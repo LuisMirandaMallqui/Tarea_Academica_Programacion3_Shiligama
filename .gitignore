@@ -1,0 +1,110 @@
+# ==========================================
+# 1. BACKEND: JAVA 25 & MAVEN
+# ==========================================
+# Ignorar las carpetas donde se guardan los compilados (.class, .jar, .war)
+target/
+
+# Archivos de caché y logs de Maven
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+
+# Archivos compilados sueltos (por si acaso se escapan de target/)
+*.class
+*.log
+*.jar
+*.war
+*.nar
+*.ear
+
+# Caché de dependencias Maven (opcional, algunos lo ignoran)
+.m2/
+
+# ==========================================
+# 2. FRONTEND: .NET 10 / C# / BLAZOR
+# ==========================================
+# Carpetas de compilación de Visual Studio y .NET
+[Bb]in/
+[Oo]bj/
+
+# Archivos de usuario y caché de Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.vsidx
+
+# Archivos de configuración local de .NET (con secretos)
+appsettings.local.json
+appsettings.Development.json
+
+# ==========================================
+# 3. ENTORNOS DE DESARROLLO (IDEs)
+# ==========================================
+# IntelliJ IDEA (El que usarás para Java)
+.idea/
+*.iml
+*.iws
+
+# NetBeans (Si algún compañero decide no usar IntelliJ)
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# Visual Studio Code (por si alguien lo usa)
+.vscode/
+*.code-workspace
+
+# ==========================================
+# 4. SISTEMA OPERATIVO Y OTROS
+# ==========================================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Bases de datos SQLite locales o temporales
+*.db
+*.sqlite
+*.sqlite3
+
+# ==========================================
+# 5. SECRETOS Y CONFIGURACIÓN SENSIBLE
+# ==========================================
+# Variables de entorno y secretos (CRÍTICO NO SUBIR)
+.env
+.env.local
+.env.*.local
+
+# Archivos de propiedades con contraseñas
+secrets.properties
+application-secret.properties
+database.properties
+
+# Archivos de configuración con API keys
+config.local.xml
+
+# ==========================================
+# 6. DOCUMENTOS TEMPORALES Y CACHÉS
+# ==========================================
+*.tmp
+*.temp
+*.bak
+~*
+*.swp
+*.swo
+
+# Archivos de contraseña de Git
+.git-credentials
