@@ -1238,9 +1238,9 @@ public class MovimientoInventario {
 
 ```java
 // ============================================================
-// pe.edu.pucp.shiligama.model.proveedor.Promocion.java
+// pe.edu.pucp.shiligama.model.promocion.java
 // ============================================================
-package pe.edu.pucp.shiligama.model.proveedor;
+package pe.edu.pucp.shiligama.model.promocion;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -1321,9 +1321,9 @@ public class Promocion {
 
 ```java
 // ============================================================
-// pe.edu.pucp.shiligama.model.proveedor.PromocionProducto.java
+// pe.edu.pucp.shiligama.model.promocionProducto.java
 // ============================================================
-package pe.edu.pucp.shiligama.model.proveedor;
+package pe.edu.pucp.shiligama.model.promocion;
 
 import pe.edu.pucp.shiligama.model.producto.Producto;
 
@@ -1350,129 +1350,6 @@ public class PromocionProducto {
 }
 ```
 
-```java
-// ============================================================
-// pe.edu.pucp.shiligama.model.proveedor.Turno.java
-// ============================================================
-package pe.edu.pucp.shiligama.model.proveedor;
-
-import java.time.LocalDate;
-import java.time.LocalTime;
-import pe.edu.pucp.shiligama.model.usuario.Trabajador;
-
-public class Turno {
-    private int idTurno;
-    private LocalDate fecha;
-    private LocalTime horaInicio;
-    private LocalTime horaFin;
-    private String observaciones;
-    private Trabajador trabajador;
-
-    // Constructor vacío
-    public Turno() {
-    }
-
-    // Constructor completo
-    public Turno(int idTurno, LocalDate fecha, LocalTime horaInicio,
-                 LocalTime horaFin, String observaciones,
-                 Trabajador trabajador) {
-        this.idTurno = idTurno;
-        this.fecha = fecha;
-        this.horaInicio = horaInicio;
-        this.horaFin = horaFin;
-        this.observaciones = observaciones;
-        this.trabajador = trabajador;
-    }
-
-    // Getters y Setters
-    public int getIdTurno() { return idTurno; }
-    public void setIdTurno(int idTurno) { this.idTurno = idTurno; }
-
-    public LocalDate getFecha() { return fecha; }
-    public void setFecha(LocalDate fecha) { this.fecha = fecha; }
-
-    public LocalTime getHoraInicio() { return horaInicio; }
-    public void setHoraInicio(LocalTime horaInicio) { this.horaInicio = horaInicio; }
-
-    public LocalTime getHoraFin() { return horaFin; }
-    public void setHoraFin(LocalTime horaFin) { this.horaFin = horaFin; }
-
-    public String getObservaciones() { return observaciones; }
-    public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
-
-    public Trabajador getTrabajador() { return trabajador; }
-    public void setTrabajador(Trabajador trabajador) { this.trabajador = trabajador; }
-}
-```
-
-```java
-// ============================================================
-// pe.edu.pucp.shiligama.model.proveedor.Devolucion.java
-// ============================================================
-package pe.edu.pucp.shiligama.model.proveedor;
-
-import java.time.LocalDateTime;
-import pe.edu.pucp.shiligama.model.enums.TipoDevolucion;
-import pe.edu.pucp.shiligama.model.producto.Producto;
-import pe.edu.pucp.shiligama.model.usuario.Trabajador;
-import pe.edu.pucp.shiligama.model.venta.Venta;
-
-public class Devolucion {
-    private int idDevolucion;
-    private LocalDateTime fechaHora;
-    private String motivo;
-    private int cantidad;
-    private TipoDevolucion tipoDevolucion;
-    private Producto producto;
-    private Venta venta;
-    private Trabajador trabajador;
-
-    // Constructor vacío
-    public Devolucion() {
-    }
-
-    // Constructor completo
-    public Devolucion(int idDevolucion, LocalDateTime fechaHora,
-                      String motivo, int cantidad,
-                      TipoDevolucion tipoDevolucion,
-                      Producto producto, Venta venta,
-                      Trabajador trabajador) {
-        this.idDevolucion = idDevolucion;
-        this.fechaHora = fechaHora;
-        this.motivo = motivo;
-        this.cantidad = cantidad;
-        this.tipoDevolucion = tipoDevolucion;
-        this.producto = producto;
-        this.venta = venta;
-        this.trabajador = trabajador;
-    }
-
-    // Getters y Setters
-    public int getIdDevolucion() { return idDevolucion; }
-    public void setIdDevolucion(int idDevolucion) { this.idDevolucion = idDevolucion; }
-
-    public LocalDateTime getFechaHora() { return fechaHora; }
-    public void setFechaHora(LocalDateTime fechaHora) { this.fechaHora = fechaHora; }
-
-    public String getMotivo() { return motivo; }
-    public void setMotivo(String motivo) { this.motivo = motivo; }
-
-    public int getCantidad() { return cantidad; }
-    public void setCantidad(int cantidad) { this.cantidad = cantidad; }
-
-    public TipoDevolucion getTipoDevolucion() { return tipoDevolucion; }
-    public void setTipoDevolucion(TipoDevolucion tipoDevolucion) { this.tipoDevolucion = tipoDevolucion; }
-
-    public Producto getProducto() { return producto; }
-    public void setProducto(Producto producto) { this.producto = producto; }
-
-    public Venta getVenta() { return venta; }
-    public void setVenta(Venta venta) { this.venta = venta; }
-
-    public Trabajador getTrabajador() { return trabajador; }
-    public void setTrabajador(Trabajador trabajador) { this.trabajador = trabajador; }
-}
-```
 
 ```java
 // ============================================================
