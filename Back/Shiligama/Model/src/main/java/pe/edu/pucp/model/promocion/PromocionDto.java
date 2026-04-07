@@ -1,4 +1,4 @@
-package pe.edu.pucp.model.proveedor;
+package pe.edu.pucp.model.promocion;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -6,7 +6,7 @@ import java.util.List;
 import pe.edu.pucp.model.enums.TipoDescuento;
 import pe.edu.pucp.model.producto.ProductoDto;
 
-public class Promocion {
+public class PromocionDto {
     private int idPromocion;
     private String nombre;
     private String descripcion;
@@ -19,15 +19,15 @@ public class Promocion {
     private List<ProductoDto> productos;
 
     // Constructor vacío
-    public Promocion() {
+    public PromocionDto() {
         this.productos = new ArrayList<>();
     }
 
     // Constructor completo
-    public Promocion(int idPromocion, String nombre, String descripcion,
-                     TipoDescuento tipoDescuento, double valorDescuento,
-                     LocalDate fechaInicio, LocalDate fechaFin,
-                     String condiciones, boolean estado) {
+    public PromocionDto(int idPromocion, String nombre, String descripcion,
+                        TipoDescuento tipoDescuento, double valorDescuento,
+                        LocalDate fechaInicio, LocalDate fechaFin,
+                        String condiciones, boolean estado) {
         this.idPromocion = idPromocion;
         this.nombre = nombre;
         this.descripcion = descripcion;
