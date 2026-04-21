@@ -1,8 +1,5 @@
 package pe.edu.pucp.persistance.dao.usuario.impl;
 
-import pe.edu.pucp.db.DBManager;
-import pe.edu.pucp.model.producto.CategoriaDto;
-import pe.edu.pucp.model.producto.ProductoDto;
 import pe.edu.pucp.model.usuario.UsuarioDto;
 import pe.edu.pucp.persistance.dao.usuario.dao.UsuarioDAO;
 import pe.edu.pucp.persistance.daoImpl.DAOImplBase;
@@ -37,32 +34,32 @@ public class UsuarioImpl extends DAOImplBase implements UsuarioDAO {
     @Override
     protected void incluirValorDeParametrosParaInsercion() throws SQLException {
         int i = 1;
-        this.prepare_statement.setInt(i++, this.persona.getEstadoPersona().getEstadoPersonaId());
-        this.prepare_statement.setString(i++, this.persona.getNombres());
-        this.prepare_statement.setString(i++, this.persona.getPrimerApellido());
-        this.prepare_statement.setString(i++, this.persona.getSegundoApellido());
-        this.prepare_statement.setString(i++, this.persona.getCodigo());
-        this.prepare_statement.setString(i++, this.persona.getCorreo());
-        this.prepare_statement.setString(i++, this.persona.getContrasena());
-        this.prepare_statement.setString(i++, this.persona.getUltimaActividad());
-        this.prepare_statement.setString(i++, this.persona.getusuarioCreacion());
-        this.prepare_statement.setString(i++, this.persona.getusuarioModificacion());
+        this.prepared_statement.setInt(i++, this.persona.getEstadoPersona().getEstadoPersonaId());
+        this.prepared_statement.setString(i++, this.persona.getNombres());
+        this.prepared_statement.setString(i++, this.persona.getPrimerApellido());
+        this.prepared_statement.setString(i++, this.persona.getSegundoApellido());
+        this.prepared_statement.setString(i++, this.persona.getCodigo());
+        this.prepared_statement.setString(i++, this.persona.getCorreo());
+        this.prepared_statement.setString(i++, this.persona.getContrasena());
+        this.prepared_statement.setString(i++, this.persona.getUltimaActividad());
+        this.prepared_statement.setString(i++, this.persona.getusuarioCreacion());
+        this.prepared_statement.setString(i++, this.persona.getusuarioModificacion());
     }
 
     @Override
     protected void incluirValorDeParametrosParaModificacion() throws SQLException {
         int i = 1;
-        this.prepare_statement.setInt(i++, this.persona.getEstadoPersona().getEstadoPersonaId());
-        this.prepare_statement.setString(i++, this.persona.getNombres());
-        this.prepare_statement.setString(i++, this.persona.getPrimerApellido());
-        this.prepare_statement.setString(i++, this.persona.getSegundoApellido());
-        this.prepare_statement.setString(i++, this.persona.getCodigo());
-        this.prepare_statement.setString(i++, this.persona.getCorreo());
-        this.prepare_statement.setString(i++, this.persona.getContrasena());
-        this.prepare_statement.setString(i++, this.persona.getUltimaActividad());
-        this.prepare_statement.setString(i++, this.persona.getusuarioCreacion());
-        this.prepare_statement.setString(i++, this.persona.getusuarioModificacion());
-        this.prepare_statement.setInt(i++, this.persona.getPersonaId());
+        this.prepared_statement.setInt(i++, this.persona.getEstadoPersona().getEstadoPersonaId());
+        this.prepared_statement.setString(i++, this.persona.getNombres());
+        this.prepared_statement.setString(i++, this.persona.getPrimerApellido());
+        this.prepared_statement.setString(i++, this.persona.getSegundoApellido());
+        this.prepared_statement.setString(i++, this.persona.getCodigo());
+        this.prepared_statement.setString(i++, this.persona.getCorreo());
+        this.prepared_statement.setString(i++, this.persona.getContrasena());
+        this.prepared_statement.setString(i++, this.persona.getUltimaActividad());
+        this.prepared_statement.setString(i++, this.persona.getusuarioCreacion());
+        this.prepared_statement.setString(i++, this.persona.getusuarioModificacion());
+        this.prepared_statement.setInt(i++, this.persona.getPersonaId());
     }
 
     @Override
@@ -95,12 +92,12 @@ public class UsuarioImpl extends DAOImplBase implements UsuarioDAO {
 
     @Override
     protected void incluirValorDeParametrosParaEliminacion() throws SQLException {
-        this.prepare_statement.setInt(1, this.persona.getPersonaId());
+        this.prepared_statement.setInt(1, this.persona.getPersonaId());
     }
 
     @Override
     protected void incluirValorDeParametrosParaObtenerPorId() throws SQLException {
-        this.prepare_statement.setInt(1, this.persona.getPersonaId());
+        this.prepared_statement.setInt(1, this.persona.getPersonaId());
     }
 
     @Override
