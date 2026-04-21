@@ -7,20 +7,20 @@ public class DetalleVentaDto {
     private int cantidad;
     private double precioUnitario;
     private double subtotal;
-    private VentaDto venta;
+    private int idPadreVenta; //En lugar de guardar el objeto completo guardamos el ID
     private ProductoDto producto;
 
     public DetalleVentaDto() {
     }
 
     public DetalleVentaDto(int idDetalleVenta, int cantidad, double precioUnitario,
-                           double subtotal, VentaDto venta, ProductoDto producto) {
+                           double subtotal, int idPadreVenta, ProductoDto producto) {
         this.idDetalleVenta = idDetalleVenta;
         this.cantidad = cantidad;
         this.precioUnitario = precioUnitario;
         this.subtotal = subtotal;
 
-        this.venta = venta;
+        this.idPadreVenta = idPadreVenta;
         this.producto = producto;
     }
 
@@ -58,12 +58,12 @@ public class DetalleVentaDto {
 
     // EN ESTOS DE ACA FALTARIA ENCAPSULAR PARA QUE NO SE COPIEN REFERENCIAS A CLASES CREO
     // Revisando parece que en esta capa no habria problema, en la capa de dominio si
-    public VentaDto getVenta() {
-        return venta;
+    public int getIdPadreVenta() {
+        return idPadreVenta;
     }
 
-    public void setVenta(VentaDto venta) {
-        this.venta = venta;
+    public void setIdPadreVenta(int idPadreVenta) {
+        this.idPadreVenta = idPadreVenta;
     }
 
     public ProductoDto getProducto() {

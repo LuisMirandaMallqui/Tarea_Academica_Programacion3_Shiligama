@@ -7,22 +7,20 @@ public class DetallePedidoDto {
     private int cantidad;
     private double precioUnitario;
     private double subtotal;
-    private boolean disponible;
-    private PedidoDto pedido;
+    private int idPadrePedido;
     private ProductoDto producto;
 
     public DetallePedidoDto() {
     }
 
     public DetallePedidoDto(int idDetallePedido, int cantidad, double precioUnitario,
-            double subtotal, boolean disponible, PedidoDto pedido,
-            ProductoDto producto) {
+                            double subtotal, int idPadrePedido,
+                            ProductoDto producto) {
         this.idDetallePedido = idDetallePedido;
         this.cantidad = cantidad;
         this.precioUnitario = precioUnitario;
         this.subtotal = subtotal;
-        this.disponible = disponible;
-        this.pedido = pedido;
+        this.idPadrePedido = idPadrePedido;
         this.producto = producto;
     }
 
@@ -58,20 +56,13 @@ public class DetallePedidoDto {
         this.subtotal = subtotal;
     }
 
-    public boolean isDisponible() {
-        return disponible;
+
+    public int getIdPadrePedido() {
+        return idPadrePedido;
     }
 
-    public void setDisponible(boolean disponible) {
-        this.disponible = disponible;
-    }
-
-    public PedidoDto getPedido() {
-        return pedido;
-    }
-
-    public void setPedido(PedidoDto pedido) {
-        this.pedido = pedido;
+    public void setIdPadrePedido(PedidoDto pedido) {
+        this.idPadrePedido = idPadrePedido;
     }
 
     public ProductoDto getProducto() {
@@ -83,7 +74,5 @@ public class DetallePedidoDto {
     }
 
     // Métodos de negocio
-    public double calcularSubtotal() {
-        return cantidad * precioUnitario;
-    }
+    public double calcularSubtotal() { return cantidad * precioUnitario; }
 }

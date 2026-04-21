@@ -4,138 +4,114 @@
 -- Equipo: Team Script - Programacion 3 (PUCP) 2026-1
 -- =====================================================================
 --   -Cada tabla maestra agrega: ACTIVO, FECHA_CREACION, FECHA_MODIFICACION,
---   USUARIO_CREACION (FK a usuarios), USUARIO_MODIFICACION (FK a usuarios).
 --   -Las tablas de detalle (detalles_venta, detalles_pedido, etc.)
 --   heredan la trazabilidad de su tabla padre y NO llevan columnas
 --   de auditoria propias.
---   -Se mantienen 18 tablas (se elimina `auditoria`).
 -- =====================================================================
 
-SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+-- SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+-- SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+-- SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 
 -- -----------------------------------------------------
 -- Schema shiligama
 -- -----------------------------------------------------
 DROP SCHEMA IF EXISTS `shiligama`;
-CREATE SCHEMA IF NOT EXISTS `shiligama` DEFAULT CHARACTER SET utf8mb4;
+CREATE SCHEMA IF NOT EXISTS `shiligama`;
+-- DEFAULT CHARACTER SET utf8mb4;
 USE `shiligama`;
 
 -- =============================================================
--- MODULO 1: GESTION DE USUARIOS (Herencia Table-per-Subclass)
--- RF01: Gestion de usuarios
--- RF02: Autenticacion y control de sesion
+-- MODULO 1: GESTION DE USUARIOS 
+-- Gestion de usuarios
+-- Autenticacion y control de sesion
 -- =============================================================
-
+-- -----------------------------------------------------
+-- Tabla Usuarios
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`usuarios` ;
 CREATE TABLE IF NOT EXISTS `usuarios` (
-    `USUARIO_ID`             INT          NOT NULL AUTO_INCREMENT,
-    `NOMBRE_USUARIO`         VARCHAR(50)  NOT NULL,
-    `CONTRASENA`             VARCHAR(255) NOT NULL,
+	-- Primary Keys
+    `USUARIO_ID`             INT          NOT NULL AUTO_INCREMENT COMMENT 'Identificador único de la persona.',
+	-- Atributos
     `NOMBRES`                VARCHAR(100) NOT NULL,
     `APELLIDOS`              VARCHAR(100) NOT NULL,
     `DNI`                    VARCHAR(8)   NOT NULL,
     `TELEFONO`               VARCHAR(15)  NULL DEFAULT NULL,
-    `EMAIL`                  VARCHAR(100) NOT NULL,
-    `DIRECCION`              VARCHAR(255) NULL DEFAULT NULL,
+    `CORREO`                  VARCHAR(100) NOT NULL,
+    -- `DIRECCION`              VARCHAR(255) NULL DEFAULT NULL,
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
-    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT          NULL DEFAULT NULL,
-    `USUARIO_MODIFICACION`   INT          NULL DEFAULT NULL,
+	`CONTRASENA`             VARCHAR(255) NOT NULL,
     PRIMARY KEY (`USUARIO_ID`),
-    UNIQUE INDEX `uq_usuarios_nombre_usuario` (`NOMBRE_USUARIO`),
-    UNIQUE INDEX `uq_usuarios_email` (`EMAIL`),
-    UNIQUE INDEX `uq_usuarios_dni` (`DNI`),
-    INDEX `fk_usuarios_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `fk_usuarios_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
-    CONSTRAINT `fk_usuarios_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_usuarios_usu_modificacion`
-        FOREIGN KEY (`USUARIO_MODIFICACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
-
+    -- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó'
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Almacena información general de los usuarios registrados';
+-- -----------------------------------------------------
+-- Tabla Clientes
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`clientes` ;
 CREATE TABLE IF NOT EXISTS `clientes` (
     `CLIENTE_ID`             INT          NOT NULL AUTO_INCREMENT,
     `USUARIO_ID`             INT          NOT NULL,
-    `TELEFONO_WHATSAPP`      VARCHAR(15)  NULL DEFAULT NULL,
     `DIRECCION_ENTREGA`      VARCHAR(255) NULL DEFAULT NULL,
     `FECHA_REGISTRO`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
-    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT          NULL DEFAULT NULL,
-    `USUARIO_MODIFICACION`   INT          NULL DEFAULT NULL,
     PRIMARY KEY (`CLIENTE_ID`),
-    UNIQUE INDEX `uq_clientes_usuario_id` (`USUARIO_ID`),
-    INDEX `fk_clientes_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `fk_clientes_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
-    CONSTRAINT `fk_clientes_usuarios`
-        FOREIGN KEY (`USUARIO_ID`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_clientes_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_clientes_usu_modificacion`
-        FOREIGN KEY (`USUARIO_MODIFICACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
-
+	-- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario 
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó'
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Almacena los Clientes';
+-- -----------------------------------------------------
+-- Tabla Administradores
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`administradores` ;
 CREATE TABLE IF NOT EXISTS `administradores` (
     `ADMINISTRADOR_ID`       INT          NOT NULL AUTO_INCREMENT,
     `USUARIO_ID`             INT          NOT NULL,
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
-    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT          NULL DEFAULT NULL,
-    `USUARIO_MODIFICACION`   INT          NULL DEFAULT NULL,
     PRIMARY KEY (`ADMINISTRADOR_ID`),
-    UNIQUE INDEX `uq_administradores_usuario_id` (`USUARIO_ID`),
-    INDEX `fk_admins_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `fk_admins_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
-    CONSTRAINT `fk_administradores_usuarios`
-        FOREIGN KEY (`USUARIO_ID`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_admins_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_admins_usu_modificacion`
-        FOREIGN KEY (`USUARIO_MODIFICACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
-
+	-- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario 
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó'
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Almacena datos de los administradores';
+-- -----------------------------------------------------
+-- Tabla Trabajadores
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`trabajadores` ;
 CREATE TABLE IF NOT EXISTS `trabajadores` (
     `TRABAJADOR_ID`          INT          NOT NULL AUTO_INCREMENT,
     `USUARIO_ID`             INT          NOT NULL,
     `CARGO`                  VARCHAR(100) NULL DEFAULT NULL,
     `FECHA_INGRESO`          DATE         NULL DEFAULT NULL,
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
-    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT          NULL DEFAULT NULL,
-    `USUARIO_MODIFICACION`   INT          NULL DEFAULT NULL,
-    PRIMARY KEY (`TRABAJADOR_ID`),
-    UNIQUE INDEX `uq_trabajadores_usuario_id` (`USUARIO_ID`),
-    INDEX `fk_trab_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `fk_trab_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
-    CONSTRAINT `fk_trabajadores_usuarios`
-        FOREIGN KEY (`USUARIO_ID`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_trab_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_trab_usu_modificacion`
-        FOREIGN KEY (`USUARIO_MODIFICACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
+     PRIMARY KEY (`TRABAJADOR_ID`),
+	-- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario 
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó'
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Almacena datos de los trabajadores';
+
 
 -- =============================================================
 -- MODULO 2: CATALOGO Y PROMOCIONES
--- RF04: Gestion de categorias
--- RF05: Gestion de productos
--- RF06: Gestion de promociones
+-- Gestion de categorias
+-- Gestion de productos
+-- Gestion de promociones
 -- =============================================================
 
 CREATE TABLE IF NOT EXISTS `categorias` (
@@ -528,9 +504,9 @@ CREATE TABLE IF NOT EXISTS `detalles_orden_reabastecimiento` (
 -- =============================================================
 -- RESTAURAR CONFIGURACION
 -- =============================================================
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+-- SET SQL_MODE=@OLD_SQL_MODE;
+-- SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+-- SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
 -- =============================================================
 -- RESUMEN DE TABLAS (18 total)

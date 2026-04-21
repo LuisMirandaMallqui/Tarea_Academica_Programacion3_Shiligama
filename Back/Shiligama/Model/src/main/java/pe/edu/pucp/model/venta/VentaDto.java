@@ -21,6 +21,7 @@ public class VentaDto {
     private MetodoPagoDto metodoPago;
     private List<DetalleVentaDto> detalles;
 
+
     public VentaDto() {
     }
 
