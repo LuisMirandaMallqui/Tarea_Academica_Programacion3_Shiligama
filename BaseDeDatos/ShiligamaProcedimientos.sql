@@ -211,9 +211,6 @@ BEGIN
     FROM categorias WHERE ACTIVO = 1;
 END$$
 
-
-
-
 CREATE PROCEDURE BUSCAR_CATEGORIA_POR_ID(
     IN _categoria_id INT
 )
@@ -223,13 +220,6 @@ BEGIN
     WHERE CATEGORIA_ID = _categoria_id;
 END$$
 
-=======
-    FROM categorias 
-    WHERE CATEGORIA_ID = _categoria_id;
-END$$
-
-
->>>>>>> 486dcc2ece9f11494d9bae299449ca898c915e9e
 CREATE PROCEDURE INSERTAR_PRODUCTO(
     OUT _producto_id INT,
     IN  _categoria_id     INT,
@@ -1074,24 +1064,64 @@ END$$
 -- MÓDULO 13: DEVOLUCIONES  (sin cambios)
 -- =============================================================
 
+-- CORRECCIÓN: parámetros alineados con el DAO de Devolucion
+-- El DAO pasa: idVenta, motivo, fechaSolicitud, estado
 CREATE PROCEDURE INSERTAR_DEVOLUCION(
-    OUT _devolucion_id INT,
-    IN  _producto_id      INT,
-    IN  _trabajador_id    INT,
-    IN  _tipo_devolucion  VARCHAR(20),
-    IN  _cantidad         INT,
-    IN  _motivo           VARCHAR(500)
+    OUT _devolucion_id   INT,
+    IN  _id_venta        INT,
+    IN  _motivo          VARCHAR(500),
+    IN  _fecha_solicitud DATETIME,
+    IN  _estado          VARCHAR(20)
 )
 BEGIN
-    INSERT INTO devoluciones(PRODUCTO_ID, TRABAJADOR_ID, TIPO_DEVOLUCION,
-                             CANTIDAD, MOTIVO)
-    VALUES(_producto_id, _trabajador_id, _tipo_devolucion, _cantidad, _motivo);
+    INSERT INTO devoluciones(id_venta, motivo, fecha_solicitud, estado, activo)
+    VALUES(_id_venta, _motivo, _fecha_solicitud, _estado, 1);
     SET _devolucion_id = LAST_INSERT_ID();
+END$$
 
-    IF _tipo_devolucion = 'CLIENTE' THEN
-        UPDATE productos SET STOCK = STOCK + _cantidad
-        WHERE PRODUCTO_ID = _producto_id;
-    END IF;
+-- CORRECCIÓN: parámetros alineados con el DAO de Devolucion
+-- El DAO pasa: idDevolucion, idVenta, motivo, fechaSolicitud, estado
+CREATE PROCEDURE MODIFICAR_DEVOLUCION(
+    IN _id_devolucion    INT,
+    IN _id_venta         INT,
+    IN _motivo           VARCHAR(500),
+    IN _fecha_solicitud  DATETIME,
+    IN _estado           VARCHAR(20)
+)
+BEGIN
+    UPDATE devoluciones SET
+        id_venta        = _id_venta,
+        motivo          = _motivo,
+        fecha_solicitud = _fecha_solicitud,
+        estado          = _estado
+    WHERE id_devolucion = _id_devolucion;
+END$$
+
+CREATE PROCEDURE ELIMINAR_DEVOLUCION(
+    IN _id_devolucion INT
+)
+BEGIN
+    UPDATE devoluciones SET activo = 0
+    WHERE id_devolucion = _id_devolucion;
+END$$
+
+CREATE PROCEDURE BUSCAR_DEVOLUCION_POR_ID(
+    IN _id_devolucion INT
+)
+BEGIN
+    -- El DAO lee: id_devolucion, id_venta, motivo, fecha_solicitud, estado, activo
+    SELECT id_devolucion, id_venta, motivo, fecha_solicitud, estado, activo
+    FROM devoluciones
+    WHERE id_devolucion = _id_devolucion;
+END$$
+
+CREATE PROCEDURE LISTAR_DEVOLUCIONES_TODAS()
+BEGIN
+    -- El DAO lee: id_devolucion, id_venta, motivo, fecha_solicitud, estado, activo
+    SELECT id_devolucion, id_venta, motivo, fecha_solicitud, estado, activo
+    FROM devoluciones
+    WHERE activo = 1
+    ORDER BY fecha_solicitud DESC;
 END$$
 
 -- =============================================================
