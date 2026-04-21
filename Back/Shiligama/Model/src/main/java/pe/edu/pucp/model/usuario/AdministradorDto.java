@@ -16,8 +16,7 @@ public class AdministradorDto extends UsuarioDto {
                          String telefono, String email, String direccion,
                          boolean estado, LocalDateTime fechaCreacion,
                          int idAdministrador) {
-        super(idUsuario, nombreUsuario, contrasena, nombres, apellidos,
-                dni, telefono, email, direccion, estado, fechaCreacion);
+        super(idUsuario,  email, contrasena,nombres,apellidos, dni, telefono);
         this.idAdministrador = idAdministrador;
     }
 

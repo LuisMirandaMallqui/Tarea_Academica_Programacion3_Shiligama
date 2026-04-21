@@ -52,7 +52,7 @@ public class PedidoDto {
         this.idPedido = idPedido;
     }
 
-    public Date getFechaHora() {
+    public LocalDateTime getFechaHora() {
         return fechaHora;
     }
 

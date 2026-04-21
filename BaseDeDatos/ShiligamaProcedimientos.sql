@@ -11,6 +11,7 @@ DELIMITER $$
 -- MÓDULO 1: USUARIOS  (sin cambios, se conservan igual)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_USUARIO$$
 CREATE PROCEDURE INSERTAR_USUARIO(
     OUT _usuario_id INT,
     IN  _nombre_usuario VARCHAR(50),
@@ -30,6 +31,7 @@ BEGIN
     SET _usuario_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS INSERTAR_CLIENTE$$
 CREATE PROCEDURE INSERTAR_CLIENTE(
     OUT _cliente_id INT,
     IN  _nombre_usuario      VARCHAR(50),
@@ -57,6 +59,7 @@ BEGIN
     SET _cliente_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS INSERTAR_TRABAJADOR$$
 CREATE PROCEDURE INSERTAR_TRABAJADOR(
     OUT _trabajador_id INT,
     IN  _nombre_usuario VARCHAR(50),
@@ -84,6 +87,7 @@ BEGIN
     SET _trabajador_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS INSERTAR_ADMINISTRADOR$$
 CREATE PROCEDURE INSERTAR_ADMINISTRADOR(
     OUT _administrador_id INT,
     IN  _nombre_usuario VARCHAR(50),
@@ -109,6 +113,7 @@ BEGIN
     SET _administrador_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS MODIFICAR_CLIENTE$$
 CREATE PROCEDURE MODIFICAR_CLIENTE(
     IN _cliente_id          INT,
     IN _nombres             VARCHAR(100),
@@ -139,6 +144,7 @@ BEGIN
     WHERE CLIENTE_ID = _cliente_id;
 END$$
 
+DROP PROCEDURE IF EXISTS ELIMINAR_USUARIO$$
 CREATE PROCEDURE ELIMINAR_USUARIO(
     IN _usuario_id INT
 )
@@ -146,6 +152,7 @@ BEGIN
     UPDATE usuarios SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_CLIENTES$$
 CREATE PROCEDURE LISTAR_CLIENTES()
 BEGIN
     SELECT c.CLIENTE_ID, u.USUARIO_ID, u.NOMBRE_USUARIO, u.NOMBRES,
@@ -156,6 +163,7 @@ BEGIN
     WHERE u.ACTIVO = 1;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_CLIENTE_POR_ID$$
 CREATE PROCEDURE BUSCAR_CLIENTE_POR_ID(
     IN _cliente_id INT
 )
@@ -172,6 +180,7 @@ END$$
 -- MÓDULO 2: CATEGORÍAS Y PRODUCTOS  (sin cambios)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_CATEGORIA$$
 CREATE PROCEDURE INSERTAR_CATEGORIA(
     OUT _categoria_id INT,
     IN  _nombre             VARCHAR(100),
@@ -184,6 +193,7 @@ BEGIN
     SET _categoria_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS MODIFICAR_CATEGORIA$$
 CREATE PROCEDURE MODIFICAR_CATEGORIA(
     IN _categoria_id        INT,
     IN _nombre              VARCHAR(100),
@@ -198,6 +208,7 @@ BEGIN
     WHERE CATEGORIA_ID = _categoria_id;
 END$$
 
+DROP PROCEDURE IF EXISTS ELIMINAR_CATEGORIA$$
 CREATE PROCEDURE ELIMINAR_CATEGORIA(
     IN _categoria_id INT
 )
@@ -205,12 +216,14 @@ BEGIN
     UPDATE categorias SET ACTIVO = 0 WHERE CATEGORIA_ID = _categoria_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_CATEGORIAS$$
 CREATE PROCEDURE LISTAR_CATEGORIAS()
 BEGIN
     SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO
     FROM categorias WHERE ACTIVO = 1;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_CATEGORIA_POR_ID$$
 CREATE PROCEDURE BUSCAR_CATEGORIA_POR_ID(
     IN _categoria_id INT
 )
@@ -220,6 +233,7 @@ BEGIN
     WHERE CATEGORIA_ID = _categoria_id;
 END$$
 
+DROP PROCEDURE IF EXISTS INSERTAR_PRODUCTO$$
 CREATE PROCEDURE INSERTAR_PRODUCTO(
     OUT _producto_id INT,
     IN  _categoria_id     INT,
@@ -240,6 +254,7 @@ BEGIN
     SET _producto_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS MODIFICAR_PRODUCTO$$
 CREATE PROCEDURE MODIFICAR_PRODUCTO(
     IN _producto_id    INT,
     IN _categoria_id   INT,
@@ -264,6 +279,7 @@ BEGIN
     WHERE PRODUCTO_ID = _producto_id;
 END$$
 
+DROP PROCEDURE IF EXISTS ELIMINAR_PRODUCTO$$
 CREATE PROCEDURE ELIMINAR_PRODUCTO(
     IN _producto_id INT
 )
@@ -271,6 +287,7 @@ BEGIN
     UPDATE productos SET ACTIVO = 0 WHERE PRODUCTO_ID = _producto_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_PRODUCTOS$$
 CREATE PROCEDURE LISTAR_PRODUCTOS()
 BEGIN
     SELECT p.PRODUCTO_ID, p.CATEGORIA_ID, c.NOMBRE AS CATEGORIA_NOMBRE,
@@ -282,6 +299,7 @@ BEGIN
     WHERE p.ACTIVO = 1;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_PRODUCTO_POR_ID$$
 CREATE PROCEDURE BUSCAR_PRODUCTO_POR_ID(
     IN _producto_id INT
 )
@@ -299,6 +317,7 @@ END$$
 -- MÓDULO 3: INVENTARIO  (sin cambios)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS REGISTRAR_MOVIMIENTO_INVENTARIO$$
 CREATE PROCEDURE REGISTRAR_MOVIMIENTO_INVENTARIO(
     OUT _movimiento_id INT,
     IN  _producto_id      INT,
@@ -337,6 +356,7 @@ BEGIN
     SET _movimiento_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_MOVIMIENTOS_POR_PRODUCTO$$
 CREATE PROCEDURE LISTAR_MOVIMIENTOS_POR_PRODUCTO(
     IN _producto_id INT
 )
@@ -361,6 +381,7 @@ END$$
 -- CORRECCIÓN: LISTAR y BUSCAR ya no retornan DESCRIPCION
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_METODO_PAGO$$
 CREATE PROCEDURE INSERTAR_METODO_PAGO(
     OUT _metodo_pago_id INT,
     IN  _nombre         VARCHAR(50)
@@ -372,6 +393,7 @@ BEGIN
     SET _metodo_pago_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS MODIFICAR_METODO_PAGO$$
 CREATE PROCEDURE MODIFICAR_METODO_PAGO(
     IN _metodo_pago_id INT,
     IN _nombre         VARCHAR(50)
@@ -383,6 +405,7 @@ BEGIN
     WHERE METODO_PAGO_ID = _metodo_pago_id;
 END$$
 
+DROP PROCEDURE IF EXISTS ELIMINAR_METODO_PAGO$$
 CREATE PROCEDURE ELIMINAR_METODO_PAGO(
     IN _metodo_pago_id INT
 )
@@ -391,6 +414,7 @@ BEGIN
     WHERE METODO_PAGO_ID = _metodo_pago_id;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_METODO_PAGO_POR_ID$$
 CREATE PROCEDURE BUSCAR_METODO_PAGO_POR_ID(
     IN _metodo_pago_id INT
 )
@@ -404,6 +428,7 @@ BEGIN
     WHERE METODO_PAGO_ID = _metodo_pago_id AND ACTIVO = 1;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_METODOS_PAGO$$
 CREATE PROCEDURE LISTAR_METODOS_PAGO()
 BEGIN
     -- Se eliminó DESCRIPCION: no existe en MetodoPagoDto
@@ -425,6 +450,7 @@ END$$
 --   para estos objetos → los JOINs a usuarios eran innecesarios.
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_VENTA$$
 CREATE PROCEDURE INSERTAR_VENTA(
     OUT _venta_id       INT,
     IN  _cliente_id     INT,
@@ -442,6 +468,7 @@ BEGIN
     SET _venta_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS COMPLETAR_VENTA$$
 CREATE PROCEDURE COMPLETAR_VENTA(
     IN _venta_id INT
 )
@@ -450,6 +477,7 @@ BEGIN
     WHERE VENTA_ID = _venta_id;
 END$$
 
+DROP PROCEDURE IF EXISTS ANULAR_VENTA$$
 CREATE PROCEDURE ANULAR_VENTA(
     IN _venta_id INT
 )
@@ -464,6 +492,7 @@ BEGIN
     WHERE VENTA_ID = _venta_id;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_VENTA_POR_ID$$
 CREATE PROCEDURE BUSCAR_VENTA_POR_ID(
     IN _venta_id INT
 )
@@ -491,6 +520,7 @@ BEGIN
     WHERE v.VENTA_ID = _venta_id AND v.ACTIVO = 1;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_VENTAS$$
 CREATE PROCEDURE LISTAR_VENTAS()
 BEGIN
     -- Misma lógica que BUSCAR: sin CLIENTE_NOMBRE ni TRABAJADOR_NOMBRE
@@ -515,6 +545,7 @@ END$$
 -- MÓDULO 6: DETALLES DE VENTA  (sin cambios lógicos)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_DETALLE_VENTA$$
 CREATE PROCEDURE INSERTAR_DETALLE_VENTA(
     OUT _detalle_venta_id INT,
     IN  _venta_id         INT,
@@ -547,6 +578,7 @@ BEGIN
 END$$
 
 -- Actualiza la cantidad de un detalle y recalcula subtotal y monto total de la venta
+DROP PROCEDURE IF EXISTS MODIFICAR_DETALLE_VENTA$$
 CREATE PROCEDURE MODIFICAR_DETALLE_VENTA(
     IN _detalle_venta_id INT,
     IN _cantidad         INT
@@ -575,6 +607,7 @@ BEGIN
     ) WHERE VENTA_ID = v_venta_id;
 END$$
 
+DROP PROCEDURE IF EXISTS ELIMINAR_DETALLE_VENTA$$
 CREATE PROCEDURE ELIMINAR_DETALLE_VENTA(
     IN _detalle_venta_id INT
 )
@@ -599,6 +632,7 @@ BEGIN
     ) WHERE VENTA_ID = v_venta_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_DETALLES_VENTA$$
 CREATE PROCEDURE LISTAR_DETALLES_VENTA()
 BEGIN
     SELECT dv.DETALLE_VENTA_ID,
@@ -612,6 +646,7 @@ BEGIN
     INNER JOIN productos p ON dv.PRODUCTO_ID = p.PRODUCTO_ID;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_DETALLE_VENTA_POR_ID$$
 CREATE PROCEDURE BUSCAR_DETALLE_VENTA_POR_ID(
     IN _detalle_venta_id INT
 )
@@ -630,6 +665,7 @@ BEGIN
     WHERE dv.DETALLE_VENTA_ID = _detalle_venta_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_DETALLES_POR_VENTA$$
 CREATE PROCEDURE LISTAR_DETALLES_POR_VENTA(
     IN _venta_id INT
 )
@@ -662,6 +698,7 @@ END$$
 --   exactamente con el nombre que usa el DAO Java.
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_PEDIDO$$
 CREATE PROCEDURE INSERTAR_PEDIDO(
     OUT _pedido_id         INT,
     IN  _cliente_id        INT,
@@ -685,6 +722,7 @@ BEGIN
     SET _pedido_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS MODIFICAR_ESTADO_PEDIDO$$
 CREATE PROCEDURE MODIFICAR_ESTADO_PEDIDO(
     IN _pedido_id     INT,
     IN _estado_pedido VARCHAR(20)
@@ -695,6 +733,7 @@ BEGIN
     WHERE PEDIDO_ID = _pedido_id;
 END$$
 
+DROP PROCEDURE IF EXISTS ELIMINAR_PEDIDO$$
 CREATE PROCEDURE ELIMINAR_PEDIDO(
     IN _pedido_id INT
 )
@@ -703,6 +742,7 @@ BEGIN
     WHERE PEDIDO_ID = _pedido_id;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_PEDIDO_POR_ID$$
 CREATE PROCEDURE BUSCAR_PEDIDO_POR_ID(
     IN _pedido_id INT
 )
@@ -725,6 +765,7 @@ BEGIN
     WHERE p.PEDIDO_ID = _pedido_id AND p.ACTIVO = 1;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_PEDIDOS$$
 CREATE PROCEDURE LISTAR_PEDIDOS()
 BEGIN
     -- Mismas columnas que BUSCAR_PEDIDO_POR_ID
@@ -752,6 +793,7 @@ END$$
 --   calculando en INSERTAR, pero no se expone al DAO.
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_DETALLE_PEDIDO$$
 CREATE PROCEDURE INSERTAR_DETALLE_PEDIDO(
     OUT _detalle_pedido_id INT,
     IN  _pedido_id         INT,
@@ -782,6 +824,7 @@ BEGIN
     ) WHERE PEDIDO_ID = _pedido_id;
 END$$
 
+DROP PROCEDURE IF EXISTS MODIFICAR_DETALLE_PEDIDO$$
 CREATE PROCEDURE MODIFICAR_DETALLE_PEDIDO(
     IN _detalle_pedido_id INT,
     IN _cantidad          INT
@@ -804,6 +847,7 @@ BEGIN
     ) WHERE PEDIDO_ID = v_pedido_id;
 END$$
 
+DROP PROCEDURE IF EXISTS ELIMINAR_DETALLE_PEDIDO$$
 CREATE PROCEDURE ELIMINAR_DETALLE_PEDIDO(
     IN _detalle_pedido_id INT
 )
@@ -821,6 +865,7 @@ BEGIN
     ) WHERE PEDIDO_ID = v_pedido_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_DETALLES_PEDIDO$$
 CREATE PROCEDURE LISTAR_DETALLES_PEDIDO()
 BEGIN
     SELECT dp.DETALLE_PEDIDO_ID,
@@ -834,6 +879,7 @@ BEGIN
     INNER JOIN productos p ON dp.PRODUCTO_ID = p.PRODUCTO_ID;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_DETALLE_PEDIDO_POR_ID$$
 CREATE PROCEDURE BUSCAR_DETALLE_PEDIDO_POR_ID(
     IN _detalle_pedido_id INT
 )
@@ -853,6 +899,7 @@ BEGIN
     WHERE dp.DETALLE_PEDIDO_ID = _detalle_pedido_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_DETALLES_POR_PEDIDO$$
 CREATE PROCEDURE LISTAR_DETALLES_POR_PEDIDO(
     IN _pedido_id INT
 )
@@ -874,6 +921,7 @@ END$$
 -- MÓDULO 9: PROVEEDORES  (sin cambios)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_PROVEEDOR$$
 CREATE PROCEDURE INSERTAR_PROVEEDOR(
     OUT _proveedor_id INT,
     IN  _razon_social VARCHAR(150),
@@ -889,6 +937,7 @@ BEGIN
     SET _proveedor_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS MODIFICAR_PROVEEDOR$$
 CREATE PROCEDURE MODIFICAR_PROVEEDOR(
     IN _proveedor_id  INT,
     IN _razon_social  VARCHAR(150),
@@ -909,11 +958,30 @@ BEGIN
     WHERE PROVEEDOR_ID = _proveedor_id;
 END$$
 
+CREATE PROCEDURE BUSCAR_PROVEEDOR_POR_ID(
+    IN _proveedor_id INT
+)
+BEGIN
+    SELECT 
+        p.PROVEEDOR_ID,
+        p.RAZON_SOCIAL,
+        p.RUC,
+        p.TELEFONO,
+        p.EMAIL,
+        p.DIRECCION,
+        p.CONTACTO,
+        p.ACTIVO
+    FROM proveedores p
+    WHERE p.PROVEEDOR_ID = _proveedor_id;
+END$$
+
+DROP PROCEDURE IF EXISTS ELIMINAR_PROVEEDOR$$
 CREATE PROCEDURE ELIMINAR_PROVEEDOR(IN _proveedor_id INT)
 BEGIN
     UPDATE proveedores SET ACTIVO = 0 WHERE PROVEEDOR_ID = _proveedor_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_PROVEEDORES$$
 CREATE PROCEDURE LISTAR_PROVEEDORES()
 BEGIN
     SELECT PROVEEDOR_ID, RAZON_SOCIAL, RUC, TELEFONO, EMAIL,
@@ -925,6 +993,7 @@ END$$
 -- MÓDULO 10: ÓRDENES DE REABASTECIMIENTO  (sin cambios)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_ORDEN_REABASTECIMIENTO$$
 CREATE PROCEDURE INSERTAR_ORDEN_REABASTECIMIENTO(
     OUT _orden_id INT,
     IN  _proveedor_id             INT,
@@ -939,6 +1008,48 @@ BEGIN
     SET _orden_id = LAST_INSERT_ID();
 END$$
 
+CREATE PROCEDURE BUSCAR_ORDEN_POR_ID(
+    IN _orden_id INT
+)
+BEGIN
+    SELECT 
+        o.ORDEN_ID,
+        o.PROVEEDOR_ID,
+        o.TRABAJADOR_ID,
+        o.FECHA_ENTREGA_ESTIMADA,
+        o.ESTADO_ORDEN,
+        o.OBSERVACIONES,
+        o.ACTIVO
+    FROM ordenes_reabastecimiento o
+    WHERE o.ORDEN_ID = _orden_id;
+END$$
+
+CREATE PROCEDURE MODIFICAR_DETALLE_ORDEN_REABAST(
+    IN _detalle_orden_id    INT,
+    IN _orden_id            INT,
+    IN _producto_id         INT,
+    IN _cantidad_solicitada INT,
+    IN _precio_compra       DECIMAL(10,2)
+)
+BEGIN
+    UPDATE detalles_orden_reabastecimiento
+    SET 
+        ORDEN_ID            = _orden_id,
+        PRODUCTO_ID         = _producto_id,
+        CANTIDAD_SOLICITADA = _cantidad_solicitada,
+        PRECIO_COMPRA       = _precio_compra
+    WHERE DETALLE_ORDEN_ID  = _detalle_orden_id;
+END$$
+
+CREATE PROCEDURE ELIMINAR_DETALLE_ORDEN_REABAST(
+    IN _detalle_orden_id INT
+)
+BEGIN
+    DELETE FROM detalles_orden_reabastecimiento
+    WHERE DETALLE_ORDEN_ID = _detalle_orden_id;
+END$$
+
+DROP PROCEDURE IF EXISTS INSERTAR_DETALLE_ORDEN_REABASTECIMIENTO$$
 CREATE PROCEDURE INSERTAR_DETALLE_ORDEN_REABASTECIMIENTO(
     OUT _detalle_orden_id    INT,
     IN  _orden_id            INT,
@@ -953,6 +1064,7 @@ BEGIN
     SET _detalle_orden_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS MODIFICAR_ESTADO_ORDEN$$
 CREATE PROCEDURE MODIFICAR_ESTADO_ORDEN(
     IN _orden_id INT,
     IN _estado   VARCHAR(20)
@@ -962,6 +1074,7 @@ BEGIN
     WHERE ORDEN_ID = _orden_id;
 END$$
 
+DROP PROCEDURE IF EXISTS RECIBIR_ORDEN_REABASTECIMIENTO$$
 CREATE PROCEDURE RECIBIR_ORDEN_REABASTECIMIENTO(
     IN _orden_id INT
 )
@@ -979,6 +1092,7 @@ BEGIN
     WHERE ORDEN_ID = _orden_id;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_ORDENES_REABASTECIMIENTO$$
 CREATE PROCEDURE LISTAR_ORDENES_REABASTECIMIENTO()
 BEGIN
     SELECT o.ORDEN_ID, o.PROVEEDOR_ID, pr.RAZON_SOCIAL,
@@ -997,6 +1111,7 @@ END$$
 -- MÓDULO 11: JUNCTIONS  (sin cambios)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS VINCULAR_PRODUCTO_PROVEEDOR$$
 CREATE PROCEDURE VINCULAR_PRODUCTO_PROVEEDOR(
     IN _producto_id   INT,
     IN _proveedor_id  INT,
@@ -1012,6 +1127,7 @@ BEGIN
         TIEMPO_ENTREGA = _tiempo_entrega;
 END$$
 
+DROP PROCEDURE IF EXISTS VINCULAR_PRODUCTO_PROMOCION$$
 CREATE PROCEDURE VINCULAR_PRODUCTO_PROMOCION(
     IN _promocion_id INT,
     IN _producto_id  INT
@@ -1021,6 +1137,7 @@ BEGIN
     VALUES(_promocion_id, _producto_id);
 END$$
 
+DROP PROCEDURE IF EXISTS DESVINCULAR_PRODUCTO_PROMOCION$$
 CREATE PROCEDURE DESVINCULAR_PRODUCTO_PROMOCION(
     IN _promocion_id INT,
     IN _producto_id  INT
@@ -1034,6 +1151,7 @@ END$$
 -- MÓDULO 12: PROMOCIONES  (sin cambios)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS INSERTAR_PROMOCION$$
 CREATE PROCEDURE INSERTAR_PROMOCION(
     OUT _promocion_id INT,
     IN  _nombre           VARCHAR(100),
@@ -1052,6 +1170,7 @@ BEGIN
     SET _promocion_id = LAST_INSERT_ID();
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_PROMOCIONES_VIGENTES$$
 CREATE PROCEDURE LISTAR_PROMOCIONES_VIGENTES()
 BEGIN
     SELECT PROMOCION_ID, NOMBRE, DESCRIPCION, TIPO_DESCUENTO,
@@ -1065,38 +1184,46 @@ END$$
 -- =============================================================
 
 -- CORRECCIÓN: parámetros alineados con el DAO de Devolucion
--- El DAO pasa: idVenta, motivo, fechaSolicitud, estado
+-- El DAO pasa: idProducto, idTrabajador, tipoDevolucion, cantidad, motivo, fechaHora
+DROP PROCEDURE IF EXISTS INSERTAR_DEVOLUCION$$
 CREATE PROCEDURE INSERTAR_DEVOLUCION(
     OUT _devolucion_id   INT,
-    IN  _id_venta        INT,
+    IN  _id_producto     INT,
+    IN  _id_trabajador    INT,
+    IN  _estado_devolucion VARCHAR(20),
+    IN  _cantidad        INT,
     IN  _motivo          VARCHAR(500),
-    IN  _fecha_solicitud DATETIME,
-    IN  _estado          VARCHAR(20)
+    IN  _fecha_hora      DATETIME
 )
 BEGIN
-    INSERT INTO devoluciones(id_venta, motivo, fecha_solicitud, estado, activo)
-    VALUES(_id_venta, _motivo, _fecha_solicitud, _estado, 1);
+    INSERT INTO devoluciones(PRODUCTO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO)
+    VALUES(_id_producto, _id_trabajador, _estado_devolucion, _cantidad, _motivo, _fecha_hora, 1);
     SET _devolucion_id = LAST_INSERT_ID();
 END$$
 
 -- CORRECCIÓN: parámetros alineados con el DAO de Devolucion
--- El DAO pasa: idDevolucion, idVenta, motivo, fechaSolicitud, estado
+DROP PROCEDURE IF EXISTS MODIFICAR_DEVOLUCION$$
 CREATE PROCEDURE MODIFICAR_DEVOLUCION(
     IN _id_devolucion    INT,
-    IN _id_venta         INT,
+    IN _id_producto      INT,
+    IN _id_trabajador    INT,
+    IN _estado_devolucion  VARCHAR(20),
+    IN _cantidad         INT,
     IN _motivo           VARCHAR(500),
-    IN _fecha_solicitud  DATETIME,
-    IN _estado           VARCHAR(20)
+    IN _fecha_hora       DATETIME
 )
 BEGIN
     UPDATE devoluciones SET
-        id_venta        = _id_venta,
-        motivo          = _motivo,
-        fecha_solicitud = _fecha_solicitud,
-        estado          = _estado
-    WHERE id_devolucion = _id_devolucion;
+        PRODUCTO_ID      = _id_producto,
+        TRABAJADOR_ID    = _id_trabajador,
+        ESTADO_DEVOLUCION  = _estado_devolucion,
+        CANTIDAD         = _cantidad,
+        MOTIVO           = _motivo,
+        FECHA_HORA       = _fecha_hora
+    WHERE DEVOLUCION_ID = _id_devolucion;
 END$$
 
+DROP PROCEDURE IF EXISTS ELIMINAR_DEVOLUCION$$
 CREATE PROCEDURE ELIMINAR_DEVOLUCION(
     IN _id_devolucion INT
 )
@@ -1105,29 +1232,30 @@ BEGIN
     WHERE id_devolucion = _id_devolucion;
 END$$
 
+DROP PROCEDURE IF EXISTS BUSCAR_DEVOLUCION_POR_ID$$
 CREATE PROCEDURE BUSCAR_DEVOLUCION_POR_ID(
     IN _id_devolucion INT
 )
 BEGIN
-    -- El DAO lee: id_devolucion, id_venta, motivo, fecha_solicitud, estado, activo
-    SELECT id_devolucion, id_venta, motivo, fecha_solicitud, estado, activo
+    SELECT DEVOLUCION_ID, PRODUCTO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO
     FROM devoluciones
-    WHERE id_devolucion = _id_devolucion;
+    WHERE DEVOLUCION_ID = _id_devolucion;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_TODAS$$
 CREATE PROCEDURE LISTAR_DEVOLUCIONES_TODAS()
 BEGIN
-    -- El DAO lee: id_devolucion, id_venta, motivo, fecha_solicitud, estado, activo
-    SELECT id_devolucion, id_venta, motivo, fecha_solicitud, estado, activo
+    SELECT DEVOLUCION_ID, PRODUCTO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO
     FROM devoluciones
-    WHERE activo = 1
-    ORDER BY fecha_solicitud DESC;
+    WHERE ACTIVO = 1
+    ORDER BY FECHA_HORA DESC;
 END$$
 
 -- =============================================================
 -- MÓDULO 14: REPORTES  (sin cambios)
 -- =============================================================
 
+DROP PROCEDURE IF EXISTS REPORTE_VENTAS_POR_PERIODO$$
 CREATE PROCEDURE REPORTE_VENTAS_POR_PERIODO(
     IN _fecha_inicio DATE,
     IN _fecha_fin    DATE
@@ -1147,6 +1275,7 @@ BEGIN
     ORDER BY v.FECHA_HORA;
 END$$
 
+DROP PROCEDURE IF EXISTS REPORTE_PRODUCTOS_BAJO_STOCK$$
 CREATE PROCEDURE REPORTE_PRODUCTOS_BAJO_STOCK()
 BEGIN
     SELECT p.PRODUCTO_ID, p.NOMBRE, c.NOMBRE AS CATEGORIA,
@@ -1158,6 +1287,7 @@ BEGIN
     ORDER BY (p.STOCK_MINIMO - p.STOCK) DESC;
 END$$
 
+DROP PROCEDURE IF EXISTS REPORTE_PRODUCTOS_MAS_VENDIDOS$$
 CREATE PROCEDURE REPORTE_PRODUCTOS_MAS_VENDIDOS(
     IN _fecha_inicio DATE,
     IN _fecha_fin    DATE,
@@ -1179,21 +1309,274 @@ BEGIN
     LIMIT _limite;
 END$$
 
+DROP PROCEDURE IF EXISTS REPORTE_PERDIDAS_POR_PERIODO$$
 CREATE PROCEDURE REPORTE_PERDIDAS_POR_PERIODO(
     IN _fecha_inicio DATE,
     IN _fecha_fin    DATE
 )
 BEGIN
-    SELECT d.DEVOLUCION_ID, p.NOMBRE AS PRODUCTO, d.TIPO_DEVOLUCION,
+    SELECT d.DEVOLUCION_ID, p.NOMBRE AS PRODUCTO, d.ESTADO_DEVOLUCION,
            d.CANTIDAD, d.MOTIVO, d.FECHA_HORA,
            CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS REGISTRADO_POR
     FROM devoluciones d
     INNER JOIN productos    p ON d.PRODUCTO_ID   = p.PRODUCTO_ID
     INNER JOIN trabajadores t ON d.TRABAJADOR_ID = t.TRABAJADOR_ID
     INNER JOIN usuarios     u ON t.USUARIO_ID    = u.USUARIO_ID
-    WHERE d.TIPO_DEVOLUCION IN ('MERMA','VENCIMIENTO','DEFECTO')
+    WHERE d.ESTADO_DEVOLUCION = 'APROBADO'
       AND DATE(d.FECHA_HORA) BETWEEN _fecha_inicio AND _fecha_fin
     ORDER BY d.FECHA_HORA DESC;
 END$$
+DELIMITER ;
+-- =============================================================
+-- FALTANTES PARA PROMOCIONES
+-- =============================================================
+DELIMITER $$
+-- 1. MODIFICAR_PROMOCION
+DROP PROCEDURE IF EXISTS MODIFICAR_PROMOCION$$
+CREATE PROCEDURE MODIFICAR_PROMOCION(
+    IN _promocion_id      INT,
+    IN _nombre            VARCHAR(100),
+    IN _descripcion       VARCHAR(500),
+    IN _tipo_descuento    VARCHAR(20),
+    IN _valor_descuento   DECIMAL(10,2),
+    IN _fecha_inicio      DATE,
+    IN _fecha_fin         DATE,
+    IN _condiciones       VARCHAR(500)
+)
+BEGIN
+    UPDATE promociones SET
+        NOMBRE          = _nombre,
+        DESCRIPCION     = _descripcion,
+        TIPO_DESCUENTO  = _tipo_descuento,
+        VALOR_DESCUENTO = _valor_descuento,
+        FECHA_INICIO    = _fecha_inicio,
+        FECHA_FIN       = _fecha_fin,
+        CONDICIONES     = _condiciones
+    WHERE PROMOCION_ID = _promocion_id;
+END$$
 
+-- 2. ELIMINAR_PROMOCION
+DROP PROCEDURE IF EXISTS ELIMINAR_PROMOCION$$
+CREATE PROCEDURE ELIMINAR_PROMOCION(
+    IN _promocion_id INT
+)
+BEGIN
+    UPDATE promociones SET ACTIVO = 0
+    WHERE PROMOCION_ID = _promocion_id;
+END$$
+
+-- 3. BUSCAR_PROMOCION_POR_ID (con ALIAS para que coincida con tu Java)
+DROP PROCEDURE IF EXISTS BUSCAR_PROMOCION_POR_ID$$
+CREATE PROCEDURE BUSCAR_PROMOCION_POR_ID(
+    IN _promocion_id INT
+)
+BEGIN
+    SELECT 
+        PROMOCION_ID AS id_promocion,
+        NOMBRE AS nombre,
+        DESCRIPCION AS descripcion,
+        TIPO_DESCUENTO AS tipo_descuento,
+        VALOR_DESCUENTO AS valor_descuento,
+        FECHA_INICIO AS fecha_inicio,
+        FECHA_FIN AS fecha_fin,
+        CONDICIONES AS condiciones,
+        ACTIVO AS activo
+    FROM promociones
+    WHERE PROMOCION_ID = _promocion_id AND ACTIVO = 1;
+END$$
+
+-- 4. LISTAR_PROMOCIONES_TODAS (con ALIAS)
+DROP PROCEDURE IF EXISTS LISTAR_PROMOCIONES_TODAS$$
+CREATE PROCEDURE LISTAR_PROMOCIONES_TODAS()
+BEGIN
+    SELECT 
+        PROMOCION_ID AS id_promocion,
+        NOMBRE AS nombre,
+        DESCRIPCION AS descripcion,
+        TIPO_DESCUENTO AS tipo_descuento,
+        VALOR_DESCUENTO AS valor_descuento,
+        FECHA_INICIO AS fecha_inicio,
+        FECHA_FIN AS fecha_fin,
+        CONDICIONES AS condiciones,
+        ACTIVO AS activo
+    FROM promociones
+    WHERE ACTIVO = 1
+    ORDER BY FECHA_INICIO DESC;
+END$$
+
+-- 5. CORREGIR LISTAR_PROMOCIONES_VIGENTES (con ALIAS)
+DROP PROCEDURE IF EXISTS LISTAR_PROMOCIONES_VIGENTES$$
+CREATE PROCEDURE LISTAR_PROMOCIONES_VIGENTES()
+BEGIN
+    SELECT 
+        PROMOCION_ID AS id_promocion,
+        NOMBRE AS nombre,
+        DESCRIPCION AS descripcion,
+        TIPO_DESCUENTO AS tipo_descuento,
+        VALOR_DESCUENTO AS valor_descuento,
+        FECHA_INICIO AS fecha_inicio,
+        FECHA_FIN AS fecha_fin,
+        CONDICIONES AS condiciones,
+        ACTIVO AS activo
+    FROM promociones
+    WHERE ACTIVO = 1 AND CURDATE() BETWEEN FECHA_INICIO AND FECHA_FIN;
+END$$
+
+-- =============================================================
+-- FALTANTES PARA DEVOLUCIONES
+-- =============================================================
+
+-- 6. MODIFICAR_DEVOLUCION
+DROP PROCEDURE IF EXISTS MODIFICAR_DEVOLUCION$$
+CREATE PROCEDURE MODIFICAR_DEVOLUCION(
+    IN _devolucion_id      INT,
+    IN _producto_id        INT,
+    IN _trabajador_id      INT,
+    IN _estado_devolucion  VARCHAR(20),
+    IN _cantidad           INT,
+    IN _motivo             VARCHAR(500),
+    IN _fecha_hora         DATETIME
+)
+BEGIN
+    UPDATE devoluciones SET
+        PRODUCTO_ID        = _producto_id,
+        TRABAJADOR_ID      = _trabajador_id,
+        ESTADO_DEVOLUCION  = _estado_devolucion,
+        CANTIDAD           = _cantidad,
+        MOTIVO             = _motivo,
+        FECHA_HORA         = _fecha_hora
+    WHERE DEVOLUCION_ID = _devolucion_id;
+END$$
+
+-- 7. ELIMINAR_DEVOLUCION
+DROP PROCEDURE IF EXISTS ELIMINAR_DEVOLUCION$$
+CREATE PROCEDURE ELIMINAR_DEVOLUCION(
+    IN _devolucion_id INT
+)
+BEGIN
+    UPDATE devoluciones SET ACTIVO = 0
+    WHERE DEVOLUCION_ID = _devolucion_id;
+END$$
+
+-- 8. BUSCAR_DEVOLUCION_POR_ID
+DROP PROCEDURE IF EXISTS BUSCAR_DEVOLUCION_POR_ID$$
+CREATE PROCEDURE BUSCAR_DEVOLUCION_POR_ID(
+    IN _devolucion_id INT
+)
+BEGIN
+    SELECT 
+        DEVOLUCION_ID,
+        PRODUCTO_ID,
+        TRABAJADOR_ID,
+        ESTADO_DEVOLUCION,
+        CANTIDAD,
+        MOTIVO,
+        FECHA_HORA,
+        ACTIVO
+    FROM devoluciones
+    WHERE DEVOLUCION_ID = _devolucion_id AND ACTIVO = 1;
+END$$
+
+-- 9. LISTAR_DEVOLUCIONES_TODAS
+DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_TODAS$$
+CREATE PROCEDURE LISTAR_DEVOLUCIONES_TODAS()
+BEGIN
+    SELECT 
+        DEVOLUCION_ID,
+        PRODUCTO_ID,
+        TRABAJADOR_ID,
+        ESTADO_DEVOLUCION,
+        CANTIDAD,
+        MOTIVO,
+        FECHA_HORA,
+        ACTIVO
+    FROM devoluciones
+    WHERE ACTIVO = 1
+    ORDER BY FECHA_HORA DESC;
+END$$
+
+-- 10. LISTAR_DEVOLUCIONES_POR_FECHAS
+DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_POR_FECHAS$$
+CREATE PROCEDURE LISTAR_DEVOLUCIONES_POR_FECHAS(
+    IN _fecha_inicio DATETIME,
+    IN _fecha_fin    DATETIME
+)
+BEGIN
+    SELECT 
+        DEVOLUCION_ID,
+        PRODUCTO_ID,
+        TRABAJADOR_ID,
+        ESTADO_DEVOLUCION,
+        CANTIDAD,
+        MOTIVO,
+        FECHA_HORA,
+        ACTIVO
+    FROM devoluciones
+    WHERE ACTIVO = 1 AND FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
+    ORDER BY FECHA_HORA DESC;
+END$$
+
+-- =============================================================
+-- FALTANTES PARA MOVIMIENTOS_INVENTARIO
+-- =============================================================
+
+-- 11. BUSCAR_MOVIMIENTO_POR_ID
+DROP PROCEDURE IF EXISTS BUSCAR_MOVIMIENTO_POR_ID$$
+CREATE PROCEDURE BUSCAR_MOVIMIENTO_POR_ID(
+    IN _movimiento_id INT
+)
+BEGIN
+    SELECT 
+        MOVIMIENTO_ID,
+        PRODUCTO_ID,
+        TRABAJADOR_ID,
+        TIPO_MOVIMIENTO,
+        CANTIDAD,
+        STOCK_ANTERIOR,
+        STOCK_RESULTANTE,
+        MOTIVO,
+        FECHA_HORA
+    FROM movimientos_inventario
+    WHERE MOVIMIENTO_ID = _movimiento_id;
+END$$
+
+-- 12. LISTAR_MOVIMIENTOS_TODOS
+DROP PROCEDURE IF EXISTS LISTAR_MOVIMIENTOS_TODOS$$
+CREATE PROCEDURE LISTAR_MOVIMIENTOS_TODOS()
+BEGIN
+    SELECT 
+        MOVIMIENTO_ID,
+        PRODUCTO_ID,
+        TRABAJADOR_ID,
+        TIPO_MOVIMIENTO,
+        CANTIDAD,
+        STOCK_ANTERIOR,
+        STOCK_RESULTANTE,
+        MOTIVO,
+        FECHA_HORA
+    FROM movimientos_inventario
+    ORDER BY FECHA_HORA DESC;
+END$$
+
+-- 13. LISTAR_MOVIMIENTOS_POR_FECHAS
+DROP PROCEDURE IF EXISTS LISTAR_MOVIMIENTOS_POR_FECHAS$$
+CREATE PROCEDURE LISTAR_MOVIMIENTOS_POR_FECHAS(
+    IN _fecha_inicio DATETIME,
+    IN _fecha_fin    DATETIME
+)
+BEGIN
+    SELECT 
+        MOVIMIENTO_ID,
+        PRODUCTO_ID,
+        TRABAJADOR_ID,
+        TIPO_MOVIMIENTO,
+        CANTIDAD,
+        STOCK_ANTERIOR,
+        STOCK_RESULTANTE,
+        MOTIVO,
+        FECHA_HORA
+    FROM movimientos_inventario
+    WHERE FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
+    ORDER BY FECHA_HORA DESC;
+END$$
 DELIMITER ;

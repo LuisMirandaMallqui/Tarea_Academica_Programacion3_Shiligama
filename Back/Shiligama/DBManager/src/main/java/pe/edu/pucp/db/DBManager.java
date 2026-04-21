@@ -35,6 +35,7 @@ public class DBManager {
 
     public Connection getConnection() {
         try {
+            //System.out.println(url+'\n'+username+'\n'+password);
             if (connection == null || connection.isClosed()) {
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 connection = DriverManager.getConnection(url, username, password);

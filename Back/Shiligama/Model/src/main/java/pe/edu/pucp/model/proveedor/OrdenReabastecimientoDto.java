@@ -24,9 +24,9 @@ public class OrdenReabastecimientoDto {
 
     // Constructor completo
     public OrdenReabastecimientoDto(int idOrden, LocalDateTime fechaCreacion,
-                                 LocalDate fechaEntregaEstimada,
-                                 EstadoOrden estadoOrden, String observaciones,
-                                 ProveedorDto proveedor, TrabajadorDto trabajador) {
+                                    LocalDate fechaEntregaEstimada,
+                                    EstadoOrden estadoOrden, String observaciones,
+                                    ProveedorDto proveedor, TrabajadorDto trabajador) {
         this.idOrden = idOrden;
         this.fechaCreacion = fechaCreacion;
         this.fechaEntregaEstimada = fechaEntregaEstimada;

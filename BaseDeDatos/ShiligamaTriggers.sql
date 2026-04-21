@@ -111,7 +111,7 @@ BEGIN
     INSERT INTO auditoria(TABLA, OPERACION, REGISTRO_ID, DATOS_DESPUES)
     VALUES('devoluciones', 'INSERT', NEW.DEVOLUCION_ID,
         JSON_OBJECT('producto_id', NEW.PRODUCTO_ID,
-                    'tipo', NEW.TIPO_DEVOLUCION,
+                    'estado', NEW.ESTADO_DEVOLUCION,
                     'cantidad', NEW.CANTIDAD,
                     'motivo', NEW.MOTIVO));
 END$$

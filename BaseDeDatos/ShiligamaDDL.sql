@@ -244,10 +244,10 @@ CREATE TABLE IF NOT EXISTS `devoluciones` (
     -- Primary Key
     `DEVOLUCION_ID`          INT                                              NOT NULL AUTO_INCREMENT,
     -- Atributos
-    `PRODUCTO_ID`            INT                                              NOT NULL, -- DEBERIA IR VENTA CREO    
+    `PRODUCTO_ID`            INT                                              NOT NULL,
     `TRABAJADOR_ID`          INT                                              NOT NULL,
     `ESTADO_DEVOLUCION`      ENUM('PENDIENTE','APROBADO','RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
-    `CANTIDAD`               INT                                              NOT NULL, -- DUDA
+    `CANTIDAD`               INT                                              NOT NULL,
     `MOTIVO`                 VARCHAR(500)                                     NOT NULL,
     `FECHA_HORA`             DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ACTIVO`                 TINYINT                                          NOT NULL DEFAULT 1,

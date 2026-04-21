@@ -10,7 +10,7 @@ import java.util.List;
 
 /**
  * Implementación del DAO para la entidad Devolucion.
- * Utiliza procedimientos almacenados para las operaciones en BD.
+ * Utiliza procedimientos almacenados actualizados para las operaciones en BD.
  */
 public class DevolucionImpl implements DevolucionDAO {
     // ================= RECURSOS JDBC =================
@@ -20,25 +20,20 @@ public class DevolucionImpl implements DevolucionDAO {
     private Statement st;
     private ResultSet rs;
 
-    /**
-     * Inserta una nueva devolución.
-     * @param devolucion Objeto con los datos
-     * @return 1 si éxito, 0 si error
-     */
     @Override
     public int insertar(Devolucion devolucion) {
         int resultado = 0;
         try {
             con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call INSERTAR_DEVOLUCION(?,?,?,?,?)}");
+            cs = con.prepareCall("{call INSERTAR_DEVOLUCION(?,?,?,?,?,?,?)}");
             cs.registerOutParameter(1, Types.INTEGER); // ID devuelto
-            cs.setInt(2, devolucion.getIdVenta());
-            cs.setString(3, devolucion.getMotivo());
-            // Si fechaSolicitud es generada, se puede usar Timestamp.valueOf
-            cs.setTimestamp(4, devolucion.getFechaSolicitud() != null ? 
-                               Timestamp.valueOf(devolucion.getFechaSolicitud()) : 
-                               Timestamp.valueOf(LocalDateTime.now()));
-            cs.setString(5, devolucion.getEstado());
+            cs.setInt(2, devolucion.getIdProducto());
+            cs.setInt(3, devolucion.getIdTrabajador());
+            cs.setString(4, devolucion.getEstadoDevolucion());
+            cs.setInt(5, devolucion.getCantidad());
+            cs.setString(6, devolucion.getMotivo());
+            cs.setTimestamp(7, devolucion.getFechaHora() != null ? Timestamp.valueOf(devolucion.getFechaHora())
+                    : Timestamp.valueOf(LocalDateTime.now()));
             cs.executeUpdate();
             devolucion.setIdDevolucion(cs.getInt(1));
             resultado = 1;
@@ -51,22 +46,19 @@ public class DevolucionImpl implements DevolucionDAO {
         return resultado;
     }
 
-    /**
-     * Modifica una devolución existente.
-     * @param devolucion Objeto con los nuevos datos
-     * @return 1 si éxito, 0 si error
-     */
     @Override
     public int modificar(Devolucion devolucion) {
         int resultado = 0;
         try {
             con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call MODIFICAR_DEVOLUCION(?,?,?,?,?)}");
+            cs = con.prepareCall("{call MODIFICAR_DEVOLUCION(?,?,?,?,?,?,?)}");
             cs.setInt(1, devolucion.getIdDevolucion());
-            cs.setInt(2, devolucion.getIdVenta());
-            cs.setString(3, devolucion.getMotivo());
-            cs.setTimestamp(4, Timestamp.valueOf(devolucion.getFechaSolicitud()));
-            cs.setString(5, devolucion.getEstado());
+            cs.setInt(2, devolucion.getIdProducto());
+            cs.setInt(3, devolucion.getIdTrabajador());
+            cs.setString(4, devolucion.getEstadoDevolucion());
+            cs.setInt(5, devolucion.getCantidad());
+            cs.setString(6, devolucion.getMotivo());
+            cs.setTimestamp(7, Timestamp.valueOf(devolucion.getFechaHora()));
             cs.executeUpdate();
             resultado = 1;
         } catch (Exception ex) {
@@ -78,11 +70,6 @@ public class DevolucionImpl implements DevolucionDAO {
         return resultado;
     }
 
-    /**
-     * Elimina lógicamente una devolución (activo = 0).
-     * @param id ID de la devolución
-     * @return 1 si éxito, 0 si error
-     */
     @Override
     public int eliminar(int id) {
         int resultado = 0;
@@ -101,30 +88,25 @@ public class DevolucionImpl implements DevolucionDAO {
         return resultado;
     }
 
-    /**
-     * Busca una devolución mediante su ID.
-     * @param id ID de la devolución
-     * @return Objeto Devolucion, o null si no se encuentra
-     */
     @Override
     public Devolucion buscarPorID(int id) {
         Devolucion d = null;
         try {
             con = DBManager.getInstance().getConnection();
-            // A falta de un SP, usaré PreparedStatement o asumo que existe el SP. 
-            // Crear el SP BUSCAR_DEVOLUCION_POR_ID en el script SQL para consistencia.
             cs = con.prepareCall("{call BUSCAR_DEVOLUCION_POR_ID(?)}");
             cs.setInt(1, id);
             rs = cs.executeQuery();
             if (rs.next()) {
                 d = new Devolucion();
-                d.setIdDevolucion(rs.getInt("id_devolucion"));
-                d.setIdVenta(rs.getInt("id_venta"));
-                d.setMotivo(rs.getString("motivo"));
-                d.setFechaSolicitud(rs.getTimestamp("fecha_solicitud") != null ? 
-                                    rs.getTimestamp("fecha_solicitud").toLocalDateTime() : null);
-                d.setEstado(rs.getString("estado"));
-                d.setActivo(rs.getBoolean("activo"));
+                d.setIdDevolucion(rs.getInt("DEVOLUCION_ID"));
+                d.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                d.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+                d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
+                d.setCantidad(rs.getInt("CANTIDAD"));
+                d.setMotivo(rs.getString("MOTIVO"));
+                d.setFechaHora(
+                        rs.getTimestamp("FECHA_HORA") != null ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
+                d.setActivo(rs.getBoolean("ACTIVO"));
             }
         } catch (Exception ex) {
             System.err.println("Error en buscarPorID Devolucion: " + ex.getMessage());
@@ -135,10 +117,6 @@ public class DevolucionImpl implements DevolucionDAO {
         return d;
     }
 
-    /**
-     * Lista todas las devoluciones activas registradas en el sistema.
-     * @return Lista de devoluciones
-     */
     @Override
     public List<Devolucion> listarTodos() {
         List<Devolucion> lista = new ArrayList<>();
@@ -148,13 +126,15 @@ public class DevolucionImpl implements DevolucionDAO {
             rs = cs.executeQuery();
             while (rs.next()) {
                 Devolucion d = new Devolucion();
-                d.setIdDevolucion(rs.getInt("id_devolucion"));
-                d.setIdVenta(rs.getInt("id_venta"));
-                d.setMotivo(rs.getString("motivo"));
-                d.setFechaSolicitud(rs.getTimestamp("fecha_solicitud") != null ? 
-                                    rs.getTimestamp("fecha_solicitud").toLocalDateTime() : null);
-                d.setEstado(rs.getString("estado"));
-                d.setActivo(rs.getBoolean("activo"));
+                d.setIdDevolucion(rs.getInt("DEVOLUCION_ID"));
+                d.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                d.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+                d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
+                d.setCantidad(rs.getInt("CANTIDAD"));
+                d.setMotivo(rs.getString("MOTIVO"));
+                d.setFechaHora(
+                        rs.getTimestamp("FECHA_HORA") != null ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
+                d.setActivo(rs.getBoolean("ACTIVO"));
                 lista.add(d);
             }
         } catch (Exception ex) {
@@ -171,19 +151,22 @@ public class DevolucionImpl implements DevolucionDAO {
         List<Devolucion> lista = new ArrayList<>();
         try {
             con = DBManager.getInstance().getConnection();
+            // Asumiendo que LISTAR_DEVOLUCIONES_POR_FECHAS usa las mismas columnas
             cs = con.prepareCall("{call LISTAR_DEVOLUCIONES_POR_FECHAS(?,?)}");
             cs.setTimestamp(1, Timestamp.valueOf(fechaInicio.atStartOfDay()));
             cs.setTimestamp(2, Timestamp.valueOf(fechaFin.atTime(23, 59, 59)));
             rs = cs.executeQuery();
             while (rs.next()) {
                 Devolucion d = new Devolucion();
-                d.setIdDevolucion(rs.getInt("id_devolucion"));
-                d.setIdVenta(rs.getInt("id_venta"));
-                d.setMotivo(rs.getString("motivo"));
-                d.setFechaSolicitud(rs.getTimestamp("fecha_solicitud") != null ? 
-                                    rs.getTimestamp("fecha_solicitud").toLocalDateTime() : null);
-                d.setEstado(rs.getString("estado"));
-                d.setActivo(rs.getBoolean("activo"));
+                d.setIdDevolucion(rs.getInt("DEVOLUCION_ID"));
+                d.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                d.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+                d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
+                d.setCantidad(rs.getInt("CANTIDAD"));
+                d.setMotivo(rs.getString("MOTIVO"));
+                d.setFechaHora(
+                        rs.getTimestamp("FECHA_HORA") != null ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
+                d.setActivo(rs.getBoolean("ACTIVO"));
                 lista.add(d);
             }
         } catch (Exception ex) {
@@ -195,15 +178,31 @@ public class DevolucionImpl implements DevolucionDAO {
         return lista;
     }
 
-    /**
-     * Cierra todos los recursos JDBC utilizados.
-     * IMPORTANTE: Siempre llamar en el bloque finally.
-     */
     private void cerrarRecursos() {
-        try { if (cs != null) cs.close(); } catch (Exception ex) {}
-        try { if (pst != null) pst.close(); } catch (Exception ex) {}
-        try { if (st != null) st.close(); } catch (Exception ex) {}
-        try { if (rs != null) rs.close(); } catch (Exception ex) {}
-        try { if (con != null) con.close(); } catch (Exception ex) {}
+        try {
+            if (cs != null)
+                cs.close();
+        } catch (Exception ex) {
+        }
+        try {
+            if (pst != null)
+                pst.close();
+        } catch (Exception ex) {
+        }
+        try {
+            if (st != null)
+                st.close();
+        } catch (Exception ex) {
+        }
+        try {
+            if (rs != null)
+                rs.close();
+        } catch (Exception ex) {
+        }
+        try {
+            if (con != null)
+                con.close();
+        } catch (Exception ex) {
+        }
     }
 }
