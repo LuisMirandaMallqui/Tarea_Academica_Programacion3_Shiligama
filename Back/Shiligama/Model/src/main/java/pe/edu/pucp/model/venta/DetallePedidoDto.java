@@ -15,8 +15,8 @@ public class DetallePedidoDto {
     }
 
     public DetallePedidoDto(int idDetallePedido, int cantidad, double precioUnitario,
-                            double subtotal, boolean disponible, PedidoDto pedido,
-                            ProductoDto producto) {
+            double subtotal, boolean disponible, PedidoDto pedido,
+            ProductoDto producto) {
         this.idDetallePedido = idDetallePedido;
         this.cantidad = cantidad;
         this.precioUnitario = precioUnitario;
@@ -83,5 +83,7 @@ public class DetallePedidoDto {
     }
 
     // Métodos de negocio
-    public double calcularSubtotal() { return cantidad * precioUnitario; }
+    public double calcularSubtotal() {
+        return cantidad * precioUnitario;
+    }
 }
