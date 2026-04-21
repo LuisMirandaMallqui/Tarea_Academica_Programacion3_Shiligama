@@ -9,6 +9,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 
 public abstract  class DAOImplBase {
     protected String nombre_tabla;
@@ -276,7 +278,7 @@ public abstract  class DAOImplBase {
             }
             this.colocarSQLEnStatement(sql);
             if (incluirValorDeParametros != null) {
-                incluirValorDeParametros.accept(this.statement);
+                incluirValorDeParametros.accept(this.prepare_statement);
             }
             this.ejecutarSelectEnDB();
             while (this.resultSet.next()) {
@@ -321,9 +323,7 @@ public abstract  class DAOImplBase {
         }
     }
 
-
     protected int getMinId(String tabla, String col) throws SQLException {
-        tabla = tabla.replace("`", "").replace("[", "").replace("]", "");
         String sql = "SELECT MIN(" + col + ") AS id FROM " + tabla;
         try (java.sql.PreparedStatement ps = this.conexion.prepareStatement(sql);
              java.sql.ResultSet rs = ps.executeQuery()) {
@@ -335,19 +335,27 @@ public abstract  class DAOImplBase {
         return 1;
     }
 
+    //Sirve para ejecutar cualquier función de agregado (COUNT, SUM, AVG) que devuelva un único número entero.
+    //Importante para paginación por ejemplo
     protected Integer ejecutarConteo(StringBuilder sql, ArrayList<Object> parametros) {
         Integer total = 0;
         try {
             this.abrirConexion();
-            java.sql.PreparedStatement ps = this.conexion.prepareStatement(sql.toString());
-            int i = 1;
-            for (Object param : parametros) {
-                ps.setObject(i++, param);
-            }
-            var rs = ps.executeQuery();
-            if (rs.next()) {
-                // Se hace uso del índice 1 pues es universal (AVG, COUNT, etc)
-                total = rs.getInt(1);
+
+            // Usamos try-with-resources para asegurar el cierre de ps y rs
+            try (java.sql.PreparedStatement ps = this.conexion.prepareStatement(sql.toString())) { // para
+                int i = 1;
+                if (parametros != null) {
+                    for (Object param : parametros) {
+                        ps.setObject(i++, param);
+                    }
+                }
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        // Se hace uso del índice 1 pues es universal (AVG, COUNT, etc)
+                        total = rs.getInt(1);
+                    }
+                }
             }
         } catch (SQLException ex) {
             System.err.println("Error al contar: " + ex.getMessage());
@@ -358,8 +366,8 @@ public abstract  class DAOImplBase {
         return total;
     }
 
-    protected int safeFkId(Integer provided, String tabla, String col) throws SQLException {
-        if (provided != null && provided > 0) return provided;
-        return getMinId(tabla, col);
-    }
+//    protected int safeFkId(Integer provided, String tabla, String col) throws SQLException {
+//        if (provided != null && provided > 0) return provided;
+//        return getMinId(tabla, col);
+//    }
 }

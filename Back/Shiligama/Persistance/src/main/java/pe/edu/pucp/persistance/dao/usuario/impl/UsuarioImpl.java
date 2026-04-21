@@ -6,6 +6,7 @@ import pe.edu.pucp.model.producto.ProductoDto;
 import pe.edu.pucp.model.usuario.UsuarioDto;
 import pe.edu.pucp.persistance.dao.usuario.dao.UsuarioDAO;
 import pe.edu.pucp.persistance.daoImpl.DAOImplBase;
+import pe.edu.pucp.persistance.daoImpl.util.Columna;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -35,21 +36,11 @@ public class UsuarioImpl extends DAOImplBase implements UsuarioDAO {
     }
 
 
+    
 
 
 
 
-
-
-
-
-
-    // ================= RECURSOS JDBC =================
-    private Connection con;
-    private CallableStatement cs;
-    private PreparedStatement pst;
-    private Statement st;
-    private ResultSet rs;
 
     /**
      * Inserta un nuevo producto.
