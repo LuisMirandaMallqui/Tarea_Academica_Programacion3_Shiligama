@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import pe.edu.pucp.model.enums.EstadoPedido;
+import pe.edu.pucp.model.enums.ModalidadVenta;
 import pe.edu.pucp.model.usuario.ClienteDto;
 
 public class PedidoDto {
@@ -13,6 +14,7 @@ public class PedidoDto {
     private double montoDescuento;
     private EstadoPedido estadoPedido;
     private String direccionEntrega; //En caso sea presencial queda vacío o como presencial
+    private ModalidadVenta modalidadVenta;
     private String observaciones;
     //private String payloadJson;
     private ClienteDto cliente;
@@ -25,7 +27,7 @@ public class PedidoDto {
     }
 
     public PedidoDto(int idPedido, LocalDateTime fechaHora, double montoTotal,double montoDescuento,
-                     EstadoPedido estadoPedido, String direccionEntrega,
+                     EstadoPedido estadoPedido, String direccionEntrega,ModalidadVenta modalidadVenta,
                      String observaciones, ClienteDto cliente,
                       List<DetallePedidoDto> detalles) {
         this.idPedido = idPedido;
@@ -34,6 +36,7 @@ public class PedidoDto {
         this.montoDescuento = montoDescuento;
         this.estadoPedido = estadoPedido;
         this.direccionEntrega = direccionEntrega;
+        this.modalidadVenta = modalidadVenta;
         this.observaciones = observaciones;
         //this.payloadJson = payloadJson;
         this.cliente = cliente;
@@ -88,13 +91,21 @@ public class PedidoDto {
         this.direccionEntrega = direccionEntrega;
     }
 
+    public ModalidadVenta getModalidadVenta() {
+        return modalidadVenta;
+    }
+
+    public void setModalidadVenta(ModalidadVenta modalidadVenta) {
+        this.modalidadVenta = modalidadVenta;
+    }
+
     public String getObservaciones() {
         return observaciones;
     }
 
-//    public void setObservaciones(String observaciones) {
-//        this.observaciones = observaciones;
-//    }
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
+    }
 
 //    public String getPayloadJson() {
 //        return payloadJson;

@@ -1,8 +1,14 @@
 package pe.edu.pucp.model.venta;
 
-import java.time.LocalDateTime;
+import pe.edu.pucp.model.enums.CanalVenta;
+import pe.edu.pucp.model.enums.EstadoVenta;
+import pe.edu.pucp.model.usuario.ClienteDto;
+import pe.edu.pucp.model.usuario.TrabajadorDto;
 
-public class BoletaDto {
+import java.time.LocalDateTime;
+import java.util.List;
+
+public class BoletaDto extends VentaDto {
     private int idBoleta;
     private String RUC;
     private String numContacto;
@@ -15,9 +21,14 @@ public class BoletaDto {
     public BoletaDto() {
     }
 
-    public BoletaDto(int idBoleta, String RUC, String numContacto, String numeroBoleta,
+    public BoletaDto(int idVenta, LocalDateTime fechaHora, double montoTotal,
+                     double montoDescuento, CanalVenta canalVenta, EstadoVenta estadoVenta,
+                     String observaciones, ClienteDto cliente, TrabajadorDto trabajador,
+                     MetodoPagoDto metodoPago, List<DetalleVentaDto> detalles,int idBoleta, String RUC, String numContacto, String numeroBoleta,
                      LocalDateTime fechaEmision,
-                     VentaDto venta,String mensaje) {
+                     VentaDto venta, String mensaje) {
+        super(idVenta,fechaHora,montoTotal,montoDescuento,canalVenta,estadoVenta,observaciones,cliente,trabajador,
+                metodoPago,detalles);
         this.idBoleta = idBoleta;
         this.RUC = RUC;
         this.numContacto = numContacto;
