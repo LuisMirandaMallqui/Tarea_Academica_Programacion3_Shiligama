@@ -113,7 +113,6 @@ COMMENT = 'Almacena datos de los trabajadores';
 -- Gestion de productos
 -- Gestion de promociones
 -- =============================================================
-
 CREATE TABLE IF NOT EXISTS `categorias` (
     `CATEGORIA_ID`           INT          NOT NULL AUTO_INCREMENT,
     `CATEGORIA_PADRE_ID`     INT          NULL DEFAULT NULL,
@@ -180,10 +179,12 @@ CREATE TABLE IF NOT EXISTS `promociones` (
     `FECHA_FIN`              DATE           NOT NULL,
     `CONDICIONES`            VARCHAR(500)   NULL DEFAULT NULL,
     `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
+    
     `FECHA_CREACION`         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `FECHA_MODIFICACION`     DATETIME       NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
     `USUARIO_CREACION`       INT            NULL DEFAULT NULL,
     `USUARIO_MODIFICACION`   INT            NULL DEFAULT NULL,
+    
     PRIMARY KEY (`PROMOCION_ID`),
     INDEX `fk_prom_usu_creacion_idx` (`USUARIO_CREACION`),
     INDEX `fk_prom_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
@@ -211,15 +212,20 @@ CREATE TABLE IF NOT EXISTS `promociones_productos` (
 
 -- =============================================================
 -- MODULO 3: INVENTARIO Y DEVOLUCIONES
--- RF07: Actualizacion de stock
--- RF08: Historial de movimientos
--- RF09: Devoluciones y mermas
+-- Actualizacion de stock
+-- Historial de movimientos
+-- Devoluciones y mermas
 -- =============================================================
-
+-- -----------------------------------------------------
+-- Tabla Movimientos Inventario
+-- -----------------------------------------------------
 -- Los movimientos de inventario son un LOG inmutable: no llevan
 -- columnas de modificacion (no se editan una vez registrados).
+DROP TABLE IF EXISTS `shiligama`.`movimientos_inventario` ;
 CREATE TABLE IF NOT EXISTS `movimientos_inventario` (
+    -- Primary Key
     `MOVIMIENTO_ID`          INT                                              NOT NULL AUTO_INCREMENT,
+    -- Atributos
     `PRODUCTO_ID`            INT                                              NOT NULL,
     `TRABAJADOR_ID`          INT                                              NULL DEFAULT NULL,
     `TIPO_MOVIMIENTO`        ENUM('ENTRADA','SALIDA','AJUSTE','DEVOLUCION')   NOT NULL,
@@ -227,51 +233,46 @@ CREATE TABLE IF NOT EXISTS `movimientos_inventario` (
     `STOCK_ANTERIOR`         INT                                              NOT NULL,
     `STOCK_RESULTANTE`       INT                                              NOT NULL,
     `MOTIVO`                 VARCHAR(255)                                     NULL DEFAULT NULL,
-    `FECHA_HORA`             DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT                                              NULL DEFAULT NULL,
     PRIMARY KEY (`MOVIMIENTO_ID`),
+    -- Auditoría Automatica
+	`FECHA_HORA`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    -- Auditoría de Usuario 
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
     INDEX `fk_movimientos_productos_idx` (`PRODUCTO_ID`),
     INDEX `fk_movimientos_trabajadores_idx` (`TRABAJADOR_ID`),
-    INDEX `fk_mov_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `idx_mov_fecha` (`FECHA_HORA`),
     CONSTRAINT `fk_movimientos_productos`
         FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `productos` (`PRODUCTO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_movimientos_trabajadores`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajadores` (`TRABAJADOR_ID`) ON UPDATE CASCADE,
-    CONSTRAINT `fk_mov_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajadores` (`TRABAJADOR_ID`) ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Auditoría de movimientos de inventario: entradas, salidas, ajustes y devoluciones de productos';
 
 CREATE TABLE IF NOT EXISTS `devoluciones` (
+    -- Primary Key
     `DEVOLUCION_ID`          INT                                              NOT NULL AUTO_INCREMENT,
-    `PRODUCTO_ID`            INT                                              NOT NULL,
+    -- Atributos
+    `PRODUCTO_ID`            INT                                              NOT NULL, -- DEBERIA IR VENTA CREO    
     `TRABAJADOR_ID`          INT                                              NOT NULL,
-    `TIPO_DEVOLUCION`        ENUM('CLIENTE','MERMA','VENCIMIENTO','DEFECTO')  NOT NULL,
-    `CANTIDAD`               INT                                              NOT NULL,
+    `ESTADO_DEVOLUCION`      ENUM('PENDIENTE','APROBADO','RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
+    `CANTIDAD`               INT                                              NOT NULL, -- DUDA
     `MOTIVO`                 VARCHAR(500)                                     NOT NULL,
     `FECHA_HORA`             DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ACTIVO`                 TINYINT                                          NOT NULL DEFAULT 1,
-    `FECHA_CREACION`         DATETIME                                         NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `FECHA_MODIFICACION`     DATETIME                                         NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT                                              NULL DEFAULT NULL,
-    `USUARIO_MODIFICACION`   INT                                              NULL DEFAULT NULL,
     PRIMARY KEY (`DEVOLUCION_ID`),
+	-- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario 
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó',
     INDEX `fk_devoluciones_productos_idx` (`PRODUCTO_ID`),
     INDEX `fk_devoluciones_trabajadores_idx` (`TRABAJADOR_ID`),
-    INDEX `fk_dev_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `fk_dev_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
     CONSTRAINT `fk_devoluciones_productos`
         FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `productos` (`PRODUCTO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_devoluciones_trabajadores`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajadores` (`TRABAJADOR_ID`) ON UPDATE CASCADE,
-    CONSTRAINT `fk_dev_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_dev_usu_modificacion`
-        FOREIGN KEY (`USUARIO_MODIFICACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajadores` (`TRABAJADOR_ID`) ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Registro de devoluciones';
 
 -- =============================================================
 -- MODULO 4: VENTAS Y PEDIDOS
@@ -318,7 +319,13 @@ CREATE TABLE IF NOT EXISTS `ventas` (
     `CANAL_VENTA`            ENUM('PRESENCIAL','WEB') NOT NULL DEFAULT 'PRESENCIAL',
     `ESTADO_VENTA`           ENUM('REGISTRADA','COMPLETADA','ANULADA') NOT NULL DEFAULT 'REGISTRADA',
     `OBSERVACIONES`          VARCHAR(500)   NULL DEFAULT NULL,
-    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1, -- CONSIDERAR PARA BORRADO LOGICO, lo añado en DTO?
+    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1, -- CONSIDERAR PARA BORRADO LOGICO, lo añado en DTO?    
+    -- Campos específicos de boleta
+    `NUMERO_BOLETA`          VARCHAR(20)    NULL DEFAULT NULL COMMENT 'Número de comprobante',
+    `RUC_EMPRESA`            VARCHAR(11)    NULL DEFAULT NULL COMMENT 'RUC de la empresa emisora',
+    `CONTACTO_CLIENTE`       VARCHAR(20)    NULL DEFAULT NULL COMMENT 'Teléfono/contacto del cliente',
+    `MENSAJE_BOLETA`         VARCHAR(255)   NULL DEFAULT NULL COMMENT 'Mensaje personalizado en boleta',
+    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
 	PRIMARY KEY (`VENTA_ID`),
     -- Auditoría Automática
     `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
@@ -337,6 +344,27 @@ CREATE TABLE IF NOT EXISTS `ventas` (
         FOREIGN KEY (`METODO_PAGO_ID`) REFERENCES `metodos_pago` (`METODO_PAGO_ID`) ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Almacena la cabecera de los comprobantes de pago (ventas/alquileres).';
+
+CREATE TABLE IF NOT EXISTS `ventas` (
+    `VENTA_ID`               INT            NOT NULL AUTO_INCREMENT,
+    
+    PRIMARY KEY (`VENTA_ID`),
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL,
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL,
+    INDEX `fk_ventas_clientes_idx` (`CLIENTE_ID`),
+    INDEX `fk_ventas_trabajadores_idx` (`TRABAJADOR_ID`),
+    INDEX `fk_ventas_metodos_pago_idx` (`METODO_PAGO_ID`),
+    CONSTRAINT `fk_ventas_clientes`
+        FOREIGN KEY (`CLIENTE_ID`) REFERENCES `clientes` (`CLIENTE_ID`) ON UPDATE CASCADE,
+    CONSTRAINT `fk_ventas_trabajadores`
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajadores` (`TRABAJADOR_ID`) ON UPDATE CASCADE,
+    CONSTRAINT `fk_ventas_metodos_pago`
+        FOREIGN KEY (`METODO_PAGO_ID`) REFERENCES `metodos_pago` (`METODO_PAGO_ID`) ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Registro de ventas/comprobantes de pago. Contiene la información completa de cada transacción.';
+
 
 -- -----------------------------------------------------
 -- Tabla DetallesVenta (sin auditoria propia porque hereda de ventas)
