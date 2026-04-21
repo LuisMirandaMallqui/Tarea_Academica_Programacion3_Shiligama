@@ -211,6 +211,9 @@ BEGIN
     FROM categorias WHERE ACTIVO = 1;
 END$$
 
+
+
+
 CREATE PROCEDURE BUSCAR_CATEGORIA_POR_ID(
     IN _categoria_id INT
 )
@@ -220,6 +223,13 @@ BEGIN
     WHERE CATEGORIA_ID = _categoria_id;
 END$$
 
+=======
+    FROM categorias 
+    WHERE CATEGORIA_ID = _categoria_id;
+END$$
+
+
+>>>>>>> 486dcc2ece9f11494d9bae299449ca898c915e9e
 CREATE PROCEDURE INSERTAR_PRODUCTO(
     OUT _producto_id INT,
     IN  _categoria_id     INT,
