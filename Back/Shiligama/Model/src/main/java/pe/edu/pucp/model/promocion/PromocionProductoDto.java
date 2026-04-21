@@ -5,17 +5,18 @@ import pe.edu.pucp.model.producto.ProductoDto;
 public class PromocionProductoDto {
     private PromocionDto promocionDto;
     private ProductoDto producto;
-    private double precioDescuento;
+    //private double precioDescuento;
 
     // Constructor vacío
     public PromocionProductoDto() {
     }
 
     // Constructor completo
-    public PromocionProductoDto(PromocionDto promocionDto, ProductoDto producto, double precioDescuento) {
+  //  public PromocionProductoDto(PromocionDto promocionDto, ProductoDto producto, double precioDescuento) {
+    public PromocionProductoDto(PromocionDto promocionDto, ProductoDto producto) {
         this.promocionDto = promocionDto;
         this.producto = producto;
-        this.precioDescuento = precioDescuento;
+        //this.precioDescuento = precioDescuento;
     }
 
     // Getters y Setters
@@ -25,6 +26,6 @@ public class PromocionProductoDto {
     public ProductoDto getProducto() { return producto; }
     public void setProducto(ProductoDto producto) { this.producto = producto; }
 
-    public double getPrecioDescuento() { return precioDescuento; }
-    public void setPrecioDescuento(double precioDescuento) { this.precioDescuento = precioDescuento; }
+    //public double getPrecioDescuento() { return precioDescuento; }
+    //public void setPrecioDescuento(double precioDescuento) { this.precioDescuento = precioDescuento; }
 }

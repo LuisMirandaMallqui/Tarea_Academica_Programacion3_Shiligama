@@ -35,6 +35,7 @@ public class DBManager {
 
     public Connection getConnection() {
         try {
+            //System.out.println(url+'\n'+username+'\n'+password);
             if (connection == null || connection.isClosed()) {
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 connection = DriverManager.getConnection(url, username, password);
@@ -55,5 +56,9 @@ public class DBManager {
         } catch (SQLException e) {
             System.err.println("Error al cerrar la conexión: " + e.getMessage());
         }
+    }
+
+    public String retornarSQLParaUltimoAutoGenerado() {
+        return "select @@last_insert_id as id";
     }
 }

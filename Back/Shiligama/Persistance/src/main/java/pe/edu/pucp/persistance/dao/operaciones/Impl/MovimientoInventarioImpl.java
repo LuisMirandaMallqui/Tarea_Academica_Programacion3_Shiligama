@@ -10,6 +10,7 @@ import java.util.List;
 
 /**
  * Implementación del DAO para la entidad MovimientoInventario.
+ * Alineado con el procedimiento almacenado que calcula stock automáticamente.
  */
 public class MovimientoInventarioImpl implements MovimientoInventarioDAO {
     // ================= RECURSOS JDBC =================
@@ -24,19 +25,14 @@ public class MovimientoInventarioImpl implements MovimientoInventarioDAO {
         int resultado = 0;
         try {
             con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call REGISTRAR_MOVIMIENTO_INVENTARIO(?,?,?,?,?,?,?,?,?,?)}");
+            // SP REGISTRAR_MOVIMIENTO_INVENTARIO(OUT id, prod, trab, tipo, cant, motivo)
+            cs = con.prepareCall("{call REGISTRAR_MOVIMIENTO_INVENTARIO(?,?,?,?,?,?)}");
             cs.registerOutParameter(1, Types.INTEGER); // ID devuelto
             cs.setInt(2, mov.getIdProducto());
             cs.setInt(3, mov.getIdTrabajador());
             cs.setString(4, mov.getTipoMovimiento());
             cs.setInt(5, mov.getCantidad());
-            cs.setInt(6, mov.getStockAnterior());
-            cs.setInt(7, mov.getStockResultante());
-            cs.setString(8, mov.getMotivo());
-            cs.setTimestamp(9, mov.getFechaHora() != null ? 
-                               Timestamp.valueOf(mov.getFechaHora()) : 
-                               Timestamp.valueOf(LocalDateTime.now()));
-            cs.setInt(10, mov.getUsuarioCreacion());
+            cs.setString(6, mov.getMotivo());
             cs.executeUpdate();
             mov.setIdMovimiento(cs.getInt(1));
             resultado = 1;
@@ -71,17 +67,16 @@ public class MovimientoInventarioImpl implements MovimientoInventarioDAO {
             rs = cs.executeQuery();
             if (rs.next()) {
                 m = new MovimientoInventario();
-                m.setIdMovimiento(rs.getInt("id_movimiento"));
-                m.setIdProducto(rs.getInt("id_producto"));
-                m.setIdTrabajador(rs.getInt("id_trabajador"));
-                m.setTipoMovimiento(rs.getString("tipo_movimiento"));
-                m.setCantidad(rs.getInt("cantidad"));
-                m.setStockAnterior(rs.getInt("stock_anterior"));
-                m.setStockResultante(rs.getInt("stock_resultante"));
-                m.setMotivo(rs.getString("motivo"));
-                m.setFechaHora(rs.getTimestamp("fecha_hora") != null ? 
-                                     rs.getTimestamp("fecha_hora").toLocalDateTime() : null);
-                m.setUsuarioCreacion(rs.getInt("usuario_creacion"));
+                m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
+                m.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+                m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
+                m.setCantidad(rs.getInt("CANTIDAD"));
+                m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
+                m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
+                m.setMotivo(rs.getString("MOTIVO"));
+                m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null ? 
+                               rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
             }
         } catch (Exception ex) {
             System.err.println("Error en buscarPorID MovimientoInventario: " + ex.getMessage());
@@ -97,21 +92,21 @@ public class MovimientoInventarioImpl implements MovimientoInventarioDAO {
         List<MovimientoInventario> lista = new ArrayList<>();
         try {
             con = DBManager.getInstance().getConnection();
+            // Asumiendo que LISTAR_MOVIMIENTOS_TODOS existe o usaré el de producto como base
             cs = con.prepareCall("{call LISTAR_MOVIMIENTOS_TODOS()}");
             rs = cs.executeQuery();
             while (rs.next()) {
                 MovimientoInventario m = new MovimientoInventario();
-                m.setIdMovimiento(rs.getInt("id_movimiento"));
-                m.setIdProducto(rs.getInt("id_producto"));
-                m.setIdTrabajador(rs.getInt("id_trabajador"));
-                m.setTipoMovimiento(rs.getString("tipo_movimiento"));
-                m.setCantidad(rs.getInt("cantidad"));
-                m.setStockAnterior(rs.getInt("stock_anterior"));
-                m.setStockResultante(rs.getInt("stock_resultante"));
-                m.setMotivo(rs.getString("motivo"));
-                m.setFechaHora(rs.getTimestamp("fecha_hora") != null ? 
-                                     rs.getTimestamp("fecha_hora").toLocalDateTime() : null);
-                m.setUsuarioCreacion(rs.getInt("usuario_creacion"));
+                m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
+                m.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+                m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
+                m.setCantidad(rs.getInt("CANTIDAD"));
+                m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
+                m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
+                m.setMotivo(rs.getString("MOTIVO"));
+                m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null ? 
+                               rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
                 lista.add(m);
             }
         } catch (Exception ex) {
@@ -133,17 +128,16 @@ public class MovimientoInventarioImpl implements MovimientoInventarioDAO {
             rs = cs.executeQuery();
             while (rs.next()) {
                 MovimientoInventario m = new MovimientoInventario();
-                m.setIdMovimiento(rs.getInt("id_movimiento"));
-                m.setIdProducto(rs.getInt("id_producto"));
-                m.setIdTrabajador(rs.getInt("id_trabajador"));
-                m.setTipoMovimiento(rs.getString("tipo_movimiento"));
-                m.setCantidad(rs.getInt("cantidad"));
-                m.setStockAnterior(rs.getInt("stock_anterior"));
-                m.setStockResultante(rs.getInt("stock_resultante"));
-                m.setMotivo(rs.getString("motivo"));
-                m.setFechaHora(rs.getTimestamp("fecha_hora") != null ? 
-                                     rs.getTimestamp("fecha_hora").toLocalDateTime() : null);
-                m.setUsuarioCreacion(rs.getInt("usuario_creacion"));
+                m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
+                m.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+                m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
+                m.setCantidad(rs.getInt("CANTIDAD"));
+                m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
+                m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
+                m.setMotivo(rs.getString("MOTIVO"));
+                m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null ? 
+                               rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
                 lista.add(m);
             }
         } catch (Exception ex) {
@@ -166,17 +160,16 @@ public class MovimientoInventarioImpl implements MovimientoInventarioDAO {
             rs = cs.executeQuery();
             while (rs.next()) {
                 MovimientoInventario m = new MovimientoInventario();
-                m.setIdMovimiento(rs.getInt("id_movimiento"));
-                m.setIdProducto(rs.getInt("id_producto"));
-                m.setIdTrabajador(rs.getInt("id_trabajador"));
-                m.setTipoMovimiento(rs.getString("tipo_movimiento"));
-                m.setCantidad(rs.getInt("cantidad"));
-                m.setStockAnterior(rs.getInt("stock_anterior"));
-                m.setStockResultante(rs.getInt("stock_resultante"));
-                m.setMotivo(rs.getString("motivo"));
-                m.setFechaHora(rs.getTimestamp("fecha_hora") != null ? 
-                                     rs.getTimestamp("fecha_hora").toLocalDateTime() : null);
-                m.setUsuarioCreacion(rs.getInt("usuario_creacion"));
+                m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
+                m.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+                m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
+                m.setCantidad(rs.getInt("CANTIDAD"));
+                m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
+                m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
+                m.setMotivo(rs.getString("MOTIVO"));
+                m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null ? 
+                               rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
                 lista.add(m);
             }
         } catch (Exception ex) {
@@ -188,10 +181,6 @@ public class MovimientoInventarioImpl implements MovimientoInventarioDAO {
         return lista;
     }
 
-    /**
-     * Cierra todos los recursos JDBC utilizados.
-     * IMPORTANTE: Siempre llamar en el bloque finally.
-     */
     private void cerrarRecursos() {
         try { if (cs != null) cs.close(); } catch (Exception ex) {}
         try { if (pst != null) pst.close(); } catch (Exception ex) {}

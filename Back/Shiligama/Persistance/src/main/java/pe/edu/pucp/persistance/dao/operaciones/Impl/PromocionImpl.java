@@ -254,12 +254,12 @@ public class PromocionImpl implements PromocionDAO {
         List<Integer> lista = new ArrayList<>();
         try {
             con = DBManager.getInstance().getConnection();
-            String sql = "SELECT id_producto FROM promocion_producto WHERE id_promocion = ?";
+            String sql = "SELECT PRODUCTO_ID FROM promociones_productos WHERE PROMOCION_ID = ?";
             pst = con.prepareStatement(sql);
             pst.setInt(1, idPromocion);
             rs = pst.executeQuery();
             while (rs.next()) {
-                lista.add(rs.getInt("id_producto"));
+                lista.add(rs.getInt("PRODUCTO_ID"));
             }
         } catch (Exception ex) {
             System.err.println("Error en listarProductosPorPromocion: " + ex.getMessage());

@@ -16,7 +16,7 @@ public class PromocionDto {
     private LocalDate fechaFin;
     private String condiciones;
     private boolean estado;
-    private List<ProductoDto> productos;
+    private List<ProductoDto> productos; //CORREGIR ESTO, VER EL TEMA SOLO USAR LA ID
 
     // Constructor vacío
     public PromocionDto() {

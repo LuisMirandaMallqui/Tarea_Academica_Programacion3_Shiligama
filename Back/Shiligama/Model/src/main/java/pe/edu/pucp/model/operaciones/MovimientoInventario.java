@@ -8,22 +8,21 @@ import java.time.LocalDateTime;
 public class MovimientoInventario {
     // ================= ATRIBUTOS =================
     private int idMovimiento;
-    private int idProducto;
-    private int idTrabajador;
-    private String tipoMovimiento; // Entrada, Salida, etc.
+    private int idProducto;        // Solo el ID
+    private int idTrabajador;      // Solo el ID (puede ser 0 si es NULL)
+    private String tipoMovimiento; // "ENTRADA", "SALIDA", "AJUSTE", "DEVOLUCION"
     private int cantidad;
     private int stockAnterior;
     private int stockResultante;
     private String motivo;
     private LocalDateTime fechaHora;
-    private int usuarioCreacion;
 
     // ================= CONSTRUCTORES =================
     public MovimientoInventario() {}
 
     public MovimientoInventario(int idMovimiento, int idProducto, int idTrabajador, String tipoMovimiento,
                                 int cantidad, int stockAnterior, int stockResultante, String motivo, 
-                                LocalDateTime fechaHora, int usuarioCreacion) {
+                                LocalDateTime fechaHora) {
         this.idMovimiento = idMovimiento;
         this.idProducto = idProducto;
         this.idTrabajador = idTrabajador;
@@ -33,7 +32,6 @@ public class MovimientoInventario {
         this.stockResultante = stockResultante;
         this.motivo = motivo;
         this.fechaHora = fechaHora;
-        this.usuarioCreacion = usuarioCreacion;
     }
 
     // ================= GETTERS Y SETTERS =================
@@ -63,9 +61,6 @@ public class MovimientoInventario {
     
     public LocalDateTime getFechaHora() { return fechaHora; }
     public void setFechaHora(LocalDateTime fechaHora) { this.fechaHora = fechaHora; }
-    
-    public int getUsuarioCreacion() { return usuarioCreacion; }
-    public void setUsuarioCreacion(int usuarioCreacion) { this.usuarioCreacion = usuarioCreacion; }
 
     @Override
     public String toString() {
@@ -74,7 +69,10 @@ public class MovimientoInventario {
                 ", idProducto=" + idProducto +
                 ", tipo='" + tipoMovimiento + '\'' +
                 ", cantidad=" + cantidad +
+                ", stockAnterior=" + stockAnterior +
+                ", stockResultante=" + stockResultante +
                 ", motivo='" + motivo + '\'' +
+                ", fechaHora=" + fechaHora +
                 '}';
     }
 }
