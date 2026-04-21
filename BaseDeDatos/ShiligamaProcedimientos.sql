@@ -958,6 +958,23 @@ BEGIN
     WHERE PROVEEDOR_ID = _proveedor_id;
 END$$
 
+CREATE PROCEDURE BUSCAR_PROVEEDOR_POR_ID(
+    IN _proveedor_id INT
+)
+BEGIN
+    SELECT 
+        p.PROVEEDOR_ID,
+        p.RAZON_SOCIAL,
+        p.RUC,
+        p.TELEFONO,
+        p.EMAIL,
+        p.DIRECCION,
+        p.CONTACTO,
+        p.ACTIVO
+    FROM proveedores p
+    WHERE p.PROVEEDOR_ID = _proveedor_id;
+END$$
+
 DROP PROCEDURE IF EXISTS ELIMINAR_PROVEEDOR$$
 CREATE PROCEDURE ELIMINAR_PROVEEDOR(IN _proveedor_id INT)
 BEGIN
@@ -989,6 +1006,47 @@ BEGIN
         FECHA_ENTREGA_ESTIMADA, OBSERVACIONES)
     VALUES(_proveedor_id, _trabajador_id, _fecha_entrega_estimada, _observaciones);
     SET _orden_id = LAST_INSERT_ID();
+END$$
+
+CREATE PROCEDURE BUSCAR_ORDEN_POR_ID(
+    IN _orden_id INT
+)
+BEGIN
+    SELECT 
+        o.ORDEN_ID,
+        o.PROVEEDOR_ID,
+        o.TRABAJADOR_ID,
+        o.FECHA_ENTREGA_ESTIMADA,
+        o.ESTADO_ORDEN,
+        o.OBSERVACIONES,
+        o.ACTIVO
+    FROM ordenes_reabastecimiento o
+    WHERE o.ORDEN_ID = _orden_id;
+END$$
+
+CREATE PROCEDURE MODIFICAR_DETALLE_ORDEN_REABAST(
+    IN _detalle_orden_id    INT,
+    IN _orden_id            INT,
+    IN _producto_id         INT,
+    IN _cantidad_solicitada INT,
+    IN _precio_compra       DECIMAL(10,2)
+)
+BEGIN
+    UPDATE detalles_orden_reabastecimiento
+    SET 
+        ORDEN_ID            = _orden_id,
+        PRODUCTO_ID         = _producto_id,
+        CANTIDAD_SOLICITADA = _cantidad_solicitada,
+        PRECIO_COMPRA       = _precio_compra
+    WHERE DETALLE_ORDEN_ID  = _detalle_orden_id;
+END$$
+
+CREATE PROCEDURE ELIMINAR_DETALLE_ORDEN_REABAST(
+    IN _detalle_orden_id INT
+)
+BEGIN
+    DELETE FROM detalles_orden_reabastecimiento
+    WHERE DETALLE_ORDEN_ID = _detalle_orden_id;
 END$$
 
 DROP PROCEDURE IF EXISTS INSERTAR_DETALLE_ORDEN_REABASTECIMIENTO$$
