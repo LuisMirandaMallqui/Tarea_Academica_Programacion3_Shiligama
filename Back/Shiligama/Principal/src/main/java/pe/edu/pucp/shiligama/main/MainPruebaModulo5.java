@@ -3,9 +3,13 @@ package pe.edu.pucp.shiligama.main;
 import pe.edu.pucp.model.operaciones.Promocion;
 import pe.edu.pucp.model.operaciones.Devolucion;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
+import pe.edu.pucp.model.producto.CategoriaDto;
+import pe.edu.pucp.model.producto.ProductoDto;
 import pe.edu.pucp.persistance.dao.operaciones.Impl.PromocionImpl;
 import pe.edu.pucp.persistance.dao.operaciones.Impl.DevolucionImpl;
 import pe.edu.pucp.persistance.dao.operaciones.Impl.MovimientoInventarioImpl;
+import pe.edu.pucp.persistance.dao.producto.Impl.CategoriaImpl;
+import pe.edu.pucp.persistance.dao.producto.Impl.ProductoImpl;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -21,6 +25,9 @@ public class MainPruebaModulo5 {
         pruebaPromocion();
         pruebaDevolucion();
         pruebaMovimientoInventario();
+
+        pruebaCategoria();
+        pruebaProducto();
 
         System.out.println("\n==================================================");
         System.out.println(" FIN DE LAS PRUEBAS ");
@@ -159,6 +166,154 @@ public class MainPruebaModulo5 {
             // 7. Listar por fechas
             List<MovimientoInventario> porFechas = dao.listarPorFechas(LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1));
             System.out.println("Listar movimientos por fecha. Cantidad: " + porFechas.size());
+        }
+    }
+
+    private static void pruebaCategoria() {
+        System.out.println("\n------------ PRUEBA CATEGORÍA ------------");
+        CategoriaImpl dao = new CategoriaImpl();
+
+        // 1. Insertar categoría padre
+        CategoriaDto categoriaPadre = new CategoriaDto();
+        categoriaPadre.setNombre("Bebidas");
+        categoriaPadre.setDescripcion("Categoría principal de bebidas");
+        categoriaPadre.setCategoriaPadre(null); // No tiene padre
+        categoriaPadre.setEstado(true);
+
+        int resInsPadre = dao.insertar(categoriaPadre);
+        System.out.println("Insertar categoría padre: " + (resInsPadre == 1 ? "Éxito ID: " + categoriaPadre.getIdCategoria() : "Error"));
+
+        if (resInsPadre == 1) {
+            // 2. Insertar categoría hija
+            CategoriaDto categoriaHija = new CategoriaDto();
+            categoriaHija.setNombre("Gaseosas");
+            categoriaHija.setDescripcion("Bebidas gaseosas");
+            categoriaHija.setCategoriaPadre(categoriaPadre); // Tiene como padre a "Bebidas"
+            categoriaHija.setEstado(true);
+
+            int resInsHija = dao.insertar(categoriaHija);
+            System.out.println("Insertar categoría hija: " + (resInsHija == 1 ? "Éxito ID: " + categoriaHija.getIdCategoria() : "Error"));
+
+            if (resInsHija == 1) {
+                // 3. Modificar categoría hija
+                categoriaHija.setNombre("Bebidas Gaseosas");
+                categoriaHija.setDescripcion("Bebidas carbonatadas y refrescantes");
+                int resMod = dao.modificar(categoriaHija);
+                System.out.println("Modificar categoría: " + (resMod == 1 ? "Éxito" : "Error"));
+
+                // 4. Buscar por ID
+                CategoriaDto cBuscada = dao.buscarPorID(categoriaHija.getIdCategoria());
+                System.out.println("Buscar categoría: " + (cBuscada != null ?
+                        "Encontrada: " + cBuscada.getNombre() + " - " + cBuscada.getDescripcion() :
+                        "No encontrada"));
+
+                // 5. Listar todas
+                List<CategoriaDto> todas = dao.listarTodos();
+                System.out.println("Listar todas las categorías. Cantidad: " + todas.size());
+                for (CategoriaDto cat : todas) {
+                    System.out.println("  - ID: " + cat.getIdCategoria() +
+                            " | Nombre: " + cat.getNombre() +
+                            " | Padre: " + (cat.getCategoriaPadre() != null ?
+                            cat.getCategoriaPadre().getIdCategoria() : "Ninguno"));
+                }
+
+                // 6. Eliminar categoría hija
+                int resElimHija = dao.eliminar(categoriaHija.getIdCategoria());
+                System.out.println("Eliminar categoría hija: " + (resElimHija == 1 ? "Éxito (marcada como inactiva)" : "Error"));
+
+                // 7. Verificar que fue eliminada (búsqueda debe retornar null o inactiva)
+                CategoriaDto cEliminada = dao.buscarPorID(categoriaHija.getIdCategoria());
+                System.out.println("Verificar eliminación: " +
+                        (cEliminada == null || !cEliminada.isEstado() ?
+                                "Categoría inactiva/no encontrada correctamente" :
+                                "ERROR: Categoría sigue activa"));
+            }
+
+            // 8. Eliminar categoría padre
+            int resElimPadre = dao.eliminar(categoriaPadre.getIdCategoria());
+            System.out.println("Eliminar categoría padre: " + (resElimPadre == 1 ? "Éxito (marcada como inactiva)" : "Error"));
+        }
+    }
+
+    private static void pruebaProducto() {
+        System.out.println("\n------------ PRUEBA PRODUCTO ------------");
+        ProductoImpl daoProducto = new ProductoImpl();
+        CategoriaImpl daoCategoria = new CategoriaImpl();
+
+        // Primero necesitamos una categoría activa para asociar al producto
+        CategoriaDto categoria = new CategoriaDto();
+        categoria.setNombre("Snacks");
+        categoria.setDescripcion("Productos para picar");
+        categoria.setCategoriaPadre(null);
+        categoria.setEstado(true);
+
+        int resInsCat = daoCategoria.insertar(categoria);
+        System.out.println("Insertar categoría para productos: " + (resInsCat == 1 ? "Éxito ID: " + categoria.getIdCategoria() : "Error"));
+
+        if (resInsCat == 1) {
+            // 1. Insertar producto
+            ProductoDto producto = new ProductoDto();
+            producto.setNombre("Papas Lays Original");
+            producto.setDescripcion("Papas fritas sabor original 150g");
+            producto.setPrecioUnitario(5.50);
+            producto.setStock(100);
+            producto.setStockMinimo(20);
+            producto.setUnidadMedida("Unidad");
+            producto.setCodigoBarras("7501234567890");
+            producto.setImagenUrl("http://ejemplo.com/lays.jpg");
+            producto.setEstado(true);
+            producto.setCategoria(categoria);
+
+            int resIns = daoProducto.insertar(producto);
+            System.out.println("Insertar producto: " + (resIns == 1 ? "Éxito ID: " + producto.getIdProducto() : "Error"));
+
+            if (resIns == 1) {
+                // 2. Modificar producto
+                producto.setNombre("Papas Lays Original 200g");
+                producto.setPrecioUnitario(7.00);
+                producto.setStockMinimo(15);
+                int resMod = daoProducto.modificar(producto);
+                System.out.println("Modificar producto: " + (resMod == 1 ? "Éxito" : "Error"));
+
+                // 3. Buscar por ID
+                ProductoDto pBuscado = daoProducto.buscarPorID(producto.getIdProducto());
+                System.out.println("Buscar producto: " + (pBuscado != null ?
+                        "Encontrado: " + pBuscado.getNombre() +
+                                " | Precio: S/ " + pBuscado.getPrecioUnitario() +
+                                " | Categoría: " + pBuscado.getCategoria().getNombre() :
+                        "No encontrado"));
+
+                // 4. Verificar stock bajo (método de negocio)
+                if (pBuscado != null) {
+                    System.out.println("¿Tiene stock bajo?: " + pBuscado.tieneStockBajo());
+                }
+
+                // 5. Listar todos
+                List<ProductoDto> todos = daoProducto.listarTodos();
+                System.out.println("Listar todos los productos. Cantidad: " + todos.size());
+                for (ProductoDto p : todos) {
+                    System.out.println("  - ID: " + p.getIdProducto() +
+                            " | Nombre: " + p.getNombre() +
+                            " | Precio: S/ " + p.getPrecioUnitario() +
+                            " | Stock: " + p.getStock() +
+                            " | Categoría: " + p.getCategoria().getNombre());
+                }
+
+                // 6. Eliminar producto
+                int resElim = daoProducto.eliminar(producto.getIdProducto());
+                System.out.println("Eliminar producto: " + (resElim == 1 ? "Éxito (marcado como inactivo)" : "Error"));
+
+                // 7. Verificar que fue eliminado
+                ProductoDto pEliminado = daoProducto.buscarPorID(producto.getIdProducto());
+                System.out.println("Verificar eliminación: " +
+                        (pEliminado == null || !pEliminado.isEstado() ?
+                                "Producto inactivo/no encontrado correctamente" :
+                                "ERROR: Producto sigue activo"));
+            }
+
+            // Limpiar: eliminar la categoría de prueba
+            daoCategoria.eliminar(categoria.getIdCategoria());
+            System.out.println("Categoría de prueba eliminada");
         }
     }
 }

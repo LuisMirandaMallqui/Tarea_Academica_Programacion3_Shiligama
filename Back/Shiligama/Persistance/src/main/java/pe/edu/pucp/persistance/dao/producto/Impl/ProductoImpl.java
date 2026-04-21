@@ -141,7 +141,7 @@ public class ProductoImpl implements ProductoDAO {
                 p.setCategoria(categoria);
 
                 // Manejo de fecha si existe en el resultado
-                Timestamp fechaReg = rs.getTimestamp("FECHA_REGISTRO");
+                Timestamp fechaReg = rs.getTimestamp("FECHA_CREACION");
                 if (fechaReg != null) {
                     p.setFechaRegistro(fechaReg.toLocalDateTime());
                 }
@@ -186,7 +186,7 @@ public class ProductoImpl implements ProductoDAO {
                 p.setCategoria(categoria);
 
                 // Manejo de fecha si existe en el resultado
-                Timestamp fechaReg = rs.getTimestamp("FECHA_REGISTRO");
+                Timestamp fechaReg = rs.getTimestamp("FECHA_CREACION");
                 if (fechaReg != null) {
                     p.setFechaRegistro(fechaReg.toLocalDateTime());
                 }

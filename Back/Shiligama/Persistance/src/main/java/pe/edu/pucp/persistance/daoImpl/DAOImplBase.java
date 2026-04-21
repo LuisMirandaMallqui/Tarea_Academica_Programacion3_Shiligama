@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 public abstract  class DAOImplBase {
     protected String nombre_tabla;
@@ -263,11 +264,11 @@ public abstract  class DAOImplBase {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public List listarTodos() {
+    /*public List listarTodos() {
         return this.listarTodos(null, null, null);
-    }
+    }*/
 
-    public List listarTodos(String sql, Consumer incluirValorDeParametros, Object parametros) {
+   /* public List listarTodos(String sql, Consumer incluirValorDeParametros, Object parametros) {
         List lista = new ArrayList<>();
         try {
             this.abrirConexion();
@@ -288,17 +289,17 @@ public abstract  class DAOImplBase {
             try { this.cerrarConexion(); } catch (SQLException ex) { }
         }
         return lista;
-    }
+    }*/
 
     protected void agregarObjetoALaLista(List lista) throws SQLException {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public void ejecutarProcedimientoAlmacenado(String sql, Boolean conTransaccion) {
+   /* public void ejecutarProcedimientoAlmacenado(String sql, Boolean conTransaccion) {
         this.ejecutarProcedimientoAlmacenado(sql, null, null, conTransaccion);
-    }
+    }*/
 
-    public void ejecutarProcedimientoAlmacenado(String sql, Consumer incluirValorDeParametros, Object parametros, Boolean conTransaccion) {
+   /* public void ejecutarProcedimientoAlmacenado(String sql, Consumer incluirValorDeParametros, Object parametros, Boolean conTransaccion) {
         try {
             if (conTransaccion) {
                 this.iniciarTransaccion();
@@ -319,7 +320,7 @@ public abstract  class DAOImplBase {
         } finally {
             try { this.cerrarConexion(); } catch (SQLException ex) {}
         }
-    }
+    }*/
 
 
     protected int getMinId(String tabla, String col) throws SQLException {
