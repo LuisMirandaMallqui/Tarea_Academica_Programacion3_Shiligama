@@ -1,4 +1,4 @@
-package pe.edu.pucp.persistance.dao.dao;
+package pe.edu.pucp.persistance.dao;
 import java.util.List;
 
 public interface IDAO<T> {

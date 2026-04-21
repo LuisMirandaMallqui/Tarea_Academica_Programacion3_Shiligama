@@ -56,4 +56,8 @@ public class DBManager {
             System.err.println("Error al cerrar la conexión: " + e.getMessage());
         }
     }
+
+    public String retornarSQLParaUltimoAutoGenerado() {
+        return "select @@last_insert_id as id";
+    }
 }

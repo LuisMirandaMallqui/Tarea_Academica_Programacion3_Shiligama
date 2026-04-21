@@ -1,6 +1,6 @@
 package pe.edu.pucp.persistance.dao.operaciones.dao;
 
-import pe.edu.pucp.persistance.dao.dao.IDAO;
+import pe.edu.pucp.persistance.dao.IDAO;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
 
 import java.time.LocalDateTime;
