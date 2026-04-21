@@ -1,7 +1,6 @@
 package pe.edu.pucp.model.operaciones;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * Clase que representa una promoción en el sistema.
@@ -19,10 +18,6 @@ public class Promocion {
     private LocalDate fechaFin;
     private String condiciones;
     private boolean activo;
-    private LocalDateTime fechaCreacion;
-    private LocalDateTime fechaModificacion;
-    private int usuarioCreacion;
-    private int usuarioModificacion;
 
     // ================= CONSTRUCTORES =================
     public Promocion() {}
@@ -61,14 +56,6 @@ public class Promocion {
     public void setCondiciones(String condiciones) { this.condiciones = condiciones; }
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
-    public LocalDateTime getFechaCreacion() { return fechaCreacion; }
-    public void setFechaCreacion(LocalDateTime fechaCreacion) { this.fechaCreacion = fechaCreacion; }
-    public LocalDateTime getFechaModificacion() { return fechaModificacion; }
-    public void setFechaModificacion(LocalDateTime fechaModificacion) { this.fechaModificacion = fechaModificacion; }
-    public int getUsuarioCreacion() { return usuarioCreacion; }
-    public void setUsuarioCreacion(int usuarioCreacion) { this.usuarioCreacion = usuarioCreacion; }
-    public int getUsuarioModificacion() { return usuarioModificacion; }
-    public void setUsuarioModificacion(int usuarioModificacion) { this.usuarioModificacion = usuarioModificacion; }
 
     @Override
     public String toString() {
