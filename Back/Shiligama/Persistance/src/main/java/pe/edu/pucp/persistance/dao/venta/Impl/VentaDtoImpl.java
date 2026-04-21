@@ -15,7 +15,6 @@ import java.sql.Types;
 import java.util.List;
 
 public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
-
     private VentaDto venta;
 
     public VentaDtoImpl(VentaDto venta) {
@@ -23,9 +22,8 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
     }
 
     // -------------------------------------------------------------------------
-    // DML
+    // Los CRUD importantes
     // -------------------------------------------------------------------------
-
     @Override
     public int insertar(VentaDto venta) {
         int resultado = 0;
@@ -55,7 +53,7 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
         return resultado;
     }
 
-    // En el original, modificar llama a COMPLETAR_VENTA — se respeta esa decisión de negocio.
+    // llamado a proceudre
     @Override
     public int modificar(VentaDto venta) {
         int resultado = 0;
@@ -79,7 +77,6 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
         return resultado;
     }
 
-    // En el original, eliminar llama a ANULAR_VENTA — es una baja lógica, se respeta.
     @Override
     public int eliminar(int id) {
         int resultado = 0;
@@ -104,9 +101,8 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
     }
 
     // -------------------------------------------------------------------------
-    // SELECT — PreparedStatement a través de los template methods de la base
+    // Para operaciones SELECT se hace uso de PreparedStatement
     // -------------------------------------------------------------------------
-
     public VentaDto buscarPorID(int id) {
         this.venta = new VentaDto();
         this.venta.setIdVenta(id);
@@ -160,9 +156,8 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
     }
 
     // -------------------------------------------------------------------------
-    // Mapeo del ResultSet — centralizado para no duplicarlo entre buscar y listar
+    // Mapeo del ResultSet — refactorizado par usarse entre buscar y listar
     // -------------------------------------------------------------------------
-
     private VentaDto mapearVenta() throws SQLException {
         VentaDto v = new VentaDto();
         v.setIdVenta(resultSet.getInt("VENTA_ID"));
