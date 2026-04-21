@@ -9,8 +9,13 @@ public class TrabajadorDto extends UsuarioDto {
     public TrabajadorDto() {
     }
 
-    public TrabajadorDto(int idUsuario, String nombreUsuario, String contrasena, String nombres, String apellidos, String dni, String telefono, String email, String direccion, boolean estado, LocalDateTime fechaCreacion, int idTrabajador, LocalDate fechaIngreso) {
-        super(idUsuario, nombreUsuario, contrasena, nombres, apellidos, dni, telefono, email, direccion, estado, fechaCreacion);
+    public TrabajadorDto(int idUsuario, String email, String contrasena,
+                      String nombres, String apellidos, String dni,
+                      String telefono,
+                      int idTrabajador,
+                      LocalDate fechaIngreso) {
+        super(idUsuario, email, contrasena, nombres, apellidos,
+                dni, telefono);
         this.idTrabajador = idTrabajador;
         this.fechaIngreso = fechaIngreso;
     }
@@ -37,16 +42,12 @@ public class TrabajadorDto extends UsuarioDto {
                 "idTrabajador=" + idTrabajador +
                 ", fechaIngreso=" + fechaIngreso +
                 ", idUsuario=" + idUsuario +
-                ", nombreUsuario='" + nombreUsuario + '\'' +
+                ", nombreUsuario='" + email + '\'' +
                 ", contrasena='" + contrasena + '\'' +
                 ", nombres='" + nombres + '\'' +
                 ", apellidos='" + apellidos + '\'' +
                 ", dni='" + dni + '\'' +
                 ", telefono='" + telefono + '\'' +
-                ", email='" + email + '\'' +
-                ", direccion='" + direccion + '\'' +
-                ", estado=" + estado +
-                ", fechaCreacion=" + fechaCreacion +
                 '}';
     }
 
