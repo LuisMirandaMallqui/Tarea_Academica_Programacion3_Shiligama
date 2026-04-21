@@ -275,34 +275,40 @@ CREATE TABLE IF NOT EXISTS `devoluciones` (
 
 -- =============================================================
 -- MODULO 4: VENTAS Y PEDIDOS
--- RF03: Metodos de pago
--- RF10: Ventas presenciales
--- RF11: Pedidos del portal web
--- RF12: Verificacion de stock en checkout
+-- Metodos de pago
+-- Ventas presenciales
+-- Pedidos del portal web
+-- Verificacion de stock en checkout
 -- =============================================================
-
+-- -----------------------------------------------------
+-- Tabla Metodos Pago
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`metodos_pago` ;
 CREATE TABLE IF NOT EXISTS `metodos_pago` (
+    -- Primary Key
     `METODO_PAGO_ID`         INT          NOT NULL AUTO_INCREMENT,
+    -- Atributos
     `NOMBRE`                 VARCHAR(50)  NOT NULL,
-    `DESCRIPCION`            VARCHAR(255) NULL DEFAULT NULL,
+    `DESCRIPCION`            VARCHAR(255) NULL DEFAULT NULL, -- SE DEBERIA IR?
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
-    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT          NULL DEFAULT NULL,
-    `USUARIO_MODIFICACION`   INT          NULL DEFAULT NULL,
-    PRIMARY KEY (`METODO_PAGO_ID`),
-    INDEX `fk_mp_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `fk_mp_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
-    CONSTRAINT `fk_mp_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_mp_usu_modificacion`
-        FOREIGN KEY (`USUARIO_MODIFICACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
+	PRIMARY KEY (`METODO_PAGO_ID`),
+    -- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó'
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Almacena los distintos metodos de pago';
 
+-- -----------------------------------------------------
+-- Tabla Ventas BOLETA?? WAAA
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`ventas` ;
 CREATE TABLE IF NOT EXISTS `ventas` (
+    -- Primary Key
     `VENTA_ID`               INT            NOT NULL AUTO_INCREMENT,
+    -- Atributos
     `CLIENTE_ID`             INT            NULL DEFAULT NULL,
     `TRABAJADOR_ID`          INT            NULL DEFAULT NULL,
     `METODO_PAGO_ID`         INT            NOT NULL,
@@ -312,40 +318,40 @@ CREATE TABLE IF NOT EXISTS `ventas` (
     `CANAL_VENTA`            ENUM('PRESENCIAL','WEB') NOT NULL DEFAULT 'PRESENCIAL',
     `ESTADO_VENTA`           ENUM('REGISTRADA','COMPLETADA','ANULADA') NOT NULL DEFAULT 'REGISTRADA',
     `OBSERVACIONES`          VARCHAR(500)   NULL DEFAULT NULL,
-    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
-    `FECHA_CREACION`         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `FECHA_MODIFICACION`     DATETIME       NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT            NULL DEFAULT NULL,
-    `USUARIO_MODIFICACION`   INT            NULL DEFAULT NULL,
-    PRIMARY KEY (`VENTA_ID`),
+    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1, -- CONSIDERAR PARA BORRADO LOGICO, lo añado en DTO?
+	PRIMARY KEY (`VENTA_ID`),
+    -- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó',
     INDEX `fk_ventas_clientes_idx` (`CLIENTE_ID`),
     INDEX `fk_ventas_trabajadores_idx` (`TRABAJADOR_ID`),
     INDEX `fk_ventas_metodos_pago_idx` (`METODO_PAGO_ID`),
-    INDEX `fk_ven_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `fk_ven_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
-    INDEX `idx_ventas_fecha` (`FECHA_HORA`),
     CONSTRAINT `fk_ventas_clientes`
         FOREIGN KEY (`CLIENTE_ID`) REFERENCES `clientes` (`CLIENTE_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_ventas_trabajadores`
         FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajadores` (`TRABAJADOR_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_ventas_metodos_pago`
-        FOREIGN KEY (`METODO_PAGO_ID`) REFERENCES `metodos_pago` (`METODO_PAGO_ID`) ON UPDATE CASCADE,
-    CONSTRAINT `fk_ven_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_ven_usu_modificacion`
-        FOREIGN KEY (`USUARIO_MODIFICACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
+        FOREIGN KEY (`METODO_PAGO_ID`) REFERENCES `metodos_pago` (`METODO_PAGO_ID`) ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Almacena la cabecera de los comprobantes de pago (ventas/alquileres).';
 
--- Tabla de detalle (sin auditoria propia; hereda de ventas)
+-- -----------------------------------------------------
+-- Tabla DetallesVenta (sin auditoria propia porque hereda de ventas)
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`detalles_venta` ;
 CREATE TABLE IF NOT EXISTS `detalles_venta` (
+    -- Primary Key
     `DETALLE_VENTA_ID` INT            NOT NULL AUTO_INCREMENT,
+    -- Atributos
     `VENTA_ID`         INT            NOT NULL,
     `PRODUCTO_ID`      INT            NOT NULL,
-    `CANTIDAD`         INT            NOT NULL,
+	`DESCRIPCION` VARCHAR(100) NOT NULL COMMENT 'Descripción de la línea de detalle.',
     `PRECIO_UNITARIO`  DECIMAL(10,2)  NOT NULL,
-    `SUBTOTAL`         DECIMAL(10,2)  NOT NULL,
+    `CANTIDAD`         INT            NOT NULL,
+    `SUBTOTAL`         DECIMAL(10,2)  NOT NULL,    
     PRIMARY KEY (`DETALLE_VENTA_ID`),
     INDEX `fk_det_venta_ventas_idx` (`VENTA_ID`),
     INDEX `fk_det_venta_productos_idx` (`PRODUCTO_ID`),
@@ -356,8 +362,14 @@ CREATE TABLE IF NOT EXISTS `detalles_venta` (
         FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `productos` (`PRODUCTO_ID`) ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
 
+-- -----------------------------------------------------
+-- Tabla Pedidos 
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`pedidos` ;
 CREATE TABLE IF NOT EXISTS `pedidos` (
+	-- Primary Key
     `PEDIDO_ID`              INT            NOT NULL AUTO_INCREMENT,
+    -- Atributos 
     `CLIENTE_ID`             INT            NOT NULL,
     `VENTA_ID`               INT            NULL DEFAULT NULL,
     `FECHA_HORA`             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -368,31 +380,30 @@ CREATE TABLE IF NOT EXISTS `pedidos` (
     `MODALIDAD_ENTREGA`      ENUM('DELIVERY','RECOJO_TIENDA') NOT NULL DEFAULT 'DELIVERY',
     `OBSERVACIONES`          VARCHAR(500)   NULL DEFAULT NULL,
     `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
-    `FECHA_CREACION`         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `FECHA_MODIFICACION`     DATETIME       NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
-    `USUARIO_CREACION`       INT            NULL DEFAULT NULL,
-    `USUARIO_MODIFICACION`   INT            NULL DEFAULT NULL,
-    PRIMARY KEY (`PEDIDO_ID`),
+	PRIMARY KEY (`PEDIDO_ID`),
+    -- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó',
     INDEX `fk_pedidos_clientes_idx` (`CLIENTE_ID`),
     INDEX `fk_pedidos_ventas_idx` (`VENTA_ID`),
-    INDEX `fk_ped_usu_creacion_idx` (`USUARIO_CREACION`),
-    INDEX `fk_ped_usu_modificacion_idx` (`USUARIO_MODIFICACION`),
-    INDEX `idx_pedidos_estado` (`ESTADO_PEDIDO`),
+    -- INDEX `idx_pedidos_estado` (`ESTADO_PEDIDO`),
     CONSTRAINT `fk_pedidos_clientes`
         FOREIGN KEY (`CLIENTE_ID`) REFERENCES `clientes` (`CLIENTE_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_pedidos_ventas`
-        FOREIGN KEY (`VENTA_ID`) REFERENCES `ventas` (`VENTA_ID`) ON UPDATE CASCADE,
-    CONSTRAINT `fk_ped_usu_creacion`
-        FOREIGN KEY (`USUARIO_CREACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT `fk_ped_usu_modificacion`
-        FOREIGN KEY (`USUARIO_MODIFICACION`) REFERENCES `usuarios` (`USUARIO_ID`)
-        ON DELETE SET NULL ON UPDATE CASCADE
+        FOREIGN KEY (`VENTA_ID`) REFERENCES `ventas` (`VENTA_ID`) ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
 
--- Tabla de detalle (sin auditoria propia; hereda de pedidos)
+-- -----------------------------------------------------
+-- Tabla Detalles Pedidos
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`detalles_pedido` ;
 CREATE TABLE IF NOT EXISTS `detalles_pedido` (
+    -- Primary Key
     `DETALLE_PEDIDO_ID` INT            NOT NULL AUTO_INCREMENT,
+    -- Atributos
     `PEDIDO_ID`         INT            NOT NULL,
     `PRODUCTO_ID`       INT            NOT NULL,
     `CANTIDAD`          INT            NOT NULL,
@@ -406,7 +417,8 @@ CREATE TABLE IF NOT EXISTS `detalles_pedido` (
         FOREIGN KEY (`PEDIDO_ID`) REFERENCES `pedidos` (`PEDIDO_ID`)
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_det_pedido_productos`
-        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `productos` (`PRODUCTO_ID`) ON UPDATE CASCADE
+        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `productos` (`PRODUCTO_ID`) 
+        ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
 
 -- =============================================================
