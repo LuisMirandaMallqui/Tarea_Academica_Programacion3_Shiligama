@@ -61,7 +61,7 @@ public class DetallePedidoDto {
         return idPadrePedido;
     }
 
-    public void setIdPadrePedido(PedidoDto pedido) {
+    public void setIdPadrePedido(int pedido) {
         this.idPadrePedido = idPadrePedido;
     }
 

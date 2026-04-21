@@ -1,5 +1,6 @@
 package pe.edu.pucp.model.venta;
 
+import java.sql.Date;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +52,7 @@ public class PedidoDto {
         this.idPedido = idPedido;
     }
 
-    public LocalDateTime getFechaHora() {
+    public Date getFechaHora() {
         return fechaHora;
     }
 
