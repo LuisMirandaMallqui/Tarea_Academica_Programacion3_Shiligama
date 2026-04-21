@@ -15,11 +15,10 @@ import java.util.List;
 public class UsuarioImpl extends DAOImplBase implements UsuarioDAO {
     private UsuarioDto usuario;
     public UsuarioImpl(){
-        super("personas");
+        super("usuarios");
         this.usuario = null;
         this.retornarLlavePrimaria = true;
     }
-
     @Override
     protected void configurarListaDeColumnas() {
         this.listaColumnas.add(new Columna("PERSONA_ID", true, true));
@@ -35,206 +34,186 @@ public class UsuarioImpl extends DAOImplBase implements UsuarioDAO {
         this.listaColumnas.add(new Columna("USUARIO_MODIFICACION", false, false));
     }
 
-
-    
-
-
-
-
-
-    /**
-     * Inserta un nuevo producto.
-     * @param producto Objeto con los datos
-     * @return 1 si éxito, 0 si error
-     */
     @Override
-    public int insertar(ProductoDto producto) {
-        int resultado = 0;
-        try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call INSERTAR_PRODUCTO(?,?,?,?,?,?,?,?,?,?)}");
-            cs.registerOutParameter(1, Types.INTEGER); // ID devuelto
-            cs.setInt(2, producto.getCategoria().getIdCategoria());
-            cs.setString(3, producto.getNombre());
-            cs.setString(4, producto.getDescripcion());
-            cs.setDouble(5, producto.getPrecioUnitario());
-            cs.setInt(6, producto.getStock());
-            cs.setInt(7, producto.getStockMinimo());
-            cs.setString(8, producto.getUnidadMedida());
-            cs.setString(9, producto.getCodigoBarras());
-            cs.setString(10, producto.getImagenUrl());
-            cs.executeUpdate();
-            producto.setIdProducto(cs.getInt(1));
-            resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en insertar Producto: " + ex.getMessage());
-            ex.printStackTrace();
-        } finally {
-            cerrarRecursos();
-        }
-        return resultado;
+    protected void incluirValorDeParametrosParaInsercion() throws SQLException {
+        int i = 1;
+        this.prepare_statement.setInt(i++, this.persona.getEstadoPersona().getEstadoPersonaId());
+        this.prepare_statement.setString(i++, this.persona.getNombres());
+        this.prepare_statement.setString(i++, this.persona.getPrimerApellido());
+        this.prepare_statement.setString(i++, this.persona.getSegundoApellido());
+        this.prepare_statement.setString(i++, this.persona.getCodigo());
+        this.prepare_statement.setString(i++, this.persona.getCorreo());
+        this.prepare_statement.setString(i++, this.persona.getContrasena());
+        this.prepare_statement.setString(i++, this.persona.getUltimaActividad());
+        this.prepare_statement.setString(i++, this.persona.getusuarioCreacion());
+        this.prepare_statement.setString(i++, this.persona.getusuarioModificacion());
     }
 
-    /**
-     * Modifica un producto existente.
-     * @param producto Objeto con los nuevos datos
-     * @return 1 si éxito, 0 si error
-     */
     @Override
-    public int modificar(ProductoDto producto) {
-        int resultado = 0;
-        try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call MODIFICAR_PRODUCTO(?,?,?,?,?,?,?,?,?)}");
-            cs.setInt(1, producto.getIdProducto());
-            cs.setInt(2, producto.getCategoria().getIdCategoria());
-            cs.setString(3, producto.getNombre());
-            cs.setString(4, producto.getDescripcion());
-            cs.setDouble(5, producto.getPrecioUnitario());
-            cs.setInt(6, producto.getStockMinimo());
-            cs.setString(7, producto.getUnidadMedida());
-            cs.setString(8, producto.getCodigoBarras());
-            cs.setString(9, producto.getImagenUrl());
-            cs.executeUpdate();
-            resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en modificar Producto: " + ex.getMessage());
-            ex.printStackTrace();
-        } finally {
-            cerrarRecursos();
-        }
-        return resultado;
+    protected void incluirValorDeParametrosParaModificacion() throws SQLException {
+        int i = 1;
+        this.prepare_statement.setInt(i++, this.persona.getEstadoPersona().getEstadoPersonaId());
+        this.prepare_statement.setString(i++, this.persona.getNombres());
+        this.prepare_statement.setString(i++, this.persona.getPrimerApellido());
+        this.prepare_statement.setString(i++, this.persona.getSegundoApellido());
+        this.prepare_statement.setString(i++, this.persona.getCodigo());
+        this.prepare_statement.setString(i++, this.persona.getCorreo());
+        this.prepare_statement.setString(i++, this.persona.getContrasena());
+        this.prepare_statement.setString(i++, this.persona.getUltimaActividad());
+        this.prepare_statement.setString(i++, this.persona.getusuarioCreacion());
+        this.prepare_statement.setString(i++, this.persona.getusuarioModificacion());
+        this.prepare_statement.setInt(i++, this.persona.getPersonaId());
     }
 
-    /**
-     * Elimina lógicamente un producto (activo = 0).
-     * @param id ID del producto
-     * @return 1 si éxito, 0 si error
-     */
     @Override
-    public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call ELIMINAR_PRODUCTO(?)}");
-            cs.setInt(1, id);
-            cs.executeUpdate();
-            resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en eliminar Producto: " + ex.getMessage());
-            ex.printStackTrace();
-        } finally {
-            cerrarRecursos();
-        }
-        return resultado;
+    protected void incluirValorDeParametrosParaInsercion() throws SQLException {
+        // Usamos nombres de columnas en lugar de índices i++
+        this.asignarParametro("email", this.usuario.getEmail());
+        this.asignarParametro("contrasena", this.usuario.getContrasena());
+        this.asignarParametro("nombres", this.usuario.getNombres());
+        this.asignarParametro("apellidos", this.usuario.getApellidos());
+        this.asignarParametro("dni", this.usuario.getDni());
+        this.asignarParametro("telefono", this.usuario.getTelefono());
     }
 
-    /**
-     * Busca un producto mediante su ID.
-     * @param id ID del producto
-     * @return Objeto ProductoDto, o null si no se encuentra
-     */
     @Override
-    public ProductoDto buscarPorID(int id) {
-        ProductoDto p = null;
-        try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call BUSCAR_PRODUCTO_POR_ID(?)}");
-            cs.setInt(1, id);
-            rs = cs.executeQuery();
-            if (rs.next()) {
-                p = new ProductoDto();
-                p.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                p.setNombre(rs.getString("NOMBRE"));
-                p.setDescripcion(rs.getString("DESCRIPCION"));
-                p.setPrecioUnitario(rs.getDouble("PRECIO_UNITARIO"));
-                p.setStock(rs.getInt("STOCK"));
-                p.setStockMinimo(rs.getInt("STOCK_MINIMO"));
-                p.setUnidadMedida(rs.getString("UNIDAD_MEDIDA"));
-                p.setCodigoBarras(rs.getString("CODIGO_BARRAS"));
-                p.setImagenUrl(rs.getString("IMAGEN_URL"));
-                p.setEstado(rs.getBoolean("ACTIVO"));
+    protected void incluirValorDeParametrosParaModificacion() throws SQLException {
+        // 1. Columnas a actualizar (SET)
+        this.asignarParametro("email", this.usuario.getEmail());
+        this.asignarParametro("contrasena", this.usuario.getContrasena());
+        this.asignarParametro("nombres", this.usuario.getNombres());
+        this.asignarParametro("apellidos", this.usuario.getApellidos());
+        this.asignarParametro("dni", this.usuario.getDni());
+        this.asignarParametro("telefono", this.usuario.getTelefono());
 
-                // Crear objeto categoría con los datos del JOIN
-                CategoriaDto categoria = new CategoriaDto();
-                categoria.setIdCategoria(rs.getInt("CATEGORIA_ID"));
-                categoria.setNombre(rs.getString("CATEGORIA_NOMBRE"));
-                p.setCategoria(categoria);
+        // 2. Condición del WHERE (Llave primaria)
+        this.asignarParametro("idUsuario", this.usuario.getIdUsuario());
+    }
 
-                // Manejo de fecha si existe en el resultado
-                Timestamp fechaReg = rs.getTimestamp("FECHA_REGISTRO");
-                if (fechaReg != null) {
-                    p.setFechaRegistro(fechaReg.toLocalDateTime());
-                }
+
+
+
+    @Override
+    protected void incluirValorDeParametrosParaEliminacion() throws SQLException {
+        this.prepare_statement.setInt(1, this.persona.getPersonaId());
+    }
+
+    @Override
+    protected void incluirValorDeParametrosParaObtenerPorId() throws SQLException {
+        this.prepare_statement.setInt(1, this.persona.getPersonaId());
+    }
+
+    @Override
+    protected void instanciarObjetoDelResultSet() throws SQLException {
+        this.persona = new PersonaDto();
+
+        EstadoPersonaDto ep = new EstadoPersonaDto();
+        ep.setEstadoPersonaId(this.resultSet.getInt("ESTADO_PERSONA_ID_ESTADOPERSONA"));
+        this.persona.setEstadoPersona(ep);
+
+        this.persona.setPersonaId(this.resultSet.getInt("PERSONA_ID"));
+        this.persona.setNombres(this.resultSet.getString("NOMBRES"));
+        this.persona.setPrimerApellido(this.resultSet.getString("PRIMER_APELLIDO"));
+        this.persona.setSegundoApellido(this.resultSet.getString("SEGUNDO_APELLIDO"));
+        this.persona.setCodigo(this.resultSet.getString("CODIGO"));
+        this.persona.setCorreo(this.resultSet.getString("CORREO"));
+        this.persona.setContrasena(this.resultSet.getString("CONTRASENA"));
+        this.persona.setUltimaActividad(this.resultSet.getString("ULTIMA_ACTIVIDAD"));
+        this.persona.setusuarioCreacion(this.resultSet.getString("USUARIO_CREACION"));
+        this.persona.setusuarioModificacion(this.resultSet.getString("USUARIO_MODIFICACION"));
+
+        // Sub-consulta de roles
+        RolPersonaDao rolDao = new RolPersonaDaoImpl();
+        ArrayList<RolPersonaDto> roles = rolDao.listarPorPersona(this.persona.getPersonaId());
+        this.persona.setRolPersona(roles);
+    }
+
+    @Override
+    protected void limpiarObjetoDelResultSet() {
+        this.persona = null;
+    }
+
+    @Override
+    protected void agregarObjetoALaLista(List lista) throws SQLException {
+        this.instanciarObjetoDelResultSet();
+        lista.add(this.persona);
+    }
+
+    @Override
+    public Integer insertar(PersonaDto persona) {
+        this.persona = persona;
+        return super.insertar();
+    }
+
+    @Override
+    public PersonaDto obtenerPorId(Integer id) {
+        this.persona = new PersonaDto();
+        this.persona.setPersonaId(id);
+        super.obtenerPorId();
+        return this.persona;
+    }
+
+    @Override
+    public ArrayList<PersonaDto> listarTodos() {
+        return (ArrayList<PersonaDto>) super.listarTodos();
+    }
+
+    @Override
+    public Integer modificar(PersonaDto persona) {
+        this.persona = persona;
+        return super.modificar();
+    }
+
+    @Override
+    public Integer eliminar(PersonaDto persona) {
+        this.persona = persona;
+        return super.eliminar();
+    }
+
+    @Override
+    public PersonaDto obtenerPorDNI(String dni) {
+        String sql = this.generarSQLParaListarTodos() + " WHERE DNI=?";
+        Consumer<PreparedStatement> incluir = ps -> {
+            try {
+                this.statement.setString(1, dni);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-        } catch (Exception ex) {
-            System.err.println("Error en buscarPorID Producto: " + ex.getMessage());
-            ex.printStackTrace();
-        } finally {
-            cerrarRecursos();
-        }
-        return p;
+        };
+        ArrayList lista = (ArrayList) this.listarTodos(sql, incluir, null);
+        return (lista == null || lista.isEmpty()) ? null : (PersonaDto) lista.get(0);
     }
 
-    /**
-     * Lista todos los productos activos registrados en el sistema.
-     * @return Lista de productos
-     */
     @Override
-    public List<ProductoDto> listarTodos() {
-        List<ProductoDto> lista = new ArrayList<>();
-        try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call LISTAR_PRODUCTOS()}");
-            rs = cs.executeQuery();
-            while (rs.next()) {
-                ProductoDto p = new ProductoDto();
-                p.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                p.setNombre(rs.getString("NOMBRE"));
-                p.setDescripcion(rs.getString("DESCRIPCION"));
-                p.setPrecioUnitario(rs.getDouble("PRECIO_UNITARIO"));
-                p.setStock(rs.getInt("STOCK"));
-                p.setStockMinimo(rs.getInt("STOCK_MINIMO"));
-                p.setUnidadMedida(rs.getString("UNIDAD_MEDIDA"));
-                p.setCodigoBarras(rs.getString("CODIGO_BARRAS"));
-                p.setImagenUrl(rs.getString("IMAGEN_URL"));
-                p.setEstado(rs.getBoolean("ACTIVO"));
-
-                // Crear objeto categoría con los datos del JOIN
-                CategoriaDto categoria = new CategoriaDto();
-                categoria.setIdCategoria(rs.getInt("CATEGORIA_ID"));
-                categoria.setNombre(rs.getString("CATEGORIA_NOMBRE"));
-                p.setCategoria(categoria);
-
-                // Manejo de fecha si existe en el resultado
-                Timestamp fechaReg = rs.getTimestamp("FECHA_REGISTRO");
-                if (fechaReg != null) {
-                    p.setFechaRegistro(fechaReg.toLocalDateTime());
-                }
-
-                lista.add(p);
+    public PersonaDto buscarPorCorreo(String correo) {
+        String sql = this.generarSQLParaListarTodos() + " WHERE CORREO=?";
+        Consumer<PreparedStatement> incluir = ps -> {
+            try {
+                ps.setString(1, correo);
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-        } catch (Exception ex) {
-            System.err.println("Error en listarTodos Productos: " + ex.getMessage());
-            ex.printStackTrace();
-        } finally {
-            cerrarRecursos();
-        }
-        return lista;
+        };
+        ArrayList lista = (ArrayList) this.listarTodos(sql, incluir, null);
+        return (lista == null || lista.isEmpty()) ? null : (PersonaDto) lista.get(0);
     }
 
-    /**
-     * Cierra todos los recursos JDBC abiertos.
-     */
-    private void cerrarRecursos() {
-        try {
-            if (rs != null) rs.close();
-            if (cs != null) cs.close();
-            if (pst != null) pst.close();
-            if (st != null) st.close();
-            if (con != null) con.close();
-        } catch (SQLException ex) {
-            System.err.println("Error al cerrar recursos: " + ex.getMessage());
-        }
+    public void ejecutarReporteCalificaciones(String nombreSP, boolean conTransaccion) {
+        String sql = "{call REPORTE_CALIFICACIONES()}";
+        this.ejecutarProcedimientoAlmacenado(sql, conTransaccion);
+    }
+
+    @Override
+    public Boolean existeUsuarioEnBD(PersonaDto per){
+        String sql = this.generarSQLParaListarTodos() + " WHERE CODIGO=?";
+        Consumer<PreparedStatement> incluir = ps -> {
+            try {
+                ps.setString(1, per.getCodigo());
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        ArrayList lista = (ArrayList) this.listarTodos(sql, incluir, null);
+        return (lista != null && !lista.isEmpty());
     }
 }
