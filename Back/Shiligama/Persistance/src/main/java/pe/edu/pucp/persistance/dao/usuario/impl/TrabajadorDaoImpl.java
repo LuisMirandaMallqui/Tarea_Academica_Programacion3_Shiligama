@@ -110,7 +110,7 @@ public class TrabajadorDaoImpl extends DaoImplBase implements UsuarioDao<Trabaja
     }
 
     // -------------------------------------------------------------------------
-    // SELECT — PreparedStatement a través de los template methods de la base
+    // Select a través de PrepareStatement
     // -------------------------------------------------------------------------
 
     public TrabajadorDto buscarPorID(int id) {

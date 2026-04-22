@@ -22,6 +22,9 @@ public class ProductoDaoImpl extends DaoImplBase implements ProductoDao {
         this.producto = producto;
     }
 
+    // -------------------------------------------------------------------------
+    // Metodos CRUD importantes
+    // -------------------------------------------------------------------------
     @Override
     public int insertar(ProductoDto producto) {
         int resultado = 0;
@@ -110,7 +113,7 @@ public class ProductoDaoImpl extends DaoImplBase implements ProductoDao {
     }
 
     // -------------------------------------------------------------------------
-    // SELECT — usan PreparedStatement a través de los template methods de la base
+    // Select a través de PrepareStatement
     // -------------------------------------------------------------------------
 
     // buscarPorID delega en obtenerPorId() de la base, que maneja la conexión,

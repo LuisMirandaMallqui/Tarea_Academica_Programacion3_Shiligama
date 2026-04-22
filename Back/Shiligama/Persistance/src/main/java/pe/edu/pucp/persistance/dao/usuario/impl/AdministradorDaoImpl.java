@@ -22,7 +22,7 @@ public class AdministradorDaoImpl extends DaoImplBase implements UsuarioDao<Admi
     }
 
     // -------------------------------------------------------------------------
-    // DML — el SP maneja el INSERT en usuarios + administradores en una sola operación
+    // Metodos CRUD importantes
     // -------------------------------------------------------------------------
 
     @Override

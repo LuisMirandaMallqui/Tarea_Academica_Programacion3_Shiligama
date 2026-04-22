@@ -107,10 +107,6 @@ public class ClienteDaoImpl extends DaoImplBase implements UsuarioDao<ClienteDto
         return resultado;
     }
 
-    // -------------------------------------------------------------------------
-    // SELECT — PreparedStatement a través de los template methods de la base
-    // -------------------------------------------------------------------------
-
     public ClienteDto buscarPorID(int id) {
         this.cliente = new ClienteDto();
         this.cliente.setIdCliente(id);
