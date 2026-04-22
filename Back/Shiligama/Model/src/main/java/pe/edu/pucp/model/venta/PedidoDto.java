@@ -12,7 +12,7 @@ public class PedidoDto {
     private int idPedido;
     private LocalDateTime fechaHora;
     private double montoTotal;
-    private double montoDescuento;
+    //private double montoDescuento;
     private EstadoPedido estadoPedido;
     private String direccionEntrega; //En caso sea presencial queda vacío o como presencial
     private ModalidadVenta modalidadVenta;
@@ -27,14 +27,14 @@ public class PedidoDto {
     public PedidoDto() {
     }
 
-    public PedidoDto(int idPedido, LocalDateTime fechaHora, double montoTotal,double montoDescuento,
+    public PedidoDto(int idPedido, LocalDateTime fechaHora, double montoTotal,//double montoDescuento,
                      EstadoPedido estadoPedido, String direccionEntrega,ModalidadVenta modalidadVenta,
                      String observaciones, ClienteDto cliente,
                       List<DetallePedidoDto> detalles) {
         this.idPedido = idPedido;
         this.fechaHora = fechaHora;
         this.montoTotal = montoTotal;
-        this.montoDescuento = montoDescuento;
+        //this.montoDescuento = montoDescuento;
         this.estadoPedido = estadoPedido;
         this.direccionEntrega = direccionEntrega;
         this.modalidadVenta = modalidadVenta;
@@ -68,13 +68,13 @@ public class PedidoDto {
         this.montoTotal = montoTotal;
     }
 
-    public double getMontoDescuento() {
-        return montoDescuento;
-    }
-
-    public void setMontoDescuento(double montoDescuento) {
-        this.montoDescuento = montoDescuento;
-    }
+//    public double getMontoDescuento() {
+//        return montoDescuento;
+//    }
+//
+//    public void setMontoDescuento(double montoDescuento) {
+//        this.montoDescuento = montoDescuento;
+//    }
 
     public EstadoPedido getEstadoPedido() {
         return estadoPedido;

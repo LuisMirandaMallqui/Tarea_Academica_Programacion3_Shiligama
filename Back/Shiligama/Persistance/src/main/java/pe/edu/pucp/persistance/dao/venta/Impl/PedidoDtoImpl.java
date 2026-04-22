@@ -112,7 +112,7 @@ public class PedidoDtoImpl implements PedidoDtoDAO {
                 pedido.setIdPedido(rs.getInt("PEDIDO_ID"));
                 pedido.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
                 pedido.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
-                pedido.setMontoDescuento(rs.getDouble("MONTO_DESCUENTO"));
+                //pedido.setMontoDescuento(rs.getDouble("MONTO_DESCUENTO"));
                 pedido.setEstadoPedido(EstadoPedido.valueOf(rs.getString("ESTADO_PEDIDO")));
                 pedido.setDireccionEntrega(rs.getString("DIRECCION_ENTREGA"));
                 pedido.setModalidadVenta(ModalidadVenta.valueOf(rs.getString("MODALIDAD_ENTREGA")));
@@ -151,7 +151,7 @@ public class PedidoDtoImpl implements PedidoDtoDAO {
                 pedido.setIdPedido(rs.getInt("PEDIDO_ID"));
                 pedido.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
                 pedido.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
-                pedido.setMontoDescuento(rs.getDouble("MONTO_DESCUENTO"));
+                //pedido.setMontoDescuento(rs.getDouble("MONTO_DESCUENTO"));
                 pedido.setEstadoPedido(EstadoPedido.valueOf(rs.getString("ESTADO_PEDIDO")));
                 pedido.setDireccionEntrega(rs.getString("DIRECCION_ENTREGA"));
                 pedido.setModalidadVenta(ModalidadVenta.valueOf(rs.getString("MODALIDAD_ENTREGA")));
