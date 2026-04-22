@@ -94,16 +94,6 @@ BEGIN
         JSON_OBJECT('estado', NEW.ESTADO_PEDIDO, 'monto_total', NEW.MONTO_TOTAL));
 END$$
 
--- ---- ORDENES DE REABASTECIMIENTO ----
-CREATE TRIGGER trg_ordenes_after_update
-AFTER UPDATE ON ordenes_reabastecimiento FOR EACH ROW
-BEGIN
-    INSERT INTO auditoria(TABLA, OPERACION, REGISTRO_ID, DATOS_ANTES, DATOS_DESPUES)
-    VALUES('ordenes_reabastecimiento', 'UPDATE', NEW.ORDEN_ID,
-        JSON_OBJECT('estado', OLD.ESTADO_ORDEN),
-        JSON_OBJECT('estado', NEW.ESTADO_ORDEN));
-END$$
-
 -- ---- DEVOLUCIONES ----
 CREATE TRIGGER trg_devoluciones_after_insert
 AFTER INSERT ON devoluciones FOR EACH ROW
@@ -121,7 +111,7 @@ END$$
 -- =============================================================
 
 -- Cuando se registra un movimiento de inventario tipo ENTRADA
--- (por recepción de orden de reabastecimiento), registrar en auditoría
+--registrar en auditoría
 CREATE TRIGGER trg_movimientos_after_insert
 AFTER INSERT ON movimientos_inventario FOR EACH ROW
 BEGIN
