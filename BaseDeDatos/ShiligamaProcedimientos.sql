@@ -10,171 +10,313 @@ DELIMITER $$
 -- =============================================================
 -- MÓDULO 1: USUARIOS  (sin cambios, se conservan igual)
 -- =============================================================
-
+-- =====================================================================
+-- HELPER INTERNO — no se llama desde Java directamente.
+-- Solo lo usan los SPs de inserción de cliente, trabajador y admin.
+-- Encapsula el INSERT en usuarios para no repetirlo tres veces.
+-- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_USUARIO$$
 CREATE PROCEDURE INSERTAR_USUARIO(
-    OUT _usuario_id INT,
-    IN  _nombre_usuario VARCHAR(50),
-    IN  _contrasena     VARCHAR(255),
-    IN  _nombres        VARCHAR(100),
-    IN  _apellidos      VARCHAR(100),
-    IN  _dni            VARCHAR(8),
-    IN  _telefono       VARCHAR(15),
-    IN  _email          VARCHAR(100),
-    IN  _direccion      VARCHAR(255)
+    OUT _usuario_id  INT,
+    IN  _nombres     VARCHAR(100),
+    IN  _apellidos   VARCHAR(100),
+    IN  _dni         VARCHAR(8),
+    IN  _telefono    VARCHAR(15),
+    IN  _correo      VARCHAR(100),
+    IN  _contrasena  VARCHAR(255)
 )
 BEGIN
-    INSERT INTO usuarios(NOMBRE_USUARIO, CONTRASENA, NOMBRES, APELLIDOS,
-                         DNI, TELEFONO, EMAIL, DIRECCION)
-    VALUES(_nombre_usuario, _contrasena, _nombres, _apellidos,
-           _dni, _telefono, _email, _direccion);
+    INSERT INTO usuarios(NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, CONTRASENA, ACTIVO)
+    VALUES(_nombres, _apellidos, _dni, _telefono, _correo, _contrasena, 1);
+ 
     SET _usuario_id = LAST_INSERT_ID();
 END$$
-
+ 
+ 
+-- =====================================================================
+-- CLIENTES
+-- Alineado con ClienteDAOImpl.java:
+--   insertar(8 params) | modificar(7 params) | eliminar(1 param)
+-- =====================================================================
+ 
 DROP PROCEDURE IF EXISTS INSERTAR_CLIENTE$$
 CREATE PROCEDURE INSERTAR_CLIENTE(
-    OUT _cliente_id INT,
-    IN  _nombre_usuario      VARCHAR(50),
-    IN  _contrasena          VARCHAR(255),
-    IN  _nombres             VARCHAR(100),
-    IN  _apellidos           VARCHAR(100),
-    IN  _dni                 VARCHAR(8),
-    IN  _telefono            VARCHAR(15),
-    IN  _email               VARCHAR(100),
-    IN  _direccion           VARCHAR(255),
-    IN  _telefono_whatsapp   VARCHAR(15),
-    IN  _direccion_entrega   VARCHAR(255)
+    OUT _cliente_id       INT,
+    IN  _nombres          VARCHAR(100),
+    IN  _apellidos        VARCHAR(100),
+    IN  _dni              VARCHAR(8),
+    IN  _telefono         VARCHAR(15),
+    IN  _correo           VARCHAR(100),
+    IN  _contrasena       VARCHAR(255),
+    IN  _direccion_entrega VARCHAR(255)
 )
 BEGIN
     DECLARE v_usuario_id INT;
-
-    INSERT INTO usuarios(NOMBRE_USUARIO, CONTRASENA, NOMBRES, APELLIDOS,
-                         DNI, TELEFONO, EMAIL, DIRECCION)
-    VALUES(_nombre_usuario, _contrasena, _nombres, _apellidos,
-           _dni, _telefono, _email, _direccion);
-    SET v_usuario_id = LAST_INSERT_ID();
-
-    INSERT INTO clientes(USUARIO_ID, TELEFONO_WHATSAPP, DIRECCION_ENTREGA)
-    VALUES(v_usuario_id, _telefono_whatsapp, _direccion_entrega);
+ 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+ 
+    START TRANSACTION;
+ 
+    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
+                          _telefono, _correo, _contrasena);
+ 
+    INSERT INTO clientes(USUARIO_ID, DIRECCION_ENTREGA)
+    VALUES(v_usuario_id, _direccion_entrega);
+ 
     SET _cliente_id = LAST_INSERT_ID();
+ 
+    COMMIT;
 END$$
-
-DROP PROCEDURE IF EXISTS INSERTAR_TRABAJADOR$$
-CREATE PROCEDURE INSERTAR_TRABAJADOR(
-    OUT _trabajador_id INT,
-    IN  _nombre_usuario VARCHAR(50),
-    IN  _contrasena     VARCHAR(255),
-    IN  _nombres        VARCHAR(100),
-    IN  _apellidos      VARCHAR(100),
-    IN  _dni            VARCHAR(8),
-    IN  _telefono       VARCHAR(15),
-    IN  _email          VARCHAR(100),
-    IN  _direccion      VARCHAR(255),
-    IN  _cargo          VARCHAR(100),
-    IN  _fecha_ingreso  DATE
-)
-BEGIN
-    DECLARE v_usuario_id INT;
-
-    INSERT INTO usuarios(NOMBRE_USUARIO, CONTRASENA, NOMBRES, APELLIDOS,
-                         DNI, TELEFONO, EMAIL, DIRECCION)
-    VALUES(_nombre_usuario, _contrasena, _nombres, _apellidos,
-           _dni, _telefono, _email, _direccion);
-    SET v_usuario_id = LAST_INSERT_ID();
-
-    INSERT INTO trabajadores(USUARIO_ID, CARGO, FECHA_INGRESO)
-    VALUES(v_usuario_id, _cargo, _fecha_ingreso);
-    SET _trabajador_id = LAST_INSERT_ID();
-END$$
-
-DROP PROCEDURE IF EXISTS INSERTAR_ADMINISTRADOR$$
-CREATE PROCEDURE INSERTAR_ADMINISTRADOR(
-    OUT _administrador_id INT,
-    IN  _nombre_usuario VARCHAR(50),
-    IN  _contrasena     VARCHAR(255),
-    IN  _nombres        VARCHAR(100),
-    IN  _apellidos      VARCHAR(100),
-    IN  _dni            VARCHAR(8),
-    IN  _telefono       VARCHAR(15),
-    IN  _email          VARCHAR(100),
-    IN  _direccion      VARCHAR(255)
-)
-BEGIN
-    DECLARE v_usuario_id INT;
-
-    INSERT INTO usuarios(NOMBRE_USUARIO, CONTRASENA, NOMBRES, APELLIDOS,
-                         DNI, TELEFONO, EMAIL, DIRECCION)
-    VALUES(_nombre_usuario, _contrasena, _nombres, _apellidos,
-           _dni, _telefono, _email, _direccion);
-    SET v_usuario_id = LAST_INSERT_ID();
-
-    INSERT INTO administradores(USUARIO_ID)
-    VALUES(v_usuario_id);
-    SET _administrador_id = LAST_INSERT_ID();
-END$$
-
+ 
+ 
 DROP PROCEDURE IF EXISTS MODIFICAR_CLIENTE$$
 CREATE PROCEDURE MODIFICAR_CLIENTE(
-    IN _cliente_id          INT,
-    IN _nombres             VARCHAR(100),
-    IN _apellidos           VARCHAR(100),
-    IN _telefono            VARCHAR(15),
-    IN _email               VARCHAR(100),
-    IN _direccion           VARCHAR(255),
-    IN _telefono_whatsapp   VARCHAR(15),
-    IN _direccion_entrega   VARCHAR(255)
+    IN _cliente_id         INT,
+    IN _nombres            VARCHAR(100),
+    IN _apellidos          VARCHAR(100),
+    IN _dni                VARCHAR(8),
+    IN _telefono           VARCHAR(15),
+    IN _correo             VARCHAR(100),
+    IN _direccion_entrega  VARCHAR(255)
 )
 BEGIN
     DECLARE v_usuario_id INT;
-
+ 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+ 
+    START TRANSACTION;
+ 
     SELECT USUARIO_ID INTO v_usuario_id
     FROM clientes WHERE CLIENTE_ID = _cliente_id;
-
+ 
     UPDATE usuarios SET
-        NOMBRES  = _nombres,
+        NOMBRES   = _nombres,
         APELLIDOS = _apellidos,
+        DNI       = _dni,
         TELEFONO  = _telefono,
-        EMAIL     = _email,
-        DIRECCION = _direccion
+        CORREO    = _correo
     WHERE USUARIO_ID = v_usuario_id;
-
+ 
     UPDATE clientes SET
-        TELEFONO_WHATSAPP = _telefono_whatsapp,
-        DIRECCION_ENTREGA  = _direccion_entrega
+        DIRECCION_ENTREGA = _direccion_entrega
     WHERE CLIENTE_ID = _cliente_id;
+ 
+    COMMIT;
 END$$
-
-DROP PROCEDURE IF EXISTS ELIMINAR_USUARIO$$
-CREATE PROCEDURE ELIMINAR_USUARIO(
-    IN _usuario_id INT
-)
-BEGIN
-    UPDATE usuarios SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
-END$$
-
-DROP PROCEDURE IF EXISTS LISTAR_CLIENTES$$
-CREATE PROCEDURE LISTAR_CLIENTES()
-BEGIN
-    SELECT c.CLIENTE_ID, u.USUARIO_ID, u.NOMBRE_USUARIO, u.NOMBRES,
-           u.APELLIDOS, u.DNI, u.TELEFONO, u.EMAIL, u.DIRECCION,
-           c.TELEFONO_WHATSAPP, c.DIRECCION_ENTREGA, c.FECHA_REGISTRO
-    FROM clientes c
-    INNER JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID
-    WHERE u.ACTIVO = 1;
-END$$
-
-DROP PROCEDURE IF EXISTS BUSCAR_CLIENTE_POR_ID$$
-CREATE PROCEDURE BUSCAR_CLIENTE_POR_ID(
+ 
+ 
+DROP PROCEDURE IF EXISTS ELIMINAR_CLIENTE$$
+CREATE PROCEDURE ELIMINAR_CLIENTE(
     IN _cliente_id INT
 )
 BEGIN
-    SELECT c.CLIENTE_ID, u.USUARIO_ID, u.NOMBRE_USUARIO, u.NOMBRES,
-           u.APELLIDOS, u.DNI, u.TELEFONO, u.EMAIL, u.DIRECCION,
-           c.TELEFONO_WHATSAPP, c.DIRECCION_ENTREGA, c.FECHA_REGISTRO
-    FROM clientes c
-    INNER JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID
-    WHERE c.CLIENTE_ID = _cliente_id AND u.ACTIVO = 1;
+    DECLARE v_usuario_id INT;
+ 
+    SELECT USUARIO_ID INTO v_usuario_id
+    FROM clientes WHERE CLIENTE_ID = _cliente_id;
+ 
+    -- Baja lógica: se desactiva el usuario padre, el cliente queda inaccesible
+    UPDATE usuarios SET ACTIVO = 0 WHERE USUARIO_ID = v_usuario_id;
 END$$
+ 
+ 
+-- =====================================================================
+-- TRABAJADORES
+-- Alineado con TrabajadorDAOImpl.java:
+--   insertar(9 params) | modificar(7 params) | eliminar(1 param)
+-- =====================================================================
+ 
+DROP PROCEDURE IF EXISTS INSERTAR_TRABAJADOR$$
+CREATE PROCEDURE INSERTAR_TRABAJADOR(
+    OUT _trabajador_id INT,
+    IN  _nombres       VARCHAR(100),
+    IN  _apellidos     VARCHAR(100),
+    IN  _dni           VARCHAR(8),
+    IN  _telefono      VARCHAR(15),
+    IN  _correo        VARCHAR(100),
+    IN  _contrasena    VARCHAR(255),
+    IN  _cargo         VARCHAR(100),
+    IN  _fecha_ingreso DATE
+)
+BEGIN
+    DECLARE v_usuario_id INT;
+ 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+ 
+    START TRANSACTION;
+ 
+    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
+                          _telefono, _correo, _contrasena);
+ 
+    INSERT INTO trabajadores(USUARIO_ID, CARGO, FECHA_INGRESO, ACTIVO)
+    VALUES(v_usuario_id, _cargo, _fecha_ingreso, 1);
+ 
+    SET _trabajador_id = LAST_INSERT_ID();
+ 
+    COMMIT;
+END$$
+ 
+ 
+DROP PROCEDURE IF EXISTS MODIFICAR_TRABAJADOR$$
+CREATE PROCEDURE MODIFICAR_TRABAJADOR(
+    IN _trabajador_id INT,
+    IN _nombres       VARCHAR(100),
+    IN _apellidos     VARCHAR(100),
+    IN _dni           VARCHAR(8),
+    IN _telefono      VARCHAR(15),
+    IN _correo        VARCHAR(100),
+    IN _fecha_ingreso DATE
+)
+BEGIN
+    DECLARE v_usuario_id INT;
+ 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+ 
+    START TRANSACTION;
+ 
+    SELECT USUARIO_ID INTO v_usuario_id
+    FROM trabajadores WHERE TRABAJADOR_ID = _trabajador_id;
+ 
+    UPDATE usuarios SET
+        NOMBRES   = _nombres,
+        APELLIDOS = _apellidos,
+        DNI       = _dni,
+        TELEFONO  = _telefono,
+        CORREO    = _correo
+    WHERE USUARIO_ID = v_usuario_id;
+ 
+    UPDATE trabajadores SET
+        FECHA_INGRESO = _fecha_ingreso
+    WHERE TRABAJADOR_ID = _trabajador_id;
+ 
+    -- CARGO no se modifica desde Java por ahora (no está en TrabajadorDto).
+    -- Si se agrega cargo al DTO en el futuro, agregar aquí el parámetro y el SET.
+ 
+    COMMIT;
+END$$
+ 
+ 
+DROP PROCEDURE IF EXISTS ELIMINAR_TRABAJADOR$$
+CREATE PROCEDURE ELIMINAR_TRABAJADOR(
+    IN _trabajador_id INT
+)
+BEGIN
+    DECLARE v_usuario_id INT;
+ 
+    SELECT USUARIO_ID INTO v_usuario_id
+    FROM trabajadores WHERE TRABAJADOR_ID = _trabajador_id;
+ 
+    -- Baja lógica en ambas tablas
+    UPDATE usuarios     SET ACTIVO = 0 WHERE USUARIO_ID    = v_usuario_id;
+    UPDATE trabajadores SET ACTIVO = 0 WHERE TRABAJADOR_ID = _trabajador_id;
+END$$
+ 
+ 
+-- =====================================================================
+-- ADMINISTRADORES
+-- Alineado con AdministradorDAOImpl.java:
+--   insertar(7 params) | modificar(6 params) | eliminar(1 param)
+-- =====================================================================
+ 
+DROP PROCEDURE IF EXISTS INSERTAR_ADMINISTRADOR$$
+CREATE PROCEDURE INSERTAR_ADMINISTRADOR(
+    OUT _administrador_id INT,
+    IN  _nombres          VARCHAR(100),
+    IN  _apellidos        VARCHAR(100),
+    IN  _dni              VARCHAR(8),
+    IN  _telefono         VARCHAR(15),
+    IN  _correo           VARCHAR(100),
+    IN  _contrasena       VARCHAR(255)
+)
+BEGIN
+    DECLARE v_usuario_id INT;
+ 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+ 
+    START TRANSACTION;
+ 
+    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
+                          _telefono, _correo, _contrasena);
+ 
+    INSERT INTO administradores(USUARIO_ID, ACTIVO)
+    VALUES(v_usuario_id, 1);
+ 
+    SET _administrador_id = LAST_INSERT_ID();
+ 
+    COMMIT;
+END$$
+ 
+ 
+DROP PROCEDURE IF EXISTS MODIFICAR_ADMINISTRADOR$$
+CREATE PROCEDURE MODIFICAR_ADMINISTRADOR(
+    IN _administrador_id INT,
+    IN _nombres          VARCHAR(100),
+    IN _apellidos        VARCHAR(100),
+    IN _dni              VARCHAR(8),
+    IN _telefono         VARCHAR(15),
+    IN _correo           VARCHAR(100)
+)
+BEGIN
+    DECLARE v_usuario_id INT;
+ 
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        RESIGNAL;
+    END;
+ 
+    START TRANSACTION;
+ 
+    SELECT USUARIO_ID INTO v_usuario_id
+    FROM administradores WHERE ADMINISTRADOR_ID = _administrador_id;
+ 
+    UPDATE usuarios SET
+        NOMBRES   = _nombres,
+        APELLIDOS = _apellidos,
+        DNI       = _dni,
+        TELEFONO  = _telefono,
+        CORREO    = _correo
+    WHERE USUARIO_ID = v_usuario_id;
+ 
+    COMMIT;
+END$$
+ 
+ 
+DROP PROCEDURE IF EXISTS ELIMINAR_ADMINISTRADOR$$
+CREATE PROCEDURE ELIMINAR_ADMINISTRADOR(
+    IN _administrador_id INT
+)
+BEGIN
+    DECLARE v_usuario_id INT;
+ 
+    SELECT USUARIO_ID INTO v_usuario_id
+    FROM administradores WHERE ADMINISTRADOR_ID = _administrador_id;
+ 
+    -- Baja lógica en ambas tablas
+    UPDATE usuarios        SET ACTIVO = 0 WHERE USUARIO_ID       = v_usuario_id;
+    UPDATE administradores SET ACTIVO = 0 WHERE ADMINISTRADOR_ID = _administrador_id;
+END$$ 
+
 
 -- =============================================================
 -- MÓDULO 2: CATEGORÍAS Y PRODUCTOS  (sin cambios)

@@ -249,7 +249,10 @@ public class TrabajadorDaoImpl extends DaoImplBase implements UsuarioDao<Trabaja
     private TrabajadorDto mapearTrabajador() throws SQLException {
         TrabajadorDto t = new TrabajadorDto();
         t.setIdTrabajador(resultSet.getInt("TRABAJADOR_ID"));
-        t.setFechaIngreso(resultSet.getDate("FECHA_INGRESO").toLocalDate());
+        Date fechaIngreso = resultSet.getDate("FECHA_INGRESO");
+        if (fechaIngreso != null) {
+            t.setFechaIngreso(fechaIngreso.toLocalDate());
+        }
         t.setIdUsuario(resultSet.getInt("USUARIO_ID"));
         t.setNombres(resultSet.getString("NOMBRES"));
         t.setApellidos(resultSet.getString("APELLIDOS"));

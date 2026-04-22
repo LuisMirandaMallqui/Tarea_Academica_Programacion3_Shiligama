@@ -66,8 +66,8 @@ public class MainPruebaModulo5 {
         System.out.println("==================================================\n");
 
         testCliente();
-//        testTrabajador();
-//        testAdministrador();
+        testTrabajador();
+        testAdministrador();
 
         System.out.println("\n==================================================");
         System.out.println(" FIN DE LAS PRUEBAS ");
