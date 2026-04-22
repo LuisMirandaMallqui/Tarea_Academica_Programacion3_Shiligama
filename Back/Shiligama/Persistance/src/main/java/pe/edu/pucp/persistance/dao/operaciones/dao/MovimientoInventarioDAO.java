@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Interfaz DAO específica para la entidad MovimientoInventario.
  */
-public interface MovimientoInventarioDAO extends IDAO<MovimientoInventario> {
+public interface MovimientoInventarioDao extends IDAO<MovimientoInventario> {
     // Aquí se pueden agregar firmas de métodos específicos
     List<MovimientoInventario> listarPorProducto(int idProducto);
     List<MovimientoInventario> listarPorFechas(LocalDateTime fechaInicio, LocalDateTime fechaFin);

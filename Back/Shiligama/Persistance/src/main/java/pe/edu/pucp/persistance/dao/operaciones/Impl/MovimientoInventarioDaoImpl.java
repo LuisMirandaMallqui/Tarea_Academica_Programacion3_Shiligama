@@ -1,6 +1,6 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
-import pe.edu.pucp.persistance.dao.operaciones.dao.MovimientoInventarioDAO;
+import pe.edu.pucp.persistance.dao.operaciones.dao.MovimientoInventarioDao;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
 import pe.edu.pucp.db.DBManager;
 import java.sql.*;
@@ -12,7 +12,7 @@ import java.util.List;
  * Implementación del DAO para la entidad MovimientoInventario.
  * Alineado con el procedimiento almacenado que calcula stock automáticamente.
  */
-public class MovimientoInventarioImpl implements MovimientoInventarioDAO {
+public class MovimientoInventarioDaoImpl implements MovimientoInventarioDao {
     // ================= RECURSOS JDBC =================
     private Connection con;
     private CallableStatement cs;

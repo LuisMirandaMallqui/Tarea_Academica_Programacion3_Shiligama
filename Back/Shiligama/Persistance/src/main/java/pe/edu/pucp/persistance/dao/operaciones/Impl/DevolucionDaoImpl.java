@@ -1,6 +1,6 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
-import pe.edu.pucp.persistance.dao.operaciones.dao.DevolucionDAO;
+import pe.edu.pucp.persistance.dao.operaciones.dao.DevolucionDao;
 import pe.edu.pucp.model.operaciones.Devolucion;
 import pe.edu.pucp.db.DBManager;
 import java.sql.*;
@@ -12,7 +12,7 @@ import java.util.List;
  * Implementación del DAO para la entidad Devolucion.
  * Utiliza procedimientos almacenados actualizados para las operaciones en BD.
  */
-public class DevolucionImpl implements DevolucionDAO {
+public class DevolucionDaoImpl implements DevolucionDao {
     // ================= RECURSOS JDBC =================
     private Connection con;
     private CallableStatement cs;

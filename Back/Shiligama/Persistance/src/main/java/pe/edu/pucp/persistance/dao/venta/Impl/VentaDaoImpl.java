@@ -1,11 +1,12 @@
 package pe.edu.pucp.persistance.dao.venta.Impl;
 
-import pe.edu.pucp.persistance.daoImpl.DAOImplBase;
-import pe.edu.pucp.persistance.dao.venta.dao.VentaDtoDAO;
+import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
+import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
 import pe.edu.pucp.model.enums.CanalVenta;
 import pe.edu.pucp.model.enums.EstadoVenta;
 import pe.edu.pucp.model.usuario.ClienteDto;
 import pe.edu.pucp.model.usuario.TrabajadorDto;
+import pe.edu.pucp.model.venta.BoletaDto;
 import pe.edu.pucp.model.venta.MetodoPagoDto;
 import pe.edu.pucp.model.venta.VentaDto;
 
@@ -14,16 +15,21 @@ import java.sql.SQLException;
 import java.sql.Types;
 import java.util.List;
 
-public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
+public class VentaDaoImpl extends DaoImplBase implements VentaDao {
     private VentaDto venta;
 
-    public VentaDtoImpl(VentaDto venta) {
+    public VentaDaoImpl() {
+        this.venta = null;
+    }
+
+    public VentaDaoImpl(VentaDto venta) {
         this.venta = venta;
     }
 
     // -------------------------------------------------------------------------
-    // Los CRUD importantes
+    // Metodos CRUD importantes
     // -------------------------------------------------------------------------
+
     @Override
     public int insertar(VentaDto venta) {
         int resultado = 0;
@@ -53,7 +59,6 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
         return resultado;
     }
 
-    // llamado a proceudre
     @Override
     public int modificar(VentaDto venta) {
         int resultado = 0;
@@ -103,6 +108,7 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
     // -------------------------------------------------------------------------
     // Para operaciones SELECT se hace uso de PreparedStatement
     // -------------------------------------------------------------------------
+
     public VentaDto buscarPorID(int id) {
         this.venta = new VentaDto();
         this.venta.setIdVenta(id);
@@ -115,8 +121,9 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
         return "SELECT v.VENTA_ID, v.FECHA_HORA, v.MONTO_TOTAL, v.MONTO_DESCUENTO, "
                 + "v.CANAL_VENTA, v.ESTADO_VENTA, v.OBSERVACIONES, "
                 + "v.CLIENTE_ID, v.TRABAJADOR_ID, "
+                + "v.NUMERO_BOLETA, v.RUC_EMPRESA, v.CONTACTO_CLIENTE, v.MENSAJE_BOLETA, "
                 + "mp.METODO_PAGO_ID, mp.NOMBRE AS METODO_PAGO_NOMBRE "
-                + "FROM venta v JOIN metodo_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID "
+                + "FROM ventas v JOIN metodos_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID "
                 + "WHERE v.VENTA_ID = ?";
     }
 
@@ -125,9 +132,16 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
         this.preparedStatement.setInt(1, this.venta.getIdVenta());
     }
 
+    // Si el registro tiene NUMERO_BOLETA, se instancia BoletaDto.
+    // Si no, es una venta simple y se instancia VentaDto.
     @Override
     protected void instanciarObjetoDelResultSet() throws SQLException {
-        this.venta = mapearVenta();
+        String numeroBoleta = resultSet.getString("NUMERO_BOLETA");
+        if (numeroBoleta != null && !numeroBoleta.isEmpty()) {
+            this.venta = mapearBoleta(numeroBoleta);
+        } else {
+            this.venta = mapearVenta();
+        }
     }
 
     @Override
@@ -145,21 +159,46 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
         return "SELECT v.VENTA_ID, v.FECHA_HORA, v.MONTO_TOTAL, v.MONTO_DESCUENTO, "
                 + "v.CANAL_VENTA, v.ESTADO_VENTA, v.OBSERVACIONES, "
                 + "v.CLIENTE_ID, v.TRABAJADOR_ID, "
+                + "v.NUMERO_BOLETA, v.RUC_EMPRESA, v.CONTACTO_CLIENTE, v.MENSAJE_BOLETA, "
                 + "mp.METODO_PAGO_ID, mp.NOMBRE AS METODO_PAGO_NOMBRE "
-                + "FROM venta v JOIN metodo_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID "
+                + "FROM ventas v JOIN metodos_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID "
                 + "ORDER BY v.FECHA_HORA DESC";
     }
 
     @Override
     protected void agregarObjetoALaLista(List lista) throws SQLException {
-        lista.add(mapearVenta());
+        String numeroBoleta = resultSet.getString("NUMERO_BOLETA");
+        if (numeroBoleta != null && !numeroBoleta.isEmpty()) {
+            lista.add(mapearBoleta(numeroBoleta));
+        } else {
+            lista.add(mapearVenta());
+        }
     }
 
     // -------------------------------------------------------------------------
-    // Mapeo del ResultSet — refactorizado par usarse entre buscar y listar
+    // Mapeo del ResultSet
     // -------------------------------------------------------------------------
+
+    // Campos comunes a toda venta, reutilizados por ambos métodos de mapeo
     private VentaDto mapearVenta() throws SQLException {
         VentaDto v = new VentaDto();
+        completarCamposVenta(v);
+        return v;
+    }
+
+    // Cuando hay boleta, se mapean primero los campos de venta y luego los específicos de boleta
+    private BoletaDto mapearBoleta(String numeroBoleta) throws SQLException {
+        BoletaDto boleta = new BoletaDto();
+        completarCamposVenta(boleta);
+        boleta.setNumeroBoleta(numeroBoleta);
+        boleta.setRuc(resultSet.getString("RUC_EMPRESA"));
+        boleta.setContactoCliente(resultSet.getString("CONTACTO_CLIENTE"));
+        boleta.setMensajeBoleta(resultSet.getString("MENSAJE_BOLETA"));
+        return boleta;
+    }
+
+    // Extrae los campos comunes de venta del ResultSet hacia cualquier VentaDto (o subclase)
+    private void completarCamposVenta(VentaDto v) throws SQLException {
         v.setIdVenta(resultSet.getInt("VENTA_ID"));
         v.setFechaHora(resultSet.getTimestamp("FECHA_HORA").toLocalDateTime());
         v.setMontoTotal(resultSet.getDouble("MONTO_TOTAL"));
@@ -180,7 +219,5 @@ public class VentaDtoImpl extends DAOImplBase implements VentaDtoDAO {
         metodoPago.setIdMetodoPago(resultSet.getInt("METODO_PAGO_ID"));
         metodoPago.setNombre(resultSet.getString("METODO_PAGO_NOMBRE"));
         v.setMetodoPago(metodoPago);
-
-        return v;
     }
 }

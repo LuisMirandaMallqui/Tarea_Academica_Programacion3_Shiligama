@@ -8,15 +8,17 @@ import pe.edu.pucp.model.usuario.TrabajadorDto;
 import java.time.LocalDateTime;
 import java.util.List;
 
+// BoletaDto representa una venta que además emite comprobante de pago.
+// Extiende VentaDto porque una boleta es una venta
+// Los campos específicos de boleta son simplemente columnas adicionales en la tabla 'ventas'.
+
 public class BoletaDto extends VentaDto {
     private int idBoleta;
-    private String RUC;
-    private String numContacto;
-    private String numeroBoleta;
-    private static final String direccionLocal = "Santa Eulalia 2023 Psje. 14";
-    private LocalDateTime fechaEmision;
-    private VentaDto venta;
-    private String mensaje; //Mensaje personalizado para colocar en la boleta
+    private String numeroBoleta;              // NUMERO_BOLETA
+    private String ruc;                       // RUC_EMPRESA
+    private String contactoCliente;           // CONTACTO_CLIENTE
+    private String mensajeBoleta;             // MENSAJE_BOLETA
+    private static final String DIRECCION_LOCAL = "Santa Eulalia 2023 Psje. 14";
 
     public BoletaDto() {
     }
@@ -24,74 +26,32 @@ public class BoletaDto extends VentaDto {
     public BoletaDto(int idVenta, LocalDateTime fechaHora, double montoTotal,
                      double montoDescuento, CanalVenta canalVenta, EstadoVenta estadoVenta,
                      String observaciones, ClienteDto cliente, TrabajadorDto trabajador,
-                     MetodoPagoDto metodoPago, List<DetalleVentaDto> detalles,int idBoleta, String RUC, String numContacto, String numeroBoleta,
-                     LocalDateTime fechaEmision,
-                     VentaDto venta, String mensaje) {
-        super(idVenta,fechaHora,montoTotal,montoDescuento,canalVenta,estadoVenta,observaciones,cliente,trabajador,
-                metodoPago,detalles);
+                     MetodoPagoDto metodoPago, List<DetalleVentaDto> detalles,
+                     int idBoleta, String numeroBoleta, String ruc,
+                     String contactoCliente, String mensajeBoleta) {
+        super(idVenta, fechaHora, montoTotal, montoDescuento, canalVenta, estadoVenta,
+                observaciones, cliente, trabajador, metodoPago, detalles);
         this.idBoleta = idBoleta;
-        this.RUC = RUC;
-        this.numContacto = numContacto;
         this.numeroBoleta = numeroBoleta;
-        this.fechaEmision = fechaEmision;
-        this.venta = venta;
-        this.mensaje = mensaje;
+        this.ruc = ruc;
+        this.contactoCliente = contactoCliente;
+        this.mensajeBoleta = mensajeBoleta;
     }
 
-    public int getIdBoleta() {
-        return idBoleta;
-    }
+    public int getIdBoleta() { return idBoleta; }
+    public void setIdBoleta(int idBoleta) { this.idBoleta = idBoleta; }
 
-    public void setIdBoleta(int idBoleta) {
-        this.idBoleta = idBoleta;
-    }
+    public String getNumeroBoleta() { return numeroBoleta; }
+    public void setNumeroBoleta(String numeroBoleta) { this.numeroBoleta = numeroBoleta; }
 
-    public String getRUC(){
-        return this.RUC;
-    }
+    public String getRuc() { return ruc; }
+    public void setRuc(String ruc) { this.ruc = ruc; }
 
-    public void setRUC(String RUC){
-        this.RUC = RUC;
-    }
+    public String getContactoCliente() { return contactoCliente; }
+    public void setContactoCliente(String contactoCliente) { this.contactoCliente = contactoCliente; }
 
-    public String getNumContacto(){
-        return this.numContacto;
-    }
+    public String getMensajeBoleta() { return mensajeBoleta; }
+    public void setMensajeBoleta(String mensajeBoleta) { this.mensajeBoleta = mensajeBoleta; }
 
-    public void setNumContacto(String numContacto){
-        this.numContacto = numContacto;
-    }
-
-    public String getNumeroBoleta() {
-        return numeroBoleta;
-    }
-
-    public void setNumeroBoleta(String numeroBoleta) {
-        this.numeroBoleta = numeroBoleta;
-    }
-
-    public LocalDateTime getFechaEmision() {
-        return fechaEmision;
-    }
-
-    public void setFechaEmision(LocalDateTime fechaEmision) {
-        this.fechaEmision = fechaEmision;
-    }
-
-    public VentaDto getVenta() {
-        return venta;
-    }
-
-    public void setVenta(VentaDto venta) {
-        this.venta = venta;
-    }
-
-    public String getMensaje(){
-        return this.mensaje;
-    }
-
-    public void setMensaje(String mensaje){
-        this.mensaje = mensaje;
-    }
+    public static String getDireccionLocal() { return DIRECCION_LOCAL; }
 }
-

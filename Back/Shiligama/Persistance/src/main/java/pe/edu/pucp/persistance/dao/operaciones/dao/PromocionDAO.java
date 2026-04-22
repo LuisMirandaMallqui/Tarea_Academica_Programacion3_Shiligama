@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Interfaz DAO específica para la entidad Promocion.
  */
-public interface PromocionDAO extends IDAO<Promocion> {
+public interface PromocionDao extends IDAO<Promocion> {
     // Aquí se pueden agregar firmas de métodos específicos de Promocion
     List<Promocion> listarVigentes();
     int asociarProducto(int idPromocion, int idProducto);

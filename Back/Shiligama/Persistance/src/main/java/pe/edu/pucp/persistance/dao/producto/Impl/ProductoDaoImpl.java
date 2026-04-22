@@ -1,7 +1,7 @@
 package pe.edu.pucp.persistance.dao.producto.Impl;
 
-import pe.edu.pucp.persistance.dao.producto.dao.ProductoDAO;
-import pe.edu.pucp.persistance.daoImpl.DAOImplBase;
+import pe.edu.pucp.persistance.dao.producto.dao.ProductoDao;
+import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
 import pe.edu.pucp.model.producto.ProductoDto;
 import pe.edu.pucp.model.producto.CategoriaDto;
 
@@ -11,11 +11,14 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.List;
 
-public class ProductoImpl extends DAOImplBase implements ProductoDAO {
+public class ProductoDaoImpl extends DaoImplBase implements ProductoDao {
 
     private ProductoDto producto;
 
-    public ProductoImpl(ProductoDto producto) {
+    public ProductoDaoImpl() {
+        this.producto = null;
+    }
+    public ProductoDaoImpl(ProductoDto producto) {
         this.producto = producto;
     }
 
@@ -123,9 +126,9 @@ public class ProductoImpl extends DAOImplBase implements ProductoDAO {
     protected String obtenerSQLParaObtenerPorId() {
         return "SELECT p.PRODUCTO_ID, p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, "
                 + "p.STOCK, p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS, "
-                + "p.IMAGEN_URL, p.ACTIVO, p.FECHA_REGISTRO, "
+                + "p.IMAGEN_URL, p.ACTIVO, p.FECHA_CREACION, "
                 + "c.CATEGORIA_ID, c.NOMBRE AS CATEGORIA_NOMBRE "
-                + "FROM producto p JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID "
+                + "FROM productos p JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID "
                 + "WHERE p.PRODUCTO_ID = ?";
     }
 
@@ -149,9 +152,9 @@ public class ProductoImpl extends DAOImplBase implements ProductoDAO {
     protected String obtenerSQLParaListarTodos() {
         return "SELECT p.PRODUCTO_ID, p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, "
                 + "p.STOCK, p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS, "
-                + "p.IMAGEN_URL, p.ACTIVO, p.FECHA_REGISTRO, "
+                + "p.IMAGEN_URL, p.ACTIVO, p.FECHA_CREACION, "
                 + "c.CATEGORIA_ID, c.NOMBRE AS CATEGORIA_NOMBRE "
-                + "FROM producto p JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID "
+                + "FROM productos p JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID "
                 + "WHERE p.ACTIVO = 1";
     }
 
@@ -182,7 +185,7 @@ public class ProductoImpl extends DAOImplBase implements ProductoDAO {
         categoria.setNombre(resultSet.getString("CATEGORIA_NOMBRE"));
         p.setCategoria(categoria);
 
-        Timestamp fechaRegistro = resultSet.getTimestamp("FECHA_REGISTRO");
+        Timestamp fechaRegistro = resultSet.getTimestamp("FECHA_CREACION");
         if (fechaRegistro != null) {
             p.setFechaRegistro(fechaRegistro.toLocalDateTime());
         }

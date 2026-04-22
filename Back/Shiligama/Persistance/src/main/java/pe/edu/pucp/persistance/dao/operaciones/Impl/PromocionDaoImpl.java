@@ -1,6 +1,6 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
-import pe.edu.pucp.persistance.dao.operaciones.dao.PromocionDAO;
+import pe.edu.pucp.persistance.dao.operaciones.dao.PromocionDao;
 import pe.edu.pucp.model.operaciones.Promocion;
 import pe.edu.pucp.db.DBManager;
 import java.sql.*;
@@ -11,7 +11,7 @@ import java.util.List;
  * Implementación del DAO para la entidad Promocion.
  * Utiliza procedimientos almacenados para todas las operaciones en base de datos.
  */
-public class PromocionImpl implements PromocionDAO {
+public class PromocionDaoImpl implements PromocionDao {
     // ================= RECURSOS JDBC =================
     private Connection con;
     private CallableStatement cs;

@@ -40,7 +40,7 @@ import java.util.List;
  *       return resultado;
  *   }
  */
-public abstract class DAOImplBase {
+public abstract class DaoImplBase {
 
     // --- ATRIBUTOS ---
     protected Connection conexion;

@@ -1,6 +1,6 @@
 package pe.edu.pucp.persistance.dao.producto.Impl;
 
-import pe.edu.pucp.persistance.dao.producto.dao.CategoriaDAO;
+import pe.edu.pucp.persistance.dao.producto.dao.CategoriaDao;
 import pe.edu.pucp.model.producto.CategoriaDto;
 import pe.edu.pucp.db.DBManager;
 import java.sql.*;
@@ -11,7 +11,7 @@ import java.util.List;
  * Implementación del DAO para la entidad Categoria.
  * Utiliza procedimientos almacenados para las operaciones en BD.
  */
-public class CategoriaImpl implements CategoriaDAO {
+public class CategoriaDaoImpl implements CategoriaDao {
     // ================= RECURSOS JDBC =================
     private Connection con;
     private CallableStatement cs;

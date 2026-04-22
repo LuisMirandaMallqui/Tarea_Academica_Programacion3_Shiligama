@@ -8,14 +8,18 @@ import pe.edu.pucp.model.operaciones.Devolucion;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
 import pe.edu.pucp.model.producto.CategoriaDto;
 import pe.edu.pucp.model.producto.ProductoDto;
+import pe.edu.pucp.model.usuario.AdministradorDto;
 import pe.edu.pucp.model.usuario.ClienteDto;
 import pe.edu.pucp.model.usuario.TrabajadorDto;
 import pe.edu.pucp.model.venta.*;
-import pe.edu.pucp.persistance.dao.operaciones.Impl.PromocionImpl;
-import pe.edu.pucp.persistance.dao.operaciones.Impl.DevolucionImpl;
-import pe.edu.pucp.persistance.dao.operaciones.Impl.MovimientoInventarioImpl;
-import pe.edu.pucp.persistance.dao.producto.Impl.CategoriaImpl;
-import pe.edu.pucp.persistance.dao.producto.Impl.ProductoImpl;
+import pe.edu.pucp.persistance.dao.operaciones.Impl.PromocionDaoImpl;
+import pe.edu.pucp.persistance.dao.operaciones.Impl.DevolucionDaoImpl;
+import pe.edu.pucp.persistance.dao.operaciones.Impl.MovimientoInventarioDaoImpl;
+import pe.edu.pucp.persistance.dao.producto.Impl.CategoriaDaoImpl;
+import pe.edu.pucp.persistance.dao.producto.Impl.ProductoDaoImpl;
+import pe.edu.pucp.persistance.dao.usuario.impl.AdministradorDaoImpl;
+import pe.edu.pucp.persistance.dao.usuario.impl.ClienteDaoImpl;
+import pe.edu.pucp.persistance.dao.usuario.impl.TrabajadorDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.Impl.*;
 
 import java.time.LocalDate;
@@ -25,10 +29,12 @@ import java.util.List;
 public class MainPruebaModulo5 {
     private static int idVentaCreada = 0;
     private static int idPedidoCreado = 0;
-    public static void main(String[] args) {
 
+    // PRINCIPAL
+    public static void main(String[] args) {
+        System.out.println("=== SISTEMA SHILIGAMA - PRUEBAS DE USUARIOS ===");
         System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULO 4 (Ventas y Pedidos)   ");
+        System.out.println(" INICIANDO PRUEBAS MÓDULO Ventas y Pedidos   ");
         System.out.println("==================================================\n");
 
         pruebaMetodoPago();
@@ -42,24 +48,36 @@ public class MainPruebaModulo5 {
         System.out.println("==================================================");
 
         System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULO 5 (Operaciones y Fide) ");
+        System.out.println(" INICIANDO PRUEBAS MÓDULOS: Operaciones, Producto y Promocion ");
         System.out.println("==================================================\n");
 
         pruebaPromocion();
         pruebaDevolucion();
         pruebaMovimientoInventario();
-
         pruebaCategoria();
         pruebaProducto();
 
         System.out.println("\n==================================================");
         System.out.println(" FIN DE LAS PRUEBAS ");
         System.out.println("==================================================");
+
+        System.out.println("==================================================");
+        System.out.println(" INICIANDO PRUEBAS MÓDULO Usuarios ");
+        System.out.println("==================================================\n");
+
+        testCliente();
+//        testTrabajador();
+//        testAdministrador();
+
+        System.out.println("\n==================================================");
+        System.out.println(" FIN DE LAS PRUEBAS ");
+        System.out.println("==================================================");
     }
 
+    //METODOS
     private static void pruebaPromocion() {
         System.out.println("------------ PRUEBA PROMOCIÓN ------------");
-        PromocionImpl dao = new PromocionImpl();
+        PromocionDaoImpl dao = new PromocionDaoImpl();
 
         // 1. Insertar
         Promocion p = new Promocion(0, "Promo Verano", "Descuento por verano", "Porcentaje", 15.0,
@@ -106,7 +124,7 @@ public class MainPruebaModulo5 {
 
     private static void pruebaDevolucion() {
         System.out.println("\n------------ PRUEBA DEVOLUCIÓN ------------");
-        DevolucionImpl dao = new DevolucionImpl();
+        DevolucionDaoImpl dao = new DevolucionDaoImpl();
 
         // 1. Insertar
         Devolucion d = new Devolucion();
@@ -148,7 +166,7 @@ public class MainPruebaModulo5 {
 
     private static void pruebaMovimientoInventario() {
         System.out.println("\n------------ PRUEBA MOVIMIENTO INVENTARIO ------------");
-        MovimientoInventarioImpl dao = new MovimientoInventarioImpl();
+        MovimientoInventarioDaoImpl dao = new MovimientoInventarioDaoImpl();
 
         // 1. Insertar (Log inmutable)
         MovimientoInventario mov = new MovimientoInventario();
@@ -194,7 +212,7 @@ public class MainPruebaModulo5 {
 
     private static void pruebaCategoria() {
         System.out.println("\n------------ PRUEBA CATEGORÍA ------------");
-        CategoriaImpl dao = new CategoriaImpl();
+        CategoriaDaoImpl dao = new CategoriaDaoImpl();
 
         // 1. Insertar categoría padre
         CategoriaDto categoriaPadre = new CategoriaDto();
@@ -260,8 +278,8 @@ public class MainPruebaModulo5 {
 
     private static void pruebaProducto() {
         System.out.println("\n------------ PRUEBA PRODUCTO ------------");
-        ProductoImpl daoProducto = new ProductoImpl();
-        CategoriaImpl daoCategoria = new CategoriaImpl();
+        ProductoDaoImpl daoProducto = new ProductoDaoImpl();
+        CategoriaDaoImpl daoCategoria = new CategoriaDaoImpl();
 
         // Primero necesitamos una categoría activa para asociar al producto
         CategoriaDto categoria = new CategoriaDto();
@@ -344,7 +362,7 @@ public class MainPruebaModulo5 {
     // =========================================================
     private static void pruebaMetodoPago() {
         System.out.println("------------ PRUEBA MÉTODO DE PAGO ------------");
-        MetodoPagoDtoImpl dao = new MetodoPagoDtoImpl();
+        MetodoPagoDaoImpl dao = new MetodoPagoDaoImpl();
 
         MetodoPagoDto mp = new MetodoPagoDto();
         mp.setNombre("Yape");
@@ -372,7 +390,7 @@ public class MainPruebaModulo5 {
     // =========================================================
     private static void pruebaVenta() {
         System.out.println("\n------------ PRUEBA VENTA ------------");
-        VentaDtoImpl dao = new VentaDtoImpl();
+        VentaDaoImpl dao = new VentaDaoImpl();
 
         ClienteDto cliente = new ClienteDto();
         cliente.setIdCliente(1);
@@ -414,7 +432,7 @@ public class MainPruebaModulo5 {
     // =========================================================
     private static void pruebaDetalleVenta() {
         System.out.println("\n------------ PRUEBA DETALLE VENTA ------------");
-        DetalleVentaDtoImpl dao = new DetalleVentaDtoImpl();
+        DetalleVentaDaoImpl dao = new DetalleVentaDaoImpl();
 
         ProductoDto producto = new ProductoDto();
         producto.setIdProducto(1);
@@ -448,7 +466,7 @@ public class MainPruebaModulo5 {
     // =========================================================
     private static void pruebaPedido() {
         System.out.println("\n------------ PRUEBA PEDIDO ------------");
-        PedidoDtoImpl dao = new PedidoDtoImpl();
+        PedidoDaoImpl dao = new PedidoDaoImpl();
 
         ClienteDto cliente = new ClienteDto();
         cliente.setIdCliente(1);
@@ -484,7 +502,7 @@ public class MainPruebaModulo5 {
     // =========================================================
     private static void pruebaDetallePedido() {
         System.out.println("\n------------ PRUEBA DETALLE PEDIDO ------------");
-        DetallePedidoDtoImpl dao = new DetallePedidoDtoImpl();
+        DetallePedidoDaoImpl dao = new DetallePedidoDaoImpl();
 
         ProductoDto producto = new ProductoDto();
         producto.setIdProducto(1);
@@ -511,6 +529,109 @@ public class MainPruebaModulo5 {
             int resElim = dao.eliminar(detalle.getIdDetallePedido());
             System.out.println("Eliminar detalle pedido: " + (resElim == 1 ? "Éxito" : "Error"));
         }
+    }
 
+    // =========================================================
+    //  CLIENTE
+    // =========================================================
+    public static void testCliente() {
+        System.out.println("\n--- [TEST CLIENTE] ---");
+        ClienteDaoImpl cliente = new ClienteDaoImpl();
+
+        // Crear
+        ClienteDto nuevo = new ClienteDto();
+        nuevo.setNombres("Juan");
+        nuevo.setApellidos("Perez");
+        nuevo.setDni("77889900");
+        nuevo.setTelefono("987654321");
+        nuevo.setEmail("juan.perez@pucp.edu.pe");
+        nuevo.setContrasena("pucp123");
+        nuevo.setDireccionEntrega("Av. Universitaria 1801, San Miguel");
+
+        int resIns = cliente.insertar(nuevo);
+        if (resIns > 0) {
+            System.out.println("Éxito: Cliente insertado con ID: " + nuevo.getIdCliente());
+
+            // Listar
+            List<ClienteDto> lista = cliente.listarTodos();
+            System.out.println("Total clientes en BD: " + (lista != null ? lista.size() : 0));
+
+            // Limpiar (Eliminar)
+            int resElim = cliente.eliminar(nuevo.getIdCliente());
+            if(resElim > 0) {
+                System.out.println("Limpieza: Cliente eliminado correctamente.");
+            } else {
+                System.out.println("Fallo al limpiar el cliente.");
+            }
+        } else {
+            System.out.println("Error al insertar cliente.");
+        }
+    }
+    // =========================================================
+    //  TRABAJADOR
+    // =========================================================
+    public static void testTrabajador() {
+        System.out.println("\n--- [TEST TRABAJADOR] ---");
+        TrabajadorDaoImpl dao = new TrabajadorDaoImpl();
+
+        // Crear
+        TrabajadorDto t = new TrabajadorDto();
+        t.setNombres("Maria");
+        t.setApellidos("Lopez");
+        t.setDni("11223344");
+        t.setTelefono("912345678");
+        t.setEmail("maria.trabajadora@gmail.com");
+        t.setContrasena("secret");
+        t.setFechaIngreso(LocalDate.now());
+
+        int resIns = dao.insertar(t);
+        if (resIns > 0) {
+            System.out.println("Éxito: Trabajador insertado con ID: " + t.getIdTrabajador());
+            // Listar
+            List<TrabajadorDto> lista = dao.listarTodos();
+            System.out.println("Total trabajadores en BD: " + (lista != null ? lista.size() : 0));
+            // Limpiar (Eliminar)
+            int resElim = dao.eliminar(t.getIdTrabajador());
+            if(resElim > 0) {
+                System.out.println("Limpieza: Trabajador eliminado correctamente.");
+            } else {
+                System.out.println("Fallo al limpiar el trabajador.");
+            }
+        } else {
+            System.out.println("Error al insertar trabajador.");
+        }
+    }
+    // =========================================================
+    //  ADMINISTRADOR
+    // =========================================================
+    public static void testAdministrador() {
+        System.out.println("\n--- [TEST ADMINISTRADOR] ---");
+        AdministradorDaoImpl dao = new AdministradorDaoImpl();
+
+        // Crear
+        AdministradorDto admin = new AdministradorDto();
+        admin.setNombres("Super");
+        admin.setApellidos("User");
+        admin.setDni("00000001");
+        admin.setEmail("admin@shiligama.com");
+        admin.setContrasena("adminroot");
+
+        int resIns = dao.insertar(admin);
+        if (resIns > 0) {
+            System.out.println("Éxito: Administrador creado con ID: " + admin.getIdAdministrador());
+            // Listar
+            List<AdministradorDto> lista = dao.listarTodos();
+            System.out.println("Total administradores en BD: " + (lista != null ? lista.size() : 0));
+
+            // Limpiar (Eliminar)
+            int resElim = dao.eliminar(admin.getIdAdministrador());
+            if(resElim > 0) {
+                System.out.println("Limpieza: Administrador eliminado correctamente.");
+            } else {
+                System.out.println("Fallo al limpiar el administrador.");
+            }
+        } else {
+            System.out.println("Error al crear administrador.");
+        }
     }
 }
