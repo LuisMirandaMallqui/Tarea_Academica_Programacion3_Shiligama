@@ -76,18 +76,6 @@ INSERT INTO productos(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO, STOCK,
 (14, 'Poett Lavanda 900ml', 'Limpiador desinfectante', 8.50, 35, 8, 'Botella', '7750001000009'),
 (1, 'Azúcar Rubia 1kg', 'Azúcar rubia', 4.20, 55, 10, 'Bolsa', '7750001000010');
 
--- Proveedores
-INSERT INTO proveedores(RAZON_SOCIAL, RUC, TELEFONO, EMAIL, DIRECCION, CONTACTO) VALUES
-('Distribuidora Alicorp SAC', '20100055237', '014111111', 'ventas@alicorp.com', 'Av. Argentina 4793, Callao', 'Pedro Sánchez'),
-('Arca Continental Lindley', '20101024645', '014222222', 'pedidos@lindley.com', 'Jr. Cajamarca 371, Rímac', 'Rosa Méndez'),
-('Distribuidora Mercantil SAC', '20512345678', '014333333', 'ventas@mercantil.com', 'Av. Colonial 1500', 'Jorge Villanueva');
-
--- Relación productos-proveedores
-INSERT INTO productos_proveedores(PRODUCTO_ID, PROVEEDOR_ID, PRECIO_COMPRA, TIEMPO_ENTREGA) VALUES
-(1, 1, 18.00, 2), (3, 1, 7.50, 2), (4, 1, 2.80, 2),
-(5, 2, 5.50, 1), (6, 2, 3.00, 1), (7, 2, 1.20, 1),
-(8, 3, 14.50, 3), (9, 3, 6.00, 3);
-
 -- Promoción de ejemplo
 INSERT INTO promociones(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO, FECHA_INICIO, FECHA_FIN, CONDICIONES)
 VALUES('Semana del Abarrote', 'Descuento en abarrotes seleccionados', 'PORCENTAJE', 10.00, '2026-04-20', '2026-04-27', 'Aplica en productos seleccionados');
