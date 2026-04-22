@@ -8,12 +8,10 @@ USE `shiligama`;
 DELIMITER $$
 
 -- =============================================================
--- MÓDULO 1: USUARIOS  (sin cambios, se conservan igual)
+-- MÓDULO 1: USUARIOS 
 -- =============================================================
 -- =====================================================================
--- HELPER INTERNO — no se llama desde Java directamente.
--- Solo lo usan los SPs de inserción de cliente, trabajador y admin.
--- Encapsula el INSERT en usuarios para no repetirlo tres veces.
+-- USUARIOS
 -- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_USUARIO$$
 CREATE PROCEDURE INSERTAR_USUARIO(
@@ -31,14 +29,9 @@ BEGIN
  
     SET _usuario_id = LAST_INSERT_ID();
 END$$
- 
- 
 -- =====================================================================
 -- CLIENTES
--- Alineado con ClienteDAOImpl.java:
---   insertar(8 params) | modificar(7 params) | eliminar(1 param)
 -- =====================================================================
- 
 DROP PROCEDURE IF EXISTS INSERTAR_CLIENTE$$
 CREATE PROCEDURE INSERTAR_CLIENTE(
     OUT _cliente_id       INT,
@@ -71,8 +64,7 @@ BEGIN
  
     COMMIT;
 END$$
- 
- 
+
 DROP PROCEDURE IF EXISTS MODIFICAR_CLIENTE$$
 CREATE PROCEDURE MODIFICAR_CLIENTE(
     IN _cliente_id         INT,
@@ -126,14 +118,9 @@ BEGIN
     -- Baja lógica: se desactiva el usuario padre, el cliente queda inaccesible
     UPDATE usuarios SET ACTIVO = 0 WHERE USUARIO_ID = v_usuario_id;
 END$$
- 
- 
 -- =====================================================================
 -- TRABAJADORES
--- Alineado con TrabajadorDAOImpl.java:
---   insertar(9 params) | modificar(7 params) | eliminar(1 param)
 -- =====================================================================
- 
 DROP PROCEDURE IF EXISTS INSERTAR_TRABAJADOR$$
 CREATE PROCEDURE INSERTAR_TRABAJADOR(
     OUT _trabajador_id INT,
@@ -205,9 +192,6 @@ BEGIN
         FECHA_INGRESO = _fecha_ingreso
     WHERE TRABAJADOR_ID = _trabajador_id;
  
-    -- CARGO no se modifica desde Java por ahora (no está en TrabajadorDto).
-    -- Si se agrega cargo al DTO en el futuro, agregar aquí el parámetro y el SET.
- 
     COMMIT;
 END$$
  
@@ -226,14 +210,10 @@ BEGIN
     UPDATE usuarios     SET ACTIVO = 0 WHERE USUARIO_ID    = v_usuario_id;
     UPDATE trabajadores SET ACTIVO = 0 WHERE TRABAJADOR_ID = _trabajador_id;
 END$$
- 
- 
+
 -- =====================================================================
 -- ADMINISTRADORES
--- Alineado con AdministradorDAOImpl.java:
---   insertar(7 params) | modificar(6 params) | eliminar(1 param)
 -- =====================================================================
- 
 DROP PROCEDURE IF EXISTS INSERTAR_ADMINISTRADOR$$
 CREATE PROCEDURE INSERTAR_ADMINISTRADOR(
     OUT _administrador_id INT,
@@ -319,7 +299,7 @@ END$$
 
 
 -- =============================================================
--- MÓDULO 2: CATEGORÍAS Y PRODUCTOS  (sin cambios)
+-- MÓDULO 2: CATEGORÍAS Y PRODUCTOS  
 -- =============================================================
 
 DROP PROCEDURE IF EXISTS INSERTAR_CATEGORIA$$
@@ -517,10 +497,6 @@ END$$
 
 -- =============================================================
 -- MÓDULO 4: MÉTODOS DE PAGO
--- CORRECCIÓN: se eliminó _descripcion de INSERTAR y MODIFICAR
---   porque MetodoPagoDto solo tiene: idMetodoPago, nombre, estado
---   El DAO solo pasa getNombre() → 1 parámetro IN
--- CORRECCIÓN: LISTAR y BUSCAR ya no retornan DESCRIPCION
 -- =============================================================
 
 DROP PROCEDURE IF EXISTS INSERTAR_METODO_PAGO$$
@@ -582,14 +558,6 @@ END$$
 
 -- =============================================================
 -- MÓDULO 5: VENTAS
--- CORRECCIÓN en INSERTAR_VENTA: se quitaron MONTO_TOTAL,
---   MONTO_DESCUENTO y ESTADO_VENTA del INSERT porque la BD
---   los gestiona con defaults/triggers; el DAO no los envía.
--- CORRECCIÓN en LISTAR_VENTAS y BUSCAR_VENTA_POR_ID:
---   Se eliminaron CLIENTE_NOMBRE y TRABAJADOR_NOMBRE porque
---   VentaDto solo guarda ClienteDto con idCliente y
---   TrabajadorDto con idTrabajador; el DAO no llama setNombre
---   para estos objetos → los JOINs a usuarios eran innecesarios.
 -- =============================================================
 
 DROP PROCEDURE IF EXISTS INSERTAR_VENTA$$
@@ -826,18 +794,6 @@ END$$
 
 -- =============================================================
 -- MÓDULO 7: PEDIDOS
--- CORRECCIÓN en INSERTAR_PEDIDO: se eliminó PRIORIDAD del OUT
---   y de los parámetros IN porque PedidoDto no tiene ese atributo
---   y el DAO no lo envía. La lógica FIFO se mantiene internamente.
--- CORRECCIÓN en BUSCAR_PEDIDO_POR_ID y LISTAR_PEDIDOS:
---   Se eliminaron PRIORIDAD (no existe en PedidoDto),
---   VENTA_ID (el DAO no lo lee), CLIENTE_NOMBRE (el DAO solo
---   setea cliente.setIdCliente → no necesita nombre).
---   Se añadió MONTO_DESCUENTO que sí existe en PedidoDto y
---   el DAO sí llama setMontoDescuento.
--- CORRECCIÓN en MODIFICAR_ESTADO_PEDIDO: se renombró el
---   parámetro _estado → _estado_pedido para que coincida
---   exactamente con el nombre que usa el DAO Java.
 -- =============================================================
 
 DROP PROCEDURE IF EXISTS INSERTAR_PEDIDO$$
@@ -929,10 +885,6 @@ END$$
 
 -- =============================================================
 -- MÓDULO 8: DETALLES DE PEDIDO
--- CORRECCIÓN en BUSCAR y LISTAR: se eliminó DISPONIBLE porque
---   DetallePedidoDto no tiene ese atributo y el DAO no lo lee.
---   La columna DISPONIBLE sigue existiendo en la BD y se sigue
---   calculando en INSERTAR, pero no se expone al DAO.
 -- =============================================================
 
 DROP PROCEDURE IF EXISTS INSERTAR_DETALLE_PEDIDO$$
@@ -1453,7 +1405,7 @@ BEGIN
 END$$
 
 -- =============================================================
--- FALTANTES PARA MOVIMIENTOS_INVENTARIO
+-- MOVIMIENTOS_INVENTARIO
 -- =============================================================
 
 -- 11. BUSCAR_MOVIMIENTO_POR_ID
