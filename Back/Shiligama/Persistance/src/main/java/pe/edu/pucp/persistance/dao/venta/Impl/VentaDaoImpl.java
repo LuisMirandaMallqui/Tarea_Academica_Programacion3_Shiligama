@@ -45,6 +45,26 @@ public class VentaDaoImpl extends DaoImplBase implements VentaDao {
             cs.execute();
             venta.setIdVenta(cs.getInt(1));
             resultado = 1;
+
+            //INSERTAR DetallePedidoDaoImpl
+            /*
+            CREATE PROCEDURE INSERTAR_LINEA_ORDEN_VENTA(
+            OUT _id_linea_orden INT,
+            IN INT,
+            ... + parametros xdd
+            )
+            BEGIN
+                INSERT INTO linea_orden_venta(fid_orden_venta,fid_producto,cantidad_unidades,subtotal,aciva)
+                VALUES(_fid_orden_venta,_fid_producto,cantidad_unidades,_subtotal,1);
+
+            for(DetalleVentaDto dv : venta.getDetalleVenta()){
+                cs = con.prepareCall("{call INSERTAR_DETALLE_VENTA()}");
+                cs.registerOutParamter("_id_detalle_venta", Types.INT);
+                cs.setInt("_fid_orden_venta",ordenVenta);
+                cs.executeUpdate();
+            }
+             */
+
             this.comitarTransaccion();
         } catch (SQLException ex) {
             System.err.println("Error al insertar venta: " + ex.getMessage());
