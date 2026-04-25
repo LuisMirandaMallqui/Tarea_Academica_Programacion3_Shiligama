@@ -652,7 +652,7 @@ BEGIN
 END$$
 
 -- =============================================================
--- MÓDULO 6: DETALLES DE VENTA  (sin cambios lógicos)
+-- MÓDULO 6: DETALLES DE VENTA
 -- =============================================================
 
 DROP PROCEDURE IF EXISTS INSERTAR_DETALLE_VENTA$$

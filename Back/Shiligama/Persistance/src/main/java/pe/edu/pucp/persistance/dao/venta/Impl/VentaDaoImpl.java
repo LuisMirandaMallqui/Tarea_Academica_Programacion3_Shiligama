@@ -47,23 +47,34 @@ public class VentaDaoImpl extends DaoImplBase implements VentaDao {
             venta.setIdVenta(cs.getInt(1));
             resultado = 1;
 
-            //INSERTAR DetallePedidoDaoImpl
             /*
-            CREATE PROCEDURE INSERTAR_LINEA_ORDEN_VENTA(
-            OUT _id_linea_orden INT,
-            IN INT,
-            ... + parametros xdd
+            CREATE PROCEDURE INSERTAR_DETALLE_VENTA(
+                OUT _detalle_venta_id INT,
+                IN  _venta_id         INT,
+                IN  _producto_id      INT,
+                IN  _cantidad         INT
+                //FALTA ACTUALIZAR :"v
             )
-            BEGIN
-                INSERT INTO linea_orden_venta(fid_orden_venta,fid_producto,cantidad_unidades,subtotal,aciva)
-                VALUES(_fid_orden_venta,_fid_producto,cantidad_unidades,_subtotal,1);
+
+                -- Primary Key
+                `DETALLE_VENTA_ID` INT            NOT NULL AUTO_INCREMENT, OK
+                -- Atributos
+                `VENTA_ID`         INT            NOT NULL, OK
+                `PRODUCTO_ID`      INT            NOT NULL, OK
+                `DESCRIPCION` VARCHAR(100) NOT NULL COMMENT 'Descripción de la línea de detalle.',
+                `PRECIO_UNITARIO`  DECIMAL(10,2)  NOT NULL,
+                `CANTIDAD`         INT            NOT NULL,
+                `SUBTOTAL`         DECIMAL(10,2)  NOT NULL,
              */
-
-            for(DetalleVentaDto dv : venta.getDetalles()){
-                cs = this.conexion.prepareCall("{CALL INSERTAR_VENTA(?, ?, ?, ?, ?, ?)}");
-                cs.registerOutParameter("_id_detalle_venta", Types.INTEGER);
-                cs.setInt("_fid_venta",venta.getIdVenta());
-
+            for(DetalleVentaDto detalleVenta : venta.getDetalles()){
+                cs = this.conexion.prepareCall("{CALL INSERTAR_DETALLE_VENTA(?, ?, ?, ?,?,?)}");
+                cs.registerOutParameter("_detalle_venta_id", Types.INTEGER);
+                cs.setInt("_venta_id",venta.getIdVenta());
+                cs.setInt("_producto_id",detalleVenta.getProducto().getIdProducto());
+                cs.setString("_descripcion", detalleVenta.getDescripcion());
+                cs.setDouble("_precio_unitario", detalleVenta.getPrecioUnitario());
+                cs.setInt("_cantidad",detalleVenta.getCantidad());
+                cs.setDouble("_subtotal", detalleVenta.getSubtotal());
                 cs.executeUpdate();
             }
 
