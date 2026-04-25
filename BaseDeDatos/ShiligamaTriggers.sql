@@ -11,19 +11,6 @@ DELIMITER $$
 -- Registran operaciones INSERT/UPDATE en tabla auditoria
 -- =============================================================
 
--- ---- USUARIOS ----
-CREATE TRIGGER trg_usuarios_after_insert
-AFTER INSERT ON usuarios FOR EACH ROW
-BEGIN
-    INSERT INTO auditoria(TABLA, OPERACION, REGISTRO_ID, DATOS_DESPUES)
-    VALUES('usuarios', 'INSERT', NEW.USUARIO_ID,
-        JSON_OBJECT('nombre_usuario', NEW.NOMBRE_USUARIO,
-                    'nombres', NEW.NOMBRES,
-                    'apellidos', NEW.APELLIDOS,
-                    'dni', NEW.DNI,
-                    'email', NEW.EMAIL));
-END$$
-
 CREATE TRIGGER trg_usuarios_after_update
 AFTER UPDATE ON usuarios FOR EACH ROW
 BEGIN
@@ -111,7 +98,7 @@ END$$
 -- =============================================================
 
 -- Cuando se registra un movimiento de inventario tipo ENTRADA
---registrar en auditoría
+-- registrar en auditoría
 CREATE TRIGGER trg_movimientos_after_insert
 AFTER INSERT ON movimientos_inventario FOR EACH ROW
 BEGIN

@@ -1,5 +1,6 @@
 package pe.edu.pucp.persistance.dao.venta.Impl;
 
+import pe.edu.pucp.model.venta.DetalleVentaDto;
 import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
 import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
 import pe.edu.pucp.model.enums.CanalVenta;
@@ -56,14 +57,15 @@ public class VentaDaoImpl extends DaoImplBase implements VentaDao {
             BEGIN
                 INSERT INTO linea_orden_venta(fid_orden_venta,fid_producto,cantidad_unidades,subtotal,aciva)
                 VALUES(_fid_orden_venta,_fid_producto,cantidad_unidades,_subtotal,1);
+             */
 
-            for(DetalleVentaDto dv : venta.getDetalleVenta()){
-                cs = con.prepareCall("{call INSERTAR_DETALLE_VENTA()}");
-                cs.registerOutParamter("_id_detalle_venta", Types.INT);
-                cs.setInt("_fid_orden_venta",ordenVenta);
+            for(DetalleVentaDto dv : venta.getDetalles()){
+                cs = this.conexion.prepareCall("{CALL INSERTAR_VENTA(?, ?, ?, ?, ?, ?)}");
+                cs.registerOutParameter("_id_detalle_venta", Types.INTEGER);
+                cs.setInt("_fid_venta",venta.getIdVenta());
+
                 cs.executeUpdate();
             }
-             */
 
             this.comitarTransaccion();
         } catch (SQLException ex) {
