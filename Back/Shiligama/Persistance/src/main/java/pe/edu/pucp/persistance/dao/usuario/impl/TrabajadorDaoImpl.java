@@ -36,7 +36,7 @@ public class TrabajadorDaoImpl extends DaoImplBase implements UsuarioDao<Trabaja
             cs.setString(3, trabajador.getApellidos());
             cs.setString(4, trabajador.getDni());
             cs.setString(5, trabajador.getTelefono());
-            cs.setString(6, trabajador.getCorreo());
+            cs.setString(6, trabajador.getEmail());
             cs.setString(7, trabajador.getContrasena());
             cs.setString(8, null); // CARGO — no está en TrabajadorDto aún, se pasa null por ahora
             cs.setDate(9, Date.valueOf(trabajador.getFechaIngreso()));
@@ -68,7 +68,7 @@ public class TrabajadorDaoImpl extends DaoImplBase implements UsuarioDao<Trabaja
             cs.setString(3, trabajador.getApellidos());
             cs.setString(4, trabajador.getDni());
             cs.setString(5, trabajador.getTelefono());
-            cs.setString(6, trabajador.getCorreo());
+            cs.setString(6, trabajador.getEmail());
             cs.setDate(7, Date.valueOf(trabajador.getFechaIngreso()));
             cs.execute();
             resultado = 1;
@@ -226,7 +226,7 @@ public class TrabajadorDaoImpl extends DaoImplBase implements UsuarioDao<Trabaja
             this.prepararConsulta(
                     "SELECT COUNT(*) FROM usuarios WHERE CORREO = ? OR DNI = ?"
             );
-            this.preparedStatement.setString(1, trabajador.getCorreo());
+            this.preparedStatement.setString(1, trabajador.getEmail());
             this.preparedStatement.setString(2, trabajador.getDni());
             this.ejecutarConsulta();
             if (this.resultSet.next()) {
@@ -258,7 +258,7 @@ public class TrabajadorDaoImpl extends DaoImplBase implements UsuarioDao<Trabaja
         t.setApellidos(resultSet.getString("APELLIDOS"));
         t.setDni(resultSet.getString("DNI"));
         t.setTelefono(resultSet.getString("TELEFONO"));
-        t.setCorreo(resultSet.getString("CORREO"));
+        t.setEmail(resultSet.getString("CORREO"));
         t.setContrasena(resultSet.getString("CONTRASENA"));
         return t;
     }

@@ -115,6 +115,7 @@ CREATE TABLE IF NOT EXISTS `categorias` (
     `NOMBRE`                 VARCHAR(100) NOT NULL,
     `DESCRIPCION`            VARCHAR(255) NULL DEFAULT NULL,
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
+    `DIRECCION`				 VARCHAR(255) NULL DEFAULT NULL,
 	PRIMARY KEY (`CATEGORIA_ID`),
 	-- Auditoría Automática
     `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
@@ -345,7 +346,7 @@ CREATE TABLE IF NOT EXISTS `detalles_venta` (
     -- Atributos
     `VENTA_ID`         INT            NOT NULL,
     `PRODUCTO_ID`      INT            NOT NULL,
-	`DESCRIPCION` VARCHAR(100) NULL DEFAULT NULL COMMENT 'Descripción opcional de la línea de detalle.',
+	`DESCRIPCION` VARCHAR(100) NOT NULL COMMENT 'Descripción de la línea de detalle.',
     `PRECIO_UNITARIO`  DECIMAL(10,2)  NOT NULL,
     `CANTIDAD`         INT            NOT NULL,
     `SUBTOTAL`         DECIMAL(10,2)  NOT NULL,    

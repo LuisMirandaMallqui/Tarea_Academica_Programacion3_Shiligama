@@ -1,7 +1,7 @@
 -- =====================================================================
 -- SHILIGAMA - Datos iniciales (catálogos y datos de prueba)
 -- =====================================================================
-USE `shiligama`;
+USE shiligama;
 
 -- =============================================================
 -- DATOS MAESTROS / CATÁLOGOS
@@ -39,29 +39,29 @@ INSERT INTO categorias(NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID) VALUES
 -- =============================================================
 
 -- Administrador (contraseña: admin123 — en producción usar bcrypt)
-INSERT INTO usuarios(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, DIRECCION)
-VALUES('$2a$10$placeholder_bcrypt_hash', 'Carlos', 'García López', '12345678', '987654321', 'admin@shiligama.pe', 'Av. Principal 100');
+INSERT INTO usuarios(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES( '$2a$10$placeholder_bcrypt_hash', 'Carlos', 'García López', '12345678', '987654321', 'admin@shiligama.pe');
 INSERT INTO administradores(USUARIO_ID) VALUES(1);
 
 -- Trabajadores
-INSERT INTO usuarios( CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, DIRECCION)
-VALUES( '$2a$10$placeholder_bcrypt_hash', 'Juan', 'Pérez Quispe', '23456789', '987654322', 'jperez@shiligama.pe', 'Jr. Los Olivos 200');
+INSERT INTO usuarios(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES('$2a$10$placeholder_bcrypt_hash', 'Juan', 'Pérez Quispe', '23456789', '987654322', 'jperez@shiligama.pe');
 INSERT INTO trabajadores(USUARIO_ID, CARGO, FECHA_INGRESO) VALUES(2, 'Cajero', '2025-01-15');
 
-INSERT INTO usuarios(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, DIRECCION)
-VALUES('$2a$10$placeholder_bcrypt_hash', 'María', 'Rodríguez Silva', '34567890', '987654323', 'mrodriguez@shiligama.pe', 'Calle Las Flores 50');
+INSERT INTO usuarios(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES('$2a$10$placeholder_bcrypt_hash', 'María', 'Rodríguez Silva', '34567890', '987654323', 'mrodriguez@shiligama.pe');
 INSERT INTO trabajadores(USUARIO_ID, CARGO, FECHA_INGRESO) VALUES(3, 'Almacenero', '2025-03-01');
 
 -- Clientes
-INSERT INTO usuarios( CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, DIRECCION)
-VALUES( '$2a$10$placeholder_bcrypt_hash', 'Ana', 'Costa Medina', '45678901', '987654324', 'acosta@gmail.com', 'Av. Los Pinos 300');
-INSERT INTO clientes(USUARIO_ID, TELEFONO_WHATSAPP, DIRECCION_ENTREGA)
-VALUES(4, '987654324', 'Av. Los Pinos 300');
+INSERT INTO usuarios( CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES( '$2a$10$placeholder_bcrypt_hash', 'Ana', 'Costa Medina', '45678901', '987654324', 'acosta@gmail.com');
+INSERT INTO clientes(USUARIO_ID, DIRECCION_ENTREGA)
+VALUES(4, 'Av. Los Pinos 300');
 
-INSERT INTO usuarios( CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, DIRECCION)
-VALUES( '$2a$10$placeholder_bcrypt_hash', 'Luis', 'Huamán Torres', '56789012', '987654325', 'lhuaman@gmail.com', 'Jr. Arequipa 150');
-INSERT INTO clientes(USUARIO_ID, TELEFONO_WHATSAPP, DIRECCION_ENTREGA)
-VALUES(5, '987654325', 'Jr. Arequipa 150');
+INSERT INTO usuarios( CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES( '$2a$10$placeholder_bcrypt_hash', 'Luis', 'Huamán Torres', '56789012', '987654325', 'lhuaman@gmail.com');
+INSERT INTO clientes(USUARIO_ID, DIRECCION_ENTREGA)
+VALUES(5, 'Jr. Arequipa 150');
 
 -- Productos de ejemplo
 INSERT INTO productos(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO, STOCK, STOCK_MINIMO, UNIDAD_MEDIDA, CODIGO_BARRAS) VALUES

@@ -1,7 +1,9 @@
 package pe.edu.pucp.shiligama.main;
 
-import pe.edu.pucp.model.enums.*;
-import pe.edu.pucp.model.promocion.PromocionDto;
+import pe.edu.pucp.model.enums.CanalVenta;
+import pe.edu.pucp.model.enums.EstadoPedido;
+import pe.edu.pucp.model.enums.ModalidadVenta;
+import pe.edu.pucp.model.operaciones.Promocion;
 import pe.edu.pucp.model.operaciones.Devolucion;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
 import pe.edu.pucp.model.producto.CategoriaDto;
@@ -31,49 +33,7 @@ public class MainPruebaModulo5 {
     // PRINCIPAL
     public static void main(String[] args) {
 
-
-
         System.out.println("=== SISTEMA SHILIGAMA - PRUEBAS DE USUARIOS ===");
-
-        ejecutarPruebasVentaPedidos();
-
-        //ejectutarPruebasOperacionproductoPromocion();
-
-        //ejecutarPruebasUsuarios();
-    }
-
-    private static void ejecutarPruebasUsuarios() {
-        System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULO Usuarios ");
-        System.out.println("==================================================\n");
-
-        testCliente();
-        testTrabajador();
-        testAdministrador();
-
-        System.out.println("\n==================================================");
-        System.out.println(" FIN DE LAS PRUEBAS ");
-        System.out.println("==================================================");
-    }
-
-    private static void ejectutarPruebasOperacionproductoPromocion() {
-        System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULOS: Operaciones, Producto y Promocion ");
-        System.out.println("==================================================\n");
-
-        pruebaPromocion();
-        pruebaDevolucion();
-        pruebaMovimientoInventario();
-        pruebaCategoria();
-        pruebaProducto();
-
-        System.out.println("\n==================================================");
-        System.out.println(" FIN DE LAS PRUEBAS ");
-        System.out.println("==================================================");
-
-    }
-
-    private static void ejecutarPruebasVentaPedidos() {
         System.out.println("==================================================");
         System.out.println(" INICIANDO PRUEBAS MÓDULO Ventas y Pedidos   ");
         System.out.println("==================================================\n");
@@ -88,6 +48,34 @@ public class MainPruebaModulo5 {
         System.out.println(" FIN DE LAS PRUEBAS ");
         System.out.println("==================================================");
 
+        System.out.println("==================================================");
+        System.out.println(" INICIANDO PRUEBAS MÓDULOS: Operaciones, Producto y Promocion ");
+        System.out.println("==================================================\n");
+
+        pruebaPromocion();
+        pruebaDevolucion();
+        pruebaMovimientoInventario();
+        pruebaCategoria();
+        pruebaProducto();
+
+        System.out.println("\n==================================================");
+        System.out.println(" FIN DE LAS PRUEBAS ");
+        System.out.println("==================================================");
+
+
+
+
+        System.out.println("==================================================");
+        System.out.println(" INICIANDO PRUEBAS MÓDULO Usuarios ");
+        System.out.println("==================================================\n");
+
+        testCliente();
+        testTrabajador();
+        testAdministrador();
+
+        System.out.println("\n==================================================");
+        System.out.println(" FIN DE LAS PRUEBAS ");
+        System.out.println("==================================================");
     }
 
     //METODOS
@@ -96,7 +84,7 @@ public class MainPruebaModulo5 {
         PromocionDaoImpl dao = new PromocionDaoImpl();
 
         // 1. Insertar
-        PromocionDto p = new PromocionDto(0, "Promo Verano", "Descuento por verano", TipoDescuento.PORCENTAJE, 15.0,
+        Promocion p = new Promocion(0, "Promo Verano", "Descuento por verano", "Porcentaje", 15.0,
                 LocalDate.now(), LocalDate.now().plusDays(10), "Aplica a bebidas", true);
         int resIns = dao.insertar(p);
         System.out.println("Insertar promoción: " + (resIns == 1 ? "Exito ID: " + p.getIdPromocion() : "Error"));
@@ -109,7 +97,7 @@ public class MainPruebaModulo5 {
             System.out.println("Modificar promoción: " + (resMod == 1 ? "Exito" : "Error"));
 
             // 3. Buscar
-            PromocionDto pBuscada = dao.buscarPorID(p.getIdPromocion());
+            Promocion pBuscada = dao.buscarPorID(p.getIdPromocion());
             System.out.println("Buscar promoción: " + (pBuscada != null ? pBuscada.getNombre() : "No encontrada"));
 
             // 4. Asociar producto (idProducto = 1 asumido)
@@ -125,11 +113,11 @@ public class MainPruebaModulo5 {
             System.out.println("Desasociar producto 1: " + (resDes == 1 ? "Exito" : "Error"));
 
             // 7. Listar todos
-            List<PromocionDto> todas = dao.listarTodos();
+            List<Promocion> todas = dao.listarTodos();
             System.out.println("Listar todas las promociones. Cantidad: " + todas.size());
 
             // 8. Listar vigentes
-            List<PromocionDto> vigentes = dao.listarVigentes();
+            List<Promocion> vigentes = dao.listarVigentes();
             System.out.println("Listar promociones vigentes. Cantidad: " + vigentes.size());
 
             // 9. Eliminar
@@ -147,7 +135,7 @@ public class MainPruebaModulo5 {
         d.setIdDevolucion(1); // asumiendo que existe venta con id 1
         d.setIdProducto(1);
         d.setIdTrabajador(1);
-        d.setEstadoDevolucion("PENDIENTE");
+        d.setEstadoDevolucion("Pendiente");
         d.setCantidad(5);
         d.setMotivo("Producto dañado");
         d.setFechaHora(LocalDateTime.now());
@@ -158,7 +146,7 @@ public class MainPruebaModulo5 {
 
         if (resIns == 1) {
             // 2. Modificar
-            d.setEstadoDevolucion("APROBADO");
+            d.setEstadoDevolucion("Aprobada");
             int resMod = dao.modificar(d);
             System.out.println("Modificar devolución: " + (resMod == 1 ? "Exito" : "Error"));
 
@@ -188,7 +176,7 @@ public class MainPruebaModulo5 {
         MovimientoInventario mov = new MovimientoInventario();
         mov.setIdProducto(1);
         mov.setIdTrabajador(1);
-        mov.setTipoMovimiento("ENTRADA");
+        mov.setTipoMovimiento("Entrada");
         mov.setCantidad(50);
         mov.setStockAnterior(10);
         mov.setStockResultante(60);
@@ -206,7 +194,7 @@ public class MainPruebaModulo5 {
 
             // 3. Eliminar (Debe dar mensaje de error custom y retornar 0)
             int resElim = dao.eliminar(mov.getIdMovimiento());
-            System.out.println("Intentar eliminar log inmutable, resultado: " + resElim);
+                System.out.println("Intentar eliminar log inmutable, resultado: " + resElim);
 
             // 4. Buscar
             MovimientoInventario mBuscado = dao.buscarPorID(mov.getIdMovimiento());
@@ -418,33 +406,11 @@ public class MainPruebaModulo5 {
         metodoPago.setIdMetodoPago(1);
 
         VentaDto venta = new VentaDto();
-        venta.setCliente(cliente); //CLIENTE_ID int
-        venta.setTrabajador(trabajador); //TRABAJADOR_ID int
-        venta.setMetodoPago(metodoPago); //METODO_PAGO_ID int
-        venta.setCanalVenta(CanalVenta.PRESENCIAL); //CANAL_VENTA enum('PRESENCIAL','WEB')
-        venta.setObservaciones("Venta de prueba"); //OBSERVACIONES varchar(500)
-
-
-
-        /*
-        FECHA_HORA datetime
-        MONTO_TOTAL decimal(10,2)
-        MONTO_DESCUENTO decimal(10,2)
-        ESTADO_VENTA enum('REGISTRADA','COMPLETADA','ANULADA')
-        ACTIVO tinyint
-
-        private double montoTotal;
-        private double montoDescuento;
-        private CanalVenta canalVenta;
-        private EstadoVenta estadoVenta;
-        private String observaciones;
-        private ClienteDto cliente;
-        private TrabajadorDto trabajador;
-        private MetodoPagoDto metodoPago;
-        private List<DetalleVentaDto> detalles;
-        */
-
-
+        venta.setCliente(cliente);
+        venta.setTrabajador(trabajador);
+        venta.setMetodoPago(metodoPago);
+        venta.setCanalVenta(CanalVenta.PRESENCIAL);
+        venta.setObservaciones("Venta de prueba");
         int resIns = dao.insertar(venta);
         idVentaCreada = venta.getIdVenta(); // guarda el ID
         System.out.println("Insertar venta: " + (resIns == 1 ? "Éxito ID: " + venta.getIdVenta() : "Error"));
@@ -575,17 +541,15 @@ public class MainPruebaModulo5 {
     public static void testCliente() {
         System.out.println("\n--- [TEST CLIENTE] ---");
         ClienteDaoImpl cliente = new ClienteDaoImpl();
-
         // Crear
         ClienteDto nuevo = new ClienteDto();
         nuevo.setNombres("Juan");
         nuevo.setApellidos("Perez");
         nuevo.setDni("77889900");
         nuevo.setTelefono("987654321");
-        nuevo.setCorreo("juan.perez@pucp.edu.pe");
+        nuevo.setEmail("juan.perez@pucp.edu.pe");
         nuevo.setContrasena("pucp123");
         nuevo.setDireccionEntrega("Av. Universitaria 1801, San Miguel");
-
         int resIns = cliente.insertar(nuevo);
         if (resIns > 0) {
             System.out.println("Éxito: Cliente insertado con ID: " + nuevo.getIdCliente());
@@ -618,7 +582,7 @@ public class MainPruebaModulo5 {
         t.setApellidos("Lopez");
         t.setDni("11223344");
         t.setTelefono("912345678");
-        t.setCorreo("maria.trabajadora@gmail.com");
+        t.setEmail("maria.trabajadora@gmail.com");
         t.setContrasena("secret");
         t.setFechaIngreso(LocalDate.now());
 
@@ -651,7 +615,7 @@ public class MainPruebaModulo5 {
         admin.setNombres("Super");
         admin.setApellidos("User");
         admin.setDni("00000001");
-        admin.setCorreo("admin@shiligama.com");
+        admin.setEmail("admin@shiligama.com");
         admin.setContrasena("adminroot");
 
         int resIns = dao.insertar(admin);

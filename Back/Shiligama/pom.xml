@@ -13,7 +13,6 @@
         <module>DBManager</module>
         <module>Persistance</module>
         <module>Principal</module>
-        <module>Business</module>
     </modules>
     <properties>
         <maven.compiler.source>25</maven.compiler.source>

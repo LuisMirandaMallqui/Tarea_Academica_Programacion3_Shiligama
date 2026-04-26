@@ -1,8 +1,10 @@
 package pe.edu.pucp.model.usuario;
 
+import java.time.LocalDateTime;
+
 public abstract class UsuarioDto {
     protected int idUsuario;
-    protected String correo; //Será usado como usuario para inicio de sesion
+    protected String email; //Será usado como usuario para inicio de sesion
     protected String contrasena;
     protected String nombres;
     protected String apellidos;
@@ -14,16 +16,16 @@ public abstract class UsuarioDto {
     }
 
     // Constructor completo
-    public UsuarioDto(int idUsuario, String correo, String contrasena,
-                      String nombres, String apellidos, String dni,
-                      String telefono) {
+    public UsuarioDto(int idUsuario, String email, String contrasena,
+                   String nombres, String apellidos, String dni,
+                   String telefono) {
         this.idUsuario = idUsuario;
         this.contrasena = contrasena;
         this.nombres = nombres;
         this.apellidos = apellidos;
         this.dni = dni;
         this.telefono = telefono;
-        this.correo = correo;
+        this.email = email;
     }
 
     // Getters y Setters
@@ -46,8 +48,8 @@ public abstract class UsuarioDto {
     public String getTelefono() { return telefono; }
     public void setTelefono(String telefono) { this.telefono = telefono; }
 
-    public String getCorreo() { return correo; }
-    public void setCorreo(String correo) { this.correo = correo; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
 
     // Métodos de negocio (declarados, se implementan en capa de negocio)

@@ -1,5 +1,6 @@
 package pe.edu.pucp.model.usuario;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class TrabajadorDto extends UsuarioDto {
     private int idTrabajador;
@@ -41,7 +42,7 @@ public class TrabajadorDto extends UsuarioDto {
                 "idTrabajador=" + idTrabajador +
                 ", fechaIngreso=" + fechaIngreso +
                 ", idUsuario=" + idUsuario +
-                ", nombreUsuario='" + correo + '\'' +
+                ", nombreUsuario='" + email + '\'' +
                 ", contrasena='" + contrasena + '\'' +
                 ", nombres='" + nombres + '\'' +
                 ", apellidos='" + apellidos + '\'' +
