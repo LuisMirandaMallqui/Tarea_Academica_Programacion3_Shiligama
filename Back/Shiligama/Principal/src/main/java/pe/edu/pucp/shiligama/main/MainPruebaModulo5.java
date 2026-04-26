@@ -33,21 +33,33 @@ public class MainPruebaModulo5 {
 
     // PRINCIPAL
     public static void main(String[] args) {
+
+
+
         System.out.println("=== SISTEMA SHILIGAMA - PRUEBAS DE USUARIOS ===");
+
+        ejecutarPruebasVentaPedidos();
+
+        //ejectutarPruebasOperacionproductoPromocion();
+
+        //ejecutarPruebasUsuarios();
+    }
+
+    private static void ejecutarPruebasUsuarios() {
         System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULO Ventas y Pedidos   ");
+        System.out.println(" INICIANDO PRUEBAS MÓDULO Usuarios ");
         System.out.println("==================================================\n");
 
-        pruebaMetodoPago();
-        pruebaVenta();
-        pruebaDetalleVenta();
-        pruebaPedido();
-        pruebaDetallePedido();
+        testCliente();
+        testTrabajador();
+        testAdministrador();
 
         System.out.println("\n==================================================");
         System.out.println(" FIN DE LAS PRUEBAS ");
         System.out.println("==================================================");
+    }
 
+    private static void ejectutarPruebasOperacionproductoPromocion() {
         System.out.println("==================================================");
         System.out.println(" INICIANDO PRUEBAS MÓDULOS: Operaciones, Producto y Promocion ");
         System.out.println("==================================================\n");
@@ -62,17 +74,23 @@ public class MainPruebaModulo5 {
         System.out.println(" FIN DE LAS PRUEBAS ");
         System.out.println("==================================================");
 
+    }
+
+    private static void ejecutarPruebasVentaPedidos() {
         System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULO Usuarios ");
+        System.out.println(" INICIANDO PRUEBAS MÓDULO Ventas y Pedidos   ");
         System.out.println("==================================================\n");
 
-        testCliente();
-        testTrabajador();
-        testAdministrador();
+        pruebaMetodoPago();
+        pruebaVenta();
+        pruebaDetalleVenta();
+        pruebaPedido();
+        pruebaDetallePedido();
 
         System.out.println("\n==================================================");
         System.out.println(" FIN DE LAS PRUEBAS ");
         System.out.println("==================================================");
+
     }
 
     //METODOS
