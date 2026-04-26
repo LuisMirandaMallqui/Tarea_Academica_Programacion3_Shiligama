@@ -150,7 +150,7 @@ public class MainPruebaModulo5 {
         d.setIdDevolucion(1); // asumiendo que existe venta con id 1
         d.setIdProducto(1);
         d.setIdTrabajador(1);
-        d.setEstadoDevolucion("Pendiente");
+        d.setEstadoDevolucion("PENDIENTE");
         d.setCantidad(5);
         d.setMotivo("Producto dañado");
         d.setFechaHora(LocalDateTime.now());
@@ -161,7 +161,7 @@ public class MainPruebaModulo5 {
 
         if (resIns == 1) {
             // 2. Modificar
-            d.setEstadoDevolucion("Aprobada");
+            d.setEstadoDevolucion("APROBADO");
             int resMod = dao.modificar(d);
             System.out.println("Modificar devolución: " + (resMod == 1 ? "Exito" : "Error"));
 
@@ -191,7 +191,7 @@ public class MainPruebaModulo5 {
         MovimientoInventario mov = new MovimientoInventario();
         mov.setIdProducto(1);
         mov.setIdTrabajador(1);
-        mov.setTipoMovimiento("Entrada");
+        mov.setTipoMovimiento("ENTRADA");
         mov.setCantidad(50);
         mov.setStockAnterior(10);
         mov.setStockResultante(60);
