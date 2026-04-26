@@ -15,3 +15,4 @@ public interface PromocionDao extends IDAO<PromocionDto> {
     int desasociarProducto(int idPromocion, int idProducto);
     List<Integer> listarProductosPorPromocion(int idPromocion);
 }
+
