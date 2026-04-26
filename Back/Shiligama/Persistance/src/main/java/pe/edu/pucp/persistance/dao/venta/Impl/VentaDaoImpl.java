@@ -37,12 +37,12 @@ public class VentaDaoImpl extends DaoImplBase implements VentaDao {
         try {
             this.iniciarTransaccion();
             CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_VENTA(?, ?, ?, ?, ?, ?)}");
-            cs.registerOutParameter(1, Types.INTEGER);
-            cs.setInt(2, venta.getCliente().getIdCliente());
-            cs.setInt(3, venta.getTrabajador().getIdTrabajador());
-            cs.setInt(4, venta.getMetodoPago().getIdMetodoPago());
-            cs.setString(5, venta.getCanalVenta().name());
-            cs.setString(6, venta.getObservaciones());
+            cs.registerOutParameter("_venta_id", Types.INTEGER);
+            cs.setInt("_cliente_id", venta.getCliente().getIdCliente());
+            cs.setInt("_trabajador_id", venta.getTrabajador().getIdTrabajador());
+            cs.setInt("_metodo_pago_id", venta.getMetodoPago().getIdMetodoPago());
+            cs.setString("_canal_venta", venta.getCanalVenta().name());
+            cs.setString("_observaciones", venta.getObservaciones());
             cs.execute();
             venta.setIdVenta(cs.getInt(1));
             resultado = 1;
@@ -66,26 +66,31 @@ public class VentaDaoImpl extends DaoImplBase implements VentaDao {
                 `CANTIDAD`         INT            NOT NULL,
                 `SUBTOTAL`         DECIMAL(10,2)  NOT NULL,
              */
-            for(DetalleVentaDto detalleVenta : venta.getDetalles()){
-                cs = this.conexion.prepareCall("{CALL INSERTAR_DETALLE_VENTA(?, ?, ?, ?,?,?)}");
-                cs.registerOutParameter("_detalle_venta_id", Types.INTEGER);
-                cs.setInt("_venta_id",venta.getIdVenta());
-                cs.setInt("_producto_id",detalleVenta.getProducto().getIdProducto());
-                cs.setString("_descripcion", detalleVenta.getDescripcion());
-                cs.setDouble("_precio_unitario", detalleVenta.getPrecioUnitario());
-                cs.setInt("_cantidad",detalleVenta.getCantidad());
-                cs.setDouble("_subtotal", detalleVenta.getSubtotal());
-                cs.executeUpdate();
+            if (venta.getDetalles() != null) {
+                for (DetalleVentaDto detalleVenta : venta.getDetalles()) {
+                    cs = this.conexion.prepareCall("{CALL INSERTAR_DETALLE_VENTA(?, ?, ?, ?,?,?)}");
+                    cs.registerOutParameter("_detalle_venta_id", Types.INTEGER);
+                    cs.setInt("_venta_id", venta.getIdVenta());
+                    cs.setInt("_producto_id", detalleVenta.getProducto().getIdProducto());
+                    cs.setString("_descripcion", detalleVenta.getDescripcion());
+                    cs.setDouble("_precio_unitario", detalleVenta.getPrecioUnitario());
+                    cs.setInt("_cantidad", detalleVenta.getCantidad());
+                    cs.setDouble("_subtotal", detalleVenta.getSubtotal());
+                    cs.executeUpdate();
+                }
             }
-
             this.comitarTransaccion();
         } catch (SQLException ex) {
             System.err.println("Error al insertar venta: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+            try {
+                this.rollbackTransaccion();
+            } catch (SQLException ex1) {
                 System.err.println("Error en rollback: " + ex1.getMessage());
             }
         } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
+            try {
+                this.cerrarConexion();
+            } catch (SQLException ex) {
                 System.err.println("Error al cerrar conexión: " + ex.getMessage());
             }
         }
@@ -104,11 +109,15 @@ public class VentaDaoImpl extends DaoImplBase implements VentaDao {
             this.comitarTransaccion();
         } catch (SQLException ex) {
             System.err.println("Error al completar venta: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+            try {
+                this.rollbackTransaccion();
+            } catch (SQLException ex1) {
                 System.err.println("Error en rollback: " + ex1.getMessage());
             }
         } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
+            try {
+                this.cerrarConexion();
+            } catch (SQLException ex) {
                 System.err.println("Error al cerrar conexión: " + ex.getMessage());
             }
         }
@@ -127,11 +136,15 @@ public class VentaDaoImpl extends DaoImplBase implements VentaDao {
             this.comitarTransaccion();
         } catch (SQLException ex) {
             System.err.println("Error al anular venta: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+            try {
+                this.rollbackTransaccion();
+            } catch (SQLException ex1) {
                 System.err.println("Error en rollback: " + ex1.getMessage());
             }
         } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
+            try {
+                this.cerrarConexion();
+            } catch (SQLException ex) {
                 System.err.println("Error al cerrar conexión: " + ex.getMessage());
             }
         }

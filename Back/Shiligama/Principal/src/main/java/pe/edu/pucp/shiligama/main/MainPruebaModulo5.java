@@ -1,9 +1,6 @@
 package pe.edu.pucp.shiligama.main;
 
-import pe.edu.pucp.model.enums.CanalVenta;
-import pe.edu.pucp.model.enums.EstadoPedido;
-import pe.edu.pucp.model.enums.ModalidadVenta;
-import pe.edu.pucp.model.enums.TipoDescuento;
+import pe.edu.pucp.model.enums.*;
 import pe.edu.pucp.model.promocion.PromocionDto;
 import pe.edu.pucp.model.operaciones.Devolucion;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
@@ -421,11 +418,33 @@ public class MainPruebaModulo5 {
         metodoPago.setIdMetodoPago(1);
 
         VentaDto venta = new VentaDto();
-        venta.setCliente(cliente);
-        venta.setTrabajador(trabajador);
-        venta.setMetodoPago(metodoPago);
-        venta.setCanalVenta(CanalVenta.PRESENCIAL);
-        venta.setObservaciones("Venta de prueba");
+        venta.setCliente(cliente); //CLIENTE_ID int
+        venta.setTrabajador(trabajador); //TRABAJADOR_ID int
+        venta.setMetodoPago(metodoPago); //METODO_PAGO_ID int
+        venta.setCanalVenta(CanalVenta.PRESENCIAL); //CANAL_VENTA enum('PRESENCIAL','WEB')
+        venta.setObservaciones("Venta de prueba"); //OBSERVACIONES varchar(500)
+
+
+
+        /*
+        FECHA_HORA datetime
+        MONTO_TOTAL decimal(10,2)
+        MONTO_DESCUENTO decimal(10,2)
+        ESTADO_VENTA enum('REGISTRADA','COMPLETADA','ANULADA')
+        ACTIVO tinyint
+
+        private double montoTotal;
+        private double montoDescuento;
+        private CanalVenta canalVenta;
+        private EstadoVenta estadoVenta;
+        private String observaciones;
+        private ClienteDto cliente;
+        private TrabajadorDto trabajador;
+        private MetodoPagoDto metodoPago;
+        private List<DetalleVentaDto> detalles;
+        */
+
+
         int resIns = dao.insertar(venta);
         idVentaCreada = venta.getIdVenta(); // guarda el ID
         System.out.println("Insertar venta: " + (resIns == 1 ? "Éxito ID: " + venta.getIdVenta() : "Error"));
