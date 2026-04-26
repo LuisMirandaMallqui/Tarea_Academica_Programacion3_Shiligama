@@ -3,7 +3,8 @@ package pe.edu.pucp.shiligama.main;
 import pe.edu.pucp.model.enums.CanalVenta;
 import pe.edu.pucp.model.enums.EstadoPedido;
 import pe.edu.pucp.model.enums.ModalidadVenta;
-import pe.edu.pucp.model.operaciones.Promocion;
+import pe.edu.pucp.model.enums.TipoDescuento;
+import pe.edu.pucp.model.promocion.PromocionDto;
 import pe.edu.pucp.model.operaciones.Devolucion;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
 import pe.edu.pucp.model.producto.CategoriaDto;
@@ -80,7 +81,7 @@ public class MainPruebaModulo5 {
         PromocionDaoImpl dao = new PromocionDaoImpl();
 
         // 1. Insertar
-        Promocion p = new Promocion(0, "Promo Verano", "Descuento por verano", "Porcentaje", 15.0,
+        PromocionDto p = new PromocionDto(0, "Promo Verano", "Descuento por verano", TipoDescuento.PORCENTAJE, 15.0,
                 LocalDate.now(), LocalDate.now().plusDays(10), "Aplica a bebidas", true);
         int resIns = dao.insertar(p);
         System.out.println("Insertar promoción: " + (resIns == 1 ? "Exito ID: " + p.getIdPromocion() : "Error"));
@@ -93,7 +94,7 @@ public class MainPruebaModulo5 {
             System.out.println("Modificar promoción: " + (resMod == 1 ? "Exito" : "Error"));
 
             // 3. Buscar
-            Promocion pBuscada = dao.buscarPorID(p.getIdPromocion());
+            PromocionDto pBuscada = dao.buscarPorID(p.getIdPromocion());
             System.out.println("Buscar promoción: " + (pBuscada != null ? pBuscada.getNombre() : "No encontrada"));
 
             // 4. Asociar producto (idProducto = 1 asumido)
@@ -109,11 +110,11 @@ public class MainPruebaModulo5 {
             System.out.println("Desasociar producto 1: " + (resDes == 1 ? "Exito" : "Error"));
 
             // 7. Listar todos
-            List<Promocion> todas = dao.listarTodos();
+            List<PromocionDto> todas = dao.listarTodos();
             System.out.println("Listar todas las promociones. Cantidad: " + todas.size());
 
             // 8. Listar vigentes
-            List<Promocion> vigentes = dao.listarVigentes();
+            List<PromocionDto> vigentes = dao.listarVigentes();
             System.out.println("Listar promociones vigentes. Cantidad: " + vigentes.size());
 
             // 9. Eliminar
@@ -544,7 +545,7 @@ public class MainPruebaModulo5 {
         nuevo.setApellidos("Perez");
         nuevo.setDni("77889900");
         nuevo.setTelefono("987654321");
-        nuevo.setEmail("juan.perez@pucp.edu.pe");
+        nuevo.setCorreo("juan.perez@pucp.edu.pe");
         nuevo.setContrasena("pucp123");
         nuevo.setDireccionEntrega("Av. Universitaria 1801, San Miguel");
 
@@ -580,7 +581,7 @@ public class MainPruebaModulo5 {
         t.setApellidos("Lopez");
         t.setDni("11223344");
         t.setTelefono("912345678");
-        t.setEmail("maria.trabajadora@gmail.com");
+        t.setCorreo("maria.trabajadora@gmail.com");
         t.setContrasena("secret");
         t.setFechaIngreso(LocalDate.now());
 
@@ -613,7 +614,7 @@ public class MainPruebaModulo5 {
         admin.setNombres("Super");
         admin.setApellidos("User");
         admin.setDni("00000001");
-        admin.setEmail("admin@shiligama.com");
+        admin.setCorreo("admin@shiligama.com");
         admin.setContrasena("adminroot");
 
         int resIns = dao.insertar(admin);

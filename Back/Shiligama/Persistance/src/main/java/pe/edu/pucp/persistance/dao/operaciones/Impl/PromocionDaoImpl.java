@@ -1,7 +1,8 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
+import pe.edu.pucp.model.enums.TipoDescuento;
+import pe.edu.pucp.model.promocion.PromocionDto;
 import pe.edu.pucp.persistance.dao.operaciones.dao.PromocionDao;
-import pe.edu.pucp.model.operaciones.Promocion;
 import pe.edu.pucp.db.DBManager;
 import java.sql.*;
 import java.util.ArrayList;
@@ -21,25 +22,25 @@ public class PromocionDaoImpl implements PromocionDao {
 
     /**
      * Inserta una nueva promoción usando el SP INSERTAR_PROMOCION
-     * @param promocion Objeto con los datos de la promoción
+     * @param promocionDto Objeto con los datos de la promoción
      * @return 1 si éxito, 0 si error
      */
     @Override
-    public int insertar(Promocion promocion) {
+    public int insertar(PromocionDto promocionDto) {
         int resultado = 0;
         try {
             con = DBManager.getInstance().getConnection();
             cs = con.prepareCall("{call INSERTAR_PROMOCION(?,?,?,?,?,?,?,?)}");
             cs.registerOutParameter(1, Types.INTEGER);  // ID generado
-            cs.setString(2, promocion.getNombre());
-            cs.setString(3, promocion.getDescripcion());
-            cs.setString(4, promocion.getTipoDescuento());
-            cs.setDouble(5, promocion.getValorDescuento());
-            cs.setDate(6, Date.valueOf(promocion.getFechaInicio()));
-            cs.setDate(7, Date.valueOf(promocion.getFechaFin()));
-            cs.setString(8, promocion.getCondiciones());
+            cs.setString(2, promocionDto.getNombre());
+            cs.setString(3, promocionDto.getDescripcion());
+            cs.setString(4, promocionDto.getTipoDescuento().toString());
+            cs.setDouble(5, promocionDto.getValorDescuento());
+            cs.setDate(6, Date.valueOf(promocionDto.getFechaInicio()));
+            cs.setDate(7, Date.valueOf(promocionDto.getFechaFin()));
+            cs.setString(8, promocionDto.getCondiciones());
             cs.executeUpdate();
-            promocion.setIdPromocion(cs.getInt(1));  // Asignar ID generado
+            promocionDto.setIdPromocion(cs.getInt(1));  // Asignar ID generado
             resultado = 1;
         } catch (Exception ex) {
             System.err.println("Error en insertar Promocion: " + ex.getMessage());
@@ -52,23 +53,23 @@ public class PromocionDaoImpl implements PromocionDao {
 
     /**
      * Modifica una promoción en base de datos.
-     * @param promocion Objeto con los nuevos datos
+     * @param promocionDto Objeto con los nuevos datos
      * @return 1 si éxito, 0 si error
      */
     @Override
-    public int modificar(Promocion promocion) {
+    public int modificar(PromocionDto promocionDto) {
         int resultado = 0;
         try {
             con = DBManager.getInstance().getConnection();
             cs = con.prepareCall("{call MODIFICAR_PROMOCION(?,?,?,?,?,?,?,?)}");
-            cs.setInt(1, promocion.getIdPromocion());
-            cs.setString(2, promocion.getNombre());
-            cs.setString(3, promocion.getDescripcion());
-            cs.setString(4, promocion.getTipoDescuento());
-            cs.setDouble(5, promocion.getValorDescuento());
-            cs.setDate(6, Date.valueOf(promocion.getFechaInicio()));
-            cs.setDate(7, Date.valueOf(promocion.getFechaFin()));
-            cs.setString(8, promocion.getCondiciones());
+            cs.setInt(1, promocionDto.getIdPromocion());
+            cs.setString(2, promocionDto.getNombre());
+            cs.setString(3, promocionDto.getDescripcion());
+            cs.setString(4, promocionDto.getTipoDescuento().toString());
+            cs.setDouble(5, promocionDto.getValorDescuento());
+            cs.setDate(6, Date.valueOf(promocionDto.getFechaInicio()));
+            cs.setDate(7, Date.valueOf(promocionDto.getFechaFin()));
+            cs.setString(8, promocionDto.getCondiciones());
             cs.executeUpdate();
             resultado = 1;
         } catch (Exception ex) {
@@ -109,19 +110,20 @@ public class PromocionDaoImpl implements PromocionDao {
      * @return Objeto Promocion, o null si no se encuentra
      */
     @Override
-    public Promocion buscarPorID(int id) {
-        Promocion p = null;
+    public PromocionDto buscarPorID(int id) {
+        PromocionDto p = null;
         try {
             con = DBManager.getInstance().getConnection();
             cs = con.prepareCall("{call BUSCAR_PROMOCION_POR_ID(?)}");
             cs.setInt(1, id);
             rs = cs.executeQuery();
             if (rs.next()) {
-                p = new Promocion();
+                p = new PromocionDto();
                 p.setIdPromocion(rs.getInt("id_promocion"));
                 p.setNombre(rs.getString("nombre"));
                 p.setDescripcion(rs.getString("descripcion"));
-                p.setTipoDescuento(rs.getString("tipo_descuento"));
+                String tipoDescuentoStr = rs.getString("tipo_descuento"); // para poder trabajar el Enum
+                p.setTipoDescuento(TipoDescuento.valueOf(tipoDescuentoStr));
                 p.setValorDescuento(rs.getDouble("valor_descuento"));
                 p.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
                 p.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
@@ -142,18 +144,19 @@ public class PromocionDaoImpl implements PromocionDao {
      * @return Lista de promociones
      */
     @Override
-    public List<Promocion> listarTodos() {
-        List<Promocion> lista = new ArrayList<>();
+    public List<PromocionDto> listarTodos() {
+        List<PromocionDto> lista = new ArrayList<>();
         try {
             con = DBManager.getInstance().getConnection();
             cs = con.prepareCall("{call LISTAR_PROMOCIONES_TODAS()}");
             rs = cs.executeQuery();
             while (rs.next()) {
-                Promocion p = new Promocion();
+                PromocionDto p = new PromocionDto();
                 p.setIdPromocion(rs.getInt("id_promocion"));
                 p.setNombre(rs.getString("nombre"));
                 p.setDescripcion(rs.getString("descripcion"));
-                p.setTipoDescuento(rs.getString("tipo_descuento"));
+                String tipoDescuentoStr = rs.getString("tipo_descuento"); // para poder trabajar el Enum
+                p.setTipoDescuento(TipoDescuento.valueOf(tipoDescuentoStr));
                 p.setValorDescuento(rs.getDouble("valor_descuento"));
                 p.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
                 p.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
@@ -174,18 +177,19 @@ public class PromocionDaoImpl implements PromocionDao {
      * Lista las promociones vigentes.
      */
     @Override
-    public List<Promocion> listarVigentes() {
-        List<Promocion> lista = new ArrayList<>();
+    public List<PromocionDto> listarVigentes() {
+        List<PromocionDto> lista = new ArrayList<>();
         try {
             con = DBManager.getInstance().getConnection();
             cs = con.prepareCall("{call LISTAR_PROMOCIONES_VIGENTES()}");
             rs = cs.executeQuery();
             while (rs.next()) {
-                Promocion p = new Promocion();
+                PromocionDto p = new PromocionDto();
                 p.setIdPromocion(rs.getInt("id_promocion"));
                 p.setNombre(rs.getString("nombre"));
                 p.setDescripcion(rs.getString("descripcion"));
-                p.setTipoDescuento(rs.getString("tipo_descuento"));
+                String tipoDescuentoStr = rs.getString("tipo_descuento"); // para poder trabajar el Enum
+                p.setTipoDescuento(TipoDescuento.valueOf(tipoDescuentoStr));
                 p.setValorDescuento(rs.getDouble("valor_descuento"));
                 p.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
                 p.setFechaFin(rs.getDate("fecha_fin").toLocalDate());

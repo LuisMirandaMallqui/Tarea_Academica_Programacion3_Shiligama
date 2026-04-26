@@ -36,7 +36,7 @@ public class AdministradorDaoImpl extends DaoImplBase implements UsuarioDao<Admi
             cs.setString(3, administrador.getApellidos());
             cs.setString(4, administrador.getDni());
             cs.setString(5, administrador.getTelefono());
-            cs.setString(6, administrador.getEmail());
+            cs.setString(6, administrador.getCorreo());
             cs.setString(7, administrador.getContrasena());
             cs.execute();
             administrador.setIdAdministrador(cs.getInt(1));
@@ -66,7 +66,7 @@ public class AdministradorDaoImpl extends DaoImplBase implements UsuarioDao<Admi
             cs.setString(3, administrador.getApellidos());
             cs.setString(4, administrador.getDni());
             cs.setString(5, administrador.getTelefono());
-            cs.setString(6, administrador.getEmail());
+            cs.setString(6, administrador.getCorreo());
             cs.execute();
             resultado = 1;
             this.comitarTransaccion();
@@ -223,7 +223,7 @@ public class AdministradorDaoImpl extends DaoImplBase implements UsuarioDao<Admi
             this.prepararConsulta(
                     "SELECT COUNT(*) FROM usuarios WHERE CORREO = ? OR DNI = ?"
             );
-            this.preparedStatement.setString(1, administrador.getEmail());
+            this.preparedStatement.setString(1, administrador.getCorreo());
             this.preparedStatement.setString(2, administrador.getDni());
             this.ejecutarConsulta();
             if (this.resultSet.next()) {
@@ -251,7 +251,7 @@ public class AdministradorDaoImpl extends DaoImplBase implements UsuarioDao<Admi
         a.setApellidos(resultSet.getString("APELLIDOS"));
         a.setDni(resultSet.getString("DNI"));
         a.setTelefono(resultSet.getString("TELEFONO"));
-        a.setEmail(resultSet.getString("CORREO"));
+        a.setCorreo(resultSet.getString("CORREO"));
         a.setContrasena(resultSet.getString("CONTRASENA"));
         return a;
     }

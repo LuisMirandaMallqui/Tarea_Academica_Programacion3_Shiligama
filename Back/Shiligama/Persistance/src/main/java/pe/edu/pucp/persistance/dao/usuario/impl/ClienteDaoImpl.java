@@ -35,7 +35,7 @@ public class ClienteDaoImpl extends DaoImplBase implements UsuarioDao<ClienteDto
             cs.setString(3, cliente.getApellidos());
             cs.setString(4, cliente.getDni());
             cs.setString(5, cliente.getTelefono());
-            cs.setString(6, cliente.getEmail());
+            cs.setString(6, cliente.getCorreo());
             cs.setString(7, cliente.getContrasena());
             cs.setString(8, cliente.getDireccionEntrega());
             cs.execute();
@@ -66,7 +66,7 @@ public class ClienteDaoImpl extends DaoImplBase implements UsuarioDao<ClienteDto
             cs.setString(3, cliente.getApellidos());
             cs.setString(4, cliente.getDni());
             cs.setString(5, cliente.getTelefono());
-            cs.setString(6, cliente.getEmail());
+            cs.setString(6, cliente.getCorreo());
             cs.setString(7, cliente.getDireccionEntrega());
             cs.execute();
             resultado = 1;
@@ -224,7 +224,7 @@ public class ClienteDaoImpl extends DaoImplBase implements UsuarioDao<ClienteDto
             this.prepararConsulta(
                     "SELECT COUNT(*) FROM usuarios WHERE CORREO = ? OR DNI = ?"
             );
-            this.preparedStatement.setString(1, cliente.getEmail());
+            this.preparedStatement.setString(1, cliente.getCorreo());
             this.preparedStatement.setString(2, cliente.getDni());
             this.ejecutarConsulta();
             if (this.resultSet.next()) {
@@ -253,7 +253,7 @@ public class ClienteDaoImpl extends DaoImplBase implements UsuarioDao<ClienteDto
         c.setApellidos(resultSet.getString("APELLIDOS"));
         c.setDni(resultSet.getString("DNI"));
         c.setTelefono(resultSet.getString("TELEFONO"));
-        c.setEmail(resultSet.getString("CORREO"));
+        c.setCorreo(resultSet.getString("CORREO"));
         c.setContrasena(resultSet.getString("CONTRASENA"));
         return c;
     }
