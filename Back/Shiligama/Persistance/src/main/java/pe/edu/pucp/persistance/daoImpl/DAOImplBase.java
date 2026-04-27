@@ -12,33 +12,33 @@ import java.util.List;
 /**
  * Clase base para todas las implementaciones DAO del sistema.
  * Criterios de uso:
- *  - PreparedStatement : para SELECT directos con parámetros (obtenerPorId, listarTodos, agregados).
- *                        Es más portable y directo cuando no se necesita un procedimiento almacenado.
- *  - CallableStatement : para invocar procedimientos almacenados. Se declara de forma LOCAL
- *                        en cada método DML de la clase hija (insertar, modificar, eliminar),
- *                        lo que da claridad y control total sobre los parámetros OUT.
+ * - PreparedStatement : para SELECT directos con parámetros (obtenerPorId, listarTodos, agregados).
+ * Es más portable y directo cuando no se necesita un procedimiento almacenado.
+ * - CallableStatement : para invocar procedimientos almacenados. Se declara de forma LOCAL
+ * en cada método DML de la clase hija (insertar, modificar, eliminar),
+ * lo que da claridad y control total sobre los parámetros OUT.
  * Las operaciones DML (insertar, modificar, eliminar) NO están en esta clase base.
  * Cada clase hija las implementa directamente con su CallableStatement y su procedimiento específico.
  * Ejemplo de insertar() en la clase hija (con parámetro OUT para recuperar el ID):
- *   public Integer insertar() {
- *       Integer resultado = 0;
- *       try {
- *           this.iniciarTransaccion();
- *           CallableStatement cs = this.conexion.prepareCall("{call INSERTAR_AREA(?, ?)}");
- *           cs.setString(1, this.area.getNombre());
- *           cs.registerOutParameter(2, Types.INTEGER);
- *           cs.execute();
- *           resultado = cs.getInt(2);
- *           this.area.setIdArea(resultado);
- *           this.comitarTransaccion();
- *       } catch (SQLException ex) {
- *           System.err.println("Error al insertar - " + ex);
- *           try { this.rollbackTransaccion(); } catch (SQLException ex1) { ... }
- *       } finally {
- *           try { this.cerrarConexion(); } catch (SQLException ex) { ... }
- *       }
- *       return resultado;
- *   }
+ * public Integer insertar() {
+ * Integer resultado = 0;
+ * try {
+ * this.iniciarTransaccion();
+ * CallableStatement cs = this.conexion.prepareCall("{call INSERTAR_AREA(?, ?)}");
+ * cs.setString(1, this.area.getNombre());
+ * cs.registerOutParameter(2, Types.INTEGER);
+ * cs.execute();
+ * resultado = cs.getInt(2);
+ * this.area.setIdArea(resultado);
+ * this.comitarTransaccion();
+ * } catch (SQLException ex) {
+ * System.err.println("Error al insertar - " + ex);
+ * try { this.rollbackTransaccion(); } catch (SQLException ex1) { ... }
+ * } finally {
+ * try { this.cerrarConexion(); } catch (SQLException ex) { ... }
+ * }
+ * return resultado;
+ * }
  */
 public abstract class DaoImplBase {
 
@@ -123,7 +123,9 @@ public abstract class DaoImplBase {
         } catch (SQLException ex) {
             System.err.println("Error en obtenerPorId - " + ex);
         } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
+            try {
+                this.cerrarConexion();
+            } catch (SQLException ex) {
                 System.err.println("Error al cerrar conexión en obtenerPorId - " + ex);
             }
         }
@@ -166,7 +168,9 @@ public abstract class DaoImplBase {
         } catch (SQLException ex) {
             System.err.println("Error en listarTodos - " + ex);
         } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
+            try {
+                this.cerrarConexion();
+            } catch (SQLException ex) {
                 System.err.println("Error al cerrar conexión en listarTodos - " + ex);
             }
         }
@@ -212,7 +216,9 @@ public abstract class DaoImplBase {
         } catch (SQLException ex) {
             System.err.println("Error en ejecutarAgregado: " + ex.getMessage());
         } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
+            try {
+                this.cerrarConexion();
+            } catch (SQLException ex) {
                 System.err.println("Error al cerrar conexión en ejecutarAgregado - " + ex);
             }
         }
