@@ -60,7 +60,7 @@ public class PedidoDaoImpl extends DaoImplBase implements PedidoDao {
         return resultado;
     }
 
-    // modificar aquí equivale a cambiar el estado del pedido (PENDIENTE → COMPLETADO, etc.)
+    // modificar aquí equivale a cambiar el estado del pedido (RECIBIDO → EN_PROCESO → ATENDIDO, etc.)
     @Override
     public int modificar(PedidoDto pedido) {
         int resultado = 0;

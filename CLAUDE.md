@@ -51,10 +51,10 @@ devoluciones, metodos_pago, ventas, detalles_venta,
 pedidos, detalles_pedido, promociones, promociones_productos
 
 ### Enums Java ↔ ENUM MySQL:
-- CanalVenta: PRESENCIAL, WEB, WHATSAPP
+- CanalVenta: PRESENCIAL, WEB
 - EstadoVenta: REGISTRADA, COMPLETADA, ANULADA
-- EstadoPedido: PENDIENTE, ENVIADO, EN_PROCESO, EN_CAMINO, ENTREGADO, CANCELADO, RECIBIDO
-- ModalidadVenta: RECOJO, DELIVERY
+- EstadoPedido: RECIBIDO, EN_PROCESO, ATENDIDO, RECHAZADO, CANCELADO
+- ModalidadVenta: DELIVERY, RECOJO_TIENDA
 - TipoMovimiento: ENTRADA, SALIDA, AJUSTE, DEVOLUCION
 - TipoDescuento: PORCENTAJE, MONTO_FIJO
 - TipoDevolucion: CLIENTE, MERMA, VENCIMIENTO, DEFECTO
@@ -87,12 +87,19 @@ Tarea_Academica_Programacion3/
 7. Devoluciones (Devolucion)
 
 ## Estado actual
-- Model: 100% (todos los DTOs y enums creados)
+- Model: 100% (DTOs + 7 enums alineados con MySQL). Archivos a eliminar manualmente: `operaciones/PromocionProducto.java` (duplicado), `enums/EstadoOrden.java` (huérfano).
 - DBManager: 100% (Singleton funcional, conectado a AWS RDS)
-- Persistance: ~95% (todos los Impl de los 7 módulos codificados)
+- Persistance: ~98% (13 Impl codificados; 9 usan DaoImplBase, 4 independientes — ambos estilos válidos)
 - Business: ~10% (solo PedidoBoImpl existe como esqueleto)
-- Principal: tiene MainPruebaModulo5 con tests manuales
-- SQL: DDL + ~60 stored procedures + triggers de auditoría + inserts
+- Principal: MainPruebaModulo5 con tests manuales (todos los módulos cubiertos)
+- SQL: DDL 14 tablas + ~60 stored procedures + triggers de auditoría + inserts corregidos
+
+### Impl que usan DaoImplBase (template method para SELECTs):
+ProductoDaoImpl, ClienteDaoImpl, TrabajadorDaoImpl, AdministradorDaoImpl,
+VentaDaoImpl, DetalleVentaDaoImpl, PedidoDaoImpl, DetallePedidoDaoImpl, MetodoPagoDaoImpl
+
+### Impl independientes (con cerrarRecursos() propio):
+CategoriaDaoImpl, DevolucionDaoImpl, MovimientoInventarioDaoImpl, PromocionDaoImpl
 
 ## Pendiente para siguiente entrega (Lab 8 — Semana 8):
 - Completar capa de negocio (Business) al 100% para los 7 módulos

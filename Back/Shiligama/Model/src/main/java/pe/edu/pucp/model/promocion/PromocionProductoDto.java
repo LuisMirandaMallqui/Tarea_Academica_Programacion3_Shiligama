@@ -28,4 +28,11 @@ public class PromocionProductoDto {
 
     //public double getPrecioDescuento() { return precioDescuento; }
     //public void setPrecioDescuento(double precioDescuento) { this.precioDescuento = precioDescuento; }
+    @Override
+    public String toString() {
+        return "PromocionProducto{" +
+                "idPromocion=" + promocionDto.getIdPromocion() +
+                ", idProducto=" + producto.getIdProducto() +
+                '}';
+    }
 }

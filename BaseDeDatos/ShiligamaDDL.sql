@@ -345,7 +345,7 @@ CREATE TABLE IF NOT EXISTS `detalles_venta` (
     -- Atributos
     `VENTA_ID`         INT            NOT NULL,
     `PRODUCTO_ID`      INT            NOT NULL,
-	`DESCRIPCION` VARCHAR(100) NULL DEFAULT NULL COMMENT 'Descripción opcional de la línea de detalle.',
+	`DESCRIPCION`      VARCHAR(100)   NULL DEFAULT NULL COMMENT 'Descripción opcional de la línea de detalle.',
     `PRECIO_UNITARIO`  DECIMAL(10,2)  NOT NULL,
     `CANTIDAD`         INT            NOT NULL,
     `SUBTOTAL`         DECIMAL(10,2)  NOT NULL,    

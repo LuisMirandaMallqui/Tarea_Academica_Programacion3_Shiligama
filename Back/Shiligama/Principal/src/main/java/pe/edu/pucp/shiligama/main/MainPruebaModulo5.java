@@ -30,67 +30,42 @@ public class MainPruebaModulo5 {
 
     // PRINCIPAL
     public static void main(String[] args) {
-
-
-
         System.out.println("=== SISTEMA SHILIGAMA - PRUEBAS DE USUARIOS ===");
 
         ejecutarPruebasVentaPedidos();
-
-        //ejectutarPruebasOperacionproductoPromocion();
-
-        //ejecutarPruebasUsuarios();
+        ejectutarPruebasOperacionproductoPromocion();
+        ejecutarPruebasUsuarios();
     }
 
     private static void ejecutarPruebasUsuarios() {
-        System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULO Usuarios ");
-        System.out.println("==================================================\n");
-
-        testCliente();
-        testTrabajador();
-        testAdministrador();
-
-        System.out.println("\n==================================================");
-        System.out.println(" FIN DE LAS PRUEBAS ");
-        System.out.println("==================================================");
+        imprimir_encabezado("Usuarios");
+        pruebaCliente();
+        pruebaTrabajador();
+        pruebaAdministrador();
+        imprimir_cierre();
     }
 
     private static void ejectutarPruebasOperacionproductoPromocion() {
-        System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULOS: Operaciones, Producto y Promocion ");
-        System.out.println("==================================================\n");
-
+        imprimir_encabezado("Operaciones, Producto y Promocion");
         pruebaPromocion();
         pruebaDevolucion();
         pruebaMovimientoInventario();
         pruebaCategoria();
         pruebaProducto();
-
-        System.out.println("\n==================================================");
-        System.out.println(" FIN DE LAS PRUEBAS ");
-        System.out.println("==================================================");
-
+        imprimir_cierre();
     }
 
     private static void ejecutarPruebasVentaPedidos() {
-        System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULO Ventas y Pedidos   ");
-        System.out.println("==================================================\n");
-
+        imprimir_encabezado("Ventas y Pedidos");
         pruebaMetodoPago();
         pruebaVenta();
         pruebaDetalleVenta();
         pruebaPedido();
         pruebaDetallePedido();
-
-        System.out.println("\n==================================================");
-        System.out.println(" FIN DE LAS PRUEBAS ");
-        System.out.println("==================================================");
-
+        imprimir_cierre();
     }
 
-    //METODOS
+
     private static void pruebaPromocion() {
         System.out.println("------------ PRUEBA PROMOCIÓN ------------");
         PromocionDaoImpl dao = new PromocionDaoImpl();
@@ -424,27 +399,6 @@ public class MainPruebaModulo5 {
         venta.setCanalVenta(CanalVenta.PRESENCIAL); //CANAL_VENTA enum('PRESENCIAL','WEB')
         venta.setObservaciones("Venta de prueba"); //OBSERVACIONES varchar(500)
 
-
-
-        /*
-        FECHA_HORA datetime
-        MONTO_TOTAL decimal(10,2)
-        MONTO_DESCUENTO decimal(10,2)
-        ESTADO_VENTA enum('REGISTRADA','COMPLETADA','ANULADA')
-        ACTIVO tinyint
-
-        private double montoTotal;
-        private double montoDescuento;
-        private CanalVenta canalVenta;
-        private EstadoVenta estadoVenta;
-        private String observaciones;
-        private ClienteDto cliente;
-        private TrabajadorDto trabajador;
-        private MetodoPagoDto metodoPago;
-        private List<DetalleVentaDto> detalles;
-        */
-
-
         int resIns = dao.insertar(venta);
         idVentaCreada = venta.getIdVenta(); // guarda el ID
         System.out.println("Insertar venta: " + (resIns == 1 ? "Éxito ID: " + venta.getIdVenta() : "Error"));
@@ -460,8 +414,8 @@ public class MainPruebaModulo5 {
             List<VentaDto> lista = dao.listarTodos();
             System.out.println("Listar todas las ventas. Cantidad: " + lista.size());
 
-            // int resElim = dao.eliminar(venta.getIdVenta());
-            // System.out.println("Anular venta (eliminar): " + (resElim == 1 ? "Éxito" : "Error"));
+            int resElim = dao.eliminar(venta.getIdVenta());
+            System.out.println("Anular venta (eliminar): " + (resElim == 1 ? "Éxito" : "Error"));
         }
     }
 
@@ -530,8 +484,8 @@ public class MainPruebaModulo5 {
             List<PedidoDto> lista = dao.listarTodos();
             System.out.println("Listar todos los pedidos. Cantidad: " + lista.size());
 
-            // int resElim = dao.eliminar(pedido.getIdPedido());
-            // System.out.println("Eliminar pedido: " + (resElim == 1 ? "Éxito" : "Error"));
+            int resElim = dao.eliminar(pedido.getIdPedido());
+            System.out.println("Eliminar pedido: " + (resElim == 1 ? "Éxito" : "Error"));
         }
     }
 
@@ -572,7 +526,7 @@ public class MainPruebaModulo5 {
     // =========================================================
     //  CLIENTE
     // =========================================================
-    public static void testCliente() {
+    public static void pruebaCliente() {
         System.out.println("\n--- [TEST CLIENTE] ---");
         ClienteDaoImpl cliente = new ClienteDaoImpl();
 
@@ -608,7 +562,7 @@ public class MainPruebaModulo5 {
     // =========================================================
     //  TRABAJADOR
     // =========================================================
-    public static void testTrabajador() {
+    public static void pruebaTrabajador() {
         System.out.println("\n--- [TEST TRABAJADOR] ---");
         TrabajadorDaoImpl dao = new TrabajadorDaoImpl();
 
@@ -642,7 +596,7 @@ public class MainPruebaModulo5 {
     // =========================================================
     //  ADMINISTRADOR
     // =========================================================
-    public static void testAdministrador() {
+    public static void pruebaAdministrador() {
         System.out.println("\n--- [TEST ADMINISTRADOR] ---");
         AdministradorDaoImpl dao = new AdministradorDaoImpl();
 
@@ -671,5 +625,17 @@ public class MainPruebaModulo5 {
         } else {
             System.out.println("Error al crear administrador.");
         }
+    }
+
+    private static void imprimir_encabezado(String prueba){
+        System.out.println("==================================================");
+        System.out.println(" INICIANDO PRUEBAS MÓDULO/s: " + prueba );
+        System.out.println("==================================================\n");
+    }
+
+    private static void imprimir_cierre(){
+        System.out.println("\n==================================================");
+        System.out.println(" FIN DE LAS PRUEBAS ");
+        System.out.println("==================================================");
     }
 }

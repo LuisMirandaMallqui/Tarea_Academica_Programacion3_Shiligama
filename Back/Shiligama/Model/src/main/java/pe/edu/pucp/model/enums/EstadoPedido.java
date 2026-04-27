@@ -1,11 +1,9 @@
 package pe.edu.pucp.model.enums;
 
 public enum EstadoPedido {
-    PENDIENTE,
-    ENVIADO,
+    RECIBIDO,
     EN_PROCESO,
-    EN_CAMINO,
-    ENTREGADO,//Cuando se paga
-    CANCELADO,
-    RECIBIDO
+    ATENDIDO,
+    RECHAZADO,
+    CANCELADO
 }
