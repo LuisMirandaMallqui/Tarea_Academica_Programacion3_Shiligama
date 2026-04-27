@@ -1,5 +1,11 @@
 package pe.edu.pucp.bo;
 
+import java.util.List;
+
 public interface BaseBo<T> {
-    public int insertar(T t);
+    int insertar(T t);
+    int modificar(T t);
+    int eliminar(int id);
+    T buscarPorID(int id);
+    List<T> listarTodos();
 }

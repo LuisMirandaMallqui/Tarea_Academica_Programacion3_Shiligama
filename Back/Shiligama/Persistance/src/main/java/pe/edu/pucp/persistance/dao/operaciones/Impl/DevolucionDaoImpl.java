@@ -1,47 +1,48 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
 import pe.edu.pucp.persistance.dao.operaciones.dao.DevolucionDao;
+import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
 import pe.edu.pucp.model.operaciones.Devolucion;
-import pe.edu.pucp.db.DBManager;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Implementación del DAO para la entidad Devolucion.
- * Utiliza procedimientos almacenados actualizados para las operaciones en BD.
- */
-public class DevolucionDaoImpl implements DevolucionDao {
-    // ================= RECURSOS JDBC =================
-    private Connection con;
-    private CallableStatement cs;
-    private PreparedStatement pst;
-    private Statement st;
-    private ResultSet rs;
+public class DevolucionDaoImpl extends DaoImplBase implements DevolucionDao {
+
+    // -------------------------------------------------------------------------
+    // DML con CallableStatement + parámetros nombrados
+    // -------------------------------------------------------------------------
 
     @Override
     public int insertar(Devolucion devolucion) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call INSERTAR_DEVOLUCION(?,?,?,?,?,?,?)}");
-            cs.registerOutParameter(1, Types.INTEGER); // ID devuelto
-            cs.setInt(2, devolucion.getIdProducto());
-            cs.setInt(3, devolucion.getIdTrabajador());
-            cs.setString(4, devolucion.getEstadoDevolucion());
-            cs.setInt(5, devolucion.getCantidad());
-            cs.setString(6, devolucion.getMotivo());
-            cs.setTimestamp(7, devolucion.getFechaHora() != null ? Timestamp.valueOf(devolucion.getFechaHora())
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_DEVOLUCION(?,?,?,?,?,?,?)}");
+            cs.registerOutParameter("_devolucion_id", Types.INTEGER);
+            cs.setInt("_id_producto", devolucion.getIdProducto());
+            cs.setInt("_id_trabajador", devolucion.getIdTrabajador());
+            cs.setString("_estado_devolucion", devolucion.getEstadoDevolucion());
+            cs.setInt("_cantidad", devolucion.getCantidad());
+            cs.setString("_motivo", devolucion.getMotivo());
+            cs.setTimestamp("_fecha_hora", devolucion.getFechaHora() != null
+                    ? Timestamp.valueOf(devolucion.getFechaHora())
                     : Timestamp.valueOf(LocalDateTime.now()));
             cs.executeUpdate();
-            devolucion.setIdDevolucion(cs.getInt(1));
+            devolucion.setIdDevolucion(cs.getInt("_devolucion_id"));
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en insertar Devolucion: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al insertar devolucion: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
@@ -50,22 +51,27 @@ public class DevolucionDaoImpl implements DevolucionDao {
     public int modificar(Devolucion devolucion) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call MODIFICAR_DEVOLUCION(?,?,?,?,?,?,?)}");
-            cs.setInt(1, devolucion.getIdDevolucion());
-            cs.setInt(2, devolucion.getIdProducto());
-            cs.setInt(3, devolucion.getIdTrabajador());
-            cs.setString(4, devolucion.getEstadoDevolucion());
-            cs.setInt(5, devolucion.getCantidad());
-            cs.setString(6, devolucion.getMotivo());
-            cs.setTimestamp(7, Timestamp.valueOf(devolucion.getFechaHora()));
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_DEVOLUCION(?,?,?,?,?,?,?)}");
+            cs.setInt("_devolucion_id", devolucion.getIdDevolucion());
+            cs.setInt("_producto_id", devolucion.getIdProducto());
+            cs.setInt("_trabajador_id", devolucion.getIdTrabajador());
+            cs.setString("_estado_devolucion", devolucion.getEstadoDevolucion());
+            cs.setInt("_cantidad", devolucion.getCantidad());
+            cs.setString("_motivo", devolucion.getMotivo());
+            cs.setTimestamp("_fecha_hora", Timestamp.valueOf(devolucion.getFechaHora()));
             cs.executeUpdate();
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en modificar Devolucion: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al modificar devolucion: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
@@ -74,45 +80,46 @@ public class DevolucionDaoImpl implements DevolucionDao {
     public int eliminar(int id) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call ELIMINAR_DEVOLUCION(?)}");
-            cs.setInt(1, id);
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_DEVOLUCION(?)}");
+            cs.setInt("_devolucion_id", id);
             cs.executeUpdate();
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en eliminar Devolucion: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al eliminar devolucion: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
+
+    // -------------------------------------------------------------------------
+    // SELECTs — usan SPs con CallableStatement directamente
+    // -------------------------------------------------------------------------
 
     @Override
     public Devolucion buscarPorID(int id) {
         Devolucion d = null;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call BUSCAR_DEVOLUCION_POR_ID(?)}");
-            cs.setInt(1, id);
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL BUSCAR_DEVOLUCION_POR_ID(?)}");
+            cs.setInt("_devolucion_id", id);
+            ResultSet rs = cs.executeQuery();
             if (rs.next()) {
-                d = new Devolucion();
-                d.setIdDevolucion(rs.getInt("DEVOLUCION_ID"));
-                d.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                d.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
-                d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
-                d.setCantidad(rs.getInt("CANTIDAD"));
-                d.setMotivo(rs.getString("MOTIVO"));
-                d.setFechaHora(
-                        rs.getTimestamp("FECHA_HORA") != null ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
-                d.setActivo(rs.getBoolean("ACTIVO"));
+                d = mapearDevolucion(rs);
             }
-        } catch (Exception ex) {
-            System.err.println("Error en buscarPorID Devolucion: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en buscarPorID devolucion: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return d;
     }
@@ -121,27 +128,18 @@ public class DevolucionDaoImpl implements DevolucionDao {
     public List<Devolucion> listarTodos() {
         List<Devolucion> lista = new ArrayList<>();
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call LISTAR_DEVOLUCIONES_TODAS()}");
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_DEVOLUCIONES_TODAS()}");
+            ResultSet rs = cs.executeQuery();
             while (rs.next()) {
-                Devolucion d = new Devolucion();
-                d.setIdDevolucion(rs.getInt("DEVOLUCION_ID"));
-                d.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                d.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
-                d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
-                d.setCantidad(rs.getInt("CANTIDAD"));
-                d.setMotivo(rs.getString("MOTIVO"));
-                d.setFechaHora(
-                        rs.getTimestamp("FECHA_HORA") != null ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
-                d.setActivo(rs.getBoolean("ACTIVO"));
-                lista.add(d);
+                lista.add(mapearDevolucion(rs));
             }
-        } catch (Exception ex) {
-            System.err.println("Error en listarTodos Devoluciones: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en listarTodos devoluciones: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return lista;
     }
@@ -150,59 +148,52 @@ public class DevolucionDaoImpl implements DevolucionDao {
     public List<Devolucion> listarPorFechas(java.time.LocalDate fechaInicio, java.time.LocalDate fechaFin) {
         List<Devolucion> lista = new ArrayList<>();
         try {
-            con = DBManager.getInstance().getConnection();
-            // Asumiendo que LISTAR_DEVOLUCIONES_POR_FECHAS usa las mismas columnas
-            cs = con.prepareCall("{call LISTAR_DEVOLUCIONES_POR_FECHAS(?,?)}");
-            cs.setTimestamp(1, Timestamp.valueOf(fechaInicio.atStartOfDay()));
-            cs.setTimestamp(2, Timestamp.valueOf(fechaFin.atTime(23, 59, 59)));
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_DEVOLUCIONES_POR_FECHAS(?,?)}");
+            cs.setTimestamp("_fecha_inicio", Timestamp.valueOf(fechaInicio.atStartOfDay()));
+            cs.setTimestamp("_fecha_fin", Timestamp.valueOf(fechaFin.atTime(23, 59, 59)));
+            ResultSet rs = cs.executeQuery();
             while (rs.next()) {
-                Devolucion d = new Devolucion();
-                d.setIdDevolucion(rs.getInt("DEVOLUCION_ID"));
-                d.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                d.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
-                d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
-                d.setCantidad(rs.getInt("CANTIDAD"));
-                d.setMotivo(rs.getString("MOTIVO"));
-                d.setFechaHora(
-                        rs.getTimestamp("FECHA_HORA") != null ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
-                d.setActivo(rs.getBoolean("ACTIVO"));
-                lista.add(d);
+                lista.add(mapearDevolucion(rs));
             }
-        } catch (Exception ex) {
-            System.err.println("Error en listarPorFechas Devoluciones: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en listarPorFechas devoluciones: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return lista;
     }
 
-    private void cerrarRecursos() {
-        try {
-            if (cs != null)
-                cs.close();
-        } catch (Exception ex) {
-        }
-        try {
-            if (pst != null)
-                pst.close();
-        } catch (Exception ex) {
-        }
-        try {
-            if (st != null)
-                st.close();
-        } catch (Exception ex) {
-        }
-        try {
-            if (rs != null)
-                rs.close();
-        } catch (Exception ex) {
-        }
-        try {
-            if (con != null)
-                con.close();
-        } catch (Exception ex) {
-        }
+    // -------------------------------------------------------------------------
+    // Mapeo del ResultSet
+    // -------------------------------------------------------------------------
+
+    private Devolucion mapearDevolucion(ResultSet rs) throws SQLException {
+        Devolucion d = new Devolucion();
+        d.setIdDevolucion(rs.getInt("DEVOLUCION_ID"));
+        d.setIdProducto(rs.getInt("PRODUCTO_ID"));
+        d.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+        d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
+        d.setCantidad(rs.getInt("CANTIDAD"));
+        d.setMotivo(rs.getString("MOTIVO"));
+        d.setFechaHora(rs.getTimestamp("FECHA_HORA") != null
+                ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
+        d.setActivo(rs.getBoolean("ACTIVO"));
+        return d;
+    }
+
+    // -------------------------------------------------------------------------
+    // Métodos abstractos de DaoImplBase (no usados, SELECTs via SPs)
+    // -------------------------------------------------------------------------
+    @Override
+    protected String obtenerSQLParaObtenerPorId() {
+        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
+    }
+
+    @Override
+    protected String obtenerSQLParaListarTodos() {
+        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
     }
 }

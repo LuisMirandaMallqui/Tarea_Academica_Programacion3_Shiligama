@@ -3,286 +3,265 @@ package pe.edu.pucp.persistance.dao.operaciones.Impl;
 import pe.edu.pucp.model.enums.TipoDescuento;
 import pe.edu.pucp.model.promocion.PromocionDto;
 import pe.edu.pucp.persistance.dao.operaciones.dao.PromocionDao;
-import pe.edu.pucp.db.DBManager;
+import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Implementación del DAO para la entidad Promocion.
- * Utiliza procedimientos almacenados para todas las operaciones en base de datos.
- */
-public class PromocionDaoImpl implements PromocionDao {
-    // ================= RECURSOS JDBC =================
-    private Connection con;
-    private CallableStatement cs;
-    private PreparedStatement pst;
-    private Statement st;
-    private ResultSet rs;
+public class PromocionDaoImpl extends DaoImplBase implements PromocionDao {
 
-    /**
-     * Inserta una nueva promoción usando el SP INSERTAR_PROMOCION
-     * @param promocionDto Objeto con los datos de la promoción
-     * @return 1 si éxito, 0 si error
-     */
+    // -------------------------------------------------------------------------
+    // DML con CallableStatement + parámetros nombrados
+    // -------------------------------------------------------------------------
+
     @Override
-    public int insertar(PromocionDto promocionDto) {
+    public int insertar(PromocionDto promocion) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call INSERTAR_PROMOCION(?,?,?,?,?,?,?,?)}");
-            cs.registerOutParameter(1, Types.INTEGER);  // ID generado
-            cs.setString(2, promocionDto.getNombre());
-            cs.setString(3, promocionDto.getDescripcion());
-            cs.setString(4, promocionDto.getTipoDescuento().toString());
-            cs.setDouble(5, promocionDto.getValorDescuento());
-            cs.setDate(6, Date.valueOf(promocionDto.getFechaInicio()));
-            cs.setDate(7, Date.valueOf(promocionDto.getFechaFin()));
-            cs.setString(8, promocionDto.getCondiciones());
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_PROMOCION(?,?,?,?,?,?,?,?)}");
+            cs.registerOutParameter("_promocion_id", Types.INTEGER);
+            cs.setString("_nombre", promocion.getNombre());
+            cs.setString("_descripcion", promocion.getDescripcion());
+            cs.setString("_tipo_descuento", promocion.getTipoDescuento().toString());
+            cs.setDouble("_valor_descuento", promocion.getValorDescuento());
+            cs.setDate("_fecha_inicio", Date.valueOf(promocion.getFechaInicio()));
+            cs.setDate("_fecha_fin", Date.valueOf(promocion.getFechaFin()));
+            cs.setString("_condiciones", promocion.getCondiciones());
             cs.executeUpdate();
-            promocionDto.setIdPromocion(cs.getInt(1));  // Asignar ID generado
+            promocion.setIdPromocion(cs.getInt("_promocion_id"));
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en insertar Promocion: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al insertar promocion: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
 
-    /**
-     * Modifica una promoción en base de datos.
-     * @param promocionDto Objeto con los nuevos datos
-     * @return 1 si éxito, 0 si error
-     */
     @Override
-    public int modificar(PromocionDto promocionDto) {
+    public int modificar(PromocionDto promocion) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call MODIFICAR_PROMOCION(?,?,?,?,?,?,?,?)}");
-            cs.setInt(1, promocionDto.getIdPromocion());
-            cs.setString(2, promocionDto.getNombre());
-            cs.setString(3, promocionDto.getDescripcion());
-            cs.setString(4, promocionDto.getTipoDescuento().toString());
-            cs.setDouble(5, promocionDto.getValorDescuento());
-            cs.setDate(6, Date.valueOf(promocionDto.getFechaInicio()));
-            cs.setDate(7, Date.valueOf(promocionDto.getFechaFin()));
-            cs.setString(8, promocionDto.getCondiciones());
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_PROMOCION(?,?,?,?,?,?,?,?)}");
+            cs.setInt("_promocion_id", promocion.getIdPromocion());
+            cs.setString("_nombre", promocion.getNombre());
+            cs.setString("_descripcion", promocion.getDescripcion());
+            cs.setString("_tipo_descuento", promocion.getTipoDescuento().toString());
+            cs.setDouble("_valor_descuento", promocion.getValorDescuento());
+            cs.setDate("_fecha_inicio", Date.valueOf(promocion.getFechaInicio()));
+            cs.setDate("_fecha_fin", Date.valueOf(promocion.getFechaFin()));
+            cs.setString("_condiciones", promocion.getCondiciones());
             cs.executeUpdate();
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en modificar Promocion: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al modificar promocion: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
 
-    /**
-     * Elimina lógicamente una promoción (activo = 0).
-     * @param id ID de la promoción
-     * @return 1 si éxito, 0 si error
-     */
     @Override
     public int eliminar(int id) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call ELIMINAR_PROMOCION(?)}");
-            cs.setInt(1, id);
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_PROMOCION(?)}");
+            cs.setInt("_promocion_id", id);
             cs.executeUpdate();
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en eliminar Promocion: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al eliminar promocion: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
 
-    /**
-     * Busca una promoción mediante su ID.
-     * @param id ID de la promoción
-     * @return Objeto Promocion, o null si no se encuentra
-     */
+    // -------------------------------------------------------------------------
+    // SELECTs — usan SPs con CallableStatement directamente
+    // -------------------------------------------------------------------------
+
     @Override
     public PromocionDto buscarPorID(int id) {
         PromocionDto p = null;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call BUSCAR_PROMOCION_POR_ID(?)}");
-            cs.setInt(1, id);
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL BUSCAR_PROMOCION_POR_ID(?)}");
+            cs.setInt("_promocion_id", id);
+            ResultSet rs = cs.executeQuery();
             if (rs.next()) {
-                p = new PromocionDto();
-                p.setIdPromocion(rs.getInt("id_promocion"));
-                p.setNombre(rs.getString("nombre"));
-                p.setDescripcion(rs.getString("descripcion"));
-                String tipoDescuentoStr = rs.getString("tipo_descuento"); // para poder trabajar el Enum
-                p.setTipoDescuento(TipoDescuento.valueOf(tipoDescuentoStr));
-                p.setValorDescuento(rs.getDouble("valor_descuento"));
-                p.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
-                p.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
-                p.setCondiciones(rs.getString("condiciones"));
-                p.setActivo(rs.getBoolean("activo"));
+                p = mapearPromocion(rs);
             }
-        } catch (Exception ex) {
-            System.err.println("Error en buscarPorID Promocion: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en buscarPorID promocion: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return p;
     }
 
-    /**
-     * Lista todas las promociones registradas en el sistema.
-     * @return Lista de promociones
-     */
     @Override
     public List<PromocionDto> listarTodos() {
         List<PromocionDto> lista = new ArrayList<>();
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call LISTAR_PROMOCIONES_TODAS()}");
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_PROMOCIONES_TODAS()}");
+            ResultSet rs = cs.executeQuery();
             while (rs.next()) {
-                PromocionDto p = new PromocionDto();
-                p.setIdPromocion(rs.getInt("id_promocion"));
-                p.setNombre(rs.getString("nombre"));
-                p.setDescripcion(rs.getString("descripcion"));
-                String tipoDescuentoStr = rs.getString("tipo_descuento"); // para poder trabajar el Enum
-                p.setTipoDescuento(TipoDescuento.valueOf(tipoDescuentoStr));
-                p.setValorDescuento(rs.getDouble("valor_descuento"));
-                p.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
-                p.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
-                p.setCondiciones(rs.getString("condiciones"));
-                p.setActivo(rs.getBoolean("activo"));
-                lista.add(p);
+                lista.add(mapearPromocion(rs));
             }
-        } catch (Exception ex) {
-            System.err.println("Error en listarTodos Promociones: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en listarTodos promociones: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return lista;
     }
 
-    /**
-     * Lista las promociones vigentes.
-     */
     @Override
     public List<PromocionDto> listarVigentes() {
         List<PromocionDto> lista = new ArrayList<>();
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call LISTAR_PROMOCIONES_VIGENTES()}");
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_PROMOCIONES_VIGENTES()}");
+            ResultSet rs = cs.executeQuery();
             while (rs.next()) {
-                PromocionDto p = new PromocionDto();
-                p.setIdPromocion(rs.getInt("id_promocion"));
-                p.setNombre(rs.getString("nombre"));
-                p.setDescripcion(rs.getString("descripcion"));
-                String tipoDescuentoStr = rs.getString("tipo_descuento"); // para poder trabajar el Enum
-                p.setTipoDescuento(TipoDescuento.valueOf(tipoDescuentoStr));
-                p.setValorDescuento(rs.getDouble("valor_descuento"));
-                p.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
-                p.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
-                p.setCondiciones(rs.getString("condiciones"));
-                p.setActivo(rs.getBoolean("activo"));
-                lista.add(p);
+                lista.add(mapearPromocion(rs));
             }
-        } catch (Exception ex) {
-            System.err.println("Error en listarVigentes Promociones: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en listarVigentes promociones: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return lista;
     }
 
-    /**
-     * Asocia un producto a una promoción.
-     */
     @Override
     public int asociarProducto(int idPromocion, int idProducto) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call VINCULAR_PRODUCTO_PROMOCION(?,?)}");
-            cs.setInt(1, idPromocion);
-            cs.setInt(2, idProducto);
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL VINCULAR_PRODUCTO_PROMOCION(?,?)}");
+            cs.setInt("_promocion_id", idPromocion);
+            cs.setInt("_producto_id", idProducto);
             cs.executeUpdate();
             resultado = 1;
-        } catch (Exception ex) {
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
             System.err.println("Error en asociarProducto: " + ex.getMessage());
-            ex.printStackTrace();
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
 
-    /**
-     * Desasocia un producto de una promoción.
-     */
     @Override
     public int desasociarProducto(int idPromocion, int idProducto) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call DESVINCULAR_PRODUCTO_PROMOCION(?,?)}");
-            cs.setInt(1, idPromocion);
-            cs.setInt(2, idProducto);
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL DESVINCULAR_PRODUCTO_PROMOCION(?,?)}");
+            cs.setInt("_promocion_id", idPromocion);
+            cs.setInt("_producto_id", idProducto);
             cs.executeUpdate();
             resultado = 1;
-        } catch (Exception ex) {
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
             System.err.println("Error en desasociarProducto: " + ex.getMessage());
-            ex.printStackTrace();
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
 
-    /**
-     * Lista los IDs de productos asociados a una promoción.
-     */
     @Override
     public List<Integer> listarProductosPorPromocion(int idPromocion) {
         List<Integer> lista = new ArrayList<>();
         try {
-            con = DBManager.getInstance().getConnection();
-            String sql = "SELECT PRODUCTO_ID FROM promociones_productos WHERE PROMOCION_ID = ?";
-            pst = con.prepareStatement(sql);
-            pst.setInt(1, idPromocion);
-            rs = pst.executeQuery();
-            while (rs.next()) {
-                lista.add(rs.getInt("PRODUCTO_ID"));
+            this.abrirConexion();
+            this.preparedStatement = this.conexion.prepareStatement(
+                    "SELECT PRODUCTO_ID FROM promociones_productos WHERE PROMOCION_ID = ?");
+            this.preparedStatement.setInt(1, idPromocion);
+            this.resultSet = this.preparedStatement.executeQuery();
+            while (this.resultSet.next()) {
+                lista.add(this.resultSet.getInt("PRODUCTO_ID"));
             }
-        } catch (Exception ex) {
+        } catch (SQLException ex) {
             System.err.println("Error en listarProductosPorPromocion: " + ex.getMessage());
-            ex.printStackTrace();
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return lista;
     }
 
-    /**
-     * Cierra todos los recursos JDBC utilizados.
-     * IMPORTANTE: Siempre llamar en el bloque finally.
-     */
-    private void cerrarRecursos() {
-        try { if (cs != null) cs.close(); } catch (Exception ex) {}
-        try { if (pst != null) pst.close(); } catch (Exception ex) {}
-        try { if (st != null) st.close(); } catch (Exception ex) {}
-        try { if (rs != null) rs.close(); } catch (Exception ex) {}
-        try { if (con != null) con.close(); } catch (Exception ex) {}
+    // -------------------------------------------------------------------------
+    // Mapeo del ResultSet
+    // -------------------------------------------------------------------------
+
+    private PromocionDto mapearPromocion(ResultSet rs) throws SQLException {
+        PromocionDto p = new PromocionDto();
+        p.setIdPromocion(rs.getInt("id_promocion"));
+        p.setNombre(rs.getString("nombre"));
+        p.setDescripcion(rs.getString("descripcion"));
+        p.setTipoDescuento(TipoDescuento.valueOf(rs.getString("tipo_descuento")));
+        p.setValorDescuento(rs.getDouble("valor_descuento"));
+        p.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
+        p.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
+        p.setCondiciones(rs.getString("condiciones"));
+        p.setActivo(rs.getBoolean("activo"));
+        return p;
+    }
+
+    // -------------------------------------------------------------------------
+    // Métodos abstractos de DaoImplBase (no usados, SELECTs via SPs)
+    // -------------------------------------------------------------------------
+    @Override
+    protected String obtenerSQLParaObtenerPorId() {
+        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
+    }
+
+    @Override
+    protected String obtenerSQLParaListarTodos() {
+        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
     }
 }

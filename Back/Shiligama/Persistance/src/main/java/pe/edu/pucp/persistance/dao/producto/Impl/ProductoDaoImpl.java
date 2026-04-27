@@ -30,19 +30,19 @@ public class ProductoDaoImpl extends DaoImplBase implements ProductoDao {
         int resultado = 0;
         try {
             this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{call INSERTAR_PRODUCTO(?,?,?,?,?,?,?,?,?,?)}");
-            cs.registerOutParameter(1, Types.INTEGER);
-            cs.setInt(2, producto.getCategoria().getIdCategoria());
-            cs.setString(3, producto.getNombre());
-            cs.setString(4, producto.getDescripcion());
-            cs.setDouble(5, producto.getPrecioUnitario());
-            cs.setInt(6, producto.getStock());
-            cs.setInt(7, producto.getStockMinimo());
-            cs.setString(8, producto.getUnidadMedida());
-            cs.setString(9, producto.getCodigoBarras());
-            cs.setString(10, producto.getImagenUrl());
+            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_PRODUCTO(?,?,?,?,?,?,?,?,?,?)}");
+            cs.registerOutParameter("_producto_id", Types.INTEGER);
+            cs.setInt("_categoria_id", producto.getCategoria().getIdCategoria());
+            cs.setString("_nombre", producto.getNombre());
+            cs.setString("_descripcion", producto.getDescripcion());
+            cs.setDouble("_precio_unitario", producto.getPrecioUnitario());
+            cs.setInt("_stock", producto.getStock());
+            cs.setInt("_stock_minimo", producto.getStockMinimo());
+            cs.setString("_unidad_medida", producto.getUnidadMedida());
+            cs.setString("_codigo_barras", producto.getCodigoBarras());
+            cs.setString("_imagen_url", producto.getImagenUrl());
             cs.executeUpdate();
-            producto.setIdProducto(cs.getInt(1));
+            producto.setIdProducto(cs.getInt("_producto_id"));
             resultado = 1;
             this.comitarTransaccion();
         } catch (SQLException ex) {
@@ -63,16 +63,16 @@ public class ProductoDaoImpl extends DaoImplBase implements ProductoDao {
         int resultado = 0;
         try {
             this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{call MODIFICAR_PRODUCTO(?,?,?,?,?,?,?,?,?)}");
-            cs.setInt(1, producto.getIdProducto());
-            cs.setInt(2, producto.getCategoria().getIdCategoria());
-            cs.setString(3, producto.getNombre());
-            cs.setString(4, producto.getDescripcion());
-            cs.setDouble(5, producto.getPrecioUnitario());
-            cs.setInt(6, producto.getStockMinimo());
-            cs.setString(7, producto.getUnidadMedida());
-            cs.setString(8, producto.getCodigoBarras());
-            cs.setString(9, producto.getImagenUrl());
+            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_PRODUCTO(?,?,?,?,?,?,?,?,?)}");
+            cs.setInt("_producto_id", producto.getIdProducto());
+            cs.setInt("_categoria_id", producto.getCategoria().getIdCategoria());
+            cs.setString("_nombre", producto.getNombre());
+            cs.setString("_descripcion", producto.getDescripcion());
+            cs.setDouble("_precio_unitario", producto.getPrecioUnitario());
+            cs.setInt("_stock_minimo", producto.getStockMinimo());
+            cs.setString("_unidad_medida", producto.getUnidadMedida());
+            cs.setString("_codigo_barras", producto.getCodigoBarras());
+            cs.setString("_imagen_url", producto.getImagenUrl());
             cs.executeUpdate();
             resultado = 1;
             this.comitarTransaccion();
@@ -94,8 +94,8 @@ public class ProductoDaoImpl extends DaoImplBase implements ProductoDao {
         int resultado = 0;
         try {
             this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{call ELIMINAR_PRODUCTO(?)}");
-            cs.setInt(1, id);
+            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_PRODUCTO(?)}");
+            cs.setInt("_producto_id", id);
             cs.executeUpdate();
             resultado = 1;
             this.comitarTransaccion();

@@ -1,202 +1,176 @@
 package pe.edu.pucp.persistance.dao.producto.Impl;
 
 import pe.edu.pucp.persistance.dao.producto.dao.CategoriaDao;
+import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
 import pe.edu.pucp.model.producto.CategoriaDto;
-import pe.edu.pucp.db.DBManager;
-import java.sql.*;
-import java.util.ArrayList;
+
+import java.sql.CallableStatement;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 
-/**
- * Implementación del DAO para la entidad Categoria.
- * Utiliza procedimientos almacenados para las operaciones en BD.
- */
-public class CategoriaDaoImpl implements CategoriaDao {
-    // ================= RECURSOS JDBC =================
-    private Connection con;
-    private CallableStatement cs;
-    private PreparedStatement pst;
-    private Statement st;
-    private ResultSet rs;
+public class CategoriaDaoImpl extends DaoImplBase implements CategoriaDao {
 
-    /**
-     * Inserta una nueva categoría.
-     * @param categoria Objeto con los datos
-     * @return 1 si éxito, 0 si error
-     */
+    private CategoriaDto categoria;
+
+    public CategoriaDaoImpl() {
+        this.categoria = null;
+    }
+
+    // -------------------------------------------------------------------------
+    // DML con CallableStatement + parámetros nombrados
+    // -------------------------------------------------------------------------
+
     @Override
     public int insertar(CategoriaDto categoria) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call INSERTAR_CATEGORIA(?,?,?,?)}");
-            cs.registerOutParameter(1, Types.INTEGER); // ID devuelto
-            cs.setString(2, categoria.getNombre());
-            cs.setString(3, categoria.getDescripcion());
-
-            // Manejo de categoría padre
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_CATEGORIA(?,?,?,?)}");
+            cs.registerOutParameter("_categoria_id", Types.INTEGER);
+            cs.setString("_nombre", categoria.getNombre());
+            cs.setString("_descripcion", categoria.getDescripcion());
             if (categoria.getCategoriaPadre() != null) {
-                cs.setInt(4, categoria.getCategoriaPadre().getIdCategoria());
+                cs.setInt("_categoria_padre_id", categoria.getCategoriaPadre().getIdCategoria());
             } else {
-                cs.setNull(4, Types.INTEGER);
+                cs.setNull("_categoria_padre_id", Types.INTEGER);
             }
-
             cs.executeUpdate();
-            categoria.setIdCategoria(cs.getInt(1));
+            categoria.setIdCategoria(cs.getInt("_categoria_id"));
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en insertar Categoria: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al insertar categoria: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
 
-    /**
-     * Modifica una categoría existente.
-     * @param categoria Objeto con los nuevos datos
-     * @return 1 si éxito, 0 si error
-     */
     @Override
     public int modificar(CategoriaDto categoria) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call MODIFICAR_CATEGORIA(?,?,?,?)}");
-            cs.setInt(1, categoria.getIdCategoria());
-            cs.setString(2, categoria.getNombre());
-            cs.setString(3, categoria.getDescripcion());
-
-            // Manejo de categoría padre
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_CATEGORIA(?,?,?,?)}");
+            cs.setInt("_categoria_id", categoria.getIdCategoria());
+            cs.setString("_nombre", categoria.getNombre());
+            cs.setString("_descripcion", categoria.getDescripcion());
             if (categoria.getCategoriaPadre() != null) {
-                cs.setInt(4, categoria.getCategoriaPadre().getIdCategoria());
+                cs.setInt("_categoria_padre_id", categoria.getCategoriaPadre().getIdCategoria());
             } else {
-                cs.setNull(4, Types.INTEGER);
+                cs.setNull("_categoria_padre_id", Types.INTEGER);
             }
-
             cs.executeUpdate();
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en modificar Categoria: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al modificar categoria: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
 
-    /**
-     * Elimina lógicamente una categoría (activo = 0).
-     * @param id ID de la categoría
-     * @return 1 si éxito, 0 si error
-     */
     @Override
     public int eliminar(int id) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call ELIMINAR_CATEGORIA(?)}");
-            cs.setInt(1, id);
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_CATEGORIA(?)}");
+            cs.setInt("_categoria_id", id);
             cs.executeUpdate();
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en eliminar Categoria: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al eliminar categoria: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
 
-    /**
-     * Busca una categoría mediante su ID.
-     * @param id ID de la categoría
-     * @return Objeto CategoriaDto, o null si no se encuentra
-     */
+    // -------------------------------------------------------------------------
+    // SELECTs via DaoImplBase (PreparedStatement)
+    // -------------------------------------------------------------------------
+
     @Override
     public CategoriaDto buscarPorID(int id) {
-        CategoriaDto c = null;
-        try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call BUSCAR_CATEGORIA_POR_ID(?)}");
-            cs.setInt(1, id);
-            rs = cs.executeQuery();
-            if (rs.next()) {
-                c = new CategoriaDto();
-                c.setIdCategoria(rs.getInt("CATEGORIA_ID"));
-                c.setNombre(rs.getString("NOMBRE"));
-                c.setDescripcion(rs.getString("DESCRIPCION"));
-                c.setEstado(rs.getBoolean("ACTIVO"));
-
-                // Manejo de categoría padre
-                int categoriaPadreId = rs.getInt("CATEGORIA_PADRE_ID");
-                if (!rs.wasNull()) {
-                    // Si necesitas cargar la categoría padre completa,
-                    // puedes hacer una búsqueda recursiva aquí
-                    CategoriaDto padre = new CategoriaDto();
-                    padre.setIdCategoria(categoriaPadreId);
-                    c.setCategoriaPadre(padre);
-                }
-            }
-        } catch (Exception ex) {
-            System.err.println("Error en buscarPorID Categoria: " + ex.getMessage());
-            ex.printStackTrace();
-        } finally {
-            cerrarRecursos();
-        }
-        return c;
+        this.categoria = new CategoriaDto();
+        this.categoria.setIdCategoria(id);
+        this.obtenerPorId();
+        return this.categoria;
     }
 
-    /**
-     * Lista todas las categorías activas registradas en el sistema.
-     * @return Lista de categorías
-     */
+    @Override
+    protected String obtenerSQLParaObtenerPorId() {
+        return "SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO "
+                + "FROM categorias WHERE CATEGORIA_ID = ?";
+    }
+
+    @Override
+    protected void incluirParametrosParaObtenerPorId() throws SQLException {
+        this.preparedStatement.setInt(1, this.categoria.getIdCategoria());
+    }
+
+    @Override
+    protected void instanciarObjetoDelResultSet() throws SQLException {
+        this.categoria = mapearCategoria();
+    }
+
+    @Override
+    protected void limpiarObjetoDelResultSet() {
+        this.categoria = null;
+    }
+
     @Override
     public List<CategoriaDto> listarTodos() {
-        List<CategoriaDto> lista = new ArrayList<>();
-        try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call LISTAR_CATEGORIAS()}");
-            rs = cs.executeQuery();
-            while (rs.next()) {
-                CategoriaDto c = new CategoriaDto();
-                c.setIdCategoria(rs.getInt("CATEGORIA_ID"));
-                c.setNombre(rs.getString("NOMBRE"));
-                c.setDescripcion(rs.getString("DESCRIPCION"));
-                c.setEstado(rs.getBoolean("ACTIVO"));
-
-                // Manejo de categoría padre
-                int categoriaPadreId = rs.getInt("CATEGORIA_PADRE_ID");
-                if (!rs.wasNull()) {
-                    CategoriaDto padre = new CategoriaDto();
-                    padre.setIdCategoria(categoriaPadreId);
-                    c.setCategoriaPadre(padre);
-                }
-
-                lista.add(c);
-            }
-        } catch (Exception ex) {
-            System.err.println("Error en listarTodos Categorias: " + ex.getMessage());
-            ex.printStackTrace();
-        } finally {
-            cerrarRecursos();
-        }
-        return lista;
+        return super.listarTodos();
     }
 
-    /**
-     * Cierra todos los recursos JDBC abiertos.
-     */
-    private void cerrarRecursos() {
-        try {
-            if (rs != null) rs.close();
-            if (cs != null) cs.close();
-            if (pst != null) pst.close();
-            if (st != null) st.close();
-            if (con != null) con.close();
-        } catch (SQLException ex) {
-            System.err.println("Error al cerrar recursos: " + ex.getMessage());
+    @Override
+    protected String obtenerSQLParaListarTodos() {
+        return "SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO "
+                + "FROM categorias WHERE ACTIVO = 1 ORDER BY NOMBRE";
+    }
+
+    @Override
+    protected void agregarObjetoALaLista(List lista) throws SQLException {
+        lista.add(mapearCategoria());
+    }
+
+    // -------------------------------------------------------------------------
+    // Mapeo del ResultSet
+    // -------------------------------------------------------------------------
+
+    private CategoriaDto mapearCategoria() throws SQLException {
+        CategoriaDto c = new CategoriaDto();
+        c.setIdCategoria(resultSet.getInt("CATEGORIA_ID"));
+        c.setNombre(resultSet.getString("NOMBRE"));
+        c.setDescripcion(resultSet.getString("DESCRIPCION"));
+        c.setEstado(resultSet.getBoolean("ACTIVO"));
+
+        int categoriaPadreId = resultSet.getInt("CATEGORIA_PADRE_ID");
+        if (!resultSet.wasNull()) {
+            CategoriaDto padre = new CategoriaDto();
+            padre.setIdCategoria(categoriaPadreId);
+            c.setCategoriaPadre(padre);
         }
+        return c;
     }
 }

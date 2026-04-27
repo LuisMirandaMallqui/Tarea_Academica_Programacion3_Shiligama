@@ -1,5 +1,6 @@
 package pe.edu.pucp.ventas.impl;
 
+import java.util.List;
 import pe.edu.pucp.model.venta.PedidoDto;
 import pe.edu.pucp.persistance.dao.venta.Impl.PedidoDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.dao.PedidoDao;
@@ -15,12 +16,39 @@ public class PedidoBoImpl implements PedidoBo {
 
     @Override
     public int insertar(PedidoDto pedido){
-        // pasa por esta capa de validación, y luego recien inserta el pedido
-        if(pedido.getCliente()==null){
-            throw new RuntimeException("Error: no se ha asignado ...");
+        if(pedido.getCliente() == null){
+            throw new RuntimeException("Error: el pedido debe tener un cliente asignado.");
         }
         return daoPedido.insertar(pedido);
     }
 
+    @Override
+    public int modificar(PedidoDto pedido){
+        if(pedido.getIdPedido() <= 0){
+            throw new RuntimeException("Error: el pedido no tiene un ID valido.");
+        }
+        return daoPedido.modificar(pedido);
+    }
+
+    @Override
+    public int eliminar(int id){
+        if(id <= 0){
+            throw new RuntimeException("Error: el ID del pedido no es valido.");
+        }
+        return daoPedido.eliminar(id);
+    }
+
+    @Override
+    public PedidoDto buscarPorID(int id){
+        if(id <= 0){
+            throw new RuntimeException("Error: el ID del pedido no es valido.");
+        }
+        return daoPedido.buscarPorID(id);
+    }
+
+    @Override
+    public List<PedidoDto> listarTodos(){
+        return daoPedido.listarTodos();
+    }
 }
 

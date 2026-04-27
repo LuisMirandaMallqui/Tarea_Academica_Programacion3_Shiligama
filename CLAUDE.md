@@ -90,18 +90,24 @@ Tarea_Academica_Programacion3/
 - Model: 100% (DTOs + 7 enums alineados con MySQL). Archivos a eliminar manualmente: `operaciones/PromocionProducto.java` (duplicado), `enums/EstadoOrden.java` (huérfano).
 - DBManager: 100% (Singleton funcional, conectado a AWS RDS)
 - Persistance: ~98% (13 Impl codificados; 9 usan DaoImplBase, 4 independientes — ambos estilos válidos)
-- Business: ~10% (solo PedidoBoImpl existe como esqueleto)
+- Business: ~40% (Módulo Usuarios completo: ClienteBoImpl, TrabajadorBoImpl, AdministradorBoImpl; Módulo Ventas: PedidoBoImpl. Faltan: Catálogo, Inventario, Ventas-detalle, Promociones, Devoluciones)
 - Principal: MainPruebaModulo5 con tests manuales (todos los módulos cubiertos)
-- SQL: DDL 14 tablas + ~60 stored procedures + triggers de auditoría + inserts corregidos
+- SQL: DDL 14 tablas + ~60 stored procedures + triggers BEFORE (llenan USUARIO_CREACION/MODIFICACION con USER()) + inserts corregidos
 
-### Impl que usan DaoImplBase (template method para SELECTs):
-ProductoDaoImpl, ClienteDaoImpl, TrabajadorDaoImpl, AdministradorDaoImpl,
-VentaDaoImpl, DetalleVentaDaoImpl, PedidoDaoImpl, DetallePedidoDaoImpl, MetodoPagoDaoImpl
+### Todos los Impl extienden DaoImplBase:
+- Template method completo (SELECTs via PreparedStatement):
+  ProductoDaoImpl, CategoriaDaoImpl, ClienteDaoImpl, TrabajadorDaoImpl, AdministradorDaoImpl,
+  VentaDaoImpl, DetalleVentaDaoImpl, PedidoDaoImpl, DetallePedidoDaoImpl, MetodoPagoDaoImpl
+- Solo conexión/transacciones de DaoImplBase (SELECTs via SPs con CallableStatement):
+  DevolucionDaoImpl, MovimientoInventarioDaoImpl, PromocionDaoImpl
 
-### Impl independientes (con cerrarRecursos() propio):
-CategoriaDaoImpl, DevolucionDaoImpl, MovimientoInventarioDaoImpl, PromocionDaoImpl
+### Estructura Business (capa de negocio):
+- BaseBo<T>: interfaz genérica con insertar, modificar, eliminar, buscarPorID, listarTodos
+- XxxBo: interfaz específica que extiende BaseBo<XxxDto> (puede agregar métodos extra)
+- XxxBoImpl: implementación con validaciones antes de delegar al DAO
+- Paquetes: pe.edu.pucp.usuarios.bo / .impl, pe.edu.pucp.ventas.bo / .impl
 
 ## Pendiente para siguiente entrega (Lab 8 — Semana 8):
-- Completar capa de negocio (Business) al 100% para los 7 módulos
+- Completar capa de negocio (Business) para módulos restantes: Catálogo, Inventario, Ventas, Promociones, Devoluciones
 - Crear interfaces gráficas en C# con Blazor
 - Script SQL completo y consolidado

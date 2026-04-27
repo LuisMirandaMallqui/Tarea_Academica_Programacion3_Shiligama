@@ -1,46 +1,45 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
 import pe.edu.pucp.persistance.dao.operaciones.dao.MovimientoInventarioDao;
+import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
-import pe.edu.pucp.db.DBManager;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Implementación del DAO para la entidad MovimientoInventario.
- * Alineado con el procedimiento almacenado que calcula stock automáticamente.
- */
-public class MovimientoInventarioDaoImpl implements MovimientoInventarioDao {
-    // ================= RECURSOS JDBC =================
-    private Connection con;
-    private CallableStatement cs;
-    private PreparedStatement pst;
-    private Statement st;
-    private ResultSet rs;
+public class MovimientoInventarioDaoImpl extends DaoImplBase implements MovimientoInventarioDao {
+
+    // -------------------------------------------------------------------------
+    // DML — solo insertar (log inmutable)
+    // -------------------------------------------------------------------------
 
     @Override
     public int insertar(MovimientoInventario mov) {
         int resultado = 0;
         try {
-            con = DBManager.getInstance().getConnection();
-            // SP REGISTRAR_MOVIMIENTO_INVENTARIO(OUT id, prod, trab, tipo, cant, motivo)
-            cs = con.prepareCall("{call REGISTRAR_MOVIMIENTO_INVENTARIO(?,?,?,?,?,?)}");
-            cs.registerOutParameter(1, Types.INTEGER); // ID devuelto
-            cs.setInt(2, mov.getIdProducto());
-            cs.setInt(3, mov.getIdTrabajador());
-            cs.setString(4, mov.getTipoMovimiento());
-            cs.setInt(5, mov.getCantidad());
-            cs.setString(6, mov.getMotivo());
+            this.iniciarTransaccion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL REGISTRAR_MOVIMIENTO_INVENTARIO(?,?,?,?,?,?)}");
+            cs.registerOutParameter("_movimiento_id", Types.INTEGER);
+            cs.setInt("_producto_id", mov.getIdProducto());
+            cs.setInt("_trabajador_id", mov.getIdTrabajador());
+            cs.setString("_tipo_movimiento", mov.getTipoMovimiento());
+            cs.setInt("_cantidad", mov.getCantidad());
+            cs.setString("_motivo", mov.getMotivo());
             cs.executeUpdate();
-            mov.setIdMovimiento(cs.getInt(1));
+            mov.setIdMovimiento(cs.getInt("_movimiento_id"));
             resultado = 1;
-        } catch (Exception ex) {
-            System.err.println("Error en insertar MovimientoInventario: " + ex.getMessage());
-            ex.printStackTrace();
+            this.comitarTransaccion();
+        } catch (SQLException ex) {
+            System.err.println("Error al insertar movimiento inventario: " + ex.getMessage());
+            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
+                System.err.println("Error en rollback: " + ex1.getMessage());
+            }
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return resultado;
     }
@@ -57,32 +56,27 @@ public class MovimientoInventarioDaoImpl implements MovimientoInventarioDao {
         return 0;
     }
 
+    // -------------------------------------------------------------------------
+    // SELECTs — usan SPs con CallableStatement directamente
+    // -------------------------------------------------------------------------
+
     @Override
     public MovimientoInventario buscarPorID(int id) {
         MovimientoInventario m = null;
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call BUSCAR_MOVIMIENTO_POR_ID(?)}");
-            cs.setInt(1, id);
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL BUSCAR_MOVIMIENTO_POR_ID(?)}");
+            cs.setInt("_movimiento_id", id);
+            ResultSet rs = cs.executeQuery();
             if (rs.next()) {
-                m = new MovimientoInventario();
-                m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
-                m.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
-                m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
-                m.setCantidad(rs.getInt("CANTIDAD"));
-                m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
-                m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
-                m.setMotivo(rs.getString("MOTIVO"));
-                m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null ? 
-                               rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
+                m = mapearMovimiento(rs);
             }
-        } catch (Exception ex) {
-            System.err.println("Error en buscarPorID MovimientoInventario: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en buscarPorID movimiento: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return m;
     }
@@ -91,29 +85,18 @@ public class MovimientoInventarioDaoImpl implements MovimientoInventarioDao {
     public List<MovimientoInventario> listarTodos() {
         List<MovimientoInventario> lista = new ArrayList<>();
         try {
-            con = DBManager.getInstance().getConnection();
-            // Asumiendo que LISTAR_MOVIMIENTOS_TODOS existe o usaré el de producto como base
-            cs = con.prepareCall("{call LISTAR_MOVIMIENTOS_TODOS()}");
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_MOVIMIENTOS_TODOS()}");
+            ResultSet rs = cs.executeQuery();
             while (rs.next()) {
-                MovimientoInventario m = new MovimientoInventario();
-                m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
-                m.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
-                m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
-                m.setCantidad(rs.getInt("CANTIDAD"));
-                m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
-                m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
-                m.setMotivo(rs.getString("MOTIVO"));
-                m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null ? 
-                               rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
-                lista.add(m);
+                lista.add(mapearMovimiento(rs));
             }
-        } catch (Exception ex) {
-            System.err.println("Error en listarTodos MovimientoInventario: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en listarTodos movimientos: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return lista;
     }
@@ -122,29 +105,19 @@ public class MovimientoInventarioDaoImpl implements MovimientoInventarioDao {
     public List<MovimientoInventario> listarPorProducto(int idProducto) {
         List<MovimientoInventario> lista = new ArrayList<>();
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call LISTAR_MOVIMIENTOS_POR_PRODUCTO(?)}");
-            cs.setInt(1, idProducto);
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_MOVIMIENTOS_POR_PRODUCTO(?)}");
+            cs.setInt("_producto_id", idProducto);
+            ResultSet rs = cs.executeQuery();
             while (rs.next()) {
-                MovimientoInventario m = new MovimientoInventario();
-                m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
-                m.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
-                m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
-                m.setCantidad(rs.getInt("CANTIDAD"));
-                m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
-                m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
-                m.setMotivo(rs.getString("MOTIVO"));
-                m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null ? 
-                               rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
-                lista.add(m);
+                lista.add(mapearMovimiento(rs));
             }
-        } catch (Exception ex) {
-            System.err.println("Error en listarPorProducto MovimientoInventario: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en listarPorProducto movimientos: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return lista;
     }
@@ -153,39 +126,53 @@ public class MovimientoInventarioDaoImpl implements MovimientoInventarioDao {
     public List<MovimientoInventario> listarPorFechas(LocalDateTime fechaInicio, LocalDateTime fechaFin) {
         List<MovimientoInventario> lista = new ArrayList<>();
         try {
-            con = DBManager.getInstance().getConnection();
-            cs = con.prepareCall("{call LISTAR_MOVIMIENTOS_POR_FECHAS(?,?)}");
-            cs.setTimestamp(1, Timestamp.valueOf(fechaInicio));
-            cs.setTimestamp(2, Timestamp.valueOf(fechaFin));
-            rs = cs.executeQuery();
+            this.abrirConexion();
+            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_MOVIMIENTOS_POR_FECHAS(?,?)}");
+            cs.setTimestamp("_fecha_inicio", Timestamp.valueOf(fechaInicio));
+            cs.setTimestamp("_fecha_fin", Timestamp.valueOf(fechaFin));
+            ResultSet rs = cs.executeQuery();
             while (rs.next()) {
-                MovimientoInventario m = new MovimientoInventario();
-                m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
-                m.setIdProducto(rs.getInt("PRODUCTO_ID"));
-                m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
-                m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
-                m.setCantidad(rs.getInt("CANTIDAD"));
-                m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
-                m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
-                m.setMotivo(rs.getString("MOTIVO"));
-                m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null ? 
-                               rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
-                lista.add(m);
+                lista.add(mapearMovimiento(rs));
             }
-        } catch (Exception ex) {
-            System.err.println("Error en listarPorFechas MovimientoInventario: " + ex.getMessage());
-            ex.printStackTrace();
+        } catch (SQLException ex) {
+            System.err.println("Error en listarPorFechas movimientos: " + ex.getMessage());
         } finally {
-            cerrarRecursos();
+            try { this.cerrarConexion(); } catch (SQLException ex) {
+                System.err.println("Error al cerrar conexion: " + ex.getMessage());
+            }
         }
         return lista;
     }
 
-    private void cerrarRecursos() {
-        try { if (cs != null) cs.close(); } catch (Exception ex) {}
-        try { if (pst != null) pst.close(); } catch (Exception ex) {}
-        try { if (st != null) st.close(); } catch (Exception ex) {}
-        try { if (rs != null) rs.close(); } catch (Exception ex) {}
-        try { if (con != null) con.close(); } catch (Exception ex) {}
+    // -------------------------------------------------------------------------
+    // Mapeo del ResultSet
+    // -------------------------------------------------------------------------
+
+    private MovimientoInventario mapearMovimiento(ResultSet rs) throws SQLException {
+        MovimientoInventario m = new MovimientoInventario();
+        m.setIdMovimiento(rs.getInt("MOVIMIENTO_ID"));
+        m.setIdProducto(rs.getInt("PRODUCTO_ID"));
+        m.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+        m.setTipoMovimiento(rs.getString("TIPO_MOVIMIENTO"));
+        m.setCantidad(rs.getInt("CANTIDAD"));
+        m.setStockAnterior(rs.getInt("STOCK_ANTERIOR"));
+        m.setStockResultante(rs.getInt("STOCK_RESULTANTE"));
+        m.setMotivo(rs.getString("MOTIVO"));
+        m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null
+                ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
+        return m;
+    }
+
+    // -------------------------------------------------------------------------
+    // Métodos abstractos de DaoImplBase (no usados, SELECTs via SPs)
+    // -------------------------------------------------------------------------
+    @Override
+    protected String obtenerSQLParaObtenerPorId() {
+        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
+    }
+
+    @Override
+    protected String obtenerSQLParaListarTodos() {
+        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
     }
 }
