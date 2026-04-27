@@ -5,7 +5,7 @@
 -- automaticamente con DEFAULT CURRENT_TIMESTAMP y ON UPDATE CURRENT_TIMESTAMP.
 -- Se usa USER() para registrar el usuario de la conexion MySQL.
 -- =====================================================================
-USE `shiligama`;
+USE `Proyecto_prueba`;
 
 DELIMITER $$
 
