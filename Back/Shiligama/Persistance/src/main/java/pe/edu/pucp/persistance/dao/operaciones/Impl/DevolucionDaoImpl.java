@@ -102,7 +102,6 @@ public class DevolucionDaoImpl extends DaoImplBase implements DevolucionDao {
     // -------------------------------------------------------------------------
     // SELECTs — usan SPs con CallableStatement directamente
     // -------------------------------------------------------------------------
-
     @Override
     public Devolucion buscarPorID(int id) {
         Devolucion d = null;
@@ -185,7 +184,7 @@ public class DevolucionDaoImpl extends DaoImplBase implements DevolucionDao {
     }
 
     // -------------------------------------------------------------------------
-    // Métodos abstractos de DaoImplBase (no usados, SELECTs via SPs)
+    // Métodos abstractos de DaoImplBase (SELECTs via SPs)
     // -------------------------------------------------------------------------
     @Override
     protected String obtenerSQLParaObtenerPorId() {
