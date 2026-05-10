@@ -19,6 +19,11 @@ import pe.edu.pucp.persistance.dao.usuario.impl.AdministradorDaoImpl;
 import pe.edu.pucp.persistance.dao.usuario.impl.ClienteDaoImpl;
 import pe.edu.pucp.persistance.dao.usuario.impl.TrabajadorDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.Impl.*;
+import pe.edu.pucp.usuario.bo.AdministradorBo;
+import pe.edu.pucp.usuario.bo.ClienteBo;
+import pe.edu.pucp.usuario.impl.AdministradorBoImpl;
+import pe.edu.pucp.usuario.impl.ClienteBoImpl;
+import pe.edu.pucp.usuario.impl.TrabajadorBoImpl;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,7 +34,7 @@ public class MainTest {
     private static int idPedidoCreado = 0;
 
     // PRINCIPAL
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         System.out.println("=== SISTEMA SHILIGAMA - PRUEBAS DE USUARIOS ===");
 
         ejecutarPruebasVentaPedidos();
@@ -37,7 +42,8 @@ public class MainTest {
         ejecutarPruebasUsuarios();
     }
 
-    private static void ejecutarPruebasUsuarios() {
+    //Ya con BO implementado
+    private static void ejecutarPruebasUsuarios() throws Exception {
         imprimir_encabezado("Usuarios");
         pruebaCliente();
         pruebaTrabajador();
@@ -311,8 +317,8 @@ public class MainTest {
                 Producto pBuscado = daoProducto.buscarPorID(producto.getIdProducto());
                 System.out.println("Buscar producto: " + (pBuscado != null ?
                         "Encontrado: " + pBuscado.getNombre() +
-                                " | Precio: S/ " + pBuscado.getPrecioUnitario() +
-                                " | Categoría: " + pBuscado.getCategoria().getNombre() :
+                        " | Precio: S/ " + pBuscado.getPrecioUnitario() +
+                        " | Categoría: " + pBuscado.getCategoria().getNombre() :
                         "No encontrado"));
 
                 // 4. Verificar stock bajo (método de negocio)
@@ -348,6 +354,7 @@ public class MainTest {
             System.out.println("Categoría de prueba eliminada");
         }
     }
+
     // =========================================================
     //  MÉTODO PAGO
     // =========================================================
@@ -526,10 +533,10 @@ public class MainTest {
     // =========================================================
     //  CLIENTE
     // =========================================================
-    public static void pruebaCliente() {
+    public static void pruebaCliente() throws Exception {
         System.out.println("\n--- [TEST CLIENTE] ---");
-        ClienteDaoImpl cliente = new ClienteDaoImpl();
-
+//        ClienteDaoImpl cliente = new ClienteDaoImpl();
+        ClienteBo clienteBO = new ClienteBoImpl();
         // Crear
         Cliente nuevo = new Cliente();
         nuevo.setNombres("Juan");
@@ -540,17 +547,17 @@ public class MainTest {
         nuevo.setContrasena("pucp123");
         nuevo.setDireccionEntrega("Av. Universitaria 1801, San Miguel");
 
-        int resIns = cliente.insertar(nuevo);
+        int resIns = clienteBO.insertar(nuevo);
         if (resIns > 0) {
             System.out.println("Éxito: Cliente insertado con ID: " + nuevo.getIdCliente());
 
             // Listar
-            List<Cliente> lista = cliente.listarTodos();
+            List<Cliente> lista = clienteBO.listarTodos();
             System.out.println("Total clientes en BD: " + (lista != null ? lista.size() : 0));
 
             // Limpiar (Eliminar)
-            int resElim = cliente.eliminar(nuevo.getIdCliente());
-            if(resElim > 0) {
+            int resElim = clienteBO.eliminar(nuevo.getIdCliente());
+            if (resElim > 0) {
                 System.out.println("Limpieza: Cliente eliminado correctamente.");
             } else {
                 System.out.println("Fallo al limpiar el cliente.");
@@ -559,32 +566,33 @@ public class MainTest {
             System.out.println("Error al insertar cliente.");
         }
     }
+
     // =========================================================
     //  TRABAJADOR
     // =========================================================
-    public static void pruebaTrabajador() {
+    public static void pruebaTrabajador() throws Exception {
         System.out.println("\n--- [TEST TRABAJADOR] ---");
-        TrabajadorDaoImpl dao = new TrabajadorDaoImpl();
-
+        //TrabajadorDaoImpl dao = new TrabajadorDaoImpl();
+        TrabajadorBoImpl trabajadorBo = new TrabajadorBoImpl();
         // Crear
-        Trabajador t = new Trabajador();
-        t.setNombres("Maria");
-        t.setApellidos("Lopez");
-        t.setDni("11223344");
-        t.setTelefono("912345678");
-        t.setCorreo("maria.trabajadora@gmail.com");
-        t.setContrasena("secret");
-        t.setFechaIngreso(LocalDate.now());
+        Trabajador trabajador = new Trabajador();
+        trabajador.setNombres("Maria");
+        trabajador.setApellidos("Lopez");
+        trabajador.setDni("11223344");
+        trabajador.setTelefono("912345678");
+        trabajador.setCorreo("maria.trabajadora@gmail.com");
+        trabajador.setContrasena("secret");
+        trabajador.setFechaIngreso(LocalDate.now());
 
-        int resIns = dao.insertar(t);
+        int resIns = trabajadorBo.insertar(trabajador);
         if (resIns > 0) {
-            System.out.println("Éxito: Trabajador insertado con ID: " + t.getIdTrabajador());
+            System.out.println("Éxito: Trabajador insertado con ID: " + trabajador.getIdTrabajador());
             // Listar
-            List<Trabajador> lista = dao.listarTodos();
+            List<Trabajador> lista = trabajadorBo.listarTodos();
             System.out.println("Total trabajadores en BD: " + (lista != null ? lista.size() : 0));
             // Limpiar (Eliminar)
-            int resElim = dao.eliminar(t.getIdTrabajador());
-            if(resElim > 0) {
+            int resElim = trabajadorBo.eliminar(trabajador.getIdTrabajador());
+            if (resElim > 0) {
                 System.out.println("Limpieza: Trabajador eliminado correctamente.");
             } else {
                 System.out.println("Fallo al limpiar el trabajador.");
@@ -593,13 +601,14 @@ public class MainTest {
             System.out.println("Error al insertar trabajador.");
         }
     }
+
     // =========================================================
     //  ADMINISTRADOR
     // =========================================================
-    public static void pruebaAdministrador() {
+    public static void pruebaAdministrador() throws Exception {
         System.out.println("\n--- [TEST ADMINISTRADOR] ---");
-        AdministradorDaoImpl dao = new AdministradorDaoImpl();
-
+        //AdministradorDaoImpl dao = new AdministradorDaoImpl();
+        AdministradorBo administradorBo = new AdministradorBoImpl();
         // Crear
         Administrador admin = new Administrador();
         admin.setNombres("Super");
@@ -608,16 +617,16 @@ public class MainTest {
         admin.setCorreo("admin@shiligama.com");
         admin.setContrasena("adminroot");
 
-        int resIns = dao.insertar(admin);
+        int resIns = administradorBo.insertar(admin);
         if (resIns > 0) {
             System.out.println("Éxito: Administrador creado con ID: " + admin.getIdAdministrador());
             // Listar
-            List<Administrador> lista = dao.listarTodos();
+            List<Administrador> lista = administradorBo.listarTodos();
             System.out.println("Total administradores en BD: " + (lista != null ? lista.size() : 0));
 
             // Limpiar (Eliminar)
-            int resElim = dao.eliminar(admin.getIdAdministrador());
-            if(resElim > 0) {
+            int resElim = administradorBo.eliminar(admin.getIdAdministrador());
+            if (resElim > 0) {
                 System.out.println("Limpieza: Administrador eliminado correctamente.");
             } else {
                 System.out.println("Fallo al limpiar el administrador.");
@@ -627,13 +636,13 @@ public class MainTest {
         }
     }
 
-    private static void imprimir_encabezado(String prueba){
+    private static void imprimir_encabezado(String prueba) {
         System.out.println("==================================================");
-        System.out.println(" INICIANDO PRUEBAS MÓDULO/s: " + prueba );
+        System.out.println(" INICIANDO PRUEBAS MÓDULO/s: " + prueba);
         System.out.println("==================================================\n");
     }
 
-    private static void imprimir_cierre(){
+    private static void imprimir_cierre() {
         System.out.println("\n==================================================");
         System.out.println(" FIN DE LAS PRUEBAS ");
         System.out.println("==================================================");
