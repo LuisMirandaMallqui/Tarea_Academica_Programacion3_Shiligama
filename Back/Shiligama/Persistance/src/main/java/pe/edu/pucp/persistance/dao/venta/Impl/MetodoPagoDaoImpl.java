@@ -1,7 +1,7 @@
 package pe.edu.pucp.persistance.dao.venta.Impl;
 
 import pe.edu.pucp.db.DBManager;
-import pe.edu.pucp.model.venta.MetodoPagoDto;
+import pe.edu.pucp.model.venta.MetodoPago;
 import pe.edu.pucp.persistance.dao.venta.dao.MetodoPagoDao;
 
 import java.sql.*;
@@ -14,7 +14,7 @@ public class MetodoPagoDaoImpl implements MetodoPagoDao {
 
     // SP: INSERTAR_METODO_PAGO(OUT _metodo_pago_id, IN _nombre)
     @Override
-    public int insertar(MetodoPagoDto metodoPago) {
+    public int insertar(MetodoPago metodoPago) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
@@ -29,7 +29,7 @@ public class MetodoPagoDaoImpl implements MetodoPagoDao {
 
     // SP: MODIFICAR_METODO_PAGO(IN _metodo_pago_id, IN _nombre)
     @Override
-    public int modificar(MetodoPagoDto metodoPago) {
+    public int modificar(MetodoPago metodoPago) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, metodoPago.getIdMetodoPago());
         parametrosEntrada.put(2, metodoPago.getNombre());
@@ -48,8 +48,8 @@ public class MetodoPagoDaoImpl implements MetodoPagoDao {
 
     // SP: BUSCAR_METODO_PAGO_X_ID(IN _metodo_pago_id)
     @Override
-    public MetodoPagoDto buscarPorID(int id) {
-        MetodoPagoDto metodoPago = null;
+    public MetodoPago buscarPorID(int id) {
+        MetodoPago metodoPago = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -69,8 +69,8 @@ public class MetodoPagoDaoImpl implements MetodoPagoDao {
 
     // SP: LISTAR_METODOS_PAGO()
     @Override
-    public List<MetodoPagoDto> listarTodos() {
-        List<MetodoPagoDto> lista = new ArrayList<>();
+    public List<MetodoPago> listarTodos() {
+        List<MetodoPago> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_METODOS_PAGO", null)) {
@@ -86,8 +86,8 @@ public class MetodoPagoDaoImpl implements MetodoPagoDao {
         return lista;
     }
 
-    private MetodoPagoDto mapearMetodoPago(ResultSet rs) throws SQLException {
-        MetodoPagoDto mp = new MetodoPagoDto();
+    private MetodoPago mapearMetodoPago(ResultSet rs) throws SQLException {
+        MetodoPago mp = new MetodoPago();
         mp.setIdMetodoPago(rs.getInt("METODO_PAGO_ID"));
         mp.setNombre(rs.getString("NOMBRE"));
         mp.setEstado(rs.getBoolean("ACTIVO"));

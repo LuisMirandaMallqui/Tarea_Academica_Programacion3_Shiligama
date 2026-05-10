@@ -1,7 +1,7 @@
 package pe.edu.pucp.persistance.dao.usuario.impl;
 
 import pe.edu.pucp.db.DBManager;
-import pe.edu.pucp.model.usuario.TrabajadorDto;
+import pe.edu.pucp.model.usuario.Trabajador;
 import pe.edu.pucp.persistance.dao.usuario.dao.TrabajadorDao;
 
 import java.sql.*;
@@ -15,7 +15,7 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
     // SP: INSERTAR_TRABAJADOR(OUT _id_trabajador, IN _nombres, IN _apellidos,
     //   IN _dni, IN _telefono, IN _correo, IN _contrasena, IN _cargo, IN _fecha_ingreso)
     @Override
-    public int insertar(TrabajadorDto trabajador) {
+    public int insertar(Trabajador trabajador) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
@@ -39,7 +39,7 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
     // SP: MODIFICAR_TRABAJADOR(IN _id_trabajador, IN _nombres, IN _apellidos,
     //   IN _dni, IN _telefono, IN _correo, IN _fecha_ingreso)
     @Override
-    public int modificar(TrabajadorDto trabajador) {
+    public int modificar(Trabajador trabajador) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
 
         parametrosEntrada.put(1, trabajador.getIdTrabajador());
@@ -66,8 +66,8 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
 
     // SP: BUSCAR_TRABAJADOR_X_ID(IN _id_trabajador)
     @Override
-    public TrabajadorDto buscarPorID(int id) {
-        TrabajadorDto trabajador = null;
+    public Trabajador buscarPorID(int id) {
+        Trabajador trabajador = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -87,8 +87,8 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
 
     // SP: LISTAR_TRABAJADORES()
     @Override
-    public List<TrabajadorDto> listarTodos() {
-        List<TrabajadorDto> lista = new ArrayList<>();
+    public List<Trabajador> listarTodos() {
+        List<Trabajador> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_TRABAJADORES", null)) {
@@ -106,8 +106,8 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
 
     // SP: BUSCAR_TRABAJADOR_X_CORREO(IN _correo)
     @Override
-    public TrabajadorDto buscarPorCorreo(String correo) {
-        TrabajadorDto trabajador = null;
+    public Trabajador buscarPorCorreo(String correo) {
+        Trabajador trabajador = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, correo);
 
@@ -127,8 +127,8 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
 
     // SP: BUSCAR_TRABAJADOR_X_DNI(IN _dni)
     @Override
-    public TrabajadorDto obtenerPorDNI(String dni) {
-        TrabajadorDto trabajador = null;
+    public Trabajador obtenerPorDNI(String dni) {
+        Trabajador trabajador = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, dni);
 
@@ -148,7 +148,7 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
 
     // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni)
     @Override
-    public Boolean existeUsuarioEnBD(TrabajadorDto trabajador) {
+    public Boolean existeUsuarioEnBD(Trabajador trabajador) {
         Boolean existe = false;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, trabajador.getCorreo());
@@ -168,8 +168,8 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return existe;
     }
 
-    private TrabajadorDto mapearTrabajador(ResultSet rs) throws SQLException {
-        TrabajadorDto t = new TrabajadorDto();
+    private Trabajador mapearTrabajador(ResultSet rs) throws SQLException {
+        Trabajador t = new Trabajador();
         t.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
         Date fechaIngreso = rs.getDate("FECHA_INGRESO");
         if (fechaIngreso != null) {

@@ -3,12 +3,12 @@ package pe.edu.pucp.persistance.dao.venta.Impl;
 import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.enums.CanalVenta;
 import pe.edu.pucp.model.enums.EstadoVenta;
-import pe.edu.pucp.model.usuario.ClienteDto;
-import pe.edu.pucp.model.usuario.TrabajadorDto;
-import pe.edu.pucp.model.venta.BoletaDto;
-import pe.edu.pucp.model.venta.DetalleVentaDto;
-import pe.edu.pucp.model.venta.MetodoPagoDto;
-import pe.edu.pucp.model.venta.VentaDto;
+import pe.edu.pucp.model.usuario.Cliente;
+import pe.edu.pucp.model.usuario.Trabajador;
+import pe.edu.pucp.model.venta.Boleta;
+import pe.edu.pucp.model.venta.DetalleVenta;
+import pe.edu.pucp.model.venta.MetodoPago;
+import pe.edu.pucp.model.venta.Venta;
 import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
 
 import java.sql.*;
@@ -24,7 +24,7 @@ public class VentaDaoImpl implements VentaDao {
     // Usa transacciones del DBManager para insertar cabecera + detalles
     // -------------------------------------------------------------------------
     @Override
-    public int insertar(VentaDto venta) {
+    public int insertar(Venta venta) {
         int resultado = 0;
         DBManager dbManager = DBManager.getInstance();
         try {
@@ -47,7 +47,7 @@ public class VentaDaoImpl implements VentaDao {
 
             // Insertar detalles
             if (venta.getDetalles() != null) {
-                for (DetalleVentaDto detalle : venta.getDetalles()) {
+                for (DetalleVenta detalle : venta.getDetalles()) {
                     Map<Integer, Object> paramsDetEntrada = new HashMap<>();
                     Map<Integer, Object> paramsDetSalida = new HashMap<>();
 
@@ -73,7 +73,7 @@ public class VentaDaoImpl implements VentaDao {
 
     // SP: COMPLETAR_VENTA(IN _venta_id)
     @Override
-    public int modificar(VentaDto venta) {
+    public int modificar(Venta venta) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, venta.getIdVenta());
         return DBManager.getInstance().ejecutarProcedimiento(
@@ -91,8 +91,8 @@ public class VentaDaoImpl implements VentaDao {
 
     // SP: BUSCAR_VENTA_X_ID(IN _venta_id)
     @Override
-    public VentaDto buscarPorID(int id) {
-        VentaDto venta = null;
+    public Venta buscarPorID(int id) {
+        Venta venta = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -117,8 +117,8 @@ public class VentaDaoImpl implements VentaDao {
 
     // SP: LISTAR_VENTAS()
     @Override
-    public List<VentaDto> listarTodos() {
-        List<VentaDto> lista = new ArrayList<>();
+    public List<Venta> listarTodos() {
+        List<Venta> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_VENTAS", null)) {
@@ -142,14 +142,14 @@ public class VentaDaoImpl implements VentaDao {
     // -------------------------------------------------------------------------
     // Mapeo del ResultSet
     // -------------------------------------------------------------------------
-    private VentaDto mapearVenta(ResultSet rs) throws SQLException {
-        VentaDto v = new VentaDto();
+    private Venta mapearVenta(ResultSet rs) throws SQLException {
+        Venta v = new Venta();
         completarCamposVenta(rs, v);
         return v;
     }
 
-    private BoletaDto mapearBoleta(ResultSet rs, String numeroBoleta) throws SQLException {
-        BoletaDto boleta = new BoletaDto();
+    private Boleta mapearBoleta(ResultSet rs, String numeroBoleta) throws SQLException {
+        Boleta boleta = new Boleta();
         completarCamposVenta(rs, boleta);
         boleta.setNumeroBoleta(numeroBoleta);
         boleta.setRuc(rs.getString("RUC_EMPRESA"));
@@ -158,7 +158,7 @@ public class VentaDaoImpl implements VentaDao {
         return boleta;
     }
 
-    private void completarCamposVenta(ResultSet rs, VentaDto v) throws SQLException {
+    private void completarCamposVenta(ResultSet rs, Venta v) throws SQLException {
         v.setIdVenta(rs.getInt("VENTA_ID"));
         v.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
         v.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
@@ -167,15 +167,15 @@ public class VentaDaoImpl implements VentaDao {
         v.setEstadoVenta(EstadoVenta.valueOf(rs.getString("ESTADO_VENTA")));
         v.setObservaciones(rs.getString("OBSERVACIONES"));
 
-        ClienteDto cliente = new ClienteDto();
+        Cliente cliente = new Cliente();
         cliente.setIdCliente(rs.getInt("CLIENTE_ID"));
         v.setCliente(cliente);
 
-        TrabajadorDto trabajador = new TrabajadorDto();
+        Trabajador trabajador = new Trabajador();
         trabajador.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
         v.setTrabajador(trabajador);
 
-        MetodoPagoDto metodoPago = new MetodoPagoDto();
+        MetodoPago metodoPago = new MetodoPago();
         metodoPago.setIdMetodoPago(rs.getInt("METODO_PAGO_ID"));
         metodoPago.setNombre(rs.getString("METODO_PAGO_NOMBRE"));
         v.setMetodoPago(metodoPago);

@@ -3,8 +3,8 @@ package pe.edu.pucp.persistance.dao.venta.Impl;
 import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.enums.EstadoPedido;
 import pe.edu.pucp.model.enums.ModalidadVenta;
-import pe.edu.pucp.model.usuario.ClienteDto;
-import pe.edu.pucp.model.venta.PedidoDto;
+import pe.edu.pucp.model.usuario.Cliente;
+import pe.edu.pucp.model.venta.Pedido;
 import pe.edu.pucp.persistance.dao.venta.dao.PedidoDao;
 
 import java.sql.*;
@@ -18,7 +18,7 @@ public class PedidoDaoImpl implements PedidoDao {
     // SP: INSERTAR_PEDIDO(OUT _pedido_id, IN _cliente_id, IN _direccion_entrega,
     //   IN _modalidad_venta, IN _observaciones)
     @Override
-    public int insertar(PedidoDto pedido) {
+    public int insertar(Pedido pedido) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
@@ -36,7 +36,7 @@ public class PedidoDaoImpl implements PedidoDao {
 
     // SP: MODIFICAR_ESTADO_PEDIDO(IN _pedido_id, IN _estado_pedido)
     @Override
-    public int modificar(PedidoDto pedido) {
+    public int modificar(Pedido pedido) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, pedido.getIdPedido());
         parametrosEntrada.put(2, pedido.getEstadoPedido().name());
@@ -55,8 +55,8 @@ public class PedidoDaoImpl implements PedidoDao {
 
     // SP: BUSCAR_PEDIDO_X_ID(IN _pedido_id)
     @Override
-    public PedidoDto buscarPorID(int id) {
-        PedidoDto pedido = null;
+    public Pedido buscarPorID(int id) {
+        Pedido pedido = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -76,8 +76,8 @@ public class PedidoDaoImpl implements PedidoDao {
 
     // SP: LISTAR_PEDIDOS()
     @Override
-    public List<PedidoDto> listarTodos() {
-        List<PedidoDto> lista = new ArrayList<>();
+    public List<Pedido> listarTodos() {
+        List<Pedido> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_PEDIDOS", null)) {
@@ -93,8 +93,8 @@ public class PedidoDaoImpl implements PedidoDao {
         return lista;
     }
 
-    private PedidoDto mapearPedido(ResultSet rs) throws SQLException {
-        PedidoDto p = new PedidoDto();
+    private Pedido mapearPedido(ResultSet rs) throws SQLException {
+        Pedido p = new Pedido();
         p.setIdPedido(rs.getInt("PEDIDO_ID"));
         p.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
         p.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
@@ -103,7 +103,7 @@ public class PedidoDaoImpl implements PedidoDao {
         p.setModalidadVenta(ModalidadVenta.valueOf(rs.getString("MODALIDAD_ENTREGA")));
         p.setObservaciones(rs.getString("OBSERVACIONES"));
 
-        ClienteDto cliente = new ClienteDto();
+        Cliente cliente = new Cliente();
         cliente.setIdCliente(rs.getInt("CLIENTE_ID"));
         p.setCliente(cliente);
 

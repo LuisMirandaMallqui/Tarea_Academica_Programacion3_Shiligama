@@ -1,7 +1,7 @@
 package pe.edu.pucp.persistance.dao.producto.Impl;
 
 import pe.edu.pucp.db.DBManager;
-import pe.edu.pucp.model.producto.CategoriaDto;
+import pe.edu.pucp.model.producto.Categoria;
 import pe.edu.pucp.persistance.dao.producto.dao.CategoriaDao;
 
 import java.sql.*;
@@ -14,7 +14,7 @@ public class CategoriaDaoImpl implements CategoriaDao {
 
     // SP: INSERTAR_CATEGORIA(OUT _categoria_id, IN _nombre, IN _descripcion, IN _categoria_padre_id)
     @Override
-    public int insertar(CategoriaDto categoria) {
+    public int insertar(Categoria categoria) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
@@ -32,7 +32,7 @@ public class CategoriaDaoImpl implements CategoriaDao {
 
     // SP: MODIFICAR_CATEGORIA(IN _categoria_id, IN _nombre, IN _descripcion, IN _categoria_padre_id)
     @Override
-    public int modificar(CategoriaDto categoria) {
+    public int modificar(Categoria categoria) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
 
         parametrosEntrada.put(1, categoria.getIdCategoria());
@@ -56,8 +56,8 @@ public class CategoriaDaoImpl implements CategoriaDao {
 
     // SP: BUSCAR_CATEGORIA_X_ID(IN _categoria_id)
     @Override
-    public CategoriaDto buscarPorID(int id) {
-        CategoriaDto categoria = null;
+    public Categoria buscarPorID(int id) {
+        Categoria categoria = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -77,8 +77,8 @@ public class CategoriaDaoImpl implements CategoriaDao {
 
     // SP: LISTAR_CATEGORIAS()
     @Override
-    public List<CategoriaDto> listarTodos() {
-        List<CategoriaDto> lista = new ArrayList<>();
+    public List<Categoria> listarTodos() {
+        List<Categoria> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_CATEGORIAS", null)) {
@@ -94,8 +94,8 @@ public class CategoriaDaoImpl implements CategoriaDao {
         return lista;
     }
 
-    private CategoriaDto mapearCategoria(ResultSet rs) throws SQLException {
-        CategoriaDto c = new CategoriaDto();
+    private Categoria mapearCategoria(ResultSet rs) throws SQLException {
+        Categoria c = new Categoria();
         c.setIdCategoria(rs.getInt("CATEGORIA_ID"));
         c.setNombre(rs.getString("NOMBRE"));
         c.setDescripcion(rs.getString("DESCRIPCION"));
@@ -103,7 +103,7 @@ public class CategoriaDaoImpl implements CategoriaDao {
 
         int categoriaPadreId = rs.getInt("CATEGORIA_PADRE_ID");
         if (!rs.wasNull()) {
-            CategoriaDto padre = new CategoriaDto();
+            Categoria padre = new Categoria();
             padre.setIdCategoria(categoriaPadreId);
             c.setCategoriaPadre(padre);
         }

@@ -1,8 +1,8 @@
 package pe.edu.pucp.persistance.dao.venta.dao;
 
-import pe.edu.pucp.model.venta.VentaDto;
+import pe.edu.pucp.model.venta.Venta;
 import pe.edu.pucp.persistance.dao.IDAO;
 
-public interface VentaDao extends IDAO<VentaDto> {
+public interface VentaDao extends IDAO<Venta> {
 
 }

@@ -1,7 +1,7 @@
 package pe.edu.pucp.persistance.dao.usuario.impl;
 
 import pe.edu.pucp.db.DBManager;
-import pe.edu.pucp.model.usuario.AdministradorDto;
+import pe.edu.pucp.model.usuario.Administrador;
 import pe.edu.pucp.persistance.dao.usuario.dao.AdministradorDao;
 
 import java.sql.*;
@@ -15,7 +15,7 @@ public class AdministradorDaoImpl implements AdministradorDao {
     // SP: INSERTAR_ADMINISTRADOR(OUT _id_admin, IN _nombres, IN _apellidos,
     //   IN _dni, IN _telefono, IN _correo, IN _contrasena)
     @Override
-    public int insertar(AdministradorDto administrador) {
+    public int insertar(Administrador administrador) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
@@ -36,7 +36,7 @@ public class AdministradorDaoImpl implements AdministradorDao {
     // SP: MODIFICAR_ADMINISTRADOR(IN _id_admin, IN _nombres, IN _apellidos,
     //   IN _dni, IN _telefono, IN _correo)
     @Override
-    public int modificar(AdministradorDto administrador) {
+    public int modificar(Administrador administrador) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
 
         parametrosEntrada.put(1, administrador.getIdAdministrador());
@@ -61,8 +61,8 @@ public class AdministradorDaoImpl implements AdministradorDao {
 
     // SP: BUSCAR_ADMINISTRADOR_X_ID(IN _id_admin)
     @Override
-    public AdministradorDto buscarPorID(int id) {
-        AdministradorDto admin = null;
+    public Administrador buscarPorID(int id) {
+        Administrador admin = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -82,8 +82,8 @@ public class AdministradorDaoImpl implements AdministradorDao {
 
     // SP: LISTAR_ADMINISTRADORES()
     @Override
-    public List<AdministradorDto> listarTodos() {
-        List<AdministradorDto> lista = new ArrayList<>();
+    public List<Administrador> listarTodos() {
+        List<Administrador> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_ADMINISTRADORES", null)) {
@@ -101,8 +101,8 @@ public class AdministradorDaoImpl implements AdministradorDao {
 
     // SP: BUSCAR_ADMINISTRADOR_X_CORREO(IN _correo)
     @Override
-    public AdministradorDto buscarPorCorreo(String correo) {
-        AdministradorDto admin = null;
+    public Administrador buscarPorCorreo(String correo) {
+        Administrador admin = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, correo);
 
@@ -122,8 +122,8 @@ public class AdministradorDaoImpl implements AdministradorDao {
 
     // SP: BUSCAR_ADMINISTRADOR_X_DNI(IN _dni)
     @Override
-    public AdministradorDto obtenerPorDNI(String dni) {
-        AdministradorDto admin = null;
+    public Administrador obtenerPorDNI(String dni) {
+        Administrador admin = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, dni);
 
@@ -143,7 +143,7 @@ public class AdministradorDaoImpl implements AdministradorDao {
 
     // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni)
     @Override
-    public Boolean existeUsuarioEnBD(AdministradorDto administrador) {
+    public Boolean existeUsuarioEnBD(Administrador administrador) {
         Boolean existe = false;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, administrador.getCorreo());
@@ -163,8 +163,8 @@ public class AdministradorDaoImpl implements AdministradorDao {
         return existe;
     }
 
-    private AdministradorDto mapearAdministrador(ResultSet rs) throws SQLException {
-        AdministradorDto a = new AdministradorDto();
+    private Administrador mapearAdministrador(ResultSet rs) throws SQLException {
+        Administrador a = new Administrador();
         a.setIdAdministrador(rs.getInt("ADMINISTRADOR_ID"));
         a.setIdUsuario(rs.getInt("USUARIO_ID"));
         a.setNombres(rs.getString("NOMBRES"));

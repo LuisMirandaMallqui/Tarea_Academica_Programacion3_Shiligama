@@ -1,7 +1,7 @@
 package pe.edu.pucp.persistance.dao.usuario.impl;
 
 import pe.edu.pucp.db.DBManager;
-import pe.edu.pucp.model.usuario.ClienteDto;
+import pe.edu.pucp.model.usuario.Cliente;
 import pe.edu.pucp.persistance.dao.usuario.dao.ClienteDao;
 
 import java.sql.*;
@@ -17,7 +17,7 @@ public class ClienteDaoImpl implements ClienteDao {
     //   IN _dni, IN _telefono, IN _correo, IN _contrasena, IN _direccion_entrega)
     // -------------------------------------------------------------------------
     @Override
-    public int insertar(ClienteDto cliente) {
+    public int insertar(Cliente cliente) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
@@ -41,7 +41,7 @@ public class ClienteDaoImpl implements ClienteDao {
     //   IN _dni, IN _telefono, IN _correo, IN _direccion_entrega)
     // -------------------------------------------------------------------------
     @Override
-    public int modificar(ClienteDto cliente) {
+    public int modificar(Cliente cliente) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
 
         parametrosEntrada.put(1, cliente.getIdCliente());
@@ -71,8 +71,8 @@ public class ClienteDaoImpl implements ClienteDao {
     // SELECT por ID — SP: BUSCAR_CLIENTE_X_ID(IN _id_cliente)
     // -------------------------------------------------------------------------
     @Override
-    public ClienteDto buscarPorID(int id) {
-        ClienteDto cliente = null;
+    public Cliente buscarPorID(int id) {
+        Cliente cliente = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -94,8 +94,8 @@ public class ClienteDaoImpl implements ClienteDao {
     // SELECT todos — SP: LISTAR_CLIENTES()
     // -------------------------------------------------------------------------
     @Override
-    public List<ClienteDto> listarTodos() {
-        List<ClienteDto> lista = new ArrayList<>();
+    public List<Cliente> listarTodos() {
+        List<Cliente> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_CLIENTES", null)) {
@@ -117,8 +117,8 @@ public class ClienteDaoImpl implements ClienteDao {
 
     // SP: BUSCAR_CLIENTE_X_CORREO(IN _correo)
     @Override
-    public ClienteDto buscarPorCorreo(String correo) {
-        ClienteDto cliente = null;
+    public Cliente buscarPorCorreo(String correo) {
+        Cliente cliente = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, correo);
 
@@ -138,8 +138,8 @@ public class ClienteDaoImpl implements ClienteDao {
 
     // SP: BUSCAR_CLIENTE_X_DNI(IN _dni)
     @Override
-    public ClienteDto obtenerPorDNI(String dni) {
-        ClienteDto cliente = null;
+    public Cliente obtenerPorDNI(String dni) {
+        Cliente cliente = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, dni);
 
@@ -159,7 +159,7 @@ public class ClienteDaoImpl implements ClienteDao {
 
     // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni) — retorna COUNT
     @Override
-    public Boolean existeUsuarioEnBD(ClienteDto cliente) {
+    public Boolean existeUsuarioEnBD(Cliente cliente) {
         Boolean existe = false;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, cliente.getCorreo());
@@ -182,8 +182,8 @@ public class ClienteDaoImpl implements ClienteDao {
     // -------------------------------------------------------------------------
     // Mapeo del ResultSet
     // -------------------------------------------------------------------------
-    private ClienteDto mapearCliente(ResultSet rs) throws SQLException {
-        ClienteDto c = new ClienteDto();
+    private Cliente mapearCliente(ResultSet rs) throws SQLException {
+        Cliente c = new Cliente();
         c.setIdCliente(rs.getInt("CLIENTE_ID"));
         c.setDireccionEntrega(rs.getString("DIRECCION_ENTREGA"));
         c.setIdUsuario(rs.getInt("USUARIO_ID"));

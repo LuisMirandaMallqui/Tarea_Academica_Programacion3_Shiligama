@@ -16,7 +16,7 @@ CREATE PROCEDURE MODIFICAR_PROMOCION(
     IN p_condiciones VARCHAR(500)
 )
 BEGIN
-    UPDATE promocionDto
+    UPDATE promocion
     SET nombre = p_nombre,
         descripcion = p_descripcion,
         tipo_descuento = p_tipo_descuento,
@@ -32,7 +32,7 @@ CREATE PROCEDURE ELIMINAR_PROMOCION(
     IN p_id_promocion INT
 )
 BEGIN
-    UPDATE promocionDto
+    UPDATE promocion
     SET activo = 0,
         fecha_modificacion = NOW()
     WHERE id_promocion = p_id_promocion;
@@ -41,7 +41,7 @@ END$$
 CREATE PROCEDURE LISTAR_PROMOCIONES_TODAS()
 BEGIN
     SELECT *
-    FROM promocionDto
+    FROM promocion
     WHERE activo = 1;
 END$$
 
@@ -50,7 +50,7 @@ CREATE PROCEDURE BUSCAR_PROMOCION_POR_ID(
 )
 BEGIN
     SELECT *
-    FROM promocionDto
+    FROM promocion
     WHERE id_promocion = p_id_promocion AND activo = 1;
 END$$
 

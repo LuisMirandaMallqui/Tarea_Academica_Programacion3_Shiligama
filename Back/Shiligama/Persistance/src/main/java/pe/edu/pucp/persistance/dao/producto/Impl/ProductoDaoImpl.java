@@ -1,8 +1,8 @@
 package pe.edu.pucp.persistance.dao.producto.Impl;
 
 import pe.edu.pucp.db.DBManager;
-import pe.edu.pucp.model.producto.CategoriaDto;
-import pe.edu.pucp.model.producto.ProductoDto;
+import pe.edu.pucp.model.producto.Categoria;
+import pe.edu.pucp.model.producto.Producto;
 import pe.edu.pucp.persistance.dao.producto.dao.ProductoDao;
 
 import java.sql.*;
@@ -17,7 +17,7 @@ public class ProductoDaoImpl implements ProductoDao {
     //   IN _descripcion, IN _precio_unitario, IN _stock, IN _stock_minimo,
     //   IN _unidad_medida, IN _codigo_barras, IN _imagen_url)
     @Override
-    public int insertar(ProductoDto producto) {
+    public int insertar(Producto producto) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
@@ -42,7 +42,7 @@ public class ProductoDaoImpl implements ProductoDao {
     //   IN _descripcion, IN _precio_unitario, IN _stock_minimo,
     //   IN _unidad_medida, IN _codigo_barras, IN _imagen_url)
     @Override
-    public int modificar(ProductoDto producto) {
+    public int modificar(Producto producto) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
 
         parametrosEntrada.put(1, producto.getIdProducto());
@@ -70,8 +70,8 @@ public class ProductoDaoImpl implements ProductoDao {
 
     // SP: BUSCAR_PRODUCTO_X_ID(IN _producto_id)
     @Override
-    public ProductoDto buscarPorID(int id) {
-        ProductoDto producto = null;
+    public Producto buscarPorID(int id) {
+        Producto producto = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -91,8 +91,8 @@ public class ProductoDaoImpl implements ProductoDao {
 
     // SP: LISTAR_PRODUCTOS()
     @Override
-    public List<ProductoDto> listarTodos() {
-        List<ProductoDto> lista = new ArrayList<>();
+    public List<Producto> listarTodos() {
+        List<Producto> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_PRODUCTOS", null)) {
@@ -108,8 +108,8 @@ public class ProductoDaoImpl implements ProductoDao {
         return lista;
     }
 
-    private ProductoDto mapearProducto(ResultSet rs) throws SQLException {
-        ProductoDto p = new ProductoDto();
+    private Producto mapearProducto(ResultSet rs) throws SQLException {
+        Producto p = new Producto();
         p.setIdProducto(rs.getInt("PRODUCTO_ID"));
         p.setNombre(rs.getString("NOMBRE"));
         p.setDescripcion(rs.getString("DESCRIPCION"));
@@ -121,7 +121,7 @@ public class ProductoDaoImpl implements ProductoDao {
         p.setImagenUrl(rs.getString("IMAGEN_URL"));
         p.setEstado(rs.getBoolean("ACTIVO"));
 
-        CategoriaDto categoria = new CategoriaDto();
+        Categoria categoria = new Categoria();
         categoria.setIdCategoria(rs.getInt("CATEGORIA_ID"));
         categoria.setNombre(rs.getString("CATEGORIA_NOMBRE"));
         p.setCategoria(categoria);

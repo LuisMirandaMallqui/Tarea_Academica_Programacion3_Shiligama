@@ -1,8 +1,8 @@
 package pe.edu.pucp.persistance.dao.venta.Impl;
 
 import pe.edu.pucp.db.DBManager;
-import pe.edu.pucp.model.producto.ProductoDto;
-import pe.edu.pucp.model.venta.DetallePedidoDto;
+import pe.edu.pucp.model.producto.Producto;
+import pe.edu.pucp.model.venta.DetallePedido;
 import pe.edu.pucp.persistance.dao.venta.dao.DetallePedidoDao;
 
 import java.sql.*;
@@ -15,7 +15,7 @@ public class DetallePedidoDaoImpl implements DetallePedidoDao {
 
     // SP: INSERTAR_DETALLE_PEDIDO(OUT _detalle_pedido_id, IN _pedido_id, IN _producto_id, IN _cantidad)
     @Override
-    public int insertar(DetallePedidoDto detallePedido) {
+    public int insertar(DetallePedido detallePedido) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
@@ -32,7 +32,7 @@ public class DetallePedidoDaoImpl implements DetallePedidoDao {
 
     // SP: MODIFICAR_DETALLE_PEDIDO(IN _detalle_pedido_id, IN _cantidad)
     @Override
-    public int modificar(DetallePedidoDto detallePedido) {
+    public int modificar(DetallePedido detallePedido) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, detallePedido.getIdDetallePedido());
         parametrosEntrada.put(2, detallePedido.getCantidad());
@@ -51,8 +51,8 @@ public class DetallePedidoDaoImpl implements DetallePedidoDao {
 
     // SP: BUSCAR_DETALLE_PEDIDO_X_ID(IN _detalle_pedido_id)
     @Override
-    public DetallePedidoDto buscarPorID(int id) {
-        DetallePedidoDto detalle = null;
+    public DetallePedido buscarPorID(int id) {
+        DetallePedido detalle = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);
 
@@ -72,8 +72,8 @@ public class DetallePedidoDaoImpl implements DetallePedidoDao {
 
     // SP: LISTAR_DETALLES_PEDIDO()
     @Override
-    public List<DetallePedidoDto> listarTodos() {
-        List<DetallePedidoDto> lista = new ArrayList<>();
+    public List<DetallePedido> listarTodos() {
+        List<DetallePedido> lista = new ArrayList<>();
 
         try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
                 .ejecutarProcedimientoLectura("LISTAR_DETALLES_PEDIDO", null)) {
@@ -89,15 +89,15 @@ public class DetallePedidoDaoImpl implements DetallePedidoDao {
         return lista;
     }
 
-    private DetallePedidoDto mapearDetallePedido(ResultSet rs) throws SQLException {
-        DetallePedidoDto detalle = new DetallePedidoDto();
+    private DetallePedido mapearDetallePedido(ResultSet rs) throws SQLException {
+        DetallePedido detalle = new DetallePedido();
         detalle.setIdDetallePedido(rs.getInt("DETALLE_PEDIDO_ID"));
         detalle.setIdPadrePedido(rs.getInt("PEDIDO_ID"));
         detalle.setCantidad(rs.getInt("CANTIDAD"));
         detalle.setPrecioUnitario(rs.getDouble("PRECIO_UNITARIO"));
         detalle.setSubtotal(rs.getDouble("SUBTOTAL"));
 
-        ProductoDto producto = new ProductoDto();
+        Producto producto = new Producto();
         producto.setIdProducto(rs.getInt("PRODUCTO_ID"));
         producto.setNombre(rs.getString("PRODUCTO_NOMBRE"));
         detalle.setProducto(producto);
