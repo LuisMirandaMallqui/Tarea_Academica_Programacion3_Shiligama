@@ -1,194 +1,132 @@
 package pe.edu.pucp.persistance.dao.producto.Impl;
 
-import pe.edu.pucp.persistance.dao.producto.dao.ProductoDao;
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
-import pe.edu.pucp.model.producto.ProductoDto;
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.producto.CategoriaDto;
+import pe.edu.pucp.model.producto.ProductoDto;
+import pe.edu.pucp.persistance.dao.producto.dao.ProductoDao;
 
-import java.sql.CallableStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class ProductoDaoImpl extends DaoImplBase implements ProductoDao {
+public class ProductoDaoImpl implements ProductoDao {
 
-    private ProductoDto producto;
-
-    public ProductoDaoImpl() {
-        this.producto = null;
-    }
-    public ProductoDaoImpl(ProductoDto producto) {
-        this.producto = producto;
-    }
-
-    // -------------------------------------------------------------------------
-    // Metodos CRUD importantes
-    // -------------------------------------------------------------------------
+    // SP: INSERTAR_PRODUCTO(OUT _producto_id, IN _categoria_id, IN _nombre,
+    //   IN _descripcion, IN _precio_unitario, IN _stock, IN _stock_minimo,
+    //   IN _unidad_medida, IN _codigo_barras, IN _imagen_url)
     @Override
     public int insertar(ProductoDto producto) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_PRODUCTO(?,?,?,?,?,?,?,?,?,?)}");
-            cs.registerOutParameter("_producto_id", Types.INTEGER);
-            cs.setInt("_categoria_id", producto.getCategoria().getIdCategoria());
-            cs.setString("_nombre", producto.getNombre());
-            cs.setString("_descripcion", producto.getDescripcion());
-            cs.setDouble("_precio_unitario", producto.getPrecioUnitario());
-            cs.setInt("_stock", producto.getStock());
-            cs.setInt("_stock_minimo", producto.getStockMinimo());
-            cs.setString("_unidad_medida", producto.getUnidadMedida());
-            cs.setString("_codigo_barras", producto.getCodigoBarras());
-            cs.setString("_imagen_url", producto.getImagenUrl());
-            cs.executeUpdate();
-            producto.setIdProducto(cs.getInt("_producto_id"));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar producto: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, producto.getCategoria().getIdCategoria());
+        parametrosEntrada.put(3, producto.getNombre());
+        parametrosEntrada.put(4, producto.getDescripcion());
+        parametrosEntrada.put(5, producto.getPrecioUnitario());
+        parametrosEntrada.put(6, producto.getStock());
+        parametrosEntrada.put(7, producto.getStockMinimo());
+        parametrosEntrada.put(8, producto.getUnidadMedida());
+        parametrosEntrada.put(9, producto.getCodigoBarras());
+        parametrosEntrada.put(10, producto.getImagenUrl());
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_PRODUCTO", parametrosEntrada, parametrosSalida);
+        producto.setIdProducto((int) parametrosSalida.get(1));
+        return producto.getIdProducto();
     }
 
+    // SP: MODIFICAR_PRODUCTO(IN _producto_id, IN _categoria_id, IN _nombre,
+    //   IN _descripcion, IN _precio_unitario, IN _stock_minimo,
+    //   IN _unidad_medida, IN _codigo_barras, IN _imagen_url)
     @Override
     public int modificar(ProductoDto producto) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_PRODUCTO(?,?,?,?,?,?,?,?,?)}");
-            cs.setInt("_producto_id", producto.getIdProducto());
-            cs.setInt("_categoria_id", producto.getCategoria().getIdCategoria());
-            cs.setString("_nombre", producto.getNombre());
-            cs.setString("_descripcion", producto.getDescripcion());
-            cs.setDouble("_precio_unitario", producto.getPrecioUnitario());
-            cs.setInt("_stock_minimo", producto.getStockMinimo());
-            cs.setString("_unidad_medida", producto.getUnidadMedida());
-            cs.setString("_codigo_barras", producto.getCodigoBarras());
-            cs.setString("_imagen_url", producto.getImagenUrl());
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar producto: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+
+        parametrosEntrada.put(1, producto.getIdProducto());
+        parametrosEntrada.put(2, producto.getCategoria().getIdCategoria());
+        parametrosEntrada.put(3, producto.getNombre());
+        parametrosEntrada.put(4, producto.getDescripcion());
+        parametrosEntrada.put(5, producto.getPrecioUnitario());
+        parametrosEntrada.put(6, producto.getStockMinimo());
+        parametrosEntrada.put(7, producto.getUnidadMedida());
+        parametrosEntrada.put(8, producto.getCodigoBarras());
+        parametrosEntrada.put(9, producto.getImagenUrl());
+
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_PRODUCTO", parametrosEntrada, null);
     }
 
+    // SP: ELIMINAR_PRODUCTO(IN _producto_id)
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_PRODUCTO(?)}");
-            cs.setInt("_producto_id", id);
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar producto: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_PRODUCTO", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // Select a través de PrepareStatement
-    // -------------------------------------------------------------------------
-
-    // buscarPorID delega en obtenerPorId() de la base, que maneja la conexión,
-    // llama a los métodos de abajo y cierra todo al final.
+    // SP: BUSCAR_PRODUCTO_X_ID(IN _producto_id)
+    @Override
     public ProductoDto buscarPorID(int id) {
-        this.producto = new ProductoDto();
-        this.producto.setIdProducto(id);
-        this.obtenerPorId();
-        return this.producto;
+        ProductoDto producto = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_PRODUCTO_X_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    producto = mapearProducto(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al buscar producto: " + ex.getMessage());
+        }
+        return producto;
     }
 
+    // SP: LISTAR_PRODUCTOS()
     @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        return "SELECT p.PRODUCTO_ID, p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, "
-                + "p.STOCK, p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS, "
-                + "p.IMAGEN_URL, p.ACTIVO, p.FECHA_CREACION, "
-                + "c.CATEGORIA_ID, c.NOMBRE AS CATEGORIA_NOMBRE "
-                + "FROM productos p JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID "
-                + "WHERE p.PRODUCTO_ID = ?";
+    public List<ProductoDto> listarTodos() {
+        List<ProductoDto> lista = new ArrayList<>();
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_PRODUCTOS", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearProducto(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar productos: " + ex.getMessage());
+        }
+        return lista;
     }
 
-    @Override
-    protected void incluirParametrosParaObtenerPorId() throws SQLException {
-        this.preparedStatement.setInt(1, this.producto.getIdProducto());
-    }
-
-    @Override
-    protected void instanciarObjetoDelResultSet() throws SQLException {
-        this.producto = mapearProducto();
-    }
-
-    @Override
-    protected void limpiarObjetoDelResultSet() {
-        this.producto = null;
-    }
-
-    // listarTodos() está implementado en la base — solo necesita el SQL y el mapeo por fila.
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        return "SELECT p.PRODUCTO_ID, p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, "
-                + "p.STOCK, p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS, "
-                + "p.IMAGEN_URL, p.ACTIVO, p.FECHA_CREACION, "
-                + "c.CATEGORIA_ID, c.NOMBRE AS CATEGORIA_NOMBRE "
-                + "FROM productos p JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID "
-                + "WHERE p.ACTIVO = 1";
-    }
-
-    @Override
-    protected void agregarObjetoALaLista(List lista) throws SQLException {
-        lista.add(mapearProducto());
-    }
-
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet — centralizado para no duplicar entre buscarPorID y listarTodos
-    // -------------------------------------------------------------------------
-
-    private ProductoDto mapearProducto() throws SQLException {
+    private ProductoDto mapearProducto(ResultSet rs) throws SQLException {
         ProductoDto p = new ProductoDto();
-        p.setIdProducto(resultSet.getInt("PRODUCTO_ID"));
-        p.setNombre(resultSet.getString("NOMBRE"));
-        p.setDescripcion(resultSet.getString("DESCRIPCION"));
-        p.setPrecioUnitario(resultSet.getDouble("PRECIO_UNITARIO"));
-        p.setStock(resultSet.getInt("STOCK"));
-        p.setStockMinimo(resultSet.getInt("STOCK_MINIMO"));
-        p.setUnidadMedida(resultSet.getString("UNIDAD_MEDIDA"));
-        p.setCodigoBarras(resultSet.getString("CODIGO_BARRAS"));
-        p.setImagenUrl(resultSet.getString("IMAGEN_URL"));
-        p.setEstado(resultSet.getBoolean("ACTIVO"));
+        p.setIdProducto(rs.getInt("PRODUCTO_ID"));
+        p.setNombre(rs.getString("NOMBRE"));
+        p.setDescripcion(rs.getString("DESCRIPCION"));
+        p.setPrecioUnitario(rs.getDouble("PRECIO_UNITARIO"));
+        p.setStock(rs.getInt("STOCK"));
+        p.setStockMinimo(rs.getInt("STOCK_MINIMO"));
+        p.setUnidadMedida(rs.getString("UNIDAD_MEDIDA"));
+        p.setCodigoBarras(rs.getString("CODIGO_BARRAS"));
+        p.setImagenUrl(rs.getString("IMAGEN_URL"));
+        p.setEstado(rs.getBoolean("ACTIVO"));
 
         CategoriaDto categoria = new CategoriaDto();
-        categoria.setIdCategoria(resultSet.getInt("CATEGORIA_ID"));
-        categoria.setNombre(resultSet.getString("CATEGORIA_NOMBRE"));
+        categoria.setIdCategoria(rs.getInt("CATEGORIA_ID"));
+        categoria.setNombre(rs.getString("CATEGORIA_NOMBRE"));
         p.setCategoria(categoria);
 
-        Timestamp fechaRegistro = resultSet.getTimestamp("FECHA_CREACION");
+        Timestamp fechaRegistro = rs.getTimestamp("FECHA_CREACION");
         if (fechaRegistro != null) {
             p.setFechaRegistro(fechaRegistro.toLocalDateTime());
         }

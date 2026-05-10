@@ -1,152 +1,134 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
-import pe.edu.pucp.persistance.dao.operaciones.dao.MovimientoInventarioDao;
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.operaciones.MovimientoInventario;
+import pe.edu.pucp.persistance.dao.operaciones.dao.MovimientoInventarioDao;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class MovimientoInventarioDaoImpl extends DaoImplBase implements MovimientoInventarioDao {
+public class MovimientoInventarioDaoImpl implements MovimientoInventarioDao {
 
-    // -------------------------------------------------------------------------
-    // DML — solo insertar (log inmutable)
-    // -------------------------------------------------------------------------
-
+    // SP: REGISTRAR_MOVIMIENTO_INVENTARIO(OUT _movimiento_id, IN _producto_id,
+    //   IN _trabajador_id, IN _tipo_movimiento, IN _cantidad, IN _motivo)
     @Override
     public int insertar(MovimientoInventario mov) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL REGISTRAR_MOVIMIENTO_INVENTARIO(?,?,?,?,?,?)}");
-            cs.registerOutParameter("_movimiento_id", Types.INTEGER);
-            cs.setInt("_producto_id", mov.getIdProducto());
-            cs.setInt("_trabajador_id", mov.getIdTrabajador());
-            cs.setString("_tipo_movimiento", mov.getTipoMovimiento());
-            cs.setInt("_cantidad", mov.getCantidad());
-            cs.setString("_motivo", mov.getMotivo());
-            cs.executeUpdate();
-            mov.setIdMovimiento(cs.getInt("_movimiento_id"));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar movimiento inventario: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, mov.getIdProducto());
+        parametrosEntrada.put(3, mov.getIdTrabajador());
+        parametrosEntrada.put(4, mov.getTipoMovimiento());
+        parametrosEntrada.put(5, mov.getCantidad());
+        parametrosEntrada.put(6, mov.getMotivo());
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "REGISTRAR_MOVIMIENTO_INVENTARIO", parametrosEntrada, parametrosSalida);
+        mov.setIdMovimiento((int) parametrosSalida.get(1));
+        return mov.getIdMovimiento();
     }
 
+    // Log inmutable — no aplica
     @Override
     public int modificar(MovimientoInventario mov) {
-        System.err.println("No aplica para log inmutable");
+        System.out.println("No aplica para log inmutable");
         return 0;
     }
 
+    // Log inmutable — no aplica
     @Override
     public int eliminar(int id) {
-        System.err.println("No aplica para log inmutable");
+        System.out.println("No aplica para log inmutable");
         return 0;
     }
 
-    // -------------------------------------------------------------------------
-    // SELECTs — usan SPs con CallableStatement directamente
-    // -------------------------------------------------------------------------
-
+    // SP: BUSCAR_MOVIMIENTO_POR_ID(IN _movimiento_id)
     @Override
     public MovimientoInventario buscarPorID(int id) {
         MovimientoInventario m = null;
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL BUSCAR_MOVIMIENTO_POR_ID(?)}");
-            cs.setInt("_movimiento_id", id);
-            ResultSet rs = cs.executeQuery();
-            if (rs.next()) {
-                m = mapearMovimiento(rs);
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_MOVIMIENTO_POR_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    m = mapearMovimiento(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en buscarPorID movimiento: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al buscar movimiento: " + ex.getMessage());
         }
         return m;
     }
 
+    // SP: LISTAR_MOVIMIENTOS_TODOS()
     @Override
     public List<MovimientoInventario> listarTodos() {
         List<MovimientoInventario> lista = new ArrayList<>();
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_MOVIMIENTOS_TODOS()}");
-            ResultSet rs = cs.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearMovimiento(rs));
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_MOVIMIENTOS_TODOS", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearMovimiento(rs));
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en listarTodos movimientos: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al listar movimientos: " + ex.getMessage());
         }
         return lista;
     }
 
+    // SP: LISTAR_MOVIMIENTOS_POR_PRODUCTO(IN _producto_id)
     @Override
     public List<MovimientoInventario> listarPorProducto(int idProducto) {
         List<MovimientoInventario> lista = new ArrayList<>();
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_MOVIMIENTOS_POR_PRODUCTO(?)}");
-            cs.setInt("_producto_id", idProducto);
-            ResultSet rs = cs.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearMovimiento(rs));
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idProducto);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_MOVIMIENTOS_POR_PRODUCTO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearMovimiento(rs));
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en listarPorProducto movimientos: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al listar movimientos por producto: " + ex.getMessage());
         }
         return lista;
     }
 
+    // SP: LISTAR_MOVIMIENTOS_POR_FECHAS(IN _fecha_inicio, IN _fecha_fin)
     @Override
     public List<MovimientoInventario> listarPorFechas(LocalDateTime fechaInicio, LocalDateTime fechaFin) {
         List<MovimientoInventario> lista = new ArrayList<>();
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_MOVIMIENTOS_POR_FECHAS(?,?)}");
-            cs.setTimestamp("_fecha_inicio", Timestamp.valueOf(fechaInicio));
-            cs.setTimestamp("_fecha_fin", Timestamp.valueOf(fechaFin));
-            ResultSet rs = cs.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearMovimiento(rs));
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, Timestamp.valueOf(fechaInicio));
+        parametrosEntrada.put(2, Timestamp.valueOf(fechaFin));
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_MOVIMIENTOS_POR_FECHAS", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearMovimiento(rs));
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en listarPorFechas movimientos: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al listar movimientos por fechas: " + ex.getMessage());
         }
         return lista;
     }
-
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet
-    // -------------------------------------------------------------------------
 
     private MovimientoInventario mapearMovimiento(ResultSet rs) throws SQLException {
         MovimientoInventario m = new MovimientoInventario();
@@ -161,18 +143,5 @@ public class MovimientoInventarioDaoImpl extends DaoImplBase implements Movimien
         m.setFechaHora(rs.getTimestamp("FECHA_HORA") != null
                 ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
         return m;
-    }
-
-    // -------------------------------------------------------------------------
-    // Métodos abstractos de DaoImplBase (no usados, SELECTs via SPs)
-    // -------------------------------------------------------------------------
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
-    }
-
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
     }
 }

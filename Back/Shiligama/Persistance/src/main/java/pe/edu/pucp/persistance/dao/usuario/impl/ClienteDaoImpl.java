@@ -1,260 +1,198 @@
 package pe.edu.pucp.persistance.dao.usuario.impl;
 
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
-import pe.edu.pucp.persistance.dao.usuario.dao.UsuarioDao;
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.usuario.ClienteDto;
+import pe.edu.pucp.persistance.dao.usuario.dao.ClienteDao;
 
-import java.sql.CallableStatement;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class ClienteDaoImpl extends DaoImplBase implements UsuarioDao<ClienteDto> {
-
-    private ClienteDto cliente;
-
-    public ClienteDaoImpl() {
-        this.cliente = null;
-    }
-    public ClienteDaoImpl(ClienteDto cliente) {
-        this.cliente = cliente;
-    }
+public class ClienteDaoImpl implements ClienteDao {
 
     // -------------------------------------------------------------------------
-    // Metodos CRUD importantes,  INSERT en usuarios + clientes en una sola operación
+    // INSERT — SP: INSERTAR_CLIENTE(OUT _id_cliente, IN _nombres, IN _apellidos,
+    //   IN _dni, IN _telefono, IN _correo, IN _contrasena, IN _direccion_entrega)
     // -------------------------------------------------------------------------
-
     @Override
     public int insertar(ClienteDto cliente) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_CLIENTE(?, ?, ?, ?, ?, ?, ?, ?)}");
-            cs.registerOutParameter(1, Types.INTEGER);
-            cs.setString(2, cliente.getNombres());
-            cs.setString(3, cliente.getApellidos());
-            cs.setString(4, cliente.getDni());
-            cs.setString(5, cliente.getTelefono());
-            cs.setString(6, cliente.getCorreo());
-            cs.setString(7, cliente.getContrasena());
-            cs.setString(8, cliente.getDireccionEntrega());
-            cs.execute();
-            cliente.setIdCliente(cs.getInt(1));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar cliente: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, cliente.getNombres());
+        parametrosEntrada.put(3, cliente.getApellidos());
+        parametrosEntrada.put(4, cliente.getDni());
+        parametrosEntrada.put(5, cliente.getTelefono());
+        parametrosEntrada.put(6, cliente.getCorreo());
+        parametrosEntrada.put(7, cliente.getContrasena());
+        parametrosEntrada.put(8, cliente.getDireccionEntrega());
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_CLIENTE", parametrosEntrada, parametrosSalida);
+        cliente.setIdCliente((int) parametrosSalida.get(1));
+        return cliente.getIdCliente();
     }
 
+    // -------------------------------------------------------------------------
+    // UPDATE — SP: MODIFICAR_CLIENTE(IN _id_cliente, IN _nombres, IN _apellidos,
+    //   IN _dni, IN _telefono, IN _correo, IN _direccion_entrega)
+    // -------------------------------------------------------------------------
     @Override
     public int modificar(ClienteDto cliente) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_CLIENTE(?, ?, ?, ?, ?, ?, ?)}");
-            cs.setInt(1, cliente.getIdCliente());
-            cs.setString(2, cliente.getNombres());
-            cs.setString(3, cliente.getApellidos());
-            cs.setString(4, cliente.getDni());
-            cs.setString(5, cliente.getTelefono());
-            cs.setString(6, cliente.getCorreo());
-            cs.setString(7, cliente.getDireccionEntrega());
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar cliente: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+
+        parametrosEntrada.put(1, cliente.getIdCliente());
+        parametrosEntrada.put(2, cliente.getNombres());
+        parametrosEntrada.put(3, cliente.getApellidos());
+        parametrosEntrada.put(4, cliente.getDni());
+        parametrosEntrada.put(5, cliente.getTelefono());
+        parametrosEntrada.put(6, cliente.getCorreo());
+        parametrosEntrada.put(7, cliente.getDireccionEntrega());
+
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_CLIENTE", parametrosEntrada, null);
     }
 
+    // -------------------------------------------------------------------------
+    // DELETE (logico) — SP: ELIMINAR_CLIENTE(IN _id_cliente)
+    // -------------------------------------------------------------------------
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_CLIENTE(?)}");
-            cs.setInt(1, id);
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar cliente: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_CLIENTE", parametrosEntrada, null);
     }
 
+    // -------------------------------------------------------------------------
+    // SELECT por ID — SP: BUSCAR_CLIENTE_X_ID(IN _id_cliente)
+    // -------------------------------------------------------------------------
+    @Override
     public ClienteDto buscarPorID(int id) {
-        this.cliente = new ClienteDto();
-        this.cliente.setIdCliente(id);
-        this.obtenerPorId();
-        return this.cliente;
+        ClienteDto cliente = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_CLIENTE_X_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    cliente = mapearCliente(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al buscar cliente: " + ex.getMessage());
+        }
+        return cliente;
     }
 
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        return "SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA, "
-                + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                + "FROM clientes c JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID "
-                + "WHERE c.CLIENTE_ID = ?";
-    }
-
-    @Override
-    protected void incluirParametrosParaObtenerPorId() throws SQLException {
-        this.preparedStatement.setInt(1, this.cliente.getIdCliente());
-    }
-
-    @Override
-    protected void instanciarObjetoDelResultSet() throws SQLException {
-        this.cliente = mapearCliente();
-    }
-
-    @Override
-    protected void limpiarObjetoDelResultSet() {
-        this.cliente = null;
-    }
-
+    // -------------------------------------------------------------------------
+    // SELECT todos — SP: LISTAR_CLIENTES()
+    // -------------------------------------------------------------------------
     @Override
     public List<ClienteDto> listarTodos() {
-        return super.listarTodos();
-    }
+        List<ClienteDto> lista = new ArrayList<>();
 
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        return "SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA, "
-                + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                + "FROM clientes c JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID "
-                + "WHERE u.ACTIVO = 1 "
-                + "ORDER BY u.APELLIDOS, u.NOMBRES";
-    }
-
-    @Override
-    protected void agregarObjetoALaLista(List lista) throws SQLException {
-        lista.add(mapearCliente());
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_CLIENTES", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearCliente(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar clientes: " + ex.getMessage());
+        }
+        return lista;
     }
 
     // -------------------------------------------------------------------------
-    // Métodos específicos de UsuarioDao
+    // Metodos especificos de UsuarioDao
     // -------------------------------------------------------------------------
 
+    // SP: BUSCAR_CLIENTE_X_CORREO(IN _correo)
     @Override
     public ClienteDto buscarPorCorreo(String correo) {
-        this.cliente = new ClienteDto();
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA, "
-                            + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                            + "FROM clientes c JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID "
-                            + "WHERE u.CORREO = ?"
-            );
-            this.preparedStatement.setString(1, correo);
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                this.cliente = mapearCliente();
-            } else {
-                this.cliente = null;
+        ClienteDto cliente = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, correo);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_CLIENTE_X_CORREO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    cliente = mapearCliente(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en buscarPorCorreo (cliente): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en buscarPorCorreo (cliente): " + ex.getMessage());
         }
-        return this.cliente;
+        return cliente;
     }
 
+    // SP: BUSCAR_CLIENTE_X_DNI(IN _dni)
     @Override
     public ClienteDto obtenerPorDNI(String dni) {
-        this.cliente = new ClienteDto();
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA, "
-                            + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                            + "FROM clientes c JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID "
-                            + "WHERE u.DNI = ?"
-            );
-            this.preparedStatement.setString(1, dni);
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                this.cliente = mapearCliente();
-            } else {
-                this.cliente = null;
+        ClienteDto cliente = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, dni);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_CLIENTE_X_DNI", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    cliente = mapearCliente(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en obtenerPorDNI (cliente): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en obtenerPorDNI (cliente): " + ex.getMessage());
         }
-        return this.cliente;
+        return cliente;
     }
 
+    // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni) — retorna COUNT
     @Override
     public Boolean existeUsuarioEnBD(ClienteDto cliente) {
         Boolean existe = false;
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT COUNT(*) FROM usuarios WHERE CORREO = ? OR DNI = ?"
-            );
-            this.preparedStatement.setString(1, cliente.getCorreo());
-            this.preparedStatement.setString(2, cliente.getDni());
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                existe = this.resultSet.getInt(1) > 0;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, cliente.getCorreo());
+        parametrosEntrada.put(2, cliente.getDni());
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("EXISTE_USUARIO_EN_BD", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    existe = rs.getInt(1) > 0;
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en existeUsuarioEnBD (cliente): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en existeUsuarioEnBD (cliente): " + ex.getMessage());
         }
         return existe;
     }
 
     // -------------------------------------------------------------------------
-    // Mapeo del ResultSet — centralizado para todos los métodos SELECT
+    // Mapeo del ResultSet
     // -------------------------------------------------------------------------
-
-    private ClienteDto mapearCliente() throws SQLException {
+    private ClienteDto mapearCliente(ResultSet rs) throws SQLException {
         ClienteDto c = new ClienteDto();
-        c.setIdCliente(resultSet.getInt("CLIENTE_ID"));
-        c.setDireccionEntrega(resultSet.getString("DIRECCION_ENTREGA"));
-        c.setIdUsuario(resultSet.getInt("USUARIO_ID"));
-        c.setNombres(resultSet.getString("NOMBRES"));
-        c.setApellidos(resultSet.getString("APELLIDOS"));
-        c.setDni(resultSet.getString("DNI"));
-        c.setTelefono(resultSet.getString("TELEFONO"));
-        c.setCorreo(resultSet.getString("CORREO"));
-        c.setContrasena(resultSet.getString("CONTRASENA"));
+        c.setIdCliente(rs.getInt("CLIENTE_ID"));
+        c.setDireccionEntrega(rs.getString("DIRECCION_ENTREGA"));
+        c.setIdUsuario(rs.getInt("USUARIO_ID"));
+        c.setNombres(rs.getString("NOMBRES"));
+        c.setApellidos(rs.getString("APELLIDOS"));
+        c.setDni(rs.getString("DNI"));
+        c.setTelefono(rs.getString("TELEFONO"));
+        c.setCorreo(rs.getString("CORREO"));
+        c.setContrasena(rs.getString("CONTRASENA"));
         return c;
     }
 }

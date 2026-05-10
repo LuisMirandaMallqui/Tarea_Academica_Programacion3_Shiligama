@@ -1,11 +1,7 @@
 -- =====================================================================
 -- SHILIGAMA - Triggers de Auditoria
--- Completan USUARIO_CREACION / USUARIO_MODIFICACION en cada tabla.
--- Las fechas (FECHA_CREACION, FECHA_MODIFICACION) ya se manejan
--- automaticamente con DEFAULT CURRENT_TIMESTAMP y ON UPDATE CURRENT_TIMESTAMP.
--- Se usa USER() para registrar el usuario de la conexion MySQL.
 -- =====================================================================
-USE `Proyecto_prueba`;
+USE `shiligama`;
 
 DELIMITER $$
 

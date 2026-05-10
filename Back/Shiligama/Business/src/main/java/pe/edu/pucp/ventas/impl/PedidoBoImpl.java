@@ -6,49 +6,55 @@ import pe.edu.pucp.persistance.dao.venta.Impl.PedidoDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.dao.PedidoDao;
 import pe.edu.pucp.ventas.bo.PedidoBo;
 
-//OrdenVenta seria en nuestro caso Pedido
 public class PedidoBoImpl implements PedidoBo {
     private final PedidoDao daoPedido;
 
-    public PedidoBoImpl(){
+    public PedidoBoImpl() {
         daoPedido = new PedidoDaoImpl();
     }
 
     @Override
-    public int insertar(PedidoDto pedido){
-        if(pedido.getCliente() == null){
-            throw new RuntimeException("Error: el pedido debe tener un cliente asignado.");
-        }
+    public int insertar(PedidoDto pedido) throws Exception {
+        validar(pedido, false);
         return daoPedido.insertar(pedido);
     }
 
     @Override
-    public int modificar(PedidoDto pedido){
-        if(pedido.getIdPedido() <= 0){
-            throw new RuntimeException("Error: el pedido no tiene un ID valido.");
-        }
+    public int modificar(PedidoDto pedido) throws Exception {
+        validar(pedido, true);
         return daoPedido.modificar(pedido);
     }
 
     @Override
-    public int eliminar(int id){
-        if(id <= 0){
-            throw new RuntimeException("Error: el ID del pedido no es valido.");
+    public int eliminar(int id) throws Exception {
+        if (id <= 0) {
+            throw new Exception("El ID del pedido debe ser mayor que cero.");
         }
         return daoPedido.eliminar(id);
     }
 
     @Override
-    public PedidoDto buscarPorID(int id){
-        if(id <= 0){
-            throw new RuntimeException("Error: el ID del pedido no es valido.");
+    public PedidoDto buscarPorID(int id) throws Exception {
+        if (id <= 0) {
+            throw new Exception("El ID del pedido debe ser mayor que cero.");
         }
         return daoPedido.buscarPorID(id);
     }
 
     @Override
-    public List<PedidoDto> listarTodos(){
+    public List<PedidoDto> listarTodos() throws Exception {
         return daoPedido.listarTodos();
     }
-}
 
+    private void validar(PedidoDto pedido, boolean esModificacion) throws Exception {
+        if (pedido == null) {
+            throw new Exception("El pedido no puede ser nulo.");
+        }
+        if (esModificacion && pedido.getIdPedido() <= 0) {
+            throw new Exception("El ID del pedido es obligatorio para la modificacion.");
+        }
+        if (pedido.getCliente() == null) {
+            throw new Exception("El pedido debe tener un cliente asignado.");
+        }
+    }
+}

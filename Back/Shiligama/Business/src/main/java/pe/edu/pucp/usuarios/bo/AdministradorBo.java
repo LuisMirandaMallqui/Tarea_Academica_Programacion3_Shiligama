@@ -4,6 +4,6 @@ import pe.edu.pucp.bo.BaseBo;
 import pe.edu.pucp.model.usuario.AdministradorDto;
 
 public interface AdministradorBo extends BaseBo<AdministradorDto> {
-    AdministradorDto buscarPorCorreo(String correo);
-    AdministradorDto obtenerPorDNI(String dni);
+    AdministradorDto buscarPorCorreo(String correo) throws Exception;
+    AdministradorDto obtenerPorDNI(String dni) throws Exception;
 }

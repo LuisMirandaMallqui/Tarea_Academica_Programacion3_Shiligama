@@ -1,172 +1,108 @@
 package pe.edu.pucp.persistance.dao.producto.Impl;
 
-import pe.edu.pucp.persistance.dao.producto.dao.CategoriaDao;
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.producto.CategoriaDto;
+import pe.edu.pucp.persistance.dao.producto.dao.CategoriaDao;
 
-import java.sql.CallableStatement;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class CategoriaDaoImpl extends DaoImplBase implements CategoriaDao {
+public class CategoriaDaoImpl implements CategoriaDao {
 
-    private CategoriaDto categoria;
-
-    public CategoriaDaoImpl() {
-        this.categoria = null;
-    }
-
-    // -------------------------------------------------------------------------
-    // DML con CallableStatement + parámetros nombrados
-    // -------------------------------------------------------------------------
-
+    // SP: INSERTAR_CATEGORIA(OUT _categoria_id, IN _nombre, IN _descripcion, IN _categoria_padre_id)
     @Override
     public int insertar(CategoriaDto categoria) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_CATEGORIA(?,?,?,?)}");
-            cs.registerOutParameter("_categoria_id", Types.INTEGER);
-            cs.setString("_nombre", categoria.getNombre());
-            cs.setString("_descripcion", categoria.getDescripcion());
-            if (categoria.getCategoriaPadre() != null) {
-                cs.setInt("_categoria_padre_id", categoria.getCategoriaPadre().getIdCategoria());
-            } else {
-                cs.setNull("_categoria_padre_id", Types.INTEGER);
-            }
-            cs.executeUpdate();
-            categoria.setIdCategoria(cs.getInt("_categoria_id"));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar categoria: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, categoria.getNombre());
+        parametrosEntrada.put(3, categoria.getDescripcion());
+        parametrosEntrada.put(4, categoria.getCategoriaPadre() != null
+                ? categoria.getCategoriaPadre().getIdCategoria() : null);
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_CATEGORIA", parametrosEntrada, parametrosSalida);
+        categoria.setIdCategoria((int) parametrosSalida.get(1));
+        return categoria.getIdCategoria();
     }
 
+    // SP: MODIFICAR_CATEGORIA(IN _categoria_id, IN _nombre, IN _descripcion, IN _categoria_padre_id)
     @Override
     public int modificar(CategoriaDto categoria) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_CATEGORIA(?,?,?,?)}");
-            cs.setInt("_categoria_id", categoria.getIdCategoria());
-            cs.setString("_nombre", categoria.getNombre());
-            cs.setString("_descripcion", categoria.getDescripcion());
-            if (categoria.getCategoriaPadre() != null) {
-                cs.setInt("_categoria_padre_id", categoria.getCategoriaPadre().getIdCategoria());
-            } else {
-                cs.setNull("_categoria_padre_id", Types.INTEGER);
-            }
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar categoria: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+
+        parametrosEntrada.put(1, categoria.getIdCategoria());
+        parametrosEntrada.put(2, categoria.getNombre());
+        parametrosEntrada.put(3, categoria.getDescripcion());
+        parametrosEntrada.put(4, categoria.getCategoriaPadre() != null
+                ? categoria.getCategoriaPadre().getIdCategoria() : null);
+
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_CATEGORIA", parametrosEntrada, null);
     }
 
+    // SP: ELIMINAR_CATEGORIA(IN _categoria_id)
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_CATEGORIA(?)}");
-            cs.setInt("_categoria_id", id);
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar categoria: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_CATEGORIA", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // SELECTs via DaoImplBase (PreparedStatement)
-    // -------------------------------------------------------------------------
-
+    // SP: BUSCAR_CATEGORIA_X_ID(IN _categoria_id)
     @Override
     public CategoriaDto buscarPorID(int id) {
-        this.categoria = new CategoriaDto();
-        this.categoria.setIdCategoria(id);
-        this.obtenerPorId();
-        return this.categoria;
+        CategoriaDto categoria = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_CATEGORIA_X_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    categoria = mapearCategoria(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al buscar categoria: " + ex.getMessage());
+        }
+        return categoria;
     }
 
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        return "SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO "
-                + "FROM categorias WHERE CATEGORIA_ID = ?";
-    }
-
-    @Override
-    protected void incluirParametrosParaObtenerPorId() throws SQLException {
-        this.preparedStatement.setInt(1, this.categoria.getIdCategoria());
-    }
-
-    @Override
-    protected void instanciarObjetoDelResultSet() throws SQLException {
-        this.categoria = mapearCategoria();
-    }
-
-    @Override
-    protected void limpiarObjetoDelResultSet() {
-        this.categoria = null;
-    }
-
+    // SP: LISTAR_CATEGORIAS()
     @Override
     public List<CategoriaDto> listarTodos() {
-        return super.listarTodos();
+        List<CategoriaDto> lista = new ArrayList<>();
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_CATEGORIAS", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearCategoria(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar categorias: " + ex.getMessage());
+        }
+        return lista;
     }
 
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        return "SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO "
-                + "FROM categorias WHERE ACTIVO = 1 ORDER BY NOMBRE";
-    }
-
-    @Override
-    protected void agregarObjetoALaLista(List lista) throws SQLException {
-        lista.add(mapearCategoria());
-    }
-
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet
-    // -------------------------------------------------------------------------
-
-    private CategoriaDto mapearCategoria() throws SQLException {
+    private CategoriaDto mapearCategoria(ResultSet rs) throws SQLException {
         CategoriaDto c = new CategoriaDto();
-        c.setIdCategoria(resultSet.getInt("CATEGORIA_ID"));
-        c.setNombre(resultSet.getString("NOMBRE"));
-        c.setDescripcion(resultSet.getString("DESCRIPCION"));
-        c.setEstado(resultSet.getBoolean("ACTIVO"));
+        c.setIdCategoria(rs.getInt("CATEGORIA_ID"));
+        c.setNombre(rs.getString("NOMBRE"));
+        c.setDescripcion(rs.getString("DESCRIPCION"));
+        c.setEstado(rs.getBoolean("ACTIVO"));
 
-        int categoriaPadreId = resultSet.getInt("CATEGORIA_PADRE_ID");
-        if (!resultSet.wasNull()) {
+        int categoriaPadreId = rs.getInt("CATEGORIA_PADRE_ID");
+        if (!rs.wasNull()) {
             CategoriaDto padre = new CategoriaDto();
             padre.setIdCategoria(categoriaPadreId);
             c.setCategoriaPadre(padre);

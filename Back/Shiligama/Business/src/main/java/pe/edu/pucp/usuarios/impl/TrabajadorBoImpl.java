@@ -14,76 +14,79 @@ public class TrabajadorBoImpl implements TrabajadorBo {
     }
 
     @Override
-    public int insertar(TrabajadorDto trabajador) {
-        if (trabajador.getNombres() == null || trabajador.getNombres().isBlank()) {
-            throw new RuntimeException("Error: el nombre del trabajador es obligatorio.");
-        }
-        if (trabajador.getApellidos() == null || trabajador.getApellidos().isBlank()) {
-            throw new RuntimeException("Error: los apellidos del trabajador son obligatorios.");
-        }
-        if (trabajador.getDni() == null || trabajador.getDni().length() != 8) {
-            throw new RuntimeException("Error: el DNI debe tener exactamente 8 digitos.");
-        }
-        if (trabajador.getCorreo() == null || trabajador.getCorreo().isBlank()) {
-            throw new RuntimeException("Error: el correo del trabajador es obligatorio.");
-        }
-        if (trabajador.getContrasena() == null || trabajador.getContrasena().isBlank()) {
-            throw new RuntimeException("Error: la contrasena es obligatoria.");
-        }
-        if (daoTrabajador.existeUsuarioEnBD(trabajador)) {
-            throw new RuntimeException("Error: ya existe un usuario con ese DNI o correo.");
-        }
+    public int insertar(TrabajadorDto trabajador) throws Exception {
+        validar(trabajador, false);
         return daoTrabajador.insertar(trabajador);
     }
 
     @Override
-    public int modificar(TrabajadorDto trabajador) {
-        if (trabajador.getIdTrabajador() <= 0) {
-            throw new RuntimeException("Error: el ID del trabajador no es valido.");
-        }
-        if (trabajador.getNombres() == null || trabajador.getNombres().isBlank()) {
-            throw new RuntimeException("Error: el nombre del trabajador es obligatorio.");
-        }
-        if (trabajador.getDni() == null || trabajador.getDni().length() != 8) {
-            throw new RuntimeException("Error: el DNI debe tener exactamente 8 digitos.");
-        }
+    public int modificar(TrabajadorDto trabajador) throws Exception {
+        validar(trabajador, true);
         return daoTrabajador.modificar(trabajador);
     }
 
     @Override
-    public int eliminar(int id) {
+    public int eliminar(int id) throws Exception {
         if (id <= 0) {
-            throw new RuntimeException("Error: el ID del trabajador no es valido.");
+            throw new Exception("El ID del trabajador debe ser mayor que cero.");
         }
         return daoTrabajador.eliminar(id);
     }
 
     @Override
-    public TrabajadorDto buscarPorID(int id) {
+    public TrabajadorDto buscarPorID(int id) throws Exception {
         if (id <= 0) {
-            throw new RuntimeException("Error: el ID del trabajador no es valido.");
+            throw new Exception("El ID del trabajador debe ser mayor que cero.");
         }
         return daoTrabajador.buscarPorID(id);
     }
 
     @Override
-    public List<TrabajadorDto> listarTodos() {
+    public List<TrabajadorDto> listarTodos() throws Exception {
         return daoTrabajador.listarTodos();
     }
 
     @Override
-    public TrabajadorDto buscarPorCorreo(String correo) {
-        if (correo == null || correo.isBlank()) {
-            throw new RuntimeException("Error: el correo no puede estar vacio.");
-        }
+    public TrabajadorDto buscarPorCorreo(String correo) throws Exception {
+        validarTextoObligatorio(correo, "El correo es obligatorio.");
         return daoTrabajador.buscarPorCorreo(correo);
     }
 
     @Override
-    public TrabajadorDto obtenerPorDNI(String dni) {
-        if (dni == null || dni.length() != 8) {
-            throw new RuntimeException("Error: el DNI debe tener exactamente 8 digitos.");
-        }
+    public TrabajadorDto obtenerPorDNI(String dni) throws Exception {
+        validarDNI(dni);
         return daoTrabajador.obtenerPorDNI(dni);
+    }
+
+    private void validar(TrabajadorDto trabajador, boolean esModificacion) throws Exception {
+        if (trabajador == null) {
+            throw new Exception("El trabajador no puede ser nulo.");
+        }
+        if (esModificacion && trabajador.getIdTrabajador() <= 0) {
+            throw new Exception("El ID del trabajador es obligatorio para la modificacion.");
+        }
+        validarDNI(trabajador.getDni());
+        validarTextoObligatorio(trabajador.getNombres(), "El nombre del trabajador es obligatorio.");
+        validarTextoObligatorio(trabajador.getApellidos(), "Los apellidos del trabajador son obligatorios.");
+        validarTextoObligatorio(trabajador.getCorreo(), "El correo del trabajador es obligatorio.");
+        validarTextoObligatorio(trabajador.getContrasena(), "La contrasena es obligatoria.");
+        if (!esModificacion && daoTrabajador.existeUsuarioEnBD(trabajador)) {
+            throw new Exception("Ya existe un usuario con ese DNI o correo.");
+        }
+    }
+
+    private void validarDNI(String dni) throws Exception {
+        if (dni == null || dni.trim().isEmpty()) {
+            throw new Exception("El DNI es obligatorio.");
+        }
+        if (!dni.trim().matches("\\d{8}")) {
+            throw new Exception("El DNI debe tener exactamente 8 digitos numericos.");
+        }
+    }
+
+    private void validarTextoObligatorio(String texto, String mensaje) throws Exception {
+        if (texto == null || texto.trim().isEmpty()) {
+            throw new Exception(mensaje);
+        }
     }
 }

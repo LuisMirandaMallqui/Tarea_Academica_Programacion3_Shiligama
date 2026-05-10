@@ -1,265 +1,187 @@
 package pe.edu.pucp.persistance.dao.usuario.impl;
 
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
-import pe.edu.pucp.persistance.dao.usuario.dao.UsuarioDao;
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.usuario.TrabajadorDto;
+import pe.edu.pucp.persistance.dao.usuario.dao.TrabajadorDao;
 
-import java.sql.CallableStatement;
-import java.sql.Date;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class TrabajadorDaoImpl extends DaoImplBase implements UsuarioDao<TrabajadorDto> {
+public class TrabajadorDaoImpl implements TrabajadorDao {
 
-    private TrabajadorDto trabajador;
-
-    public TrabajadorDaoImpl() {
-        this.trabajador = null;
-    }
-    public TrabajadorDaoImpl(TrabajadorDto trabajador) {
-        this.trabajador = trabajador;
-    }
-
-    // -------------------------------------------------------------------------
-    // DML — el SP maneja el INSERT en usuarios + trabajadores en una sola operación
-    // -------------------------------------------------------------------------
-
+    // SP: INSERTAR_TRABAJADOR(OUT _id_trabajador, IN _nombres, IN _apellidos,
+    //   IN _dni, IN _telefono, IN _correo, IN _contrasena, IN _cargo, IN _fecha_ingreso)
     @Override
     public int insertar(TrabajadorDto trabajador) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_TRABAJADOR(?, ?, ?, ?, ?, ?, ?, ?, ?)}");
-            cs.registerOutParameter(1, Types.INTEGER);
-            cs.setString(2, trabajador.getNombres());
-            cs.setString(3, trabajador.getApellidos());
-            cs.setString(4, trabajador.getDni());
-            cs.setString(5, trabajador.getTelefono());
-            cs.setString(6, trabajador.getCorreo());
-            cs.setString(7, trabajador.getContrasena());
-            cs.setString(8, null); // CARGO — no está en TrabajadorDto aún, se pasa null por ahora
-            cs.setDate(9, Date.valueOf(trabajador.getFechaIngreso()));
-            cs.execute();
-            trabajador.setIdTrabajador(cs.getInt(1));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar trabajador: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, trabajador.getNombres());
+        parametrosEntrada.put(3, trabajador.getApellidos());
+        parametrosEntrada.put(4, trabajador.getDni());
+        parametrosEntrada.put(5, trabajador.getTelefono());
+        parametrosEntrada.put(6, trabajador.getCorreo());
+        parametrosEntrada.put(7, trabajador.getContrasena());
+        parametrosEntrada.put(8, null); // CARGO — agregar al model si es necesario
+        parametrosEntrada.put(9, trabajador.getFechaIngreso() != null
+                ? java.sql.Date.valueOf(trabajador.getFechaIngreso()) : null);
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_TRABAJADOR", parametrosEntrada, parametrosSalida);
+        trabajador.setIdTrabajador((int) parametrosSalida.get(1));
+        return trabajador.getIdTrabajador();
     }
 
+    // SP: MODIFICAR_TRABAJADOR(IN _id_trabajador, IN _nombres, IN _apellidos,
+    //   IN _dni, IN _telefono, IN _correo, IN _fecha_ingreso)
     @Override
     public int modificar(TrabajadorDto trabajador) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_TRABAJADOR(?, ?, ?, ?, ?, ?, ?)}");
-            cs.setInt(1, trabajador.getIdTrabajador());
-            cs.setString(2, trabajador.getNombres());
-            cs.setString(3, trabajador.getApellidos());
-            cs.setString(4, trabajador.getDni());
-            cs.setString(5, trabajador.getTelefono());
-            cs.setString(6, trabajador.getCorreo());
-            cs.setDate(7, Date.valueOf(trabajador.getFechaIngreso()));
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar trabajador: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+
+        parametrosEntrada.put(1, trabajador.getIdTrabajador());
+        parametrosEntrada.put(2, trabajador.getNombres());
+        parametrosEntrada.put(3, trabajador.getApellidos());
+        parametrosEntrada.put(4, trabajador.getDni());
+        parametrosEntrada.put(5, trabajador.getTelefono());
+        parametrosEntrada.put(6, trabajador.getCorreo());
+        parametrosEntrada.put(7, trabajador.getFechaIngreso() != null
+                ? java.sql.Date.valueOf(trabajador.getFechaIngreso()) : null);
+
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_TRABAJADOR", parametrosEntrada, null);
     }
 
+    // SP: ELIMINAR_TRABAJADOR(IN _id_trabajador)
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_TRABAJADOR(?)}");
-            cs.setInt(1, id);
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar trabajador: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_TRABAJADOR", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // Select a través de PrepareStatement
-    // -------------------------------------------------------------------------
-
+    // SP: BUSCAR_TRABAJADOR_X_ID(IN _id_trabajador)
+    @Override
     public TrabajadorDto buscarPorID(int id) {
-        this.trabajador = new TrabajadorDto();
-        this.trabajador.setIdTrabajador(id);
-        this.obtenerPorId();
-        return this.trabajador;
+        TrabajadorDto trabajador = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_TRABAJADOR_X_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    trabajador = mapearTrabajador(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al buscar trabajador: " + ex.getMessage());
+        }
+        return trabajador;
     }
 
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        return "SELECT t.TRABAJADOR_ID, t.CARGO, t.FECHA_INGRESO, "
-                + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                + "FROM trabajadores t JOIN usuarios u ON t.USUARIO_ID = u.USUARIO_ID "
-                + "WHERE t.TRABAJADOR_ID = ?";
-    }
-
-    @Override
-    protected void incluirParametrosParaObtenerPorId() throws SQLException {
-        this.preparedStatement.setInt(1, this.trabajador.getIdTrabajador());
-    }
-
-    @Override
-    protected void instanciarObjetoDelResultSet() throws SQLException {
-        this.trabajador = mapearTrabajador();
-    }
-
-    @Override
-    protected void limpiarObjetoDelResultSet() {
-        this.trabajador = null;
-    }
-
+    // SP: LISTAR_TRABAJADORES()
     @Override
     public List<TrabajadorDto> listarTodos() {
-        return super.listarTodos();
+        List<TrabajadorDto> lista = new ArrayList<>();
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_TRABAJADORES", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearTrabajador(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar trabajadores: " + ex.getMessage());
+        }
+        return lista;
     }
 
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        return "SELECT t.TRABAJADOR_ID, t.CARGO, t.FECHA_INGRESO, "
-                + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                + "FROM trabajadores t JOIN usuarios u ON t.USUARIO_ID = u.USUARIO_ID "
-                + "WHERE t.ACTIVO = 1 "
-                + "ORDER BY u.APELLIDOS, u.NOMBRES";
-    }
-
-    @Override
-    protected void agregarObjetoALaLista(List lista) throws SQLException {
-        lista.add(mapearTrabajador());
-    }
-
-    // -------------------------------------------------------------------------
-    // Métodos específicos de UsuarioDao
-    // -------------------------------------------------------------------------
-
+    // SP: BUSCAR_TRABAJADOR_X_CORREO(IN _correo)
     @Override
     public TrabajadorDto buscarPorCorreo(String correo) {
-        this.trabajador = null;
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT t.TRABAJADOR_ID, t.CARGO, t.FECHA_INGRESO, "
-                            + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                            + "FROM trabajadores t JOIN usuarios u ON t.USUARIO_ID = u.USUARIO_ID "
-                            + "WHERE u.CORREO = ?"
-            );
-            this.preparedStatement.setString(1, correo);
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                this.trabajador = mapearTrabajador();
+        TrabajadorDto trabajador = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, correo);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_TRABAJADOR_X_CORREO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    trabajador = mapearTrabajador(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en buscarPorCorreo (trabajador): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en buscarPorCorreo (trabajador): " + ex.getMessage());
         }
-        return this.trabajador;
+        return trabajador;
     }
 
+    // SP: BUSCAR_TRABAJADOR_X_DNI(IN _dni)
     @Override
     public TrabajadorDto obtenerPorDNI(String dni) {
-        this.trabajador = null;
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT t.TRABAJADOR_ID, t.CARGO, t.FECHA_INGRESO, "
-                            + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                            + "FROM trabajadores t JOIN usuarios u ON t.USUARIO_ID = u.USUARIO_ID "
-                            + "WHERE u.DNI = ?"
-            );
-            this.preparedStatement.setString(1, dni);
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                this.trabajador = mapearTrabajador();
+        TrabajadorDto trabajador = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, dni);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_TRABAJADOR_X_DNI", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    trabajador = mapearTrabajador(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en obtenerPorDNI (trabajador): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en obtenerPorDNI (trabajador): " + ex.getMessage());
         }
-        return this.trabajador;
+        return trabajador;
     }
 
+    // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni)
     @Override
     public Boolean existeUsuarioEnBD(TrabajadorDto trabajador) {
         Boolean existe = false;
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT COUNT(*) FROM usuarios WHERE CORREO = ? OR DNI = ?"
-            );
-            this.preparedStatement.setString(1, trabajador.getCorreo());
-            this.preparedStatement.setString(2, trabajador.getDni());
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                existe = this.resultSet.getInt(1) > 0;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, trabajador.getCorreo());
+        parametrosEntrada.put(2, trabajador.getDni());
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("EXISTE_USUARIO_EN_BD", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    existe = rs.getInt(1) > 0;
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en existeUsuarioEnBD (trabajador): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en existeUsuarioEnBD (trabajador): " + ex.getMessage());
         }
         return existe;
     }
 
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet — centralizado para todos los métodos SELECT
-    // -------------------------------------------------------------------------
-
-    private TrabajadorDto mapearTrabajador() throws SQLException {
+    private TrabajadorDto mapearTrabajador(ResultSet rs) throws SQLException {
         TrabajadorDto t = new TrabajadorDto();
-        t.setIdTrabajador(resultSet.getInt("TRABAJADOR_ID"));
-        Date fechaIngreso = resultSet.getDate("FECHA_INGRESO");
+        t.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+        Date fechaIngreso = rs.getDate("FECHA_INGRESO");
         if (fechaIngreso != null) {
             t.setFechaIngreso(fechaIngreso.toLocalDate());
         }
-        t.setIdUsuario(resultSet.getInt("USUARIO_ID"));
-        t.setNombres(resultSet.getString("NOMBRES"));
-        t.setApellidos(resultSet.getString("APELLIDOS"));
-        t.setDni(resultSet.getString("DNI"));
-        t.setTelefono(resultSet.getString("TELEFONO"));
-        t.setCorreo(resultSet.getString("CORREO"));
-        t.setContrasena(resultSet.getString("CONTRASENA"));
+        t.setIdUsuario(rs.getInt("USUARIO_ID"));
+        t.setNombres(rs.getString("NOMBRES"));
+        t.setApellidos(rs.getString("APELLIDOS"));
+        t.setDni(rs.getString("DNI"));
+        t.setTelefono(rs.getString("TELEFONO"));
+        t.setCorreo(rs.getString("CORREO"));
+        t.setContrasena(rs.getString("CONTRASENA"));
         return t;
     }
 }

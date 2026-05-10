@@ -3,6 +3,7 @@ package pe.edu.pucp.db;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
 class DBManagerTest {
@@ -18,8 +19,12 @@ class DBManagerTest {
     void getConnection() { // para ver que los properties si enganchen en la construccion de la conexion
         System.out.println("getConnection");
         DBManager dBManager = DBManager.getInstance();
-        Connection conexion = dBManager.getConnection();
+        Connection conexion = null;
+        try {
+            conexion = dBManager.getConnection();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
         assertNotNull(conexion);
-        dBManager.closeConnection();
     }
 }

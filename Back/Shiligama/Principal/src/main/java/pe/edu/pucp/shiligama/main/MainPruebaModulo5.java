@@ -74,9 +74,9 @@ public class MainPruebaModulo5 {
         PromocionDto p = new PromocionDto(0, "Promo Verano", "Descuento por verano", TipoDescuento.PORCENTAJE, 15.0,
                 LocalDate.now(), LocalDate.now().plusDays(10), "Aplica a bebidas", true);
         int resIns = dao.insertar(p);
-        System.out.println("Insertar promoción: " + (resIns == 1 ? "Exito ID: " + p.getIdPromocion() : "Error"));
+        System.out.println("Insertar promoción: " + (resIns > 0 ? "Exito ID: " + p.getIdPromocion() : "Error"));
 
-        if (resIns == 1) {
+        if (resIns > 0) {
             // 2. Modificar
             p.setNombre("Promo Verano Modificada");
             p.setValorDescuento(20.0);
@@ -129,9 +129,9 @@ public class MainPruebaModulo5 {
         d.setActivo(true);
 
         int resIns = dao.insertar(d);
-        System.out.println("Insertar devolución: " + (resIns == 1 ? "Exito ID: " + d.getIdDevolucion() : "Error"));
+        System.out.println("Insertar devolución: " + (resIns > 0 ? "Exito ID: " + d.getIdDevolucion() : "Error"));
 
-        if (resIns == 1) {
+        if (resIns > 0) {
             // 2. Modificar
             d.setEstadoDevolucion("APROBADO");
             int resMod = dao.modificar(d);
@@ -172,9 +172,9 @@ public class MainPruebaModulo5 {
         //mov.setUsuarioCreacion(1); EN CASO SE AGREGE ID DE USUARIO
 
         int resIns = dao.insertar(mov);
-        System.out.println("Insertar movimiento (Log): " + (resIns == 1 ? "Exito ID: " + mov.getIdMovimiento() : "Error"));
+        System.out.println("Insertar movimiento (Log): " + (resIns > 0 ? "Exito ID: " + mov.getIdMovimiento() : "Error"));
 
-        if (resIns == 1) {
+        if (resIns > 0) {
             // 2. Modificar (Debe dar mensaje de error custom y retornar 0)
             int resMod = dao.modificar(mov);
             System.out.println("Intentar modificar log inmutable, resultado: " + resMod);
@@ -213,9 +213,9 @@ public class MainPruebaModulo5 {
         categoriaPadre.setEstado(true);
 
         int resInsPadre = dao.insertar(categoriaPadre);
-        System.out.println("Insertar categoría padre: " + (resInsPadre == 1 ? "Éxito ID: " + categoriaPadre.getIdCategoria() : "Error"));
+        System.out.println("Insertar categoría padre: " + (resInsPadre > 0 ? "Éxito ID: " + categoriaPadre.getIdCategoria() : "Error"));
 
-        if (resInsPadre == 1) {
+        if (resInsPadre > 0) {
             // 2. Insertar categoría hija
             CategoriaDto categoriaHija = new CategoriaDto();
             categoriaHija.setNombre("Gaseosas");
@@ -224,9 +224,9 @@ public class MainPruebaModulo5 {
             categoriaHija.setEstado(true);
 
             int resInsHija = dao.insertar(categoriaHija);
-            System.out.println("Insertar categoría hija: " + (resInsHija == 1 ? "Éxito ID: " + categoriaHija.getIdCategoria() : "Error"));
+            System.out.println("Insertar categoría hija: " + (resInsHija > 0 ? "Éxito ID: " + categoriaHija.getIdCategoria() : "Error"));
 
-            if (resInsHija == 1) {
+            if (resInsHija > 0) {
                 // 3. Modificar categoría hija
                 categoriaHija.setNombre("Bebidas Gaseosas");
                 categoriaHija.setDescripcion("Bebidas carbonatadas y refrescantes");
@@ -280,9 +280,9 @@ public class MainPruebaModulo5 {
         categoria.setEstado(true);
 
         int resInsCat = daoCategoria.insertar(categoria);
-        System.out.println("Insertar categoría para productos: " + (resInsCat == 1 ? "Éxito ID: " + categoria.getIdCategoria() : "Error"));
+        System.out.println("Insertar categoría para productos: " + (resInsCat > 0 ? "Éxito ID: " + categoria.getIdCategoria() : "Error"));
 
-        if (resInsCat == 1) {
+        if (resInsCat > 0) {
             // 1. Insertar producto
             ProductoDto producto = new ProductoDto();
             producto.setNombre("Papas Lays Original");
@@ -297,9 +297,9 @@ public class MainPruebaModulo5 {
             producto.setCategoria(categoria);
 
             int resIns = daoProducto.insertar(producto);
-            System.out.println("Insertar producto: " + (resIns == 1 ? "Éxito ID: " + producto.getIdProducto() : "Error"));
+            System.out.println("Insertar producto: " + (resIns > 0 ? "Éxito ID: " + producto.getIdProducto() : "Error"));
 
-            if (resIns == 1) {
+            if (resIns > 0) {
                 // 2. Modificar producto
                 producto.setNombre("Papas Lays Original 200g");
                 producto.setPrecioUnitario(7.00);
@@ -358,9 +358,9 @@ public class MainPruebaModulo5 {
         MetodoPagoDto mp = new MetodoPagoDto();
         mp.setNombre("Yape");
         int resIns = dao.insertar(mp);
-        System.out.println("Insertar método de pago: " + (resIns == 1 ? "Éxito ID: " + mp.getIdMetodoPago() : "Error"));
+        System.out.println("Insertar método de pago: " + (resIns > 0 ? "Éxito ID: " + mp.getIdMetodoPago() : "Error"));
 
-        if (resIns == 1) {
+        if (resIns > 0) {
             MetodoPagoDto mpBuscado = dao.buscarPorID(mp.getIdMetodoPago());
             System.out.println("Buscar método de pago: " + (mpBuscado != null ? mpBuscado.getNombre() : "No encontrado"));
 
@@ -401,9 +401,9 @@ public class MainPruebaModulo5 {
 
         int resIns = dao.insertar(venta);
         idVentaCreada = venta.getIdVenta(); // guarda el ID
-        System.out.println("Insertar venta: " + (resIns == 1 ? "Éxito ID: " + venta.getIdVenta() : "Error"));
+        System.out.println("Insertar venta: " + (resIns > 0 ? "Éxito ID: " + venta.getIdVenta() : "Error"));
 
-        if (resIns == 1) {
+        if (resIns > 0) {
             VentaDto ventaBuscada = dao.buscarPorID(venta.getIdVenta());
             System.out.println("Buscar venta: " + (ventaBuscada != null
                     ? "Encontrada, Canal: " + ventaBuscada.getCanalVenta() : "No encontrada"));
@@ -434,9 +434,9 @@ public class MainPruebaModulo5 {
         detalle.setProducto(producto);
         detalle.setCantidad(3);
         int resIns = dao.insertar(detalle);
-        System.out.println("Insertar detalle venta: " + (resIns == 1 ? "Éxito ID: " + detalle.getIdDetalleVenta() : "Error"));
+        System.out.println("Insertar detalle venta: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetalleVenta() : "Error"));
 
-        if (resIns == 1) {
+        if (resIns > 0) {
             DetalleVentaDto detalleBuscado = dao.buscarPorID(detalle.getIdDetalleVenta());
             System.out.println("Buscar detalle venta: " + (detalleBuscado != null
                     ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() : "No encontrado"));
@@ -470,9 +470,9 @@ public class MainPruebaModulo5 {
         pedido.setObservaciones("Pedido de prueba");
         int resIns = dao.insertar(pedido);
         idPedidoCreado = pedido.getIdPedido();
-        System.out.println("Insertar pedido: " + (resIns == 1 ? "Éxito ID: " + pedido.getIdPedido() : "Error"));
+        System.out.println("Insertar pedido: " + (resIns > 0 ? "Éxito ID: " + pedido.getIdPedido() : "Error"));
 
-        if (resIns == 1) {
+        if (resIns > 0) {
             PedidoDto pedidoBuscado = dao.buscarPorID(pedido.getIdPedido());
             System.out.println("Buscar pedido: " + (pedidoBuscado != null
                     ? "Encontrado, Estado: " + pedidoBuscado.getEstadoPedido() : "No encontrado"));
@@ -504,9 +504,9 @@ public class MainPruebaModulo5 {
         detalle.setProducto(producto);
         detalle.setCantidad(2);
         int resIns = dao.insertar(detalle);
-        System.out.println("Insertar detalle pedido: " + (resIns == 1 ? "Éxito ID: " + detalle.getIdDetallePedido() : "Error"));
+        System.out.println("Insertar detalle pedido: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetallePedido() : "Error"));
 
-        if (resIns == 1) {
+        if (resIns > 0) {
             DetallePedidoDto detalleBuscado = dao.buscarPorID(detalle.getIdDetallePedido());
             System.out.println("Buscar detalle pedido: " + (detalleBuscado != null
                     ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() : "No encontrado"));

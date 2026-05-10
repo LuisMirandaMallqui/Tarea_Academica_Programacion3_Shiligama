@@ -1,170 +1,105 @@
 package pe.edu.pucp.persistance.dao.venta.Impl;
 
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
-import pe.edu.pucp.persistance.dao.venta.dao.DetalleVentaDao;
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.producto.ProductoDto;
 import pe.edu.pucp.model.venta.DetalleVentaDto;
+import pe.edu.pucp.persistance.dao.venta.dao.DetalleVentaDao;
 
-import java.sql.CallableStatement;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class DetalleVentaDaoImpl extends DaoImplBase implements DetalleVentaDao {
+public class DetalleVentaDaoImpl implements DetalleVentaDao {
 
-    private DetalleVentaDto detalleVenta;
-
-    public DetalleVentaDaoImpl() {
-        this.detalleVenta = null;
-    }
-
-    public DetalleVentaDaoImpl(DetalleVentaDto detalleVenta) {
-        this.detalleVenta = detalleVenta;
-    }
-
-    // -------------------------------------------------------------------------
-    // Metodos CRUD importantes
-    // -------------------------------------------------------------------------
+    // SP: INSERTAR_DETALLE_VENTA(OUT _detalle_venta_id, IN _venta_id, IN _producto_id, IN _cantidad)
     @Override
     public int insertar(DetalleVentaDto detalleVenta) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_DETALLE_VENTA(?, ?, ?, ?)}");
-            cs.registerOutParameter(1, Types.INTEGER);
-            cs.setInt(2, detalleVenta.getIdPadreVenta());
-            cs.setInt(3, detalleVenta.getProducto().getIdProducto());
-            cs.setInt(4, detalleVenta.getCantidad());
-            cs.execute();
-            detalleVenta.setIdDetalleVenta(cs.getInt(1));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar detalle de venta: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, detalleVenta.getIdPadreVenta());
+        parametrosEntrada.put(3, detalleVenta.getProducto().getIdProducto());
+        parametrosEntrada.put(4, detalleVenta.getCantidad());
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_DETALLE_VENTA", parametrosEntrada, parametrosSalida);
+        detalleVenta.setIdDetalleVenta((int) parametrosSalida.get(1));
+        return detalleVenta.getIdDetalleVenta();
     }
 
+    // SP: MODIFICAR_DETALLE_VENTA(IN _detalle_venta_id, IN _cantidad)
     @Override
     public int modificar(DetalleVentaDto detalleVenta) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_DETALLE_VENTA(?, ?)}");
-            cs.setInt(1, detalleVenta.getIdDetalleVenta());
-            cs.setInt(2, detalleVenta.getCantidad());
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar detalle de venta: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, detalleVenta.getIdDetalleVenta());
+        parametrosEntrada.put(2, detalleVenta.getCantidad());
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_DETALLE_VENTA", parametrosEntrada, null);
     }
 
+    // SP: ELIMINAR_DETALLE_VENTA(IN _detalle_venta_id)
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_DETALLE_VENTA(?)}");
-            cs.setInt(1, id);
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar detalle de venta: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_DETALLE_VENTA", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // Para operaciones SELECT se hace uso de PreparedStatement
-    // -------------------------------------------------------------------------
+    // SP: BUSCAR_DETALLE_VENTA_X_ID(IN _detalle_venta_id)
+    @Override
     public DetalleVentaDto buscarPorID(int id) {
-        this.detalleVenta = new DetalleVentaDto();
-        this.detalleVenta.setIdDetalleVenta(id);
-        this.obtenerPorId();
-        return this.detalleVenta;
+        DetalleVentaDto detalle = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_DETALLE_VENTA_X_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    detalle = mapearDetalleVenta(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al buscar detalle de venta: " + ex.getMessage());
+        }
+        return detalle;
     }
 
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        return "SELECT dv.DETALLE_VENTA_ID, dv.VENTA_ID, dv.CANTIDAD, "
-                + "dv.PRECIO_UNITARIO, dv.SUBTOTAL, "
-                + "p.PRODUCTO_ID, p.NOMBRE AS PRODUCTO_NOMBRE "
-                + "FROM detalles_venta dv JOIN productos p ON dv.PRODUCTO_ID = p.PRODUCTO_ID "
-                + "WHERE dv.DETALLE_VENTA_ID = ?";
-    }
-
-    @Override
-    protected void incluirParametrosParaObtenerPorId() throws SQLException {
-        this.preparedStatement.setInt(1, this.detalleVenta.getIdDetalleVenta());
-    }
-
-    @Override
-    protected void instanciarObjetoDelResultSet() throws SQLException {
-        this.detalleVenta = mapearDetalleVenta();
-    }
-
-    @Override
-    protected void limpiarObjetoDelResultSet() {
-        this.detalleVenta = null;
-    }
-
+    // SP: LISTAR_DETALLES_VENTA()
     @Override
     public List<DetalleVentaDto> listarTodos() {
-        return super.listarTodos();
+        List<DetalleVentaDto> lista = new ArrayList<>();
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_DETALLES_VENTA", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearDetalleVenta(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar detalles de venta: " + ex.getMessage());
+        }
+        return lista;
     }
 
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        return "SELECT dv.DETALLE_VENTA_ID, dv.VENTA_ID, dv.CANTIDAD, "
-                + "dv.PRECIO_UNITARIO, dv.SUBTOTAL, "
-                + "p.PRODUCTO_ID, p.NOMBRE AS PRODUCTO_NOMBRE "
-                + "FROM detalles_venta dv JOIN productos p ON dv.PRODUCTO_ID = p.PRODUCTO_ID";
-    }
-
-    @Override
-    protected void agregarObjetoALaLista(List lista) throws SQLException {
-        lista.add(mapearDetalleVenta());
-    }
-
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet — centralizado para buscarPorID y listarTodos
-    // -------------------------------------------------------------------------
-    private DetalleVentaDto mapearDetalleVenta() throws SQLException {
+    private DetalleVentaDto mapearDetalleVenta(ResultSet rs) throws SQLException {
         DetalleVentaDto detalle = new DetalleVentaDto();
-        detalle.setIdDetalleVenta(resultSet.getInt("DETALLE_VENTA_ID"));
-        detalle.setIdPadreVenta(resultSet.getInt("VENTA_ID"));
-        detalle.setCantidad(resultSet.getInt("CANTIDAD"));
-        detalle.setPrecioUnitario(resultSet.getDouble("PRECIO_UNITARIO"));
-        detalle.setSubtotal(resultSet.getDouble("SUBTOTAL"));
+        detalle.setIdDetalleVenta(rs.getInt("DETALLE_VENTA_ID"));
+        detalle.setIdPadreVenta(rs.getInt("VENTA_ID"));
+        detalle.setCantidad(rs.getInt("CANTIDAD"));
+        detalle.setPrecioUnitario(rs.getDouble("PRECIO_UNITARIO"));
+        detalle.setSubtotal(rs.getDouble("SUBTOTAL"));
 
         ProductoDto producto = new ProductoDto();
-        producto.setIdProducto(resultSet.getInt("PRODUCTO_ID"));
-        producto.setNombre(resultSet.getString("PRODUCTO_NOMBRE"));
+        producto.setIdProducto(rs.getInt("PRODUCTO_ID"));
+        producto.setNombre(rs.getString("PRODUCTO_NOMBRE"));
         detalle.setProducto(producto);
 
         return detalle;

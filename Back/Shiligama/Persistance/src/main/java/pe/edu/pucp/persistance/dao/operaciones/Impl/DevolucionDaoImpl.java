@@ -1,173 +1,130 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
-import pe.edu.pucp.persistance.dao.operaciones.dao.DevolucionDao;
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.operaciones.Devolucion;
+import pe.edu.pucp.persistance.dao.operaciones.dao.DevolucionDao;
 
 import java.sql.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class DevolucionDaoImpl extends DaoImplBase implements DevolucionDao {
+public class DevolucionDaoImpl implements DevolucionDao {
 
-    // -------------------------------------------------------------------------
-    // DML con CallableStatement + parámetros nombrados
-    // -------------------------------------------------------------------------
-
+    // SP: INSERTAR_DEVOLUCION(OUT _devolucion_id, IN _id_producto, IN _id_trabajador,
+    //   IN _estado_devolucion, IN _cantidad, IN _motivo, IN _fecha_hora)
     @Override
     public int insertar(Devolucion devolucion) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_DEVOLUCION(?,?,?,?,?,?,?)}");
-            cs.registerOutParameter("_devolucion_id", Types.INTEGER);
-            cs.setInt("_id_producto", devolucion.getIdProducto());
-            cs.setInt("_id_trabajador", devolucion.getIdTrabajador());
-            cs.setString("_estado_devolucion", devolucion.getEstadoDevolucion());
-            cs.setInt("_cantidad", devolucion.getCantidad());
-            cs.setString("_motivo", devolucion.getMotivo());
-            cs.setTimestamp("_fecha_hora", devolucion.getFechaHora() != null
-                    ? Timestamp.valueOf(devolucion.getFechaHora())
-                    : Timestamp.valueOf(LocalDateTime.now()));
-            cs.executeUpdate();
-            devolucion.setIdDevolucion(cs.getInt("_devolucion_id"));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar devolucion: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, devolucion.getIdProducto());
+        parametrosEntrada.put(3, devolucion.getIdTrabajador());
+        parametrosEntrada.put(4, devolucion.getEstadoDevolucion());
+        parametrosEntrada.put(5, devolucion.getCantidad());
+        parametrosEntrada.put(6, devolucion.getMotivo());
+        parametrosEntrada.put(7, devolucion.getFechaHora() != null
+                ? Timestamp.valueOf(devolucion.getFechaHora())
+                : Timestamp.valueOf(LocalDateTime.now()));
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_DEVOLUCION", parametrosEntrada, parametrosSalida);
+        devolucion.setIdDevolucion((int) parametrosSalida.get(1));
+        return devolucion.getIdDevolucion();
     }
 
+    // SP: MODIFICAR_DEVOLUCION(IN _devolucion_id, IN _producto_id, IN _trabajador_id,
+    //   IN _estado_devolucion, IN _cantidad, IN _motivo, IN _fecha_hora)
     @Override
     public int modificar(Devolucion devolucion) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_DEVOLUCION(?,?,?,?,?,?,?)}");
-            cs.setInt("_devolucion_id", devolucion.getIdDevolucion());
-            cs.setInt("_producto_id", devolucion.getIdProducto());
-            cs.setInt("_trabajador_id", devolucion.getIdTrabajador());
-            cs.setString("_estado_devolucion", devolucion.getEstadoDevolucion());
-            cs.setInt("_cantidad", devolucion.getCantidad());
-            cs.setString("_motivo", devolucion.getMotivo());
-            cs.setTimestamp("_fecha_hora", Timestamp.valueOf(devolucion.getFechaHora()));
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar devolucion: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+
+        parametrosEntrada.put(1, devolucion.getIdDevolucion());
+        parametrosEntrada.put(2, devolucion.getIdProducto());
+        parametrosEntrada.put(3, devolucion.getIdTrabajador());
+        parametrosEntrada.put(4, devolucion.getEstadoDevolucion());
+        parametrosEntrada.put(5, devolucion.getCantidad());
+        parametrosEntrada.put(6, devolucion.getMotivo());
+        parametrosEntrada.put(7, Timestamp.valueOf(devolucion.getFechaHora()));
+
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_DEVOLUCION", parametrosEntrada, null);
     }
 
+    // SP: ELIMINAR_DEVOLUCION(IN _devolucion_id)
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_DEVOLUCION(?)}");
-            cs.setInt("_devolucion_id", id);
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar devolucion: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_DEVOLUCION", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // SELECTs — usan SPs con CallableStatement directamente
-    // -------------------------------------------------------------------------
+    // SP: BUSCAR_DEVOLUCION_POR_ID(IN _devolucion_id)
     @Override
     public Devolucion buscarPorID(int id) {
         Devolucion d = null;
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL BUSCAR_DEVOLUCION_POR_ID(?)}");
-            cs.setInt("_devolucion_id", id);
-            ResultSet rs = cs.executeQuery();
-            if (rs.next()) {
-                d = mapearDevolucion(rs);
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_DEVOLUCION_POR_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    d = mapearDevolucion(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en buscarPorID devolucion: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al buscar devolucion: " + ex.getMessage());
         }
         return d;
     }
 
+    // SP: LISTAR_DEVOLUCIONES_TODAS()
     @Override
     public List<Devolucion> listarTodos() {
         List<Devolucion> lista = new ArrayList<>();
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_DEVOLUCIONES_TODAS()}");
-            ResultSet rs = cs.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearDevolucion(rs));
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_DEVOLUCIONES_TODAS", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearDevolucion(rs));
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en listarTodos devoluciones: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al listar devoluciones: " + ex.getMessage());
         }
         return lista;
     }
 
+    // SP: LISTAR_DEVOLUCIONES_POR_FECHAS(IN _fecha_inicio, IN _fecha_fin)
     @Override
-    public List<Devolucion> listarPorFechas(java.time.LocalDate fechaInicio, java.time.LocalDate fechaFin) {
+    public List<Devolucion> listarPorFechas(LocalDate fechaInicio, LocalDate fechaFin) {
         List<Devolucion> lista = new ArrayList<>();
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_DEVOLUCIONES_POR_FECHAS(?,?)}");
-            cs.setTimestamp("_fecha_inicio", Timestamp.valueOf(fechaInicio.atStartOfDay()));
-            cs.setTimestamp("_fecha_fin", Timestamp.valueOf(fechaFin.atTime(23, 59, 59)));
-            ResultSet rs = cs.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearDevolucion(rs));
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, Timestamp.valueOf(fechaInicio.atStartOfDay()));
+        parametrosEntrada.put(2, Timestamp.valueOf(fechaFin.atTime(23, 59, 59)));
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_DEVOLUCIONES_POR_FECHAS", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearDevolucion(rs));
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en listarPorFechas devoluciones: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al listar devoluciones por fechas: " + ex.getMessage());
         }
         return lista;
     }
-
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet
-    // -------------------------------------------------------------------------
 
     private Devolucion mapearDevolucion(ResultSet rs) throws SQLException {
         Devolucion d = new Devolucion();
@@ -181,18 +138,5 @@ public class DevolucionDaoImpl extends DaoImplBase implements DevolucionDao {
                 ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);
         d.setActivo(rs.getBoolean("ACTIVO"));
         return d;
-    }
-
-    // -------------------------------------------------------------------------
-    // Métodos abstractos de DaoImplBase (SELECTs via SPs)
-    // -------------------------------------------------------------------------
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
-    }
-
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
     }
 }

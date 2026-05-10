@@ -1,242 +1,167 @@
 package pe.edu.pucp.persistance.dao.operaciones.Impl;
 
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.enums.TipoDescuento;
 import pe.edu.pucp.model.promocion.PromocionDto;
 import pe.edu.pucp.persistance.dao.operaciones.dao.PromocionDao;
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class PromocionDaoImpl extends DaoImplBase implements PromocionDao {
+public class PromocionDaoImpl implements PromocionDao {
 
-    // -------------------------------------------------------------------------
-    // DML con CallableStatement + parámetros nombrados
-    // -------------------------------------------------------------------------
-
+    // SP: INSERTAR_PROMOCION(OUT _promocion_id, IN _nombre, IN _descripcion,
+    //   IN _tipo_descuento, IN _valor_descuento, IN _fecha_inicio, IN _fecha_fin, IN _condiciones)
     @Override
     public int insertar(PromocionDto promocion) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_PROMOCION(?,?,?,?,?,?,?,?)}");
-            cs.registerOutParameter("_promocion_id", Types.INTEGER);
-            cs.setString("_nombre", promocion.getNombre());
-            cs.setString("_descripcion", promocion.getDescripcion());
-            cs.setString("_tipo_descuento", promocion.getTipoDescuento().toString());
-            cs.setDouble("_valor_descuento", promocion.getValorDescuento());
-            cs.setDate("_fecha_inicio", Date.valueOf(promocion.getFechaInicio()));
-            cs.setDate("_fecha_fin", Date.valueOf(promocion.getFechaFin()));
-            cs.setString("_condiciones", promocion.getCondiciones());
-            cs.executeUpdate();
-            promocion.setIdPromocion(cs.getInt("_promocion_id"));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar promocion: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, promocion.getNombre());
+        parametrosEntrada.put(3, promocion.getDescripcion());
+        parametrosEntrada.put(4, promocion.getTipoDescuento().toString());
+        parametrosEntrada.put(5, promocion.getValorDescuento());
+        parametrosEntrada.put(6, Date.valueOf(promocion.getFechaInicio()));
+        parametrosEntrada.put(7, Date.valueOf(promocion.getFechaFin()));
+        parametrosEntrada.put(8, promocion.getCondiciones());
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_PROMOCION", parametrosEntrada, parametrosSalida);
+        promocion.setIdPromocion((int) parametrosSalida.get(1));
+        return promocion.getIdPromocion();
     }
 
+    // SP: MODIFICAR_PROMOCION(IN _promocion_id, IN _nombre, IN _descripcion,
+    //   IN _tipo_descuento, IN _valor_descuento, IN _fecha_inicio, IN _fecha_fin, IN _condiciones)
     @Override
     public int modificar(PromocionDto promocion) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_PROMOCION(?,?,?,?,?,?,?,?)}");
-            cs.setInt("_promocion_id", promocion.getIdPromocion());
-            cs.setString("_nombre", promocion.getNombre());
-            cs.setString("_descripcion", promocion.getDescripcion());
-            cs.setString("_tipo_descuento", promocion.getTipoDescuento().toString());
-            cs.setDouble("_valor_descuento", promocion.getValorDescuento());
-            cs.setDate("_fecha_inicio", Date.valueOf(promocion.getFechaInicio()));
-            cs.setDate("_fecha_fin", Date.valueOf(promocion.getFechaFin()));
-            cs.setString("_condiciones", promocion.getCondiciones());
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar promocion: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+
+        parametrosEntrada.put(1, promocion.getIdPromocion());
+        parametrosEntrada.put(2, promocion.getNombre());
+        parametrosEntrada.put(3, promocion.getDescripcion());
+        parametrosEntrada.put(4, promocion.getTipoDescuento().toString());
+        parametrosEntrada.put(5, promocion.getValorDescuento());
+        parametrosEntrada.put(6, Date.valueOf(promocion.getFechaInicio()));
+        parametrosEntrada.put(7, Date.valueOf(promocion.getFechaFin()));
+        parametrosEntrada.put(8, promocion.getCondiciones());
+
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_PROMOCION", parametrosEntrada, null);
     }
 
+    // SP: ELIMINAR_PROMOCION(IN _promocion_id)
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_PROMOCION(?)}");
-            cs.setInt("_promocion_id", id);
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar promocion: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_PROMOCION", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // SELECTs — usan SPs con CallableStatement directamente
-    // -------------------------------------------------------------------------
-
+    // SP: BUSCAR_PROMOCION_POR_ID(IN _promocion_id)
     @Override
     public PromocionDto buscarPorID(int id) {
         PromocionDto p = null;
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL BUSCAR_PROMOCION_POR_ID(?)}");
-            cs.setInt("_promocion_id", id);
-            ResultSet rs = cs.executeQuery();
-            if (rs.next()) {
-                p = mapearPromocion(rs);
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_PROMOCION_POR_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    p = mapearPromocion(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en buscarPorID promocion: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al buscar promocion: " + ex.getMessage());
         }
         return p;
     }
 
+    // SP: LISTAR_PROMOCIONES_TODAS()
     @Override
     public List<PromocionDto> listarTodos() {
         List<PromocionDto> lista = new ArrayList<>();
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_PROMOCIONES_TODAS()}");
-            ResultSet rs = cs.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearPromocion(rs));
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_PROMOCIONES_TODAS", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearPromocion(rs));
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en listarTodos promociones: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al listar promociones: " + ex.getMessage());
         }
         return lista;
     }
 
+    // SP: LISTAR_PROMOCIONES_VIGENTES()
     @Override
     public List<PromocionDto> listarVigentes() {
         List<PromocionDto> lista = new ArrayList<>();
-        try {
-            this.abrirConexion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL LISTAR_PROMOCIONES_VIGENTES()}");
-            ResultSet rs = cs.executeQuery();
-            while (rs.next()) {
-                lista.add(mapearPromocion(rs));
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_PROMOCIONES_VIGENTES", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearPromocion(rs));
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en listarVigentes promociones: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al listar promociones vigentes: " + ex.getMessage());
         }
         return lista;
     }
 
+    // SP: VINCULAR_PRODUCTO_PROMOCION(IN _promocion_id, IN _producto_id)
     @Override
     public int asociarProducto(int idPromocion, int idProducto) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL VINCULAR_PRODUCTO_PROMOCION(?,?)}");
-            cs.setInt("_promocion_id", idPromocion);
-            cs.setInt("_producto_id", idProducto);
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error en asociarProducto: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idPromocion);
+        parametrosEntrada.put(2, idProducto);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "VINCULAR_PRODUCTO_PROMOCION", parametrosEntrada, null);
     }
 
+    // SP: DESVINCULAR_PRODUCTO_PROMOCION(IN _promocion_id, IN _producto_id)
     @Override
     public int desasociarProducto(int idPromocion, int idProducto) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL DESVINCULAR_PRODUCTO_PROMOCION(?,?)}");
-            cs.setInt("_promocion_id", idPromocion);
-            cs.setInt("_producto_id", idProducto);
-            cs.executeUpdate();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error en desasociarProducto: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idPromocion);
+        parametrosEntrada.put(2, idProducto);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "DESVINCULAR_PRODUCTO_PROMOCION", parametrosEntrada, null);
     }
 
+    // SP: LISTAR_PRODUCTOS_POR_PROMOCION(IN _promocion_id)
     @Override
     public List<Integer> listarProductosPorPromocion(int idPromocion) {
         List<Integer> lista = new ArrayList<>();
-        try {
-            this.abrirConexion();
-            this.preparedStatement = this.conexion.prepareStatement(
-                    "SELECT PRODUCTO_ID FROM promociones_productos WHERE PROMOCION_ID = ?");
-            this.preparedStatement.setInt(1, idPromocion);
-            this.resultSet = this.preparedStatement.executeQuery();
-            while (this.resultSet.next()) {
-                lista.add(this.resultSet.getInt("PRODUCTO_ID"));
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idPromocion);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_PRODUCTOS_POR_PROMOCION", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(rs.getInt("PRODUCTO_ID"));
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en listarProductosPorPromocion: " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexion: " + ex.getMessage());
-            }
+            System.out.println("Error al listar productos por promocion: " + ex.getMessage());
         }
         return lista;
     }
-
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet
-    // -------------------------------------------------------------------------
 
     private PromocionDto mapearPromocion(ResultSet rs) throws SQLException {
         PromocionDto p = new PromocionDto();
@@ -250,18 +175,5 @@ public class PromocionDaoImpl extends DaoImplBase implements PromocionDao {
         p.setCondiciones(rs.getString("condiciones"));
         p.setActivo(rs.getBoolean("activo"));
         return p;
-    }
-
-    // -------------------------------------------------------------------------
-    // Métodos abstractos de DaoImplBase (no usados, SELECTs via SPs)
-    // -------------------------------------------------------------------------
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
-    }
-
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        throw new UnsupportedOperationException("Este DAO usa SPs para SELECTs.");
     }
 }

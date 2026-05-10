@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS `metodos_pago` (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Almacena los distintos metodos de pago';
 -- -----------------------------------------------------
--- Tabla Ventas BOLETA?? WAAA
+-- Tabla Ventas
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `shiligama`.`ventas` ;
 CREATE TABLE IF NOT EXISTS `ventas` (
@@ -415,17 +415,3 @@ CREATE TABLE IF NOT EXISTS `detalles_pedido` (
         FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `productos` (`PRODUCTO_ID`) 
         ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
--- =============================================================
--- RESUMEN DE TABLAS
--- =============================================================
--- Maestras con auditoria completa:
---   usuarios, clientes, administradores, trabajadores,
---   categorias, productos, promociones, metodos_pago,
---   ventas, pedidos,
---   devoluciones
--- Log inmutable:
---   movimientos_inventario
--- Detalles / relaciones N:M:
---   detalles_venta, detalles_pedido,
---   promociones_productos, 
--- =============================================================

@@ -3,165 +3,94 @@ package pe.edu.pucp.persistance.dao.venta.Impl;
 import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.venta.MetodoPagoDto;
 import pe.edu.pucp.persistance.dao.venta.dao.MetodoPagoDao;
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
 
-import java.sql.CallableStatement;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class MetodoPagoDaoImpl extends DaoImplBase implements MetodoPagoDao {
-    private MetodoPagoDto metodoPago;
+public class MetodoPagoDaoImpl implements MetodoPagoDao {
 
-    public MetodoPagoDaoImpl() {
-        metodoPago = null;
-    }
-
-    public MetodoPagoDaoImpl(MetodoPagoDto metodoPago) {
-        this.metodoPago = metodoPago;
-    }
-
-    // -------------------------------------------------------------------------
-    // Metodos CRUD importantes
-    // -------------------------------------------------------------------------
-
+    // SP: INSERTAR_METODO_PAGO(OUT _metodo_pago_id, IN _nombre)
     @Override
     public int insertar(MetodoPagoDto metodoPago) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion(); // realiza de forma interna getInstance().getConnection() para mantenerlo agnostico a la base de datos;
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_METODO_PAGO(?, ?)}");
-            cs.registerOutParameter(1, Types.INTEGER);
-            cs.setString(2, metodoPago.getNombre());
-            cs.execute();
-            metodoPago.setIdMetodoPago(cs.getInt(1));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar método de pago: " + ex.getMessage());
-            try {
-                this.rollbackTransaccion();
-            } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try {
-                this.cerrarConexion(); // aca es donde se hace ahora el cs.close y con.close
-            } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, metodoPago.getNombre());
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_METODO_PAGO", parametrosEntrada, parametrosSalida);
+        metodoPago.setIdMetodoPago((int) parametrosSalida.get(1));
+        return metodoPago.getIdMetodoPago();
     }
 
+    // SP: MODIFICAR_METODO_PAGO(IN _metodo_pago_id, IN _nombre)
     @Override
     public int modificar(MetodoPagoDto metodoPago) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_METODO_PAGO(?, ?)}");
-            cs.setInt(1, metodoPago.getIdMetodoPago());
-            cs.setString(2, metodoPago.getNombre());
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar método de pago: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, metodoPago.getIdMetodoPago());
+        parametrosEntrada.put(2, metodoPago.getNombre());
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_METODO_PAGO", parametrosEntrada, null);
     }
 
+    // SP: ELIMINAR_METODO_PAGO(IN _metodo_pago_id)
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_METODO_PAGO(?)}");
-            cs.setInt(1, id);
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar método de pago: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_METODO_PAGO", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // Para operaciones SELECT se hace uso de PreparedStatement
-    // -------------------------------------------------------------------------
-
+    // SP: BUSCAR_METODO_PAGO_X_ID(IN _metodo_pago_id)
+    @Override
     public MetodoPagoDto buscarPorID(int id) {
-        this.metodoPago = new MetodoPagoDto();
-        this.metodoPago.setIdMetodoPago(id);
-        this.obtenerPorId();
-        return this.metodoPago;
+        MetodoPagoDto metodoPago = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_METODO_PAGO_X_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    metodoPago = mapearMetodoPago(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al buscar metodo de pago: " + ex.getMessage());
+        }
+        return metodoPago;
     }
 
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        return "SELECT METODO_PAGO_ID, NOMBRE, ACTIVO "
-                + "FROM metodos_pago "
-                + "WHERE METODO_PAGO_ID = ?";
-    }
-
-    @Override
-    protected void incluirParametrosParaObtenerPorId() throws SQLException {
-        this.preparedStatement.setInt(1, this.metodoPago.getIdMetodoPago());
-    }
-
-    @Override
-    protected void instanciarObjetoDelResultSet() throws SQLException {
-        this.metodoPago = mapearMetodoPago();
-    }
-
-    @Override
-    protected void limpiarObjetoDelResultSet() {
-        this.metodoPago = null;
-    }
-
+    // SP: LISTAR_METODOS_PAGO()
     @Override
     public List<MetodoPagoDto> listarTodos() {
-        return super.listarTodos();
+        List<MetodoPagoDto> lista = new ArrayList<>();
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_METODOS_PAGO", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearMetodoPago(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar metodos de pago: " + ex.getMessage());
+        }
+        return lista;
     }
 
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        // Solo los activos tiene sentido mostrar en pantalla al momento de registrar una venta
-        return "SELECT METODO_PAGO_ID, NOMBRE, ACTIVO "
-                + "FROM metodos_pago "
-                + "WHERE ACTIVO = 1";
-    }
-
-    @Override
-    protected void agregarObjetoALaLista(List lista) throws SQLException {
-        lista.add(mapearMetodoPago());
-    }
-
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet — centralizado para buscarPorID y listarTodos
-    // -------------------------------------------------------------------------
-    private MetodoPagoDto mapearMetodoPago() throws SQLException {
+    private MetodoPagoDto mapearMetodoPago(ResultSet rs) throws SQLException {
         MetodoPagoDto mp = new MetodoPagoDto();
-        mp.setIdMetodoPago(resultSet.getInt("METODO_PAGO_ID"));
-        mp.setNombre(resultSet.getString("NOMBRE"));
-        mp.setEstado(resultSet.getBoolean("ACTIVO"));
+        mp.setIdMetodoPago(rs.getInt("METODO_PAGO_ID"));
+        mp.setNombre(rs.getString("NOMBRE"));
+        mp.setEstado(rs.getBoolean("ACTIVO"));
         return mp;
     }
 }

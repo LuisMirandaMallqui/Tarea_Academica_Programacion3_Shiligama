@@ -1,258 +1,178 @@
 package pe.edu.pucp.persistance.dao.usuario.impl;
 
-import pe.edu.pucp.persistance.daoImpl.DaoImplBase;
-import pe.edu.pucp.persistance.dao.usuario.dao.UsuarioDao;
+import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.usuario.AdministradorDto;
+import pe.edu.pucp.persistance.dao.usuario.dao.AdministradorDao;
 
-import java.sql.CallableStatement;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class AdministradorDaoImpl extends DaoImplBase implements UsuarioDao<AdministradorDto> {
+public class AdministradorDaoImpl implements AdministradorDao {
 
-    private AdministradorDto administrador;
-
-    public AdministradorDaoImpl() {
-        this.administrador = null;
-    }
-
-    public AdministradorDaoImpl(AdministradorDto administrador) {
-        this.administrador = administrador;
-    }
-
-    // -------------------------------------------------------------------------
-    // Metodos CRUD importantes
-    // -------------------------------------------------------------------------
-
+    // SP: INSERTAR_ADMINISTRADOR(OUT _id_admin, IN _nombres, IN _apellidos,
+    //   IN _dni, IN _telefono, IN _correo, IN _contrasena)
     @Override
     public int insertar(AdministradorDto administrador) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL INSERTAR_ADMINISTRADOR(?, ?, ?, ?, ?, ?, ?)}");
-            cs.registerOutParameter(1, Types.INTEGER);
-            cs.setString(2, administrador.getNombres());
-            cs.setString(3, administrador.getApellidos());
-            cs.setString(4, administrador.getDni());
-            cs.setString(5, administrador.getTelefono());
-            cs.setString(6, administrador.getCorreo());
-            cs.setString(7, administrador.getContrasena());
-            cs.execute();
-            administrador.setIdAdministrador(cs.getInt(1));
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al insertar administrador: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);
+        parametrosEntrada.put(2, administrador.getNombres());
+        parametrosEntrada.put(3, administrador.getApellidos());
+        parametrosEntrada.put(4, administrador.getDni());
+        parametrosEntrada.put(5, administrador.getTelefono());
+        parametrosEntrada.put(6, administrador.getCorreo());
+        parametrosEntrada.put(7, administrador.getContrasena());
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "INSERTAR_ADMINISTRADOR", parametrosEntrada, parametrosSalida);
+        administrador.setIdAdministrador((int) parametrosSalida.get(1));
+        return administrador.getIdAdministrador();
     }
 
+    // SP: MODIFICAR_ADMINISTRADOR(IN _id_admin, IN _nombres, IN _apellidos,
+    //   IN _dni, IN _telefono, IN _correo)
     @Override
     public int modificar(AdministradorDto administrador) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL MODIFICAR_ADMINISTRADOR(?, ?, ?, ?, ?, ?)}");
-            cs.setInt(1, administrador.getIdAdministrador());
-            cs.setString(2, administrador.getNombres());
-            cs.setString(3, administrador.getApellidos());
-            cs.setString(4, administrador.getDni());
-            cs.setString(5, administrador.getTelefono());
-            cs.setString(6, administrador.getCorreo());
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al modificar administrador: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+
+        parametrosEntrada.put(1, administrador.getIdAdministrador());
+        parametrosEntrada.put(2, administrador.getNombres());
+        parametrosEntrada.put(3, administrador.getApellidos());
+        parametrosEntrada.put(4, administrador.getDni());
+        parametrosEntrada.put(5, administrador.getTelefono());
+        parametrosEntrada.put(6, administrador.getCorreo());
+
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "MODIFICAR_ADMINISTRADOR", parametrosEntrada, null);
     }
 
+    // SP: ELIMINAR_ADMINISTRADOR(IN _id_admin)
     @Override
     public int eliminar(int id) {
-        int resultado = 0;
-        try {
-            this.iniciarTransaccion();
-            CallableStatement cs = this.conexion.prepareCall("{CALL ELIMINAR_ADMINISTRADOR(?)}");
-            cs.setInt(1, id);
-            cs.execute();
-            resultado = 1;
-            this.comitarTransaccion();
-        } catch (SQLException ex) {
-            System.err.println("Error al eliminar administrador: " + ex.getMessage());
-            try { this.rollbackTransaccion(); } catch (SQLException ex1) {
-                System.err.println("Error en rollback: " + ex1.getMessage());
-            }
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
-        }
-        return resultado;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "ELIMINAR_ADMINISTRADOR", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // SELECT — PreparedStatement a través de los template methods de la base
-    // -------------------------------------------------------------------------
-
+    // SP: BUSCAR_ADMINISTRADOR_X_ID(IN _id_admin)
+    @Override
     public AdministradorDto buscarPorID(int id) {
-        this.administrador = new AdministradorDto();
-        this.administrador.setIdAdministrador(id);
-        this.obtenerPorId();
-        return this.administrador;
+        AdministradorDto admin = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, id);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_ADMINISTRADOR_X_ID", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    admin = mapearAdministrador(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al buscar administrador: " + ex.getMessage());
+        }
+        return admin;
     }
 
-    @Override
-    protected String obtenerSQLParaObtenerPorId() {
-        return "SELECT a.ADMINISTRADOR_ID, "
-                + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                + "FROM administradores a JOIN usuarios u ON a.USUARIO_ID = u.USUARIO_ID "
-                + "WHERE a.ADMINISTRADOR_ID = ?";
-    }
-
-    @Override
-    protected void incluirParametrosParaObtenerPorId() throws SQLException {
-        this.preparedStatement.setInt(1, this.administrador.getIdAdministrador());
-    }
-
-    @Override
-    protected void instanciarObjetoDelResultSet() throws SQLException {
-        this.administrador = mapearAdministrador();
-    }
-
-    @Override
-    protected void limpiarObjetoDelResultSet() {
-        this.administrador = null;
-    }
-
+    // SP: LISTAR_ADMINISTRADORES()
     @Override
     public List<AdministradorDto> listarTodos() {
-        return super.listarTodos();
+        List<AdministradorDto> lista = new ArrayList<>();
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_ADMINISTRADORES", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearAdministrador(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar administradores: " + ex.getMessage());
+        }
+        return lista;
     }
 
-    @Override
-    protected String obtenerSQLParaListarTodos() {
-        return "SELECT a.ADMINISTRADOR_ID, "
-                + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                + "FROM administradores a JOIN usuarios u ON a.USUARIO_ID = u.USUARIO_ID "
-                + "WHERE a.ACTIVO = 1 "
-                + "ORDER BY u.APELLIDOS, u.NOMBRES";
-    }
-
-    @Override
-    protected void agregarObjetoALaLista(List lista) throws SQLException {
-        lista.add(mapearAdministrador());
-    }
-
-    // -------------------------------------------------------------------------
-    // Métodos específicos de UsuarioDao
-    // -------------------------------------------------------------------------
-
+    // SP: BUSCAR_ADMINISTRADOR_X_CORREO(IN _correo)
     @Override
     public AdministradorDto buscarPorCorreo(String correo) {
-        this.administrador = null;
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT a.ADMINISTRADOR_ID, "
-                            + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                            + "FROM administradores a JOIN usuarios u ON a.USUARIO_ID = u.USUARIO_ID "
-                            + "WHERE u.CORREO = ?"
-            );
-            this.preparedStatement.setString(1, correo);
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                this.administrador = mapearAdministrador();
+        AdministradorDto admin = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, correo);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_ADMINISTRADOR_X_CORREO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    admin = mapearAdministrador(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en buscarPorCorreo (administrador): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en buscarPorCorreo (admin): " + ex.getMessage());
         }
-        return this.administrador;
+        return admin;
     }
 
+    // SP: BUSCAR_ADMINISTRADOR_X_DNI(IN _dni)
     @Override
     public AdministradorDto obtenerPorDNI(String dni) {
-        this.administrador = null;
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT a.ADMINISTRADOR_ID, "
-                            + "u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA "
-                            + "FROM administradores a JOIN usuarios u ON a.USUARIO_ID = u.USUARIO_ID "
-                            + "WHERE u.DNI = ?"
-            );
-            this.preparedStatement.setString(1, dni);
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                this.administrador = mapearAdministrador();
+        AdministradorDto admin = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, dni);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_ADMINISTRADOR_X_DNI", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    admin = mapearAdministrador(rs);
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en obtenerPorDNI (administrador): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en obtenerPorDNI (admin): " + ex.getMessage());
         }
-        return this.administrador;
+        return admin;
     }
 
+    // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni)
     @Override
     public Boolean existeUsuarioEnBD(AdministradorDto administrador) {
         Boolean existe = false;
-        try {
-            this.abrirConexion();
-            this.prepararConsulta(
-                    "SELECT COUNT(*) FROM usuarios WHERE CORREO = ? OR DNI = ?"
-            );
-            this.preparedStatement.setString(1, administrador.getCorreo());
-            this.preparedStatement.setString(2, administrador.getDni());
-            this.ejecutarConsulta();
-            if (this.resultSet.next()) {
-                existe = this.resultSet.getInt(1) > 0;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, administrador.getCorreo());
+        parametrosEntrada.put(2, administrador.getDni());
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("EXISTE_USUARIO_EN_BD", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    existe = rs.getInt(1) > 0;
+                }
             }
         } catch (SQLException ex) {
-            System.err.println("Error en existeUsuarioEnBD (administrador): " + ex.getMessage());
-        } finally {
-            try { this.cerrarConexion(); } catch (SQLException ex) {
-                System.err.println("Error al cerrar conexión: " + ex.getMessage());
-            }
+            System.out.println("Error en existeUsuarioEnBD (admin): " + ex.getMessage());
         }
         return existe;
     }
 
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet — centralizado para todos los métodos SELECT
-    // -------------------------------------------------------------------------
-
-    private AdministradorDto mapearAdministrador() throws SQLException {
+    private AdministradorDto mapearAdministrador(ResultSet rs) throws SQLException {
         AdministradorDto a = new AdministradorDto();
-        a.setIdAdministrador(resultSet.getInt("ADMINISTRADOR_ID"));
-        a.setIdUsuario(resultSet.getInt("USUARIO_ID"));
-        a.setNombres(resultSet.getString("NOMBRES"));
-        a.setApellidos(resultSet.getString("APELLIDOS"));
-        a.setDni(resultSet.getString("DNI"));
-        a.setTelefono(resultSet.getString("TELEFONO"));
-        a.setCorreo(resultSet.getString("CORREO"));
-        a.setContrasena(resultSet.getString("CONTRASENA"));
+        a.setIdAdministrador(rs.getInt("ADMINISTRADOR_ID"));
+        a.setIdUsuario(rs.getInt("USUARIO_ID"));
+        a.setNombres(rs.getString("NOMBRES"));
+        a.setApellidos(rs.getString("APELLIDOS"));
+        a.setDni(rs.getString("DNI"));
+        a.setTelefono(rs.getString("TELEFONO"));
+        a.setCorreo(rs.getString("CORREO"));
+        a.setContrasena(rs.getString("CONTRASENA"));
         return a;
     }
 }
