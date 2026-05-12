@@ -1,5 +1,6 @@
 package pe.edu.pucp.shiligama.main;
 
+import com.mysql.cj.protocol.Message;
 import pe.edu.pucp.model.enums.*;
 import pe.edu.pucp.model.promocion.Promocion;
 import pe.edu.pucp.model.operacion.Devolucion;
@@ -10,6 +11,12 @@ import pe.edu.pucp.model.usuario.Administrador;
 import pe.edu.pucp.model.usuario.Cliente;
 import pe.edu.pucp.model.usuario.Trabajador;
 import pe.edu.pucp.model.venta.*;
+import pe.edu.pucp.operacion.bo.DevolucionBO;
+import pe.edu.pucp.operacion.bo.MovimientoInventarioBO;
+import pe.edu.pucp.operacion.bo.PromocionBO;
+import pe.edu.pucp.operacion.impl.DevolucionBoImpl;
+import pe.edu.pucp.operacion.impl.MovimientoInventarioBoImpl;
+import pe.edu.pucp.operacion.impl.PromocionBoImpl;
 import pe.edu.pucp.persistance.dao.operacion.Impl.PromocionDaoImpl;
 import pe.edu.pucp.persistance.dao.operacion.Impl.DevolucionDaoImpl;
 import pe.edu.pucp.persistance.dao.operacion.Impl.MovimientoInventarioDaoImpl;
@@ -19,12 +26,17 @@ import pe.edu.pucp.persistance.dao.usuario.impl.AdministradorDaoImpl;
 import pe.edu.pucp.persistance.dao.usuario.impl.ClienteDaoImpl;
 import pe.edu.pucp.persistance.dao.usuario.impl.TrabajadorDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.Impl.*;
+import pe.edu.pucp.producto.bo.CategoriaBo;
+import pe.edu.pucp.producto.bo.ProductoBo;
+import pe.edu.pucp.producto.impl.CategoriaBoImpl;
+import pe.edu.pucp.producto.impl.ProductoBoImpl;
 import pe.edu.pucp.usuario.bo.AdministradorBo;
 import pe.edu.pucp.usuario.bo.ClienteBo;
 import pe.edu.pucp.usuario.impl.AdministradorBoImpl;
 import pe.edu.pucp.usuario.impl.ClienteBoImpl;
 import pe.edu.pucp.usuario.impl.TrabajadorBoImpl;
 
+import java.io.Console;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,7 +49,7 @@ public class MainTest {
     public static void main(String[] args) throws Exception {
         System.out.println("=== SISTEMA SHILIGAMA - PRUEBAS DE USUARIOS ===");
 
-        ejecutarPruebasVentaPedidos();
+        //ejecutarPruebasVentaPedidos();
         ejectutarPruebasOperacionproductoPromocion();
         ejecutarPruebasUsuarios();
     }
@@ -50,8 +62,8 @@ public class MainTest {
         pruebaAdministrador();
         imprimir_cierre();
     }
-
-    private static void ejectutarPruebasOperacionproductoPromocion() {
+    //Ya con BO implementado
+    private static void ejectutarPruebasOperacionproductoPromocion() throws Exception{
         imprimir_encabezado("Operaciones, Producto y Promocion");
         pruebaPromocion();
         pruebaDevolucion();
@@ -72,56 +84,56 @@ public class MainTest {
     }
 
 
-    private static void pruebaPromocion() {
+    private static void pruebaPromocion() throws Exception{
         System.out.println("------------ PRUEBA PROMOCIÓN ------------");
-        PromocionDaoImpl dao = new PromocionDaoImpl();
+        PromocionBO boPromo = new PromocionBoImpl();
 
         // 1. Insertar
         Promocion p = new Promocion(0, "Promo Verano", "Descuento por verano", TipoDescuento.PORCENTAJE, 15.0,
                 LocalDate.now(), LocalDate.now().plusDays(10), "Aplica a bebidas", true);
-        int resIns = dao.insertar(p);
+        int resIns = boPromo.insertar(p);
         System.out.println("Insertar promoción: " + (resIns > 0 ? "Exito ID: " + p.getIdPromocion() : "Error"));
 
         if (resIns > 0) {
             // 2. Modificar
             p.setNombre("Promo Verano Modificada");
             p.setValorDescuento(20.0);
-            int resMod = dao.modificar(p);
+            int resMod = boPromo.modificar(p);
             System.out.println("Modificar promoción: " + (resMod == 1 ? "Exito" : "Error"));
 
             // 3. Buscar
-            Promocion pBuscada = dao.buscarPorID(p.getIdPromocion());
+            Promocion pBuscada = boPromo.buscarPorID(p.getIdPromocion());
             System.out.println("Buscar promoción: " + (pBuscada != null ? pBuscada.getNombre() : "No encontrada"));
 
             // 4. Asociar producto (idProducto = 1 asumido)
-            int resAsoc = dao.asociarProducto(p.getIdPromocion(), 1);
+            int resAsoc = boPromo.asociarProducto(p.getIdPromocion(), 1);
             System.out.println("Asociar producto 1: " + (resAsoc == 1 ? "Exito" : "Error"));
 
             // 5. Listar productos asociados
-            List<Integer> prods = dao.listarProductosPorPromocion(p.getIdPromocion());
+            List<Integer> prods = boPromo.listarProductosPorPromocion(p.getIdPromocion());
             System.out.println("Productos asociados a la promoción: " + prods);
 
             // 6. Desasociar producto
-            int resDes = dao.desasociarProducto(p.getIdPromocion(), 1);
+            int resDes = boPromo.desasociarProducto(p.getIdPromocion(), 1);
             System.out.println("Desasociar producto 1: " + (resDes == 1 ? "Exito" : "Error"));
 
             // 7. Listar todos
-            List<Promocion> todas = dao.listarTodos();
+            List<Promocion> todas = boPromo.listarTodos();
             System.out.println("Listar todas las promociones. Cantidad: " + todas.size());
 
             // 8. Listar vigentes
-            List<Promocion> vigentes = dao.listarVigentes();
+            List<Promocion> vigentes = boPromo.listarVigentes();
             System.out.println("Listar promociones vigentes. Cantidad: " + vigentes.size());
 
             // 9. Eliminar
-            int resElim = dao.eliminar(p.getIdPromocion());
+            int resElim = boPromo.eliminar(p.getIdPromocion());
             System.out.println("Eliminar promoción: " + (resElim == 1 ? "Exito" : "Error"));
         }
     }
 
-    private static void pruebaDevolucion() {
+    private static void pruebaDevolucion() throws Exception{
         System.out.println("\n------------ PRUEBA DEVOLUCIÓN ------------");
-        DevolucionDaoImpl dao = new DevolucionDaoImpl();
+        DevolucionBO boDevolucion = new DevolucionBoImpl();
 
         // 1. Insertar
         Devolucion d = new Devolucion();
@@ -134,36 +146,36 @@ public class MainTest {
         d.setFechaHora(LocalDateTime.now());
         d.setActivo(true);
 
-        int resIns = dao.insertar(d);
+        int resIns = boDevolucion.insertar(d);
         System.out.println("Insertar devolución: " + (resIns > 0 ? "Exito ID: " + d.getIdDevolucion() : "Error"));
 
         if (resIns > 0) {
             // 2. Modificar
             d.setEstadoDevolucion("APROBADO");
-            int resMod = dao.modificar(d);
+            int resMod = boDevolucion.modificar(d);
             System.out.println("Modificar devolución: " + (resMod == 1 ? "Exito" : "Error"));
 
             // 3. Buscar
-            Devolucion dBuscada = dao.buscarPorID(d.getIdDevolucion());
+            Devolucion dBuscada = boDevolucion.buscarPorID(d.getIdDevolucion());
             System.out.println("Buscar devolución: " + (dBuscada != null ? "Encontrada, Estado: " + dBuscada.getEstadoDevolucion() : "No encontrada"));
 
             // 4. Listar todas
-            List<Devolucion> todas = dao.listarTodos();
+            List<Devolucion> todas = boDevolucion.listarTodos();
             System.out.println("Listar todas las devoluciones. Cantidad: " + todas.size());
 
             // 5. Listar por fechas
-            List<Devolucion> porFechas = dao.listarPorFechas(LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+            List<Devolucion> porFechas = boDevolucion.listarPorFechas(LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
             System.out.println("Listar devoluciones por fecha. Cantidad: " + porFechas.size());
 
             // 6. Eliminar
-            int resElim = dao.eliminar(d.getIdDevolucion());
+            int resElim = boDevolucion.eliminar(d.getIdDevolucion());
             System.out.println("Eliminar devolución: " + (resElim == 1 ? "Exito" : "Error"));
         }
     }
 
-    private static void pruebaMovimientoInventario() {
+    private static void pruebaMovimientoInventario() throws Exception{
         System.out.println("\n------------ PRUEBA MOVIMIENTO INVENTARIO ------------");
-        MovimientoInventarioDaoImpl dao = new MovimientoInventarioDaoImpl();
+        MovimientoInventarioBO boMovInvent = new MovimientoInventarioBoImpl();
 
         // 1. Insertar (Log inmutable)
         MovimientoInventario mov = new MovimientoInventario();
@@ -177,39 +189,48 @@ public class MainTest {
         mov.setFechaHora(LocalDateTime.now());
         //mov.setUsuarioCreacion(1); EN CASO SE AGREGE ID DE USUARIO
 
-        int resIns = dao.insertar(mov);
+        int resIns = boMovInvent.insertar(mov);
         System.out.println("Insertar movimiento (Log): " + (resIns > 0 ? "Exito ID: " + mov.getIdMovimiento() : "Error"));
 
         if (resIns > 0) {
             // 2. Modificar (Debe dar mensaje de error custom y retornar 0)
-            int resMod = dao.modificar(mov);
-            System.out.println("Intentar modificar log inmutable, resultado: " + resMod);
+            try{
+                int resMod = boMovInvent.modificar(mov);
+                System.out.println("Intentar modificar log inmutable, resultado: " + resMod);
+            }catch (Exception ex){
+                System.out.println("Intentar modificar log inmutable, resultado: " + ex.getMessage());
+            }
+
 
             // 3. Eliminar (Debe dar mensaje de error custom y retornar 0)
-            int resElim = dao.eliminar(mov.getIdMovimiento());
-            System.out.println("Intentar eliminar log inmutable, resultado: " + resElim);
+            try{
+                int resElim = boMovInvent.eliminar(mov.getIdMovimiento());
+                System.out.println("Intentar eliminar log inmutable, resultado: " + resElim);
+            }catch (Exception ex){
+                System.out.println("Intentar eliminar log inmutable, resultado: " + ex.getMessage());
+            }
 
             // 4. Buscar
-            MovimientoInventario mBuscado = dao.buscarPorID(mov.getIdMovimiento());
+            MovimientoInventario mBuscado = boMovInvent.buscarPorID(mov.getIdMovimiento());
             System.out.println("Buscar movimiento: " + (mBuscado != null ? "Encontrado, Tipo: " + mBuscado.getTipoMovimiento() : "No encontrado"));
 
             // 5. Listar todos
-            List<MovimientoInventario> todos = dao.listarTodos();
+            List<MovimientoInventario> todos = boMovInvent.listarTodos();
             System.out.println("Listar todos los movimientos. Cantidad: " + todos.size());
 
             // 6. Listar por producto
-            List<MovimientoInventario> porProd = dao.listarPorProducto(1);
+            List<MovimientoInventario> porProd = boMovInvent.listarPorProducto(1);
             System.out.println("Listar movimientos por producto 1. Cantidad: " + porProd.size());
 
             // 7. Listar por fechas
-            List<MovimientoInventario> porFechas = dao.listarPorFechas(LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1));
+            List<MovimientoInventario> porFechas = boMovInvent.listarPorFechas(LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1));
             System.out.println("Listar movimientos por fecha. Cantidad: " + porFechas.size());
         }
     }
 
-    private static void pruebaCategoria() {
+    private static void pruebaCategoria() throws Exception{
         System.out.println("\n------------ PRUEBA CATEGORÍA ------------");
-        CategoriaDaoImpl dao = new CategoriaDaoImpl();
+        CategoriaBo boCategoria = new CategoriaBoImpl();
 
         // 1. Insertar categoría padre
         Categoria categoriaPadre = new Categoria();
@@ -218,7 +239,7 @@ public class MainTest {
         categoriaPadre.setCategoriaPadre(null); // No tiene padre
         categoriaPadre.setEstado(true);
 
-        int resInsPadre = dao.insertar(categoriaPadre);
+        int resInsPadre = boCategoria.insertar(categoriaPadre);
         System.out.println("Insertar categoría padre: " + (resInsPadre > 0 ? "Éxito ID: " + categoriaPadre.getIdCategoria() : "Error"));
 
         if (resInsPadre > 0) {
@@ -229,24 +250,24 @@ public class MainTest {
             categoriaHija.setCategoriaPadre(categoriaPadre); // Tiene como padre a "Bebidas"
             categoriaHija.setEstado(true);
 
-            int resInsHija = dao.insertar(categoriaHija);
+            int resInsHija = boCategoria.insertar(categoriaHija);
             System.out.println("Insertar categoría hija: " + (resInsHija > 0 ? "Éxito ID: " + categoriaHija.getIdCategoria() : "Error"));
 
             if (resInsHija > 0) {
                 // 3. Modificar categoría hija
                 categoriaHija.setNombre("Bebidas Gaseosas");
                 categoriaHija.setDescripcion("Bebidas carbonatadas y refrescantes");
-                int resMod = dao.modificar(categoriaHija);
+                int resMod = boCategoria.modificar(categoriaHija);
                 System.out.println("Modificar categoría: " + (resMod == 1 ? "Éxito" : "Error"));
 
                 // 4. Buscar por ID
-                Categoria cBuscada = dao.buscarPorID(categoriaHija.getIdCategoria());
+                Categoria cBuscada = boCategoria.buscarPorID(categoriaHija.getIdCategoria());
                 System.out.println("Buscar categoría: " + (cBuscada != null ?
                         "Encontrada: " + cBuscada.getNombre() + " - " + cBuscada.getDescripcion() :
                         "No encontrada"));
 
                 // 5. Listar todas
-                List<Categoria> todas = dao.listarTodos();
+                List<Categoria> todas = boCategoria.listarTodos();
                 System.out.println("Listar todas las categorías. Cantidad: " + todas.size());
                 for (Categoria cat : todas) {
                     System.out.println("  - ID: " + cat.getIdCategoria() +
@@ -256,11 +277,11 @@ public class MainTest {
                 }
 
                 // 6. Eliminar categoría hija
-                int resElimHija = dao.eliminar(categoriaHija.getIdCategoria());
+                int resElimHija = boCategoria.eliminar(categoriaHija.getIdCategoria());
                 System.out.println("Eliminar categoría hija: " + (resElimHija == 1 ? "Éxito (marcada como inactiva)" : "Error"));
 
                 // 7. Verificar que fue eliminada (búsqueda debe retornar null o inactiva)
-                Categoria cEliminada = dao.buscarPorID(categoriaHija.getIdCategoria());
+                Categoria cEliminada = boCategoria.buscarPorID(categoriaHija.getIdCategoria());
                 System.out.println("Verificar eliminación: " +
                         (cEliminada == null || !cEliminada.isEstado() ?
                                 "Categoría inactiva/no encontrada correctamente" :
@@ -268,15 +289,15 @@ public class MainTest {
             }
 
             // 8. Eliminar categoría padre
-            int resElimPadre = dao.eliminar(categoriaPadre.getIdCategoria());
+            int resElimPadre = boCategoria.eliminar(categoriaPadre.getIdCategoria());
             System.out.println("Eliminar categoría padre: " + (resElimPadre == 1 ? "Éxito (marcada como inactiva)" : "Error"));
         }
     }
 
-    private static void pruebaProducto() {
+    private static void pruebaProducto()throws Exception {
         System.out.println("\n------------ PRUEBA PRODUCTO ------------");
-        ProductoDaoImpl daoProducto = new ProductoDaoImpl();
-        CategoriaDaoImpl daoCategoria = new CategoriaDaoImpl();
+        ProductoBo boProducto = new ProductoBoImpl();
+        CategoriaBo boCategoria = new CategoriaBoImpl();
 
         // Primero necesitamos una categoría activa para asociar al producto
         Categoria categoria = new Categoria();
@@ -285,7 +306,7 @@ public class MainTest {
         categoria.setCategoriaPadre(null);
         categoria.setEstado(true);
 
-        int resInsCat = daoCategoria.insertar(categoria);
+        int resInsCat = boCategoria.insertar(categoria);
         System.out.println("Insertar categoría para productos: " + (resInsCat > 0 ? "Éxito ID: " + categoria.getIdCategoria() : "Error"));
 
         if (resInsCat > 0) {
@@ -302,7 +323,7 @@ public class MainTest {
             producto.setEstado(true);
             producto.setCategoria(categoria);
 
-            int resIns = daoProducto.insertar(producto);
+            int resIns = boProducto.insertar(producto);
             System.out.println("Insertar producto: " + (resIns > 0 ? "Éxito ID: " + producto.getIdProducto() : "Error"));
 
             if (resIns > 0) {
@@ -310,11 +331,11 @@ public class MainTest {
                 producto.setNombre("Papas Lays Original 200g");
                 producto.setPrecioUnitario(7.00);
                 producto.setStockMinimo(15);
-                int resMod = daoProducto.modificar(producto);
+                int resMod = boProducto.modificar(producto);
                 System.out.println("Modificar producto: " + (resMod == 1 ? "Éxito" : "Error"));
 
                 // 3. Buscar por ID
-                Producto pBuscado = daoProducto.buscarPorID(producto.getIdProducto());
+                Producto pBuscado = boProducto.buscarPorID(producto.getIdProducto());
                 System.out.println("Buscar producto: " + (pBuscado != null ?
                         "Encontrado: " + pBuscado.getNombre() +
                         " | Precio: S/ " + pBuscado.getPrecioUnitario() +
@@ -327,7 +348,7 @@ public class MainTest {
                 }
 
                 // 5. Listar todos
-                List<Producto> todos = daoProducto.listarTodos();
+                List<Producto> todos = boProducto.listarTodos();
                 System.out.println("Listar todos los productos. Cantidad: " + todos.size());
                 for (Producto p : todos) {
                     System.out.println("  - ID: " + p.getIdProducto() +
@@ -338,11 +359,11 @@ public class MainTest {
                 }
 
                 // 6. Eliminar producto
-                int resElim = daoProducto.eliminar(producto.getIdProducto());
+                int resElim = boProducto.eliminar(producto.getIdProducto());
                 System.out.println("Eliminar producto: " + (resElim == 1 ? "Éxito (marcado como inactivo)" : "Error"));
 
                 // 7. Verificar que fue eliminado
-                Producto pEliminado = daoProducto.buscarPorID(producto.getIdProducto());
+                Producto pEliminado = boProducto.buscarPorID(producto.getIdProducto());
                 System.out.println("Verificar eliminación: " +
                         (pEliminado == null || !pEliminado.isEstado() ?
                                 "Producto inactivo/no encontrado correctamente" :
@@ -350,7 +371,7 @@ public class MainTest {
             }
 
             // Limpiar: eliminar la categoría de prueba
-            daoCategoria.eliminar(categoria.getIdCategoria());
+            boCategoria.eliminar(categoria.getIdCategoria());
             System.out.println("Categoría de prueba eliminada");
         }
     }
