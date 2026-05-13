@@ -10,6 +10,16 @@ import java.util.List;
 
 public class Venta {
     private int idVenta;
+
+    public int getIdPedido() {
+        return idPedido;
+    }
+
+    public void setIdPedido(int idPedido) {
+        this.idPedido = idPedido;
+    }
+
+    private int idPedido;
     private LocalDateTime fechaHora;
     private double montoTotal;
     private double montoDescuento;

@@ -46,6 +46,7 @@ public class VentaDaoImpl implements VentaDao {
                     "INSERTAR_VENTA", paramsEntrada, paramsSalida);
             venta.setIdVenta((int) paramsSalida.get(1));
 
+
             // Insertar detalles
             if (venta.getDetalles() != null) {
                 for (DetalleVenta detalle : venta.getDetalles()) {
