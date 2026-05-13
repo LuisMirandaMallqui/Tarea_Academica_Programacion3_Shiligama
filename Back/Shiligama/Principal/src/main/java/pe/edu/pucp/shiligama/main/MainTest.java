@@ -35,6 +35,9 @@ import pe.edu.pucp.usuario.bo.ClienteBo;
 import pe.edu.pucp.usuario.impl.AdministradorBoImpl;
 import pe.edu.pucp.usuario.impl.ClienteBoImpl;
 import pe.edu.pucp.usuario.impl.TrabajadorBoImpl;
+import pe.edu.pucp.model.venta.VentaReporteDto;
+import pe.edu.pucp.venta.bo.VentaBo;
+import pe.edu.pucp.venta.impl.VentaBoImpl;
 
 import java.io.Console;
 import java.time.LocalDate;
@@ -49,7 +52,7 @@ public class MainTest {
     public static void main(String[] args) throws Exception {
         System.out.println("=== SISTEMA SHILIGAMA - PRUEBAS DE USUARIOS ===");
 
-        //ejecutarPruebasVentaPedidos();
+        ejecutarPruebasVentaPedidos();
         ejectutarPruebasOperacionproductoPromocion();
         ejecutarPruebasUsuarios();
     }
@@ -73,15 +76,18 @@ public class MainTest {
         imprimir_cierre();
     }
 
-    private static void ejecutarPruebasVentaPedidos() {
+    private static void ejecutarPruebasVentaPedidos() throws Exception {
         imprimir_encabezado("Ventas y Pedidos");
         pruebaMetodoPago();
         pruebaVenta();
         pruebaDetalleVenta();
         pruebaPedido();
         pruebaDetallePedido();
+        pruebaReporteVentasPorPeriodo();
         imprimir_cierre();
     }
+
+
 
 
     private static void pruebaPromocion() throws Exception{
@@ -657,6 +663,29 @@ public class MainTest {
         }
     }
 
+    //------------------------REPORTES---------------------------------------
+    private static void pruebaReporteVentasPorPeriodo() throws Exception {
+        System.out.println("\n------------ PRUEBA REPORTE VENTAS POR PERIODO ------------");
+        VentaBo bo = new VentaBoImpl();
+
+        String fechaInicio = "2026-01-01";
+        String fechaFin    = "2026-12-31";
+
+        List<VentaReporteDto> reporte = bo.reporteVentasPorPeriodo(fechaInicio, fechaFin);
+        System.out.println("Reporte de ventas del " + fechaInicio + " al " + fechaFin
+                + ". Cantidad: " + reporte.size());
+
+        for (VentaReporteDto dto : reporte) {
+            System.out.println("  ID: " + dto.getIdVenta()
+                    + " | Fecha: " + dto.getFechaHora()
+                    + " | Cliente: " + dto.getCliente()
+                    + " | Método pago: " + dto.getMetodoPago()
+                    + " | Canal: " + dto.getCanalVenta()
+                    + " | Total: " + dto.getMontoTotal()
+                    + " | Estado: " + dto.getEstadoVenta());
+        }
+    }
+
     private static void imprimir_encabezado(String prueba) {
         System.out.println("==================================================");
         System.out.println(" INICIANDO PRUEBAS MÓDULO/s: " + prueba);
@@ -668,4 +697,7 @@ public class MainTest {
         System.out.println(" FIN DE LAS PRUEBAS ");
         System.out.println("==================================================");
     }
+
+
+
 }

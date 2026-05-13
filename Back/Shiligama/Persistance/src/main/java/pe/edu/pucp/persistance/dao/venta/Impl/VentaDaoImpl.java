@@ -10,6 +10,7 @@ import pe.edu.pucp.model.venta.DetalleVenta;
 import pe.edu.pucp.model.venta.MetodoPago;
 import pe.edu.pucp.model.venta.Venta;
 import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
+import pe.edu.pucp.model.venta.VentaReporteDto;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -179,5 +180,35 @@ public class VentaDaoImpl implements VentaDao {
         metodoPago.setIdMetodoPago(rs.getInt("METODO_PAGO_ID"));
         metodoPago.setNombre(rs.getString("METODO_PAGO_NOMBRE"));
         v.setMetodoPago(metodoPago);
+    }
+
+    @Override
+    public List<VentaReporteDto> reporteVentasPorPeriodo(String fechaInicio, String fechaFin) {
+        List<VentaReporteDto> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, fechaInicio);
+        parametrosEntrada.put(2, fechaFin);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("REPORTE_VENTAS_POR_PERIODO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    VentaReporteDto dto = new VentaReporteDto();
+                    dto.setIdVenta(rs.getInt("VENTA_ID"));
+                    dto.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
+                    dto.setCliente(rs.getString("CLIENTE"));
+                    dto.setMetodoPago(rs.getString("METODO_PAGO"));
+                    dto.setCanalVenta(rs.getString("CANAL_VENTA"));
+                    dto.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
+                    dto.setMontoDescuento(rs.getDouble("MONTO_DESCUENTO"));
+                    dto.setEstadoVenta(rs.getString("ESTADO_VENTA"));
+                    lista.add(dto);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en reporte ventas por periodo: " + ex.getMessage());
+        }
+        return lista;
     }
 }

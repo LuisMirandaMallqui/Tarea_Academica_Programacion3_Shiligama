@@ -2,6 +2,7 @@ package pe.edu.pucp.venta.impl;
 
 import java.util.List;
 import pe.edu.pucp.model.venta.Venta;
+import pe.edu.pucp.model.venta.VentaReporteDto;
 import pe.edu.pucp.persistance.dao.venta.Impl.VentaDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
 import pe.edu.pucp.venta.bo.VentaBo;
@@ -68,5 +69,16 @@ public class VentaBoImpl implements VentaBo {
         if (venta.getMontoDescuento() < 0) {
             throw new Exception("El monto de descuento no puede ser negativo.");
         }
+    }
+
+    @Override
+    public List<VentaReporteDto> reporteVentasPorPeriodo(String fechaInicio, String fechaFin) throws Exception {
+        if (fechaInicio == null || fechaInicio.isBlank()) {
+            throw new Exception("La fecha de inicio es obligatoria.");
+        }
+        if (fechaFin == null || fechaFin.isBlank()) {
+            throw new Exception("La fecha de fin es obligatoria.");
+        }
+        return daoVenta.reporteVentasPorPeriodo(fechaInicio, fechaFin);
     }
 }
