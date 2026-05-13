@@ -25,7 +25,8 @@ import pe.edu.pucp.persistance.dao.producto.Impl.ProductoDaoImpl;
 import pe.edu.pucp.persistance.dao.usuario.impl.AdministradorDaoImpl;
 import pe.edu.pucp.persistance.dao.usuario.impl.ClienteDaoImpl;
 import pe.edu.pucp.persistance.dao.usuario.impl.TrabajadorDaoImpl;
-import pe.edu.pucp.persistance.dao.venta.Impl.*;
+import pe.edu.pucp.venta.bo.*;
+import pe.edu.pucp.venta.impl.*;
 import pe.edu.pucp.producto.bo.CategoriaBo;
 import pe.edu.pucp.producto.bo.ProductoBo;
 import pe.edu.pucp.producto.impl.CategoriaBoImpl;
@@ -385,27 +386,27 @@ public class MainTest {
     // =========================================================
     //  MÉTODO PAGO
     // =========================================================
-    private static void pruebaMetodoPago() {
+    private static void pruebaMetodoPago() throws Exception {
         System.out.println("------------ PRUEBA MÉTODO DE PAGO ------------");
-        MetodoPagoDaoImpl dao = new MetodoPagoDaoImpl();
+        MetodoPagoBo bo = new MetodoPagoBoImpl();
 
         MetodoPago mp = new MetodoPago();
         mp.setNombre("Yape");
-        int resIns = dao.insertar(mp);
+        int resIns = bo.insertar(mp);
         System.out.println("Insertar método de pago: " + (resIns > 0 ? "Éxito ID: " + mp.getIdMetodoPago() : "Error"));
 
         if (resIns > 0) {
-            MetodoPago mpBuscado = dao.buscarPorID(mp.getIdMetodoPago());
+            MetodoPago mpBuscado = bo.buscarPorID(mp.getIdMetodoPago());
             System.out.println("Buscar método de pago: " + (mpBuscado != null ? mpBuscado.getNombre() : "No encontrado"));
 
             mp.setNombre("Yape Modificado");
-            int resMod = dao.modificar(mp);
+            int resMod = bo.modificar(mp);
             System.out.println("Modificar método de pago: " + (resMod == 1 ? "Éxito" : "Error"));
 
-            List<MetodoPago> lista = dao.listarTodos();
+            List<MetodoPago> lista = bo.listarTodos();
             System.out.println("Listar todos los métodos de pago. Cantidad: " + lista.size());
 
-            int resElim = dao.eliminar(mp.getIdMetodoPago());
+            int resElim = bo.eliminar(mp.getIdMetodoPago());
             System.out.println("Eliminar método de pago: " + (resElim == 1 ? "Éxito" : "Error"));
         }
     }
@@ -413,9 +414,9 @@ public class MainTest {
     // =========================================================
     //  VENTA
     // =========================================================
-    private static void pruebaVenta() {
+    private static void pruebaVenta() throws Exception {
         System.out.println("\n------------ PRUEBA VENTA ------------");
-        VentaDaoImpl dao = new VentaDaoImpl();
+        VentaBo bo = new VentaBoImpl();
 
         Cliente cliente = new Cliente();
         cliente.setIdCliente(1);
@@ -433,22 +434,22 @@ public class MainTest {
         venta.setCanalVenta(CanalVenta.PRESENCIAL); //CANAL_VENTA enum('PRESENCIAL','WEB')
         venta.setObservaciones("Venta de prueba"); //OBSERVACIONES varchar(500)
 
-        int resIns = dao.insertar(venta);
+        int resIns = bo.insertar(venta);
         idVentaCreada = venta.getIdVenta(); // guarda el ID
         System.out.println("Insertar venta: " + (resIns > 0 ? "Éxito ID: " + venta.getIdVenta() : "Error"));
 
         if (resIns > 0) {
-            Venta ventaBuscada = dao.buscarPorID(venta.getIdVenta());
+            Venta ventaBuscada = bo.buscarPorID(venta.getIdVenta());
             System.out.println("Buscar venta: " + (ventaBuscada != null
                     ? "Encontrada, Canal: " + ventaBuscada.getCanalVenta() : "No encontrada"));
 
-            int resMod = dao.modificar(venta);
+            int resMod = bo.modificar(venta);
             System.out.println("Completar venta (modificar): " + (resMod == 1 ? "Éxito" : "Error"));
 
-            List<Venta> lista = dao.listarTodos();
+            List<Venta> lista = bo.listarTodos();
             System.out.println("Listar todas las ventas. Cantidad: " + lista.size());
 
-            int resElim = dao.eliminar(venta.getIdVenta());
+            int resElim = bo.eliminar(venta.getIdVenta());
             System.out.println("Anular venta (eliminar): " + (resElim == 1 ? "Éxito" : "Error"));
         }
     }
@@ -456,9 +457,9 @@ public class MainTest {
     // =========================================================
     //  DETALLE VENTA
     // =========================================================
-    private static void pruebaDetalleVenta() {
+    private static void pruebaDetalleVenta() throws Exception {
         System.out.println("\n------------ PRUEBA DETALLE VENTA ------------");
-        DetalleVentaDaoImpl dao = new DetalleVentaDaoImpl();
+        DetalleVentaBo bo = new DetalleVentaBoImpl();
 
         Producto producto = new Producto();
         producto.setIdProducto(1);
@@ -467,22 +468,22 @@ public class MainTest {
         detalle.setIdPadreVenta(idVentaCreada); // ID de la venta creada en pruebaVenta()
         detalle.setProducto(producto);
         detalle.setCantidad(3);
-        int resIns = dao.insertar(detalle);
+        int resIns = bo.insertar(detalle);
         System.out.println("Insertar detalle venta: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetalleVenta() : "Error"));
 
         if (resIns > 0) {
-            DetalleVenta detalleBuscado = dao.buscarPorID(detalle.getIdDetalleVenta());
+            DetalleVenta detalleBuscado = bo.buscarPorID(detalle.getIdDetalleVenta());
             System.out.println("Buscar detalle venta: " + (detalleBuscado != null
                     ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() : "No encontrado"));
 
             detalle.setCantidad(5);
-            int resMod = dao.modificar(detalle);
+            int resMod = bo.modificar(detalle);
             System.out.println("Modificar detalle venta: " + (resMod == 1 ? "Éxito" : "Error"));
 
-            List<DetalleVenta> lista = dao.listarTodos();
+            List<DetalleVenta> lista = bo.listarTodos();
             System.out.println("Listar todos los detalles de venta. Cantidad: " + lista.size());
 
-            int resElim = dao.eliminar(detalle.getIdDetalleVenta());
+            int resElim = bo.eliminar(detalle.getIdDetalleVenta());
             System.out.println("Eliminar detalle venta: " + (resElim == 1 ? "Éxito" : "Error"));
         }
     }
@@ -490,9 +491,9 @@ public class MainTest {
     // =========================================================
     //  PEDIDO
     // =========================================================
-    private static void pruebaPedido() {
+    private static void pruebaPedido() throws Exception {
         System.out.println("\n------------ PRUEBA PEDIDO ------------");
-        PedidoDaoImpl dao = new PedidoDaoImpl();
+        PedidoBo bo = new PedidoBoImpl();
 
         Cliente cliente = new Cliente();
         cliente.setIdCliente(1);
@@ -502,23 +503,23 @@ public class MainTest {
         pedido.setDireccionEntrega("Av. Universitaria 1801, San Miguel");
         pedido.setModalidadVenta(ModalidadVenta.DELIVERY);
         pedido.setObservaciones("Pedido de prueba");
-        int resIns = dao.insertar(pedido);
+        int resIns = bo.insertar(pedido);
         idPedidoCreado = pedido.getIdPedido();
         System.out.println("Insertar pedido: " + (resIns > 0 ? "Éxito ID: " + pedido.getIdPedido() : "Error"));
 
         if (resIns > 0) {
-            Pedido pedidoBuscado = dao.buscarPorID(pedido.getIdPedido());
+            Pedido pedidoBuscado = bo.buscarPorID(pedido.getIdPedido());
             System.out.println("Buscar pedido: " + (pedidoBuscado != null
                     ? "Encontrado, Estado: " + pedidoBuscado.getEstadoPedido() : "No encontrado"));
 
             pedido.setEstadoPedido(EstadoPedido.EN_PROCESO);
-            int resMod = dao.modificar(pedido);
+            int resMod = bo.modificar(pedido);
             System.out.println("Modificar estado pedido: " + (resMod == 1 ? "Éxito" : "Error"));
 
-            List<Pedido> lista = dao.listarTodos();
+            List<Pedido> lista = bo.listarTodos();
             System.out.println("Listar todos los pedidos. Cantidad: " + lista.size());
 
-            int resElim = dao.eliminar(pedido.getIdPedido());
+            int resElim = bo.eliminar(pedido.getIdPedido());
             System.out.println("Eliminar pedido: " + (resElim == 1 ? "Éxito" : "Error"));
         }
     }
@@ -526,9 +527,9 @@ public class MainTest {
     // =========================================================
     //  DETALLE PEDIDO
     // =========================================================
-    private static void pruebaDetallePedido() {
+    private static void pruebaDetallePedido() throws Exception {
         System.out.println("\n------------ PRUEBA DETALLE PEDIDO ------------");
-        DetallePedidoDaoImpl dao = new DetallePedidoDaoImpl();
+        DetallePedidoBo bo = new DetallePedidoBoImpl();
 
         Producto producto = new Producto();
         producto.setIdProducto(1);
@@ -537,22 +538,22 @@ public class MainTest {
         detalle.setIdPadrePedido(idPedidoCreado); // ID de un pedido existente en la BD
         detalle.setProducto(producto);
         detalle.setCantidad(2);
-        int resIns = dao.insertar(detalle);
+        int resIns = bo.insertar(detalle);
         System.out.println("Insertar detalle pedido: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetallePedido() : "Error"));
 
         if (resIns > 0) {
-            DetallePedido detalleBuscado = dao.buscarPorID(detalle.getIdDetallePedido());
+            DetallePedido detalleBuscado = bo.buscarPorID(detalle.getIdDetallePedido());
             System.out.println("Buscar detalle pedido: " + (detalleBuscado != null
                     ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() : "No encontrado"));
 
             detalle.setCantidad(4);
-            int resMod = dao.modificar(detalle);
+            int resMod = bo.modificar(detalle);
             System.out.println("Modificar detalle pedido: " + (resMod == 1 ? "Éxito" : "Error"));
 
-            List<DetallePedido> lista = dao.listarTodos();
+            List<DetallePedido> lista = bo.listarTodos();
             System.out.println("Listar todos los detalles de pedido. Cantidad: " + lista.size());
 
-            int resElim = dao.eliminar(detalle.getIdDetallePedido());
+            int resElim = bo.eliminar(detalle.getIdDetallePedido());
             System.out.println("Eliminar detalle pedido: " + (resElim == 1 ? "Éxito" : "Error"));
         }
     }
