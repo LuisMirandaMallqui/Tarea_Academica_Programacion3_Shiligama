@@ -78,7 +78,7 @@ public class MainTest {
         imprimir_encabezado("Ventas y Pedidos");
         pruebaMetodoPago();
         pruebaVenta();
-        pruebaDetalleVenta();
+        //pruebaDetalleVenta();
         pruebaPedido();
         pruebaDetallePedido();
         imprimir_cierre();
@@ -448,6 +448,7 @@ public class MainTest {
         }
     }
 
+    /*
     // =========================================================
     //  DETALLE VENTA
     // =========================================================
@@ -481,6 +482,7 @@ public class MainTest {
             System.out.println("Eliminar detalle venta: " + (resElim == 1 ? "Éxito" : "Error"));
         }
     }
+    */
 
     // =========================================================
     //  PEDIDO
