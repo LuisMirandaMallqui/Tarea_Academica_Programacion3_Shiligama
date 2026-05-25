@@ -36,8 +36,8 @@ public class VentaDaoImpl implements VentaDao {
             Map<Integer, Object> paramsSalida = new HashMap<>();
 
             paramsSalida.put(1, Types.INTEGER);
-            paramsEntrada.put(2, venta.getCliente().getIdCliente());
-            paramsEntrada.put(3, venta.getTrabajador().getIdTrabajador());
+            paramsEntrada.put(2, venta.getCliente().getIdUsuario());
+            paramsEntrada.put(3, venta.getTrabajador().getIdUsuario());
             paramsEntrada.put(4, venta.getMetodoPago().getIdMetodoPago());
             paramsEntrada.put(5, venta.getCanalVenta().name());
             paramsEntrada.put(6, venta.getObservaciones());
@@ -170,11 +170,11 @@ public class VentaDaoImpl implements VentaDao {
         v.setObservaciones(rs.getString("OBSERVACIONES"));
 
         Cliente cliente = new Cliente();
-        cliente.setIdCliente(rs.getInt("CLIENTE_ID"));
+        cliente.setIdUsuario(rs.getInt("CLIENTE_ID"));
         v.setCliente(cliente);
 
         Trabajador trabajador = new Trabajador();
-        trabajador.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+        trabajador.setIdUsuario(rs.getInt("TRABAJADOR_ID"));
         v.setTrabajador(trabajador);
 
         MetodoPago metodoPago = new MetodoPago();

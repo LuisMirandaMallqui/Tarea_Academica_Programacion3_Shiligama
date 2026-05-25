@@ -62,7 +62,7 @@ public class TrabajadorBoImpl implements TrabajadorBo {
         if (trabajador == null) {
             throw new Exception("El trabajador no puede ser nulo.");
         }
-        if (esModificacion && trabajador.getIdTrabajador() <= 0) {
+        if (esModificacion && trabajador.getIdUsuario() <= 0) {
             throw new Exception("El ID del trabajador es obligatorio para la modificacion.");
         }
         validarDNI(trabajador.getDni());

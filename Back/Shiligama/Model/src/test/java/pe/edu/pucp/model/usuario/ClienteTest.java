@@ -7,22 +7,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class ClienteTest {
 
     @Test
-    void getIdCliente() {
+    void getIdUsuario() {
         Cliente clienteTest = new Cliente();
-        clienteTest.setIdCliente(105);
-        assertEquals(105, clienteTest.getIdCliente());
+        clienteTest.setIdUsuario(105);
+        assertEquals(105, clienteTest.getIdUsuario());
     }
 
     @Test
-    void setIdCliente() {
-    }
-
-    @Test
-    void getTelefonoWhatsapp() {
-    }
-
-    @Test
-    void setTelefonoWhatsapp() {
+    void setIdUsuario() {
     }
 
     @Test
@@ -31,14 +23,6 @@ class ClienteTest {
 
     @Test
     void setDireccionEntrega() {
-    }
-
-    @Test
-    void getFechaRegistro() {
-    }
-
-    @Test
-    void setFechaRegistro() {
     }
 
     @Test

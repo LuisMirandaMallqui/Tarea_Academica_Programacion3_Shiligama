@@ -29,9 +29,6 @@ BEGIN
 END$$
 
 -- ----- EXISTE_USUARIO_EN_BD -----
--- ClienteDaoImpl, TrabajadorDaoImpl, AdministradorDaoImpl
--- Params: IN _correo (pos 1), IN _dni (pos 2)
--- DAO solo verifica rs.next() — basta con devolver 1 fila si existe
 DROP PROCEDURE IF EXISTS EXISTE_USUARIO_EN_BD$$
 CREATE PROCEDURE EXISTE_USUARIO_EN_BD(
     IN _correo VARCHAR(100),
@@ -42,6 +39,35 @@ BEGIN
     FROM usuario
     WHERE (CORREO = _correo OR DNI = _dni) AND ACTIVO = 1
     LIMIT 1;
+END$$
+
+-- ----- MODIFICAR_USUARIO -----
+DROP PROCEDURE IF EXISTS MODIFICAR_USUARIO$$
+CREATE PROCEDURE MODIFICAR_USUARIO(
+    IN _usuario_id  INT,
+    IN _nombres     VARCHAR(100),
+    IN _apellidos   VARCHAR(100),
+    IN _dni         VARCHAR(8),
+    IN _telefono    VARCHAR(15),
+    IN _correo      VARCHAR(100)
+)
+BEGIN
+    UPDATE usuario SET
+        NOMBRES   = _nombres,
+        APELLIDOS = _apellidos,
+        DNI       = _dni,
+        TELEFONO  = _telefono,
+        CORREO    = _correo
+    WHERE USUARIO_ID = _usuario_id;
+END$$
+
+-- ----- ELIMINAR_USUARIO -----
+DROP PROCEDURE IF EXISTS ELIMINAR_USUARIO$$
+CREATE PROCEDURE ELIMINAR_USUARIO(
+    IN _usuario_id INT
+)
+BEGIN
+    UPDATE usuario SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
 -- =====================================================================
@@ -59,77 +85,40 @@ END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_CLIENTE$$
 CREATE PROCEDURE MODIFICAR_CLIENTE(
-    IN _cliente_id         INT,
-    IN _nombres            VARCHAR(100),
-    IN _apellidos          VARCHAR(100),
-    IN _dni                VARCHAR(8),
-    IN _telefono           VARCHAR(15),
-    IN _correo             VARCHAR(100),
+    IN _usuario_id         INT,
     IN _direccion_entrega  VARCHAR(255)
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM cliente WHERE CLIENTE_ID = _cliente_id;
-
-    UPDATE usuario SET
-        NOMBRES   = _nombres,
-        APELLIDOS = _apellidos,
-        DNI       = _dni,
-        TELEFONO  = _telefono,
-        CORREO    = _correo
-    WHERE USUARIO_ID = v_usuario_id;
-
     UPDATE cliente SET
         DIRECCION_ENTREGA = _direccion_entrega
-    WHERE CLIENTE_ID = _cliente_id;
-
-    COMMIT;
+    WHERE USUARIO_ID = _usuario_id;
 END$$
 
 DROP PROCEDURE IF EXISTS ELIMINAR_CLIENTE$$
 CREATE PROCEDURE ELIMINAR_CLIENTE(
-    IN _cliente_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM cliente WHERE CLIENTE_ID = _cliente_id;
-
-    UPDATE usuario SET ACTIVO = 0 WHERE USUARIO_ID = v_usuario_id;
+    UPDATE usuario SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
--- DAO: ClienteDaoImpl.buscarPorID → "BUSCAR_CLIENTE_X_ID"
--- Columnas que lee el DAO: CLIENTE_ID, DIRECCION_ENTREGA, USUARIO_ID,
---   NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, CONTRASENA
 DROP PROCEDURE IF EXISTS BUSCAR_CLIENTE_X_ID$$
 CREATE PROCEDURE BUSCAR_CLIENTE_X_ID(
-    IN _cliente_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA,
+    SELECT c.DIRECCION_ENTREGA,
            u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM cliente c
     INNER JOIN usuario u ON c.USUARIO_ID = u.USUARIO_ID
-    WHERE c.CLIENTE_ID = _cliente_id AND u.ACTIVO = 1;
+    WHERE c.USUARIO_ID = _usuario_id AND u.ACTIVO = 1;
 END$$
 
--- DAO: ClienteDaoImpl.listarTodos → "LISTAR_CLIENTES"
 DROP PROCEDURE IF EXISTS LISTAR_CLIENTES$$
 CREATE PROCEDURE LISTAR_CLIENTES()
 BEGIN
-    SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA,
+    SELECT c.DIRECCION_ENTREGA,
            u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM cliente c
@@ -137,13 +126,12 @@ BEGIN
     WHERE u.ACTIVO = 1;
 END$$
 
--- DAO: ClienteDaoImpl.buscarPorCorreo → "BUSCAR_CLIENTE_X_CORREO"
 DROP PROCEDURE IF EXISTS BUSCAR_CLIENTE_X_CORREO$$
 CREATE PROCEDURE BUSCAR_CLIENTE_X_CORREO(
     IN _correo VARCHAR(100)
 )
 BEGIN
-    SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA,
+    SELECT c.DIRECCION_ENTREGA,
            u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM cliente c
@@ -151,13 +139,12 @@ BEGIN
     WHERE u.CORREO = _correo AND u.ACTIVO = 1;
 END$$
 
--- DAO: ClienteDaoImpl.obtenerPorDNI → "BUSCAR_CLIENTE_X_DNI"
 DROP PROCEDURE IF EXISTS BUSCAR_CLIENTE_X_DNI$$
 CREATE PROCEDURE BUSCAR_CLIENTE_X_DNI(
     IN _dni VARCHAR(8)
 )
 BEGIN
-    SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA,
+    SELECT c.DIRECCION_ENTREGA,
            u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM cliente c
@@ -170,117 +157,78 @@ END$$
 -- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_TRABAJADOR$$
 CREATE PROCEDURE INSERTAR_TRABAJADOR(
-    IN  _usuario_id INT,
-    IN  _cargo         VARCHAR(100)
+    IN  _usuario_id    INT,
+    IN  _cargo         VARCHAR(100),
+    IN  _fecha_ingreso DATE
 )
 BEGIN
-    INSERT INTO trabajador(USUARIO_ID, CARGO, ACTIVO)
+    INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO, ACTIVO)
     VALUES(_usuario_id, _cargo, _fecha_ingreso, 1);
 END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_TRABAJADOR$$
 CREATE PROCEDURE MODIFICAR_TRABAJADOR(
-    IN _trabajador_id INT,
-    IN _nombres       VARCHAR(100),
-    IN _apellidos     VARCHAR(100),
-    IN _dni           VARCHAR(8),
-    IN _telefono      VARCHAR(15),
-    IN _correo        VARCHAR(100),
+    IN _usuario_id    INT,
+    IN _cargo         VARCHAR(100),
     IN _fecha_ingreso DATE
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM trabajador WHERE TRABAJADOR_ID = _trabajador_id;
-
-    UPDATE usuario SET
-        NOMBRES   = _nombres,
-        APELLIDOS = _apellidos,
-        DNI       = _dni,
-        TELEFONO  = _telefono,
-        CORREO    = _correo
-    WHERE USUARIO_ID = v_usuario_id;
-
     UPDATE trabajador SET
+        CARGO         = _cargo,
         FECHA_INGRESO = _fecha_ingreso
-    WHERE TRABAJADOR_ID = _trabajador_id;
-
-    COMMIT;
+    WHERE USUARIO_ID = _usuario_id;
 END$$
 
 DROP PROCEDURE IF EXISTS ELIMINAR_TRABAJADOR$$
 CREATE PROCEDURE ELIMINAR_TRABAJADOR(
-    IN _trabajador_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM trabajador WHERE TRABAJADOR_ID = _trabajador_id;
-
-    UPDATE usuario     SET ACTIVO = 0 WHERE USUARIO_ID    = v_usuario_id;
-    UPDATE trabajador SET ACTIVO = 0 WHERE TRABAJADOR_ID = _trabajador_id;
+    UPDATE usuario     SET ACTIVO = 0 WHERE USUARIO_ID    = _usuario_id;
+    UPDATE trabajador SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
--- DAO: TrabajadorDaoImpl.buscarPorID → "BUSCAR_TRABAJADOR_X_ID"
--- Columnas: TRABAJADOR_ID, FECHA_INGRESO, USUARIO_ID,
---   NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, CONTRASENA
 DROP PROCEDURE IF EXISTS BUSCAR_TRABAJADOR_X_ID$$
 CREATE PROCEDURE BUSCAR_TRABAJADOR_X_ID(
-    IN _trabajador_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    SELECT t.TRABAJADOR_ID, t.FECHA_INGRESO,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
-           u.TELEFONO, u.CORREO, u.CONTRASENA
+    SELECT t.CARGO, t.FECHA_INGRESO, u.USUARIO_ID, u.NOMBRES,
+    u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM trabajador t
     INNER JOIN usuario u ON t.USUARIO_ID = u.USUARIO_ID
-    WHERE t.TRABAJADOR_ID = _trabajador_id AND t.ACTIVO = 1;
+    WHERE t.USUARIO_ID = _usuario_id AND t.ACTIVO = 1;
 END$$
 
 -- DAO: TrabajadorDaoImpl.listarTodos → "LISTAR_TRABAJADORES"
 DROP PROCEDURE IF EXISTS LISTAR_TRABAJADORES$$
 CREATE PROCEDURE LISTAR_TRABAJADORES()
 BEGIN
-    SELECT t.TRABAJADOR_ID, t.FECHA_INGRESO,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
-           u.TELEFONO, u.CORREO, u.CONTRASENA
+    SELECT t.CARGO, t.FECHA_INGRESO, u.USUARIO_ID, u.NOMBRES,
+    u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM trabajador t
     INNER JOIN usuario u ON t.USUARIO_ID = u.USUARIO_ID
     WHERE t.ACTIVO = 1;
 END$$
 
--- DAO: TrabajadorDaoImpl.buscarPorCorreo → "BUSCAR_TRABAJADOR_X_CORREO"
 DROP PROCEDURE IF EXISTS BUSCAR_TRABAJADOR_X_CORREO$$
 CREATE PROCEDURE BUSCAR_TRABAJADOR_X_CORREO(
     IN _correo VARCHAR(100)
 )
 BEGIN
-    SELECT t.TRABAJADOR_ID, t.FECHA_INGRESO,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
-           u.TELEFONO, u.CORREO, u.CONTRASENA
+    SELECT t.CARGO, t.FECHA_INGRESO, u.USUARIO_ID, u.NOMBRES,
+    u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM trabajador t
     INNER JOIN usuario u ON t.USUARIO_ID = u.USUARIO_ID
     WHERE u.CORREO = _correo AND t.ACTIVO = 1;
 END$$
 
--- DAO: TrabajadorDaoImpl.obtenerPorDNI → "BUSCAR_TRABAJADOR_X_DNI"
 DROP PROCEDURE IF EXISTS BUSCAR_TRABAJADOR_X_DNI$$
 CREATE PROCEDURE BUSCAR_TRABAJADOR_X_DNI(
     IN _dni VARCHAR(8)
 )
 BEGIN
-    SELECT t.TRABAJADOR_ID, t.FECHA_INGRESO,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT t.CARGO, t.FECHA_INGRESO, u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM trabajador t
     INNER JOIN usuario u ON t.USUARIO_ID = u.USUARIO_ID
@@ -299,104 +247,55 @@ BEGIN
     VALUES(_usuario_id, 1);
 END$$
 
-DROP PROCEDURE IF EXISTS MODIFICAR_ADMINISTRADOR$$
-CREATE PROCEDURE MODIFICAR_ADMINISTRADOR(
-    IN _administrador_id INT,
-    IN _nombres          VARCHAR(100),
-    IN _apellidos        VARCHAR(100),
-    IN _dni              VARCHAR(8),
-    IN _telefono         VARCHAR(15),
-    IN _correo           VARCHAR(100)
-)
-BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM administrador WHERE ADMINISTRADOR_ID = _administrador_id;
-
-    UPDATE usuario SET
-        NOMBRES   = _nombres,
-        APELLIDOS = _apellidos,
-        DNI       = _dni,
-        TELEFONO  = _telefono,
-        CORREO    = _correo
-    WHERE USUARIO_ID = v_usuario_id;
-
-    COMMIT;
-END$$
-
 DROP PROCEDURE IF EXISTS ELIMINAR_ADMINISTRADOR$$
 CREATE PROCEDURE ELIMINAR_ADMINISTRADOR(
-    IN _administrador_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM administrador WHERE ADMINISTRADOR_ID = _administrador_id;
-
-    UPDATE usuario        SET ACTIVO = 0 WHERE USUARIO_ID       = v_usuario_id;
-    UPDATE administrador SET ACTIVO = 0 WHERE ADMINISTRADOR_ID = _administrador_id;
+    UPDATE usuario        SET ACTIVO = 0 WHERE USUARIO_ID       = _usuario_id;
+    UPDATE administrador SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
--- DAO: AdministradorDaoImpl.buscarPorID → "BUSCAR_ADMINISTRADOR_X_ID"
--- Columnas: ADMINISTRADOR_ID, USUARIO_ID, NOMBRES, APELLIDOS, DNI,
---   TELEFONO, CORREO, CONTRASENA
 DROP PROCEDURE IF EXISTS BUSCAR_ADMINISTRADOR_X_ID$$
 CREATE PROCEDURE BUSCAR_ADMINISTRADOR_X_ID(
-    IN _administrador_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    SELECT a.ADMINISTRADOR_ID,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM administrador a
     INNER JOIN usuario u ON a.USUARIO_ID = u.USUARIO_ID
-    WHERE a.ADMINISTRADOR_ID = _administrador_id AND a.ACTIVO = 1;
+    WHERE a.USUARIO_ID = _usuario_id AND a.ACTIVO = 1;
 END$$
 
--- DAO: AdministradorDaoImpl.listarTodos → "LISTAR_ADMINISTRADORES"
 DROP PROCEDURE IF EXISTS LISTAR_ADMINISTRADORES$$
 CREATE PROCEDURE LISTAR_ADMINISTRADORES()
 BEGIN
-    SELECT a.ADMINISTRADOR_ID,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM administrador a
     INNER JOIN usuario u ON a.USUARIO_ID = u.USUARIO_ID
     WHERE a.ACTIVO = 1;
 END$$
 
--- DAO: AdministradorDaoImpl.buscarPorCorreo → "BUSCAR_ADMINISTRADOR_X_CORREO"
 DROP PROCEDURE IF EXISTS BUSCAR_ADMINISTRADOR_X_CORREO$$
 CREATE PROCEDURE BUSCAR_ADMINISTRADOR_X_CORREO(
     IN _correo VARCHAR(100)
 )
 BEGIN
-    SELECT a.ADMINISTRADOR_ID,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM administrador a
     INNER JOIN usuario u ON a.USUARIO_ID = u.USUARIO_ID
     WHERE u.CORREO = _correo AND a.ACTIVO = 1;
 END$$
 
--- DAO: AdministradorDaoImpl.obtenerPorDNI → "BUSCAR_ADMINISTRADOR_X_DNI"
 DROP PROCEDURE IF EXISTS BUSCAR_ADMINISTRADOR_X_DNI$$
 CREATE PROCEDURE BUSCAR_ADMINISTRADOR_X_DNI(
     IN _dni VARCHAR(8)
 )
 BEGIN
-    SELECT a.ADMINISTRADOR_ID,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
     FROM administrador a
     INNER JOIN usuario u ON a.USUARIO_ID = u.USUARIO_ID
@@ -1403,7 +1302,7 @@ BEGIN
            v.CANAL_VENTA, v.MONTO_TOTAL, v.MONTO_DESCUENTO,
            v.ESTADO_VENTA
     FROM venta v
-    LEFT  JOIN cliente     c  ON v.CLIENTE_ID     = c.CLIENTE_ID
+    LEFT  JOIN cliente     c  ON v.CLIENTE_ID     = c.USUARIO_ID
     LEFT  JOIN usuario     uc ON c.USUARIO_ID     = uc.USUARIO_ID
     INNER JOIN metodo_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID
     WHERE DATE(v.FECHA_HORA) BETWEEN _fecha_inicio AND _fecha_fin
@@ -1456,7 +1355,7 @@ BEGIN
            CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS REGISTRADO_POR
     FROM devolucion d
     INNER JOIN producto    p ON d.PRODUCTO_ID   = p.PRODUCTO_ID
-    INNER JOIN trabajador t ON d.TRABAJADOR_ID = t.TRABAJADOR_ID
+    INNER JOIN trabajador t ON d.TRABAJADOR_ID = t.USUARIO_ID
     INNER JOIN usuario     u ON t.USUARIO_ID    = u.USUARIO_ID
     WHERE d.ESTADO_DEVOLUCION = 'APROBADO'
       AND DATE(d.FECHA_HORA) BETWEEN _fecha_inicio AND _fecha_fin

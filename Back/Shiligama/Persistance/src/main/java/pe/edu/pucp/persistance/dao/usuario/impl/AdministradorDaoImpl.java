@@ -12,45 +12,72 @@ import java.util.Map;
 
 public class AdministradorDaoImpl implements AdministradorDao {
 
-    // SP: INSERTAR_ADMINISTRADOR(OUT _id_usuario, IN _nombres, IN _apellidos,
-    //   IN _dni, IN _telefono, IN _correo, IN _contrasena)
+    // -------------------------------------------------------------------------
+    // INSERT con transaccion:
+    //   1) INSERTAR_USUARIO(OUT _usuario_id, IN _nombres, _apellidos, _dni,
+    //      _telefono, _correo, _contrasena)
+    //   2) INSERTAR_ADMINISTRADOR(IN _usuario_id)
+    // -------------------------------------------------------------------------
     @Override
     public int insertar(Administrador administrador) {
-        Map<Integer, Object> parametrosEntrada = new HashMap<>();
-        Map<Integer, Object> parametrosSalida = new HashMap<>();
+        int resultado = 0;
+        DBManager dbManager = DBManager.getInstance();
+        try {
+            dbManager.iniciarTransaccion();
 
-        parametrosSalida.put(1, Types.INTEGER);        // OUT _id_usuario
-        parametrosEntrada.put(2, administrador.getNombres());
-        parametrosEntrada.put(3, administrador.getApellidos());
-        parametrosEntrada.put(4, administrador.getDni());
-        parametrosEntrada.put(5, administrador.getTelefono());
-        parametrosEntrada.put(6, administrador.getCorreo());
-        parametrosEntrada.put(7, administrador.getContrasena());
+            // 1) Insertar en tabla padre: usuario
+            Map<Integer, Object> paramsUsr = new HashMap<>();
+            Map<Integer, Object> paramsUsrOut = new HashMap<>();
+            paramsUsrOut.put(1, Types.INTEGER);
+            paramsUsr.put(2, administrador.getNombres());
+            paramsUsr.put(3, administrador.getApellidos());
+            paramsUsr.put(4, administrador.getDni());
+            paramsUsr.put(5, administrador.getTelefono());
+            paramsUsr.put(6, administrador.getCorreo());
+            paramsUsr.put(7, administrador.getContrasena());
 
-        DBManager.getInstance().ejecutarProcedimiento(
-                "INSERTAR_ADMINISTRADOR", parametrosEntrada, parametrosSalida);
-        administrador.setIdUsuario((int) parametrosSalida.get(1));
-        return administrador.getIdUsuario();
+            dbManager.ejecutarProcedimientoTransaccion(
+                    "INSERTAR_USUARIO", paramsUsr, paramsUsrOut);
+            int idGenerado = (int) paramsUsrOut.get(1);
+            administrador.setIdUsuario(idGenerado);
+
+            // 2) Insertar en tabla hija: administrador
+            Map<Integer, Object> paramsAdm = new HashMap<>();
+            paramsAdm.put(1, idGenerado);
+
+            dbManager.ejecutarProcedimientoTransaccion(
+                    "INSERTAR_ADMINISTRADOR", paramsAdm, null);
+
+            dbManager.confirmarTransaccion();
+            resultado = idGenerado;
+        } catch (SQLException ex) {
+            System.out.println("Error al insertar administrador: " + ex.getMessage());
+            dbManager.cancelarTransaccion();
+        }
+        return resultado;
     }
 
-    // SP: MODIFICAR_ADMINISTRADOR(IN _id_usuario, IN _nombres, IN _apellidos,
-    //   IN _dni, IN _telefono, IN _correo)
+    // -------------------------------------------------------------------------
+    // UPDATE con transaccion:
+    //   1) MODIFICAR_USUARIO(IN _usuario_id, _nombres, _apellidos, _dni,
+    //      _telefono, _correo)
+    //   Administrador no tiene campos propios que modificar
+    // -------------------------------------------------------------------------
     @Override
     public int modificar(Administrador administrador) {
-        Map<Integer, Object> parametrosEntrada = new HashMap<>();
-
-        parametrosEntrada.put(1, administrador.getIdUsuario());
-        parametrosEntrada.put(2, administrador.getNombres());
-        parametrosEntrada.put(3, administrador.getApellidos());
-        parametrosEntrada.put(4, administrador.getDni());
-        parametrosEntrada.put(5, administrador.getTelefono());
-        parametrosEntrada.put(6, administrador.getCorreo());
+        Map<Integer, Object> paramsUsr = new HashMap<>();
+        paramsUsr.put(1, administrador.getIdUsuario());
+        paramsUsr.put(2, administrador.getNombres());
+        paramsUsr.put(3, administrador.getApellidos());
+        paramsUsr.put(4, administrador.getDni());
+        paramsUsr.put(5, administrador.getTelefono());
+        paramsUsr.put(6, administrador.getCorreo());
 
         return DBManager.getInstance().ejecutarProcedimiento(
-                "MODIFICAR_ADMINISTRADOR", parametrosEntrada, null);
+                "MODIFICAR_USUARIO", paramsUsr, null);
     }
 
-    // SP: ELIMINAR_ADMINISTRADOR(IN _id_usuario)
+    // SP: ELIMINAR_ADMINISTRADOR(IN _usuario_id)
     @Override
     public int eliminar(int id) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -59,7 +86,7 @@ public class AdministradorDaoImpl implements AdministradorDao {
                 "ELIMINAR_ADMINISTRADOR", parametrosEntrada, null);
     }
 
-    // SP: BUSCAR_ADMINISTRADOR_X_ID(IN _id_usuario)
+    // SP: BUSCAR_ADMINISTRADOR_X_ID(IN _usuario_id)
     @Override
     public Administrador buscarPorID(int id) {
         Administrador admin = null;
@@ -160,10 +187,10 @@ public class AdministradorDaoImpl implements AdministradorDao {
         return existe;
     }
 
-    // Mapeo — ahora usa ID_USUARIO (PK compartida)
+    // Mapeo — usa USUARIO_ID (PK compartida padre-hijo)
     private Administrador mapearAdministrador(ResultSet rs) throws SQLException {
         Administrador a = new Administrador();
-        a.setIdUsuario(rs.getInt("ID_USUARIO"));
+        a.setIdUsuario(rs.getInt("USUARIO_ID"));
         a.setNombres(rs.getString("NOMBRES"));
         a.setApellidos(rs.getString("APELLIDOS"));
         a.setDni(rs.getString("DNI"));

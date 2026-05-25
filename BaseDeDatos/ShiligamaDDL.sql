@@ -228,7 +228,7 @@ CREATE TABLE IF NOT EXISTS `movimiento_inventario` (
     CONSTRAINT `fk_movimientos_productos`
         FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_movimientos_trabajadores`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`TRABAJADOR_ID`) ON UPDATE CASCADE
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`USUARIO_ID`) ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Auditoría de movimientos de inventario: entradas, salidas, ajustes y devoluciones de productos';
 
@@ -261,7 +261,7 @@ CREATE TABLE IF NOT EXISTS `devolucion` (
         FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
         ON UPDATE CASCADE,
     CONSTRAINT `fk_devolucion_trabajador`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`TRABAJADOR_ID`)
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`USUARIO_ID`)
         ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Tabla de Devolucion, baja de stock';
@@ -324,9 +324,9 @@ CREATE TABLE IF NOT EXISTS `venta` (
     INDEX `fk_venta_trabajador_idx` (`TRABAJADOR_ID`),
     INDEX `fk_venta_metodo_pago_idx` (`METODO_PAGO_ID`),
     CONSTRAINT `fk_venta_cliente`
-        FOREIGN KEY (`CLIENTE_ID`) REFERENCES `cliente` (`CLIENTE_ID`) ON UPDATE CASCADE,
+        FOREIGN KEY (`CLIENTE_ID`) REFERENCES `cliente` (`USUARIO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_venta_trabajador`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`TRABAJADOR_ID`) ON UPDATE CASCADE,
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`USUARIO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_venta_metodo_pago`
         FOREIGN KEY (`METODO_PAGO_ID`) REFERENCES `metodo_pago` (`METODO_PAGO_ID`) ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
@@ -383,7 +383,7 @@ CREATE TABLE IF NOT EXISTS `pedido` (
     INDEX `fk_pedido_venta_idx` (`VENTA_ID`),
     -- INDEX `idx_pedido_estado` (`ESTADO_PEDIDO`),
     CONSTRAINT `fk_pedido_cliente`
-        FOREIGN KEY (`CLIENTE_ID`) REFERENCES `cliente` (`CLIENTE_ID`) ON UPDATE CASCADE,
+        FOREIGN KEY (`CLIENTE_ID`) REFERENCES `cliente` (`USUARIO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_pedido_venta`
         FOREIGN KEY (`VENTA_ID`) REFERENCES `venta` (`VENTA_ID`) ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;

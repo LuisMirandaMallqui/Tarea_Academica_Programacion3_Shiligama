@@ -419,10 +419,10 @@ public class MainTest {
         VentaBo bo = new VentaBoImpl();
 
         Cliente cliente = new Cliente();
-        cliente.setIdCliente(1);
+        cliente.setIdUsuario(1);
 
         Trabajador trabajador = new Trabajador();
-        trabajador.setIdTrabajador(1);
+        trabajador.setIdUsuario(1);
 
         MetodoPago metodoPago = new MetodoPago();
         metodoPago.setIdMetodoPago(1);
@@ -498,7 +498,7 @@ public class MainTest {
         PedidoBo bo = new PedidoBoImpl();
 
         Cliente cliente = new Cliente();
-        cliente.setIdCliente(1);
+        cliente.setIdUsuario(1);
 
         Pedido pedido = new Pedido();
         pedido.setCliente(cliente);
@@ -579,14 +579,14 @@ public class MainTest {
 
         int resIns = clienteBO.insertar(nuevo);
         if (resIns > 0) {
-            System.out.println("Éxito: Cliente insertado con ID: " + nuevo.getIdCliente());
+            System.out.println("Éxito: Cliente insertado con ID: " + nuevo.getIdUsuario());
 
             // Listar
             List<Cliente> lista = clienteBO.listarTodos();
             System.out.println("Total clientes en BD: " + (lista != null ? lista.size() : 0));
 
             // Limpiar (Eliminar)
-            int resElim = clienteBO.eliminar(nuevo.getIdCliente());
+            int resElim = clienteBO.eliminar(nuevo.getIdUsuario());
             if (resElim > 0) {
                 System.out.println("Limpieza: Cliente eliminado correctamente.");
             } else {
@@ -616,12 +616,12 @@ public class MainTest {
 
         int resIns = trabajadorBo.insertar(trabajador);
         if (resIns > 0) {
-            System.out.println("Éxito: Trabajador insertado con ID: " + trabajador.getIdTrabajador());
+            System.out.println("Éxito: Trabajador insertado con ID: " + trabajador.getIdUsuario());
             // Listar
             List<Trabajador> lista = trabajadorBo.listarTodos();
             System.out.println("Total trabajadores en BD: " + (lista != null ? lista.size() : 0));
             // Limpiar (Eliminar)
-            int resElim = trabajadorBo.eliminar(trabajador.getIdTrabajador());
+            int resElim = trabajadorBo.eliminar(trabajador.getIdUsuario());
             if (resElim > 0) {
                 System.out.println("Limpieza: Trabajador eliminado correctamente.");
             } else {
@@ -649,13 +649,13 @@ public class MainTest {
 
         int resIns = administradorBo.insertar(admin);
         if (resIns > 0) {
-            System.out.println("Éxito: Administrador creado con ID: " + admin.getIdAdministrador());
+            System.out.println("Éxito: Administrador creado con ID: " + admin.getIdUsuario());
             // Listar
             List<Administrador> lista = administradorBo.listarTodos();
             System.out.println("Total administradores en BD: " + (lista != null ? lista.size() : 0));
 
             // Limpiar (Eliminar)
-            int resElim = administradorBo.eliminar(admin.getIdAdministrador());
+            int resElim = administradorBo.eliminar(admin.getIdUsuario());
             if (resElim > 0) {
                 System.out.println("Limpieza: Administrador eliminado correctamente.");
             } else {
