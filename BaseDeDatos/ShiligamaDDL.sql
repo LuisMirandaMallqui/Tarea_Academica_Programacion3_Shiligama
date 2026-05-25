@@ -17,8 +17,6 @@ USE `shiligama`;
 -- Autenticacion y control de sesion
 -- =============================================================
 
-
-
 -- -----------------------------------------------------
 -- Tabla Usuario
 -- -----------------------------------------------------
@@ -49,11 +47,10 @@ COMMENT = 'Almacena información general de los usuarios registrados';
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `shiligama`.`cliente` ;
 CREATE TABLE IF NOT EXISTS `cliente` (
-    `CLIENTE_ID`             INT          NOT NULL AUTO_INCREMENT,
-    `USUARIO_ID`             INT          NOT NULL,
+    `USUARIO_ID`             INT          PRIMARY KEY NOT NULL,
     `DIRECCION_ENTREGA`      VARCHAR(255) NULL DEFAULT NULL,
     `FECHA_REGISTRO`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (`CLIENTE_ID`),
+    FOREIGN KEY (USUARIO_ID) REFERENCES usuario(USUARIO_ID),
 	-- Auditoría Automática
     `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
     `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
@@ -67,10 +64,9 @@ COMMENT = 'Almacena los Clientes';
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `shiligama`.`administrador` ;
 CREATE TABLE IF NOT EXISTS `administrador` (
-    `ADMINISTRADOR_ID`       INT          NOT NULL AUTO_INCREMENT,
-    `USUARIO_ID`             INT          NOT NULL,
+    `USUARIO_ID`             INT          PRIMARY KEY NOT NULL,
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
-    PRIMARY KEY (`ADMINISTRADOR_ID`),
+    FOREIGN KEY (USUARIO_ID) REFERENCES usuario(USUARIO_ID),
 	-- Auditoría Automática
     `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
     `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
@@ -84,12 +80,11 @@ COMMENT = 'Almacena datos de los administradores';
 -- -----------------------------------------------------
 DROP TABLE IF EXISTS `shiligama`.`trabajador` ;
 CREATE TABLE IF NOT EXISTS `trabajador` (
-    `TRABAJADOR_ID`          INT          NOT NULL AUTO_INCREMENT,
-    `USUARIO_ID`             INT          NOT NULL,
+    `USUARIO_ID`             INT          PRIMARY KEY NOT NULL,
     `CARGO`                  VARCHAR(100) NULL DEFAULT NULL,
-    `FECHA_INGRESO`          DATE         NULL DEFAULT NULL,
+    `FECHA_INGRESO`          DATE         NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
-     PRIMARY KEY (`TRABAJADOR_ID`),
+     FOREIGN KEY (USUARIO_ID) REFERENCES usuario(USUARIO_ID),
 	-- Auditoría Automática
     `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
     `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',

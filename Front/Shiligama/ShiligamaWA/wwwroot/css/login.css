@@ -1,0 +1,164 @@
+﻿/* ── VARIABLES DE DISEÑO (FUSIÓN SHILIGAMA) ── */
+:root {
+    --color-primary: #1a5d3b; /* Verde Shiligama principal */
+    --color-primary-hover: #12432a; /* Verde oscuro para estados interactivos */
+    --color-accent: #ffc107; /* Amarillo/Ámbar de alertas y destaques */
+    --color-bg-light: #f4f6f4; /* Fondo grisáceo claro con tinte sutil */
+    --font-main: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+.login-container {
+    display: flex;
+    min-height: 100vh;
+    font-family: var(--font-main);
+    background-color: var(--color-bg-light);
+}
+
+/* ── PANEL IZQUIERDO: BRANDING & BENEFICIOS ── */
+.left-panel {
+    background-color: var(--color-primary);
+    color: white;
+    flex: 0 0 42%;
+    padding: 4rem 3.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden; /* Clave para recortar los círculos de fondo */
+}
+
+.brand-section h2 {
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    font-size: 2.2rem;
+}
+
+.feature-list {
+    margin-top: 3rem;
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.feature-icon {
+    font-size: 1.4rem;
+    color: var(--color-accent);
+    margin-right: 1.2rem;
+    margin-top: 0.2rem;
+    width: 24px;
+    text-align: center;
+}
+
+/* Círculos decorativos de fondo sin relleno (Wireframe Style) */
+.circle-decoration {
+    position: absolute;
+    bottom: -60px;
+    left: -60px;
+    opacity: 0.12;
+    pointer-events: none; /* No interfiere con clics */
+}
+
+/* ── PANEL DERECHO: FORMULARIO DE ACCESO ── */
+.right-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.login-card {
+    background: #ffffff;
+    padding: 3rem;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(26, 93, 59, 0.04), 0 1px 8px rgba(0, 0, 0, 0.02);
+    width: 100%;
+    max-width: 460px;
+}
+
+/* Selectores de Rol Estilo Tabs */
+.role-tabs {
+    display: flex;
+    background: #e9ecef;
+    border-radius: 8px;
+    padding: 4px;
+    margin-bottom: 2rem;
+}
+
+.role-tab {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #6c757d;
+    transition: all 0.2s ease-in-out;
+}
+
+    .role-tab.active {
+        background: #ffffff;
+        color: var(--color-primary);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+/* Ajustes de Inputs */
+.input-group-text {
+    color: #a0aec0;
+    border-color: #e2e8f0;
+}
+
+.form-control {
+    border-color: #e2e8f0;
+    padding: 10px 12px;
+}
+
+    .form-control:focus {
+        border-color: var(--color-primary);
+        box-shadow: 0 0 0 3px rgba(26, 93, 59, 0.15);
+    }
+
+/* Enlace Olvidaste Contraseña */
+.link-forgot {
+    color: var(--color-primary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+    .link-forgot:hover {
+        color: var(--color-primary-hover);
+        text-decoration: underline;
+    }
+
+/* Botón de Envío Verde Shiligama */
+.btn-login {
+    background-color: var(--color-primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 12px 20px;
+    width: 100%;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: 0.3px;
+    transition: background-color 0.2s ease-in-out;
+    box-shadow: 0 4px 12px rgba(26, 93, 59, 0.2);
+}
+
+    .btn-login:hover {
+        background-color: var(--color-primary-hover) !important;
+        box-shadow: 0 6px 16px rgba(26, 93, 59, 0.3);
+    }
+
+/* Caja de Credenciales de Prueba */
+.credentials-box {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--color-accent);
+    border-radius: 4px;
+}

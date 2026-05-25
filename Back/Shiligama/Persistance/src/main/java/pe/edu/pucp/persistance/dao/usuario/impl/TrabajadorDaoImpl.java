@@ -12,37 +12,36 @@ import java.util.Map;
 
 public class TrabajadorDaoImpl implements TrabajadorDao {
 
-    // SP: INSERTAR_TRABAJADOR(OUT _id_trabajador, IN _nombres, IN _apellidos,
-    //   IN _dni, IN _telefono, IN _correo, IN _contrasena, IN _cargo, IN _fecha_ingreso)
+    // SP: INSERTAR_TRABAJADOR(OUT _id_usuario, IN _nombres, IN _apellidos,
+    //   IN _dni, IN _telefono, IN _correo, IN _contrasena, IN _fecha_ingreso)
     @Override
     public int insertar(Trabajador trabajador) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
-        parametrosSalida.put(1, Types.INTEGER);
+        parametrosSalida.put(1, Types.INTEGER);        // OUT _id_usuario
         parametrosEntrada.put(2, trabajador.getNombres());
         parametrosEntrada.put(3, trabajador.getApellidos());
         parametrosEntrada.put(4, trabajador.getDni());
         parametrosEntrada.put(5, trabajador.getTelefono());
         parametrosEntrada.put(6, trabajador.getCorreo());
         parametrosEntrada.put(7, trabajador.getContrasena());
-        parametrosEntrada.put(8, null); // CARGO — agregar al model si es necesario
-        parametrosEntrada.put(9, trabajador.getFechaIngreso() != null
+        parametrosEntrada.put(8, trabajador.getFechaIngreso() != null
                 ? java.sql.Date.valueOf(trabajador.getFechaIngreso()) : null);
 
         DBManager.getInstance().ejecutarProcedimiento(
                 "INSERTAR_TRABAJADOR", parametrosEntrada, parametrosSalida);
-        trabajador.setIdTrabajador((int) parametrosSalida.get(1));
-        return trabajador.getIdTrabajador();
+        trabajador.setIdUsuario((int) parametrosSalida.get(1));
+        return trabajador.getIdUsuario();
     }
 
-    // SP: MODIFICAR_TRABAJADOR(IN _id_trabajador, IN _nombres, IN _apellidos,
+    // SP: MODIFICAR_TRABAJADOR(IN _id_usuario, IN _nombres, IN _apellidos,
     //   IN _dni, IN _telefono, IN _correo, IN _fecha_ingreso)
     @Override
     public int modificar(Trabajador trabajador) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
 
-        parametrosEntrada.put(1, trabajador.getIdTrabajador());
+        parametrosEntrada.put(1, trabajador.getIdUsuario());
         parametrosEntrada.put(2, trabajador.getNombres());
         parametrosEntrada.put(3, trabajador.getApellidos());
         parametrosEntrada.put(4, trabajador.getDni());
@@ -55,7 +54,7 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
                 "MODIFICAR_TRABAJADOR", parametrosEntrada, null);
     }
 
-    // SP: ELIMINAR_TRABAJADOR(IN _id_trabajador)
+    // SP: ELIMINAR_TRABAJADOR(IN _id_usuario)
     @Override
     public int eliminar(int id) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -64,7 +63,7 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
                 "ELIMINAR_TRABAJADOR", parametrosEntrada, null);
     }
 
-    // SP: BUSCAR_TRABAJADOR_X_ID(IN _id_trabajador)
+    // SP: BUSCAR_TRABAJADOR_X_ID(IN _id_usuario)
     @Override
     public Trabajador buscarPorID(int id) {
         Trabajador trabajador = null;
@@ -104,7 +103,6 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return lista;
     }
 
-    // SP: BUSCAR_TRABAJADOR_X_CORREO(IN _correo)
     @Override
     public Trabajador buscarPorCorreo(String correo) {
         Trabajador trabajador = null;
@@ -125,7 +123,6 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return trabajador;
     }
 
-    // SP: BUSCAR_TRABAJADOR_X_DNI(IN _dni)
     @Override
     public Trabajador obtenerPorDNI(String dni) {
         Trabajador trabajador = null;
@@ -146,7 +143,6 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return trabajador;
     }
 
-    // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni)
     @Override
     public Boolean existeUsuarioEnBD(Trabajador trabajador) {
         Boolean existe = false;
@@ -168,14 +164,14 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return existe;
     }
 
+    // Mapeo — ahora usa ID_USUARIO (PK compartida)
     private Trabajador mapearTrabajador(ResultSet rs) throws SQLException {
         Trabajador t = new Trabajador();
-        t.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+        t.setIdUsuario(rs.getInt("ID_USUARIO"));
         Date fechaIngreso = rs.getDate("FECHA_INGRESO");
         if (fechaIngreso != null) {
             t.setFechaIngreso(fechaIngreso.toLocalDate());
         }
-        t.setIdUsuario(rs.getInt("USUARIO_ID"));
         t.setNombres(rs.getString("NOMBRES"));
         t.setApellidos(rs.getString("APELLIDOS"));
         t.setDni(rs.getString("DNI"));

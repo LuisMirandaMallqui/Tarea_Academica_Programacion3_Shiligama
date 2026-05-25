@@ -49,35 +49,12 @@ END$$
 -- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_CLIENTE$$
 CREATE PROCEDURE INSERTAR_CLIENTE(
-    OUT _cliente_id       INT,
-    IN  _nombres          VARCHAR(100),
-    IN  _apellidos        VARCHAR(100),
-    IN  _dni              VARCHAR(8),
-    IN  _telefono         VARCHAR(15),
-    IN  _correo           VARCHAR(100),
-    IN  _contrasena       VARCHAR(255),
+    IN  _id_usuario       INT,
     IN  _direccion_entrega VARCHAR(255)
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
-                          _telefono, _correo, _contrasena);
-
     INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
-    VALUES(v_usuario_id, _direccion_entrega);
-
-    SET _cliente_id = LAST_INSERT_ID();
-
-    COMMIT;
+    VALUES(_id_usuario, _direccion_entrega);
 END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_CLIENTE$$
@@ -193,36 +170,12 @@ END$$
 -- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_TRABAJADOR$$
 CREATE PROCEDURE INSERTAR_TRABAJADOR(
-    OUT _trabajador_id INT,
-    IN  _nombres       VARCHAR(100),
-    IN  _apellidos     VARCHAR(100),
-    IN  _dni           VARCHAR(8),
-    IN  _telefono      VARCHAR(15),
-    IN  _correo        VARCHAR(100),
-    IN  _contrasena    VARCHAR(255),
-    IN  _cargo         VARCHAR(100),
-    IN  _fecha_ingreso DATE
+    IN  _usuario_id INT,
+    IN  _cargo         VARCHAR(100)
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
-                          _telefono, _correo, _contrasena);
-
-    INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO, ACTIVO)
-    VALUES(v_usuario_id, _cargo, _fecha_ingreso, 1);
-
-    SET _trabajador_id = LAST_INSERT_ID();
-
-    COMMIT;
+    INSERT INTO trabajador(USUARIO_ID, CARGO, ACTIVO)
+    VALUES(_usuario_id, _cargo, _fecha_ingreso, 1);
 END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_TRABAJADOR$$
@@ -339,34 +292,11 @@ END$$
 -- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_ADMINISTRADOR$$
 CREATE PROCEDURE INSERTAR_ADMINISTRADOR(
-    OUT _administrador_id INT,
-    IN  _nombres          VARCHAR(100),
-    IN  _apellidos        VARCHAR(100),
-    IN  _dni              VARCHAR(8),
-    IN  _telefono         VARCHAR(15),
-    IN  _correo           VARCHAR(100),
-    IN  _contrasena       VARCHAR(255)
+    IN  _usuario_id INT
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
-                          _telefono, _correo, _contrasena);
-
     INSERT INTO administrador(USUARIO_ID, ACTIVO)
-    VALUES(v_usuario_id, 1);
-
-    SET _administrador_id = LAST_INSERT_ID();
-
-    COMMIT;
+    VALUES(_usuario_id, 1);
 END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_ADMINISTRADOR$$

@@ -12,14 +12,14 @@ import java.util.Map;
 
 public class AdministradorDaoImpl implements AdministradorDao {
 
-    // SP: INSERTAR_ADMINISTRADOR(OUT _id_admin, IN _nombres, IN _apellidos,
+    // SP: INSERTAR_ADMINISTRADOR(OUT _id_usuario, IN _nombres, IN _apellidos,
     //   IN _dni, IN _telefono, IN _correo, IN _contrasena)
     @Override
     public int insertar(Administrador administrador) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
-        parametrosSalida.put(1, Types.INTEGER);
+        parametrosSalida.put(1, Types.INTEGER);        // OUT _id_usuario
         parametrosEntrada.put(2, administrador.getNombres());
         parametrosEntrada.put(3, administrador.getApellidos());
         parametrosEntrada.put(4, administrador.getDni());
@@ -29,17 +29,17 @@ public class AdministradorDaoImpl implements AdministradorDao {
 
         DBManager.getInstance().ejecutarProcedimiento(
                 "INSERTAR_ADMINISTRADOR", parametrosEntrada, parametrosSalida);
-        administrador.setIdAdministrador((int) parametrosSalida.get(1));
-        return administrador.getIdAdministrador();
+        administrador.setIdUsuario((int) parametrosSalida.get(1));
+        return administrador.getIdUsuario();
     }
 
-    // SP: MODIFICAR_ADMINISTRADOR(IN _id_admin, IN _nombres, IN _apellidos,
+    // SP: MODIFICAR_ADMINISTRADOR(IN _id_usuario, IN _nombres, IN _apellidos,
     //   IN _dni, IN _telefono, IN _correo)
     @Override
     public int modificar(Administrador administrador) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
 
-        parametrosEntrada.put(1, administrador.getIdAdministrador());
+        parametrosEntrada.put(1, administrador.getIdUsuario());
         parametrosEntrada.put(2, administrador.getNombres());
         parametrosEntrada.put(3, administrador.getApellidos());
         parametrosEntrada.put(4, administrador.getDni());
@@ -50,7 +50,7 @@ public class AdministradorDaoImpl implements AdministradorDao {
                 "MODIFICAR_ADMINISTRADOR", parametrosEntrada, null);
     }
 
-    // SP: ELIMINAR_ADMINISTRADOR(IN _id_admin)
+    // SP: ELIMINAR_ADMINISTRADOR(IN _id_usuario)
     @Override
     public int eliminar(int id) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -59,7 +59,7 @@ public class AdministradorDaoImpl implements AdministradorDao {
                 "ELIMINAR_ADMINISTRADOR", parametrosEntrada, null);
     }
 
-    // SP: BUSCAR_ADMINISTRADOR_X_ID(IN _id_admin)
+    // SP: BUSCAR_ADMINISTRADOR_X_ID(IN _id_usuario)
     @Override
     public Administrador buscarPorID(int id) {
         Administrador admin = null;
@@ -99,7 +99,6 @@ public class AdministradorDaoImpl implements AdministradorDao {
         return lista;
     }
 
-    // SP: BUSCAR_ADMINISTRADOR_X_CORREO(IN _correo)
     @Override
     public Administrador buscarPorCorreo(String correo) {
         Administrador admin = null;
@@ -120,7 +119,6 @@ public class AdministradorDaoImpl implements AdministradorDao {
         return admin;
     }
 
-    // SP: BUSCAR_ADMINISTRADOR_X_DNI(IN _dni)
     @Override
     public Administrador obtenerPorDNI(String dni) {
         Administrador admin = null;
@@ -141,7 +139,6 @@ public class AdministradorDaoImpl implements AdministradorDao {
         return admin;
     }
 
-    // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni)
     @Override
     public Boolean existeUsuarioEnBD(Administrador administrador) {
         Boolean existe = false;
@@ -163,10 +160,10 @@ public class AdministradorDaoImpl implements AdministradorDao {
         return existe;
     }
 
+    // Mapeo — ahora usa ID_USUARIO (PK compartida)
     private Administrador mapearAdministrador(ResultSet rs) throws SQLException {
         Administrador a = new Administrador();
-        a.setIdAdministrador(rs.getInt("ADMINISTRADOR_ID"));
-        a.setIdUsuario(rs.getInt("USUARIO_ID"));
+        a.setIdUsuario(rs.getInt("ID_USUARIO"));
         a.setNombres(rs.getString("NOMBRES"));
         a.setApellidos(rs.getString("APELLIDOS"));
         a.setDni(rs.getString("DNI"));
