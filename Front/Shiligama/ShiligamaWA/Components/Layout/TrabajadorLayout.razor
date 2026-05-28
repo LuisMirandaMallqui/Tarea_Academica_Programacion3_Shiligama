@@ -1,0 +1,23 @@
+@inherits LayoutComponentBase
+
+<div class="trabajador-shell">
+    <TrabajadorSidebar />
+    <div class="trabajador-main">
+        <TrabajadorTopbar Title="@TitlePage" />
+        <main class="trabajador-content">
+            <CascadingValue Value="this">
+                @Body
+            </CascadingValue>
+        </main>
+    </div>
+</div>
+
+@code {
+    public string TitlePage { get; set; } = "Panel de Trabajador";
+
+    public void SetTitle(string t)
+    {
+        TitlePage = t;
+        StateHasChanged();
+    }
+}

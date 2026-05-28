@@ -1,0 +1,22 @@
+@inject NavigationManager Nav
+
+@* Mobile toggle *@
+<button class="admin-mobile-toggle d-lg-none" type="button"
+        data-bs-toggle="offcanvas" data-bs-target="#adminSidebarOffcanvas"
+        aria-controls="adminSidebarOffcanvas">
+    <i class="fa-solid fa-bars"></i>
+</button>
+
+@* Desktop sidebar fijo *@
+<aside class="admin-sidebar d-none d-lg-flex">
+    <SidebarContent />
+</aside>
+
+@* Mobile offcanvas *@
+<div class="offcanvas offcanvas-start admin-offcanvas" tabindex="-1" id="adminSidebarOffcanvas">
+    <SidebarContent />
+</div>
+
+@code {
+    // helper interno como RenderFragment no es trivial; uso componente embebido abajo.
+}

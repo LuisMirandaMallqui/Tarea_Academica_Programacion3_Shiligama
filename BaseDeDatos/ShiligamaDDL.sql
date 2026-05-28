@@ -82,7 +82,7 @@ DROP TABLE IF EXISTS `shiligama`.`trabajador` ;
 CREATE TABLE IF NOT EXISTS `trabajador` (
     `USUARIO_ID`             INT          PRIMARY KEY NOT NULL,
     `CARGO`                  VARCHAR(100) NULL DEFAULT NULL,
-    `FECHA_INGRESO`          DATE         NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `FECHA_INGRESO`          DATETIME	  NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
      FOREIGN KEY (USUARIO_ID) REFERENCES usuario(USUARIO_ID),
 	-- Auditoría Automática

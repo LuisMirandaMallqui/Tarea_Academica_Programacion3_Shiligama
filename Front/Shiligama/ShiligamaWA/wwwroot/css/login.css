@@ -1,16 +1,10 @@
-﻿/* ── VARIABLES DE DISEÑO (FUSIÓN SHILIGAMA) ── */
-:root {
-    --color-primary: #1a5d3b; /* Verde Shiligama principal */
-    --color-primary-hover: #12432a; /* Verde oscuro para estados interactivos */
-    --color-accent: #ffc107; /* Amarillo/Ámbar de alertas y destaques */
-    --color-bg-light: #f4f6f4; /* Fondo grisáceo claro con tinte sutil */
-    --font-main: 'Segoe UI', system-ui, -apple-system, sans-serif;
-}
+/* =========================================================
+   LOGIN / AUTH - usa tokens globales de app.css
+   ========================================================= */
 
 .login-container {
     display: flex;
     min-height: 100vh;
-    font-family: var(--font-main);
     background-color: var(--color-bg-light);
 }
 
@@ -24,68 +18,133 @@
     flex-direction: column;
     justify-content: space-between;
     position: relative;
-    overflow: hidden; /* Clave para recortar los círculos de fondo */
+    overflow: hidden;
+}
+
+@media (max-width: 991.98px) {
+    .left-panel {
+        display: none;
+    }
 }
 
 .brand-section h2 {
     font-weight: 800;
     letter-spacing: 0.5px;
     font-size: 2.2rem;
+    margin-bottom: 0;
+}
+
+.brand-section .brand-sub {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+}
+
+.brand-logo {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    backdrop-filter: blur(6px);
 }
 
 .feature-list {
-    margin-top: 3rem;
+    margin-top: 2.5rem;
 }
 
 .feature-item {
     display: flex;
     align-items: flex-start;
-    margin-bottom: 2rem;
+    margin-bottom: 1.8rem;
+    gap: 1rem;
 }
 
 .feature-icon {
-    font-size: 1.4rem;
-    color: var(--color-accent);
-    margin-right: 1.2rem;
-    margin-top: 0.2rem;
-    width: 24px;
-    text-align: center;
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    flex-shrink: 0;
+    backdrop-filter: blur(6px);
 }
 
-/* Círculos decorativos de fondo sin relleno (Wireframe Style) */
+.feature-text h5 {
+    color: #fff;
+    font-size: 1rem;
+    margin-bottom: 0.2rem;
+    font-weight: 600;
+}
+
+.feature-text p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.85rem;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.left-panel-footer {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+}
+
+/* Círculos decorativos */
 .circle-decoration {
     position: absolute;
-    bottom: -60px;
-    left: -60px;
-    opacity: 0.12;
-    pointer-events: none; /* No interfiere con clics */
+    border: 2px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
-/* ── PANEL DERECHO: FORMULARIO DE ACCESO ── */
+.circle-decoration.c1 { top: 40px; left: 40px; width: 128px; height: 128px; }
+.circle-decoration.c2 { bottom: 80px; right: 40px; width: 96px; height: 96px; }
+.circle-decoration.c3 { top: 50%; left: 25%; width: 64px; height: 64px; }
+
+/* ── PANEL DERECHO: FORMULARIO ── */
 .right-panel {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem;
+    background-color: var(--color-bg-light);
 }
 
 .login-card {
     background: #ffffff;
-    padding: 3rem;
+    padding: 2.5rem;
     border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(26, 93, 59, 0.04), 0 1px 8px rgba(0, 0, 0, 0.02);
+    box-shadow: var(--shadow-lg);
     width: 100%;
     max-width: 460px;
+}
+
+.login-card h3 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.login-card .login-sub {
+    color: var(--color-muted-foreground);
+    margin-bottom: 1.8rem;
+    font-size: 0.95rem;
 }
 
 /* Selectores de Rol Estilo Tabs */
 .role-tabs {
     display: flex;
-    background: #e9ecef;
-    border-radius: 8px;
+    background: var(--color-muted);
+    border-radius: 10px;
     padding: 4px;
-    margin-bottom: 2rem;
+    margin-bottom: 1.6rem;
+    gap: 4px;
 }
 
 .role-tab {
@@ -93,34 +152,58 @@
     border: none;
     background: transparent;
     padding: 10px;
-    border-radius: 6px;
+    border-radius: 7px;
     font-size: 0.88rem;
     font-weight: 600;
-    color: #6c757d;
+    color: var(--color-muted-foreground);
     transition: all 0.2s ease-in-out;
+    cursor: pointer;
 }
 
     .role-tab.active {
         background: #ffffff;
         color: var(--color-primary);
-        box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
     }
 
-/* Ajustes de Inputs */
-.input-group-text {
-    color: #a0aec0;
-    border-color: #e2e8f0;
-}
-
-.form-control {
-    border-color: #e2e8f0;
-    padding: 10px 12px;
-}
-
-    .form-control:focus {
-        border-color: var(--color-primary);
-        box-shadow: 0 0 0 3px rgba(26, 93, 59, 0.15);
+    .role-tab:hover:not(.active) {
+        color: var(--color-foreground);
     }
+
+/* Inputs con icono */
+.input-icon-group {
+    position: relative;
+}
+
+    .input-icon-group .form-control {
+        padding-left: 2.5rem;
+        height: 46px;
+    }
+
+    .input-icon-group .input-icon {
+        position: absolute;
+        left: 0.85rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-muted-foreground);
+        pointer-events: none;
+    }
+
+    .input-icon-group .input-toggle {
+        position: absolute;
+        right: 0.85rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-muted-foreground);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem;
+    }
+
+        .input-icon-group .input-toggle:hover {
+            color: var(--color-foreground);
+        }
 
 /* Enlace Olvidaste Contraseña */
 .link-forgot {
@@ -136,7 +219,7 @@
         text-decoration: underline;
     }
 
-/* Botón de Envío Verde Shiligama */
+/* Botón Login */
 .btn-login {
     background-color: var(--color-primary) !important;
     color: #ffffff !important;
@@ -144,21 +227,70 @@
     padding: 12px 20px;
     width: 100%;
     border-radius: 8px;
-    font-weight: 700;
+    font-weight: 600;
     font-size: 1rem;
     letter-spacing: 0.3px;
-    transition: background-color 0.2s ease-in-out;
-    box-shadow: 0 4px 12px rgba(26, 93, 59, 0.2);
+    transition: background-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    box-shadow: 0 4px 12px rgba(26, 107, 60, 0.2);
+    height: 48px;
 }
 
-    .btn-login:hover {
+    .btn-login:hover:not(:disabled) {
         background-color: var(--color-primary-hover) !important;
-        box-shadow: 0 6px 16px rgba(26, 93, 59, 0.3);
+        box-shadow: 0 6px 16px rgba(26, 107, 60, 0.3);
+    }
+
+    .btn-login:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
     }
 
 /* Caja de Credenciales de Prueba */
 .credentials-box {
     background-color: #f8f9fa;
     border-left: 4px solid var(--color-accent);
-    border-radius: 4px;
+    border-radius: 6px;
+    padding: 0.85rem 1rem;
+    margin-top: 1.2rem;
+}
+
+    .credentials-box .creds-title {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--color-muted-foreground);
+        margin-bottom: 0.45rem;
+    }
+
+    .credentials-box .creds-row {
+        font-size: 0.78rem;
+        color: var(--color-muted-foreground);
+        margin: 0;
+    }
+
+        .credentials-box .creds-row .label {
+            font-weight: 600;
+        }
+
+/* Error alert dentro del card */
+.auth-error {
+    background-color: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: var(--color-danger);
+    font-size: 0.88rem;
+    padding: 0.7rem 0.95rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+/* Register form: campos en grid */
+.register-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.85rem;
+}
+
+@media (max-width: 575.98px) {
+    .register-grid {
+        grid-template-columns: 1fr;
+    }
 }

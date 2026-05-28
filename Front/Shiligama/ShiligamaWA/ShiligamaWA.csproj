@@ -7,9 +7,4 @@
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="Components\Pages\Pedidos\" />
-    <Folder Include="Components\Pages\Productos\" />
-  </ItemGroup>
-
 </Project>
