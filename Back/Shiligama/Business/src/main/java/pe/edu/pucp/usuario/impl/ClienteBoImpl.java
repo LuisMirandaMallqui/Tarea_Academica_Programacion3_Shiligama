@@ -62,7 +62,7 @@ public class ClienteBoImpl implements ClienteBo {
         if (cliente == null) {
             throw new Exception("El cliente no puede ser nulo.");
         }
-        if (esModificacion && cliente.getIdCliente() <= 0) {
+        if (esModificacion && cliente.getIdUsuario() <= 0) {
             throw new Exception("El ID del cliente es obligatorio para la modificacion.");
         }
         validarDNI(cliente.getDni());

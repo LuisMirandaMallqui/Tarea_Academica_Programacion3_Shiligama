@@ -12,50 +12,98 @@ import java.util.Map;
 
 public class TrabajadorDaoImpl implements TrabajadorDao {
 
-    // SP: INSERTAR_TRABAJADOR(OUT _id_trabajador, IN _nombres, IN _apellidos,
-    //   IN _dni, IN _telefono, IN _correo, IN _contrasena, IN _cargo, IN _fecha_ingreso)
+    // -------------------------------------------------------------------------
+    // INSERT con transaccion:
+    //   1) INSERTAR_USUARIO(OUT _usuario_id, IN _nombres, _apellidos, _dni,
+    //      _telefono, _correo, _contrasena)
+    //   2) INSERTAR_TRABAJADOR(IN _usuario_id, IN _cargo, IN _fecha_ingreso)
+    // -------------------------------------------------------------------------
     @Override
     public int insertar(Trabajador trabajador) {
-        Map<Integer, Object> parametrosEntrada = new HashMap<>();
-        Map<Integer, Object> parametrosSalida = new HashMap<>();
+        int resultado = 0;
+        DBManager dbManager = DBManager.getInstance();
+        try {
+            dbManager.iniciarTransaccion();
 
-        parametrosSalida.put(1, Types.INTEGER);
-        parametrosEntrada.put(2, trabajador.getNombres());
-        parametrosEntrada.put(3, trabajador.getApellidos());
-        parametrosEntrada.put(4, trabajador.getDni());
-        parametrosEntrada.put(5, trabajador.getTelefono());
-        parametrosEntrada.put(6, trabajador.getCorreo());
-        parametrosEntrada.put(7, trabajador.getContrasena());
-        parametrosEntrada.put(8, null); // CARGO — agregar al model si es necesario
-        parametrosEntrada.put(9, trabajador.getFechaIngreso() != null
-                ? java.sql.Date.valueOf(trabajador.getFechaIngreso()) : null);
+            // 1) Insertar en tabla padre: usuario
+            Map<Integer, Object> paramsUsr = new HashMap<>();
+            Map<Integer, Object> paramsUsrOut = new HashMap<>();
+            paramsUsrOut.put(1, Types.INTEGER);
+            paramsUsr.put(2, trabajador.getNombres());
+            paramsUsr.put(3, trabajador.getApellidos());
+            paramsUsr.put(4, trabajador.getDni());
+            paramsUsr.put(5, trabajador.getTelefono());
+            paramsUsr.put(6, trabajador.getCorreo());
+            paramsUsr.put(7, trabajador.getContrasena());
 
-        DBManager.getInstance().ejecutarProcedimiento(
-                "INSERTAR_TRABAJADOR", parametrosEntrada, parametrosSalida);
-        trabajador.setIdTrabajador((int) parametrosSalida.get(1));
-        return trabajador.getIdTrabajador();
+            dbManager.ejecutarProcedimientoTransaccion(
+                    "INSERTAR_USUARIO", paramsUsr, paramsUsrOut);
+            int idGenerado = (int) paramsUsrOut.get(1);
+            trabajador.setIdUsuario(idGenerado);
+
+            // 2) Insertar en tabla hija: trabajador
+            Map<Integer, Object> paramsTrab = new HashMap<>();
+            paramsTrab.put(1, idGenerado);
+            paramsTrab.put(2, trabajador.getCargo());
+            paramsTrab.put(3, trabajador.getFechaIngreso() != null
+                    ? java.sql.Date.valueOf(trabajador.getFechaIngreso()) : null);
+
+            dbManager.ejecutarProcedimientoTransaccion(
+                    "INSERTAR_TRABAJADOR", paramsTrab, null);
+
+            dbManager.confirmarTransaccion();
+            resultado = idGenerado;
+        } catch (SQLException ex) {
+            System.out.println("Error al insertar trabajador: " + ex.getMessage());
+            dbManager.cancelarTransaccion();
+        }
+        return resultado;
     }
 
-    // SP: MODIFICAR_TRABAJADOR(IN _id_trabajador, IN _nombres, IN _apellidos,
-    //   IN _dni, IN _telefono, IN _correo, IN _fecha_ingreso)
+    // -------------------------------------------------------------------------
+    // UPDATE con transaccion:
+    //   1) MODIFICAR_USUARIO(IN _usuario_id, _nombres, _apellidos, _dni,
+    //      _telefono, _correo)
+    //   2) MODIFICAR_TRABAJADOR(IN _usuario_id, IN _cargo, IN _fecha_ingreso)
+    // -------------------------------------------------------------------------
     @Override
     public int modificar(Trabajador trabajador) {
-        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        int resultado = 0;
+        DBManager dbManager = DBManager.getInstance();
+        try {
+            dbManager.iniciarTransaccion();
 
-        parametrosEntrada.put(1, trabajador.getIdTrabajador());
-        parametrosEntrada.put(2, trabajador.getNombres());
-        parametrosEntrada.put(3, trabajador.getApellidos());
-        parametrosEntrada.put(4, trabajador.getDni());
-        parametrosEntrada.put(5, trabajador.getTelefono());
-        parametrosEntrada.put(6, trabajador.getCorreo());
-        parametrosEntrada.put(7, trabajador.getFechaIngreso() != null
-                ? java.sql.Date.valueOf(trabajador.getFechaIngreso()) : null);
+            // 1) Modificar tabla padre: usuario
+            Map<Integer, Object> paramsUsr = new HashMap<>();
+            paramsUsr.put(1, trabajador.getIdUsuario());
+            paramsUsr.put(2, trabajador.getNombres());
+            paramsUsr.put(3, trabajador.getApellidos());
+            paramsUsr.put(4, trabajador.getDni());
+            paramsUsr.put(5, trabajador.getTelefono());
+            paramsUsr.put(6, trabajador.getCorreo());
 
-        return DBManager.getInstance().ejecutarProcedimiento(
-                "MODIFICAR_TRABAJADOR", parametrosEntrada, null);
+            dbManager.ejecutarProcedimientoTransaccion(
+                    "MODIFICAR_USUARIO", paramsUsr, null);
+
+            // 2) Modificar tabla hija: trabajador
+            Map<Integer, Object> paramsTrab = new HashMap<>();
+            paramsTrab.put(1, trabajador.getIdUsuario());
+            paramsTrab.put(2, trabajador.getCargo());
+            paramsTrab.put(3, trabajador.getFechaIngreso() != null
+                    ? java.sql.Date.valueOf(trabajador.getFechaIngreso()) : null);
+
+            resultado = dbManager.ejecutarProcedimientoTransaccion(
+                    "MODIFICAR_TRABAJADOR", paramsTrab, null);
+
+            dbManager.confirmarTransaccion();
+        } catch (SQLException ex) {
+            System.out.println("Error al modificar trabajador: " + ex.getMessage());
+            dbManager.cancelarTransaccion();
+        }
+        return resultado;
     }
 
-    // SP: ELIMINAR_TRABAJADOR(IN _id_trabajador)
+    // SP: ELIMINAR_TRABAJADOR(IN _usuario_id)
     @Override
     public int eliminar(int id) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -64,7 +112,7 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
                 "ELIMINAR_TRABAJADOR", parametrosEntrada, null);
     }
 
-    // SP: BUSCAR_TRABAJADOR_X_ID(IN _id_trabajador)
+    // SP: BUSCAR_TRABAJADOR_X_ID(IN _usuario_id)
     @Override
     public Trabajador buscarPorID(int id) {
         Trabajador trabajador = null;
@@ -104,7 +152,6 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return lista;
     }
 
-    // SP: BUSCAR_TRABAJADOR_X_CORREO(IN _correo)
     @Override
     public Trabajador buscarPorCorreo(String correo) {
         Trabajador trabajador = null;
@@ -125,7 +172,6 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return trabajador;
     }
 
-    // SP: BUSCAR_TRABAJADOR_X_DNI(IN _dni)
     @Override
     public Trabajador obtenerPorDNI(String dni) {
         Trabajador trabajador = null;
@@ -146,7 +192,6 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return trabajador;
     }
 
-    // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni)
     @Override
     public Boolean existeUsuarioEnBD(Trabajador trabajador) {
         Boolean existe = false;
@@ -168,14 +213,15 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         return existe;
     }
 
+    // Mapeo — usa USUARIO_ID (PK compartida padre-hijo)
     private Trabajador mapearTrabajador(ResultSet rs) throws SQLException {
         Trabajador t = new Trabajador();
-        t.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+        t.setIdUsuario(rs.getInt("USUARIO_ID"));
+        t.setCargo(rs.getString("CARGO"));
         Date fechaIngreso = rs.getDate("FECHA_INGRESO");
         if (fechaIngreso != null) {
             t.setFechaIngreso(fechaIngreso.toLocalDate());
         }
-        t.setIdUsuario(rs.getInt("USUARIO_ID"));
         t.setNombres(rs.getString("NOMBRES"));
         t.setApellidos(rs.getString("APELLIDOS"));
         t.setDni(rs.getString("DNI"));

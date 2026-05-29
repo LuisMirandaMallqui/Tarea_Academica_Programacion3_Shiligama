@@ -1,7 +1,9 @@
+-- 3. Selecciona el schema para empezar a trabajar en él
+USE `shiligama`;
+
 -- =====================================================================
 -- SHILIGAMA - Procedimientos Almacenados
--- =====================================================================
-USE `shiligama`;
+-- =====================================================================git@github.com:fpaz19/1INF30-2026-1.git
 
 DELIMITER $$
 
@@ -21,15 +23,12 @@ CREATE PROCEDURE INSERTAR_USUARIO(
     IN  _contrasena  VARCHAR(255)
 )
 BEGIN
-    INSERT INTO usuarios(NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, CONTRASENA, ACTIVO)
+    INSERT INTO usuario(NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, CONTRASENA, ACTIVO)
     VALUES(_nombres, _apellidos, _dni, _telefono, _correo, _contrasena, 1);
     SET _usuario_id = LAST_INSERT_ID();
 END$$
 
 -- ----- EXISTE_USUARIO_EN_BD -----
--- ClienteDaoImpl, TrabajadorDaoImpl, AdministradorDaoImpl
--- Params: IN _correo (pos 1), IN _dni (pos 2)
--- DAO solo verifica rs.next() — basta con devolver 1 fila si existe
 DROP PROCEDURE IF EXISTS EXISTE_USUARIO_EN_BD$$
 CREATE PROCEDURE EXISTE_USUARIO_EN_BD(
     IN _correo VARCHAR(100),
@@ -37,9 +36,38 @@ CREATE PROCEDURE EXISTE_USUARIO_EN_BD(
 )
 BEGIN
     SELECT 1 AS EXISTE
-    FROM usuarios
+    FROM usuario
     WHERE (CORREO = _correo OR DNI = _dni) AND ACTIVO = 1
     LIMIT 1;
+END$$
+
+-- ----- MODIFICAR_USUARIO -----
+DROP PROCEDURE IF EXISTS MODIFICAR_USUARIO$$
+CREATE PROCEDURE MODIFICAR_USUARIO(
+    IN _usuario_id  INT,
+    IN _nombres     VARCHAR(100),
+    IN _apellidos   VARCHAR(100),
+    IN _dni         VARCHAR(8),
+    IN _telefono    VARCHAR(15),
+    IN _correo      VARCHAR(100)
+)
+BEGIN
+    UPDATE usuario SET
+        NOMBRES   = _nombres,
+        APELLIDOS = _apellidos,
+        DNI       = _dni,
+        TELEFONO  = _telefono,
+        CORREO    = _correo
+    WHERE USUARIO_ID = _usuario_id;
+END$$
+
+-- ----- ELIMINAR_USUARIO -----
+DROP PROCEDURE IF EXISTS ELIMINAR_USUARIO$$
+CREATE PROCEDURE ELIMINAR_USUARIO(
+    IN _usuario_id INT
+)
+BEGIN
+    UPDATE usuario SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
 -- =====================================================================
@@ -47,142 +75,80 @@ END$$
 -- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_CLIENTE$$
 CREATE PROCEDURE INSERTAR_CLIENTE(
-    OUT _cliente_id       INT,
-    IN  _nombres          VARCHAR(100),
-    IN  _apellidos        VARCHAR(100),
-    IN  _dni              VARCHAR(8),
-    IN  _telefono         VARCHAR(15),
-    IN  _correo           VARCHAR(100),
-    IN  _contrasena       VARCHAR(255),
+    IN  _id_usuario       INT,
     IN  _direccion_entrega VARCHAR(255)
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
-                          _telefono, _correo, _contrasena);
-
-    INSERT INTO clientes(USUARIO_ID, DIRECCION_ENTREGA)
-    VALUES(v_usuario_id, _direccion_entrega);
-
-    SET _cliente_id = LAST_INSERT_ID();
-
-    COMMIT;
+    INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
+    VALUES(_id_usuario, _direccion_entrega);
 END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_CLIENTE$$
 CREATE PROCEDURE MODIFICAR_CLIENTE(
-    IN _cliente_id         INT,
-    IN _nombres            VARCHAR(100),
-    IN _apellidos          VARCHAR(100),
-    IN _dni                VARCHAR(8),
-    IN _telefono           VARCHAR(15),
-    IN _correo             VARCHAR(100),
+    IN _usuario_id         INT,
     IN _direccion_entrega  VARCHAR(255)
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM clientes WHERE CLIENTE_ID = _cliente_id;
-
-    UPDATE usuarios SET
-        NOMBRES   = _nombres,
-        APELLIDOS = _apellidos,
-        DNI       = _dni,
-        TELEFONO  = _telefono,
-        CORREO    = _correo
-    WHERE USUARIO_ID = v_usuario_id;
-
-    UPDATE clientes SET
+    UPDATE cliente SET
         DIRECCION_ENTREGA = _direccion_entrega
-    WHERE CLIENTE_ID = _cliente_id;
-
-    COMMIT;
+    WHERE USUARIO_ID = _usuario_id;
 END$$
 
 DROP PROCEDURE IF EXISTS ELIMINAR_CLIENTE$$
 CREATE PROCEDURE ELIMINAR_CLIENTE(
-    IN _cliente_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM clientes WHERE CLIENTE_ID = _cliente_id;
-
-    UPDATE usuarios SET ACTIVO = 0 WHERE USUARIO_ID = v_usuario_id;
+    UPDATE usuario SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
--- DAO: ClienteDaoImpl.buscarPorID → "BUSCAR_CLIENTE_X_ID"
--- Columnas que lee el DAO: CLIENTE_ID, DIRECCION_ENTREGA, USUARIO_ID,
---   NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, CONTRASENA
 DROP PROCEDURE IF EXISTS BUSCAR_CLIENTE_X_ID$$
 CREATE PROCEDURE BUSCAR_CLIENTE_X_ID(
-    IN _cliente_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA,
+    SELECT c.DIRECCION_ENTREGA,
            u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM clientes c
-    INNER JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID
-    WHERE c.CLIENTE_ID = _cliente_id AND u.ACTIVO = 1;
+    FROM cliente c
+    INNER JOIN usuario u ON c.USUARIO_ID = u.USUARIO_ID
+    WHERE c.USUARIO_ID = _usuario_id AND u.ACTIVO = 1;
 END$$
 
--- DAO: ClienteDaoImpl.listarTodos → "LISTAR_CLIENTES"
 DROP PROCEDURE IF EXISTS LISTAR_CLIENTES$$
 CREATE PROCEDURE LISTAR_CLIENTES()
 BEGIN
-    SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA,
+    SELECT c.DIRECCION_ENTREGA,
            u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM clientes c
-    INNER JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID
+    FROM cliente c
+    INNER JOIN usuario u ON c.USUARIO_ID = u.USUARIO_ID
     WHERE u.ACTIVO = 1;
 END$$
 
--- DAO: ClienteDaoImpl.buscarPorCorreo → "BUSCAR_CLIENTE_X_CORREO"
 DROP PROCEDURE IF EXISTS BUSCAR_CLIENTE_X_CORREO$$
 CREATE PROCEDURE BUSCAR_CLIENTE_X_CORREO(
     IN _correo VARCHAR(100)
 )
 BEGIN
-    SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA,
+    SELECT c.DIRECCION_ENTREGA,
            u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM clientes c
-    INNER JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID
+    FROM cliente c
+    INNER JOIN usuario u ON c.USUARIO_ID = u.USUARIO_ID
     WHERE u.CORREO = _correo AND u.ACTIVO = 1;
 END$$
 
--- DAO: ClienteDaoImpl.obtenerPorDNI → "BUSCAR_CLIENTE_X_DNI"
 DROP PROCEDURE IF EXISTS BUSCAR_CLIENTE_X_DNI$$
 CREATE PROCEDURE BUSCAR_CLIENTE_X_DNI(
     IN _dni VARCHAR(8)
 )
 BEGIN
-    SELECT c.CLIENTE_ID, c.DIRECCION_ENTREGA,
+    SELECT c.DIRECCION_ENTREGA,
            u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM clientes c
-    INNER JOIN usuarios u ON c.USUARIO_ID = u.USUARIO_ID
+    FROM cliente c
+    INNER JOIN usuario u ON c.USUARIO_ID = u.USUARIO_ID
     WHERE u.DNI = _dni AND u.ACTIVO = 1;
 END$$
 
@@ -191,144 +157,81 @@ END$$
 -- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_TRABAJADOR$$
 CREATE PROCEDURE INSERTAR_TRABAJADOR(
-    OUT _trabajador_id INT,
-    IN  _nombres       VARCHAR(100),
-    IN  _apellidos     VARCHAR(100),
-    IN  _dni           VARCHAR(8),
-    IN  _telefono      VARCHAR(15),
-    IN  _correo        VARCHAR(100),
-    IN  _contrasena    VARCHAR(255),
+    IN  _usuario_id    INT,
     IN  _cargo         VARCHAR(100),
     IN  _fecha_ingreso DATE
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
-                          _telefono, _correo, _contrasena);
-
-    INSERT INTO trabajadores(USUARIO_ID, CARGO, FECHA_INGRESO, ACTIVO)
-    VALUES(v_usuario_id, _cargo, _fecha_ingreso, 1);
-
-    SET _trabajador_id = LAST_INSERT_ID();
-
-    COMMIT;
+    INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO, ACTIVO)
+    VALUES(_usuario_id, _cargo, _fecha_ingreso, 1);
 END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_TRABAJADOR$$
 CREATE PROCEDURE MODIFICAR_TRABAJADOR(
-    IN _trabajador_id INT,
-    IN _nombres       VARCHAR(100),
-    IN _apellidos     VARCHAR(100),
-    IN _dni           VARCHAR(8),
-    IN _telefono      VARCHAR(15),
-    IN _correo        VARCHAR(100),
+    IN _usuario_id    INT,
+    IN _cargo         VARCHAR(100),
     IN _fecha_ingreso DATE
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM trabajadores WHERE TRABAJADOR_ID = _trabajador_id;
-
-    UPDATE usuarios SET
-        NOMBRES   = _nombres,
-        APELLIDOS = _apellidos,
-        DNI       = _dni,
-        TELEFONO  = _telefono,
-        CORREO    = _correo
-    WHERE USUARIO_ID = v_usuario_id;
-
-    UPDATE trabajadores SET
+    UPDATE trabajador SET
+        CARGO         = _cargo,
         FECHA_INGRESO = _fecha_ingreso
-    WHERE TRABAJADOR_ID = _trabajador_id;
-
-    COMMIT;
+    WHERE USUARIO_ID = _usuario_id;
 END$$
 
 DROP PROCEDURE IF EXISTS ELIMINAR_TRABAJADOR$$
 CREATE PROCEDURE ELIMINAR_TRABAJADOR(
-    IN _trabajador_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM trabajadores WHERE TRABAJADOR_ID = _trabajador_id;
-
-    UPDATE usuarios     SET ACTIVO = 0 WHERE USUARIO_ID    = v_usuario_id;
-    UPDATE trabajadores SET ACTIVO = 0 WHERE TRABAJADOR_ID = _trabajador_id;
+    UPDATE usuario     SET ACTIVO = 0 WHERE USUARIO_ID    = _usuario_id;
+    UPDATE trabajador SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
--- DAO: TrabajadorDaoImpl.buscarPorID → "BUSCAR_TRABAJADOR_X_ID"
--- Columnas: TRABAJADOR_ID, FECHA_INGRESO, USUARIO_ID,
---   NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO, CONTRASENA
 DROP PROCEDURE IF EXISTS BUSCAR_TRABAJADOR_X_ID$$
 CREATE PROCEDURE BUSCAR_TRABAJADOR_X_ID(
-    IN _trabajador_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    SELECT t.TRABAJADOR_ID, t.FECHA_INGRESO,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
-           u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM trabajadores t
-    INNER JOIN usuarios u ON t.USUARIO_ID = u.USUARIO_ID
-    WHERE t.TRABAJADOR_ID = _trabajador_id AND t.ACTIVO = 1;
+    SELECT t.CARGO, t.FECHA_INGRESO, u.USUARIO_ID, u.NOMBRES,
+    u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA
+    FROM trabajador t
+    INNER JOIN usuario u ON t.USUARIO_ID = u.USUARIO_ID
+    WHERE t.USUARIO_ID = _usuario_id AND t.ACTIVO = 1;
 END$$
 
 -- DAO: TrabajadorDaoImpl.listarTodos → "LISTAR_TRABAJADORES"
 DROP PROCEDURE IF EXISTS LISTAR_TRABAJADORES$$
 CREATE PROCEDURE LISTAR_TRABAJADORES()
 BEGIN
-    SELECT t.TRABAJADOR_ID, t.FECHA_INGRESO,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
-           u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM trabajadores t
-    INNER JOIN usuarios u ON t.USUARIO_ID = u.USUARIO_ID
+    SELECT t.CARGO, t.FECHA_INGRESO, u.USUARIO_ID, u.NOMBRES,
+    u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA
+    FROM trabajador t
+    INNER JOIN usuario u ON t.USUARIO_ID = u.USUARIO_ID
     WHERE t.ACTIVO = 1;
 END$$
 
--- DAO: TrabajadorDaoImpl.buscarPorCorreo → "BUSCAR_TRABAJADOR_X_CORREO"
 DROP PROCEDURE IF EXISTS BUSCAR_TRABAJADOR_X_CORREO$$
 CREATE PROCEDURE BUSCAR_TRABAJADOR_X_CORREO(
     IN _correo VARCHAR(100)
 )
 BEGIN
-    SELECT t.TRABAJADOR_ID, t.FECHA_INGRESO,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
-           u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM trabajadores t
-    INNER JOIN usuarios u ON t.USUARIO_ID = u.USUARIO_ID
+    SELECT t.CARGO, t.FECHA_INGRESO, u.USUARIO_ID, u.NOMBRES,
+    u.APELLIDOS, u.DNI, u.TELEFONO, u.CORREO, u.CONTRASENA
+    FROM trabajador t
+    INNER JOIN usuario u ON t.USUARIO_ID = u.USUARIO_ID
     WHERE u.CORREO = _correo AND t.ACTIVO = 1;
 END$$
 
--- DAO: TrabajadorDaoImpl.obtenerPorDNI → "BUSCAR_TRABAJADOR_X_DNI"
 DROP PROCEDURE IF EXISTS BUSCAR_TRABAJADOR_X_DNI$$
 CREATE PROCEDURE BUSCAR_TRABAJADOR_X_DNI(
     IN _dni VARCHAR(8)
 )
 BEGIN
-    SELECT t.TRABAJADOR_ID, t.FECHA_INGRESO,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT t.CARGO, t.FECHA_INGRESO, u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM trabajadores t
-    INNER JOIN usuarios u ON t.USUARIO_ID = u.USUARIO_ID
+    FROM trabajador t
+    INNER JOIN usuario u ON t.USUARIO_ID = u.USUARIO_ID
     WHERE u.DNI = _dni AND t.ACTIVO = 1;
 END$$
 
@@ -337,137 +240,65 @@ END$$
 -- =====================================================================
 DROP PROCEDURE IF EXISTS INSERTAR_ADMINISTRADOR$$
 CREATE PROCEDURE INSERTAR_ADMINISTRADOR(
-    OUT _administrador_id INT,
-    IN  _nombres          VARCHAR(100),
-    IN  _apellidos        VARCHAR(100),
-    IN  _dni              VARCHAR(8),
-    IN  _telefono         VARCHAR(15),
-    IN  _correo           VARCHAR(100),
-    IN  _contrasena       VARCHAR(255)
+    IN  _usuario_id INT
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    CALL INSERTAR_USUARIO(v_usuario_id, _nombres, _apellidos, _dni,
-                          _telefono, _correo, _contrasena);
-
-    INSERT INTO administradores(USUARIO_ID, ACTIVO)
-    VALUES(v_usuario_id, 1);
-
-    SET _administrador_id = LAST_INSERT_ID();
-
-    COMMIT;
-END$$
-
-DROP PROCEDURE IF EXISTS MODIFICAR_ADMINISTRADOR$$
-CREATE PROCEDURE MODIFICAR_ADMINISTRADOR(
-    IN _administrador_id INT,
-    IN _nombres          VARCHAR(100),
-    IN _apellidos        VARCHAR(100),
-    IN _dni              VARCHAR(8),
-    IN _telefono         VARCHAR(15),
-    IN _correo           VARCHAR(100)
-)
-BEGIN
-    DECLARE v_usuario_id INT;
-
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-
-    START TRANSACTION;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM administradores WHERE ADMINISTRADOR_ID = _administrador_id;
-
-    UPDATE usuarios SET
-        NOMBRES   = _nombres,
-        APELLIDOS = _apellidos,
-        DNI       = _dni,
-        TELEFONO  = _telefono,
-        CORREO    = _correo
-    WHERE USUARIO_ID = v_usuario_id;
-
-    COMMIT;
+    INSERT INTO administrador(USUARIO_ID, ACTIVO)
+    VALUES(_usuario_id, 1);
 END$$
 
 DROP PROCEDURE IF EXISTS ELIMINAR_ADMINISTRADOR$$
 CREATE PROCEDURE ELIMINAR_ADMINISTRADOR(
-    IN _administrador_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    DECLARE v_usuario_id INT;
-
-    SELECT USUARIO_ID INTO v_usuario_id
-    FROM administradores WHERE ADMINISTRADOR_ID = _administrador_id;
-
-    UPDATE usuarios        SET ACTIVO = 0 WHERE USUARIO_ID       = v_usuario_id;
-    UPDATE administradores SET ACTIVO = 0 WHERE ADMINISTRADOR_ID = _administrador_id;
+    UPDATE usuario        SET ACTIVO = 0 WHERE USUARIO_ID       = _usuario_id;
+    UPDATE administrador SET ACTIVO = 0 WHERE USUARIO_ID = _usuario_id;
 END$$
 
--- DAO: AdministradorDaoImpl.buscarPorID → "BUSCAR_ADMINISTRADOR_X_ID"
--- Columnas: ADMINISTRADOR_ID, USUARIO_ID, NOMBRES, APELLIDOS, DNI,
---   TELEFONO, CORREO, CONTRASENA
 DROP PROCEDURE IF EXISTS BUSCAR_ADMINISTRADOR_X_ID$$
 CREATE PROCEDURE BUSCAR_ADMINISTRADOR_X_ID(
-    IN _administrador_id INT
+    IN _usuario_id INT
 )
 BEGIN
-    SELECT a.ADMINISTRADOR_ID,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM administradores a
-    INNER JOIN usuarios u ON a.USUARIO_ID = u.USUARIO_ID
-    WHERE a.ADMINISTRADOR_ID = _administrador_id AND a.ACTIVO = 1;
+    FROM administrador a
+    INNER JOIN usuario u ON a.USUARIO_ID = u.USUARIO_ID
+    WHERE a.USUARIO_ID = _usuario_id AND a.ACTIVO = 1;
 END$$
 
--- DAO: AdministradorDaoImpl.listarTodos → "LISTAR_ADMINISTRADORES"
 DROP PROCEDURE IF EXISTS LISTAR_ADMINISTRADORES$$
 CREATE PROCEDURE LISTAR_ADMINISTRADORES()
 BEGIN
-    SELECT a.ADMINISTRADOR_ID,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM administradores a
-    INNER JOIN usuarios u ON a.USUARIO_ID = u.USUARIO_ID
+    FROM administrador a
+    INNER JOIN usuario u ON a.USUARIO_ID = u.USUARIO_ID
     WHERE a.ACTIVO = 1;
 END$$
 
--- DAO: AdministradorDaoImpl.buscarPorCorreo → "BUSCAR_ADMINISTRADOR_X_CORREO"
 DROP PROCEDURE IF EXISTS BUSCAR_ADMINISTRADOR_X_CORREO$$
 CREATE PROCEDURE BUSCAR_ADMINISTRADOR_X_CORREO(
     IN _correo VARCHAR(100)
 )
 BEGIN
-    SELECT a.ADMINISTRADOR_ID,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM administradores a
-    INNER JOIN usuarios u ON a.USUARIO_ID = u.USUARIO_ID
+    FROM administrador a
+    INNER JOIN usuario u ON a.USUARIO_ID = u.USUARIO_ID
     WHERE u.CORREO = _correo AND a.ACTIVO = 1;
 END$$
 
--- DAO: AdministradorDaoImpl.obtenerPorDNI → "BUSCAR_ADMINISTRADOR_X_DNI"
 DROP PROCEDURE IF EXISTS BUSCAR_ADMINISTRADOR_X_DNI$$
 CREATE PROCEDURE BUSCAR_ADMINISTRADOR_X_DNI(
     IN _dni VARCHAR(8)
 )
 BEGIN
-    SELECT a.ADMINISTRADOR_ID,
-           u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
+    SELECT u.USUARIO_ID, u.NOMBRES, u.APELLIDOS, u.DNI,
            u.TELEFONO, u.CORREO, u.CONTRASENA
-    FROM administradores a
-    INNER JOIN usuarios u ON a.USUARIO_ID = u.USUARIO_ID
+    FROM administrador a
+    INNER JOIN usuario u ON a.USUARIO_ID = u.USUARIO_ID
     WHERE u.DNI = _dni AND a.ACTIVO = 1;
 END$$
 
@@ -484,7 +315,7 @@ CREATE PROCEDURE INSERTAR_CATEGORIA(
     IN  _categoria_padre_id INT
 )
 BEGIN
-    INSERT INTO categorias(NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID)
+    INSERT INTO categoria(NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID)
     VALUES(_nombre, _descripcion, _categoria_padre_id);
     SET _categoria_id = LAST_INSERT_ID();
 END$$
@@ -497,7 +328,7 @@ CREATE PROCEDURE MODIFICAR_CATEGORIA(
     IN _categoria_padre_id  INT
 )
 BEGIN
-    UPDATE categorias SET
+    UPDATE categoria SET
         NOMBRE             = _nombre,
         DESCRIPCION        = _descripcion,
         CATEGORIA_PADRE_ID = _categoria_padre_id
@@ -509,14 +340,14 @@ CREATE PROCEDURE ELIMINAR_CATEGORIA(
     IN _categoria_id INT
 )
 BEGIN
-    UPDATE categorias SET ACTIVO = 0 WHERE CATEGORIA_ID = _categoria_id;
+    UPDATE categoria SET ACTIVO = 0 WHERE CATEGORIA_ID = _categoria_id;
 END$$
 
 DROP PROCEDURE IF EXISTS LISTAR_CATEGORIAS$$
 CREATE PROCEDURE LISTAR_CATEGORIAS()
 BEGIN
     SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO
-    FROM categorias WHERE ACTIVO = 1;
+    FROM categoria WHERE ACTIVO = 1;
 END$$
 
 -- DAO: CategoriaDaoImpl.buscarPorID → "BUSCAR_CATEGORIA_X_ID"
@@ -526,7 +357,7 @@ CREATE PROCEDURE BUSCAR_CATEGORIA_X_ID(
 )
 BEGIN
     SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO
-    FROM categorias
+    FROM categoria
     WHERE CATEGORIA_ID = _categoria_id;
 END$$
 
@@ -548,7 +379,7 @@ CREATE PROCEDURE INSERTAR_PRODUCTO(
     IN  _imagen_url       VARCHAR(500)
 )
 BEGIN
-    INSERT INTO productos(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO,
+    INSERT INTO producto(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO,
                           STOCK, STOCK_MINIMO, UNIDAD_MEDIDA, CODIGO_BARRAS, IMAGEN_URL)
     VALUES(_categoria_id, _nombre, _descripcion, _precio_unitario,
            _stock, _stock_minimo, _unidad_medida, _codigo_barras, _imagen_url);
@@ -568,7 +399,7 @@ CREATE PROCEDURE MODIFICAR_PRODUCTO(
     IN _imagen_url      VARCHAR(500)
 )
 BEGIN
-    UPDATE productos SET
+    UPDATE producto SET
         CATEGORIA_ID    = _categoria_id,
         NOMBRE          = _nombre,
         DESCRIPCION     = _descripcion,
@@ -585,7 +416,7 @@ CREATE PROCEDURE ELIMINAR_PRODUCTO(
     IN _producto_id INT
 )
 BEGIN
-    UPDATE productos SET ACTIVO = 0 WHERE PRODUCTO_ID = _producto_id;
+    UPDATE producto SET ACTIVO = 0 WHERE PRODUCTO_ID = _producto_id;
 END$$
 
 DROP PROCEDURE IF EXISTS LISTAR_PRODUCTOS$$
@@ -595,8 +426,8 @@ BEGIN
            p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, p.STOCK,
            p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS,
            p.IMAGEN_URL, p.ACTIVO, p.FECHA_CREACION
-    FROM productos p
-    INNER JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    FROM producto p
+    INNER JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID
     WHERE p.ACTIVO = 1;
 END$$
 
@@ -610,8 +441,8 @@ BEGIN
            p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, p.STOCK,
            p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS,
            p.IMAGEN_URL, p.ACTIVO, p.FECHA_CREACION
-    FROM productos p
-    INNER JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    FROM producto p
+    INNER JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID
     WHERE p.PRODUCTO_ID = _producto_id;
 END$$
 
@@ -633,20 +464,20 @@ BEGIN
     DECLARE v_stock_actual INT;
 
     SELECT STOCK INTO v_stock_actual
-    FROM productos WHERE PRODUCTO_ID = _producto_id;
+    FROM producto WHERE PRODUCTO_ID = _producto_id;
 
     IF _tipo_movimiento = 'ENTRADA' OR _tipo_movimiento = 'DEVOLUCION' THEN
-        UPDATE productos SET STOCK = STOCK + _cantidad
+        UPDATE producto SET STOCK = STOCK + _cantidad
         WHERE PRODUCTO_ID = _producto_id;
     ELSEIF _tipo_movimiento = 'SALIDA' THEN
-        UPDATE productos SET STOCK = STOCK - _cantidad
+        UPDATE producto SET STOCK = STOCK - _cantidad
         WHERE PRODUCTO_ID = _producto_id;
     ELSEIF _tipo_movimiento = 'AJUSTE' THEN
-        UPDATE productos SET STOCK = _cantidad
+        UPDATE producto SET STOCK = _cantidad
         WHERE PRODUCTO_ID = _producto_id;
     END IF;
 
-    INSERT INTO movimientos_inventario(PRODUCTO_ID, TRABAJADOR_ID,
+    INSERT INTO movimiento_inventario(PRODUCTO_ID, TRABAJADOR_ID,
         TIPO_MOVIMIENTO, CANTIDAD, STOCK_ANTERIOR, STOCK_RESULTANTE, MOTIVO)
     VALUES(_producto_id, _trabajador_id, _tipo_movimiento,
            _cantidad, v_stock_actual,
@@ -668,7 +499,7 @@ BEGIN
     SELECT MOVIMIENTO_ID, PRODUCTO_ID, TRABAJADOR_ID,
            TIPO_MOVIMIENTO, CANTIDAD, STOCK_ANTERIOR,
            STOCK_RESULTANTE, MOTIVO, FECHA_HORA
-    FROM movimientos_inventario
+    FROM movimiento_inventario
     WHERE MOVIMIENTO_ID = _movimiento_id;
 END$$
 
@@ -679,7 +510,7 @@ BEGIN
     SELECT MOVIMIENTO_ID, PRODUCTO_ID, TRABAJADOR_ID,
            TIPO_MOVIMIENTO, CANTIDAD, STOCK_ANTERIOR,
            STOCK_RESULTANTE, MOTIVO, FECHA_HORA
-    FROM movimientos_inventario
+    FROM movimiento_inventario
     ORDER BY FECHA_HORA DESC;
 END$$
 
@@ -692,7 +523,7 @@ BEGIN
     SELECT MOVIMIENTO_ID, PRODUCTO_ID, TRABAJADOR_ID,
            TIPO_MOVIMIENTO, CANTIDAD, STOCK_ANTERIOR,
            STOCK_RESULTANTE, MOTIVO, FECHA_HORA
-    FROM movimientos_inventario
+    FROM movimiento_inventario
     WHERE PRODUCTO_ID = _producto_id
     ORDER BY FECHA_HORA DESC;
 END$$
@@ -707,7 +538,7 @@ BEGIN
     SELECT MOVIMIENTO_ID, PRODUCTO_ID, TRABAJADOR_ID,
            TIPO_MOVIMIENTO, CANTIDAD, STOCK_ANTERIOR,
            STOCK_RESULTANTE, MOTIVO, FECHA_HORA
-    FROM movimientos_inventario
+    FROM movimiento_inventario
     WHERE FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
     ORDER BY FECHA_HORA DESC;
 END$$
@@ -723,7 +554,7 @@ CREATE PROCEDURE INSERTAR_METODO_PAGO(
     IN  _nombre         VARCHAR(50)
 )
 BEGIN
-    INSERT INTO metodos_pago(NOMBRE, ACTIVO)
+    INSERT INTO metodo_pago(NOMBRE, ACTIVO)
     VALUES(_nombre, 1);
     SET _metodo_pago_id = LAST_INSERT_ID();
 END$$
@@ -734,7 +565,7 @@ CREATE PROCEDURE MODIFICAR_METODO_PAGO(
     IN _nombre         VARCHAR(50)
 )
 BEGIN
-    UPDATE metodos_pago
+    UPDATE metodo_pago
     SET NOMBRE = _nombre
     WHERE METODO_PAGO_ID = _metodo_pago_id;
 END$$
@@ -744,7 +575,7 @@ CREATE PROCEDURE ELIMINAR_METODO_PAGO(
     IN _metodo_pago_id INT
 )
 BEGIN
-    UPDATE metodos_pago SET ACTIVO = 0
+    UPDATE metodo_pago SET ACTIVO = 0
     WHERE METODO_PAGO_ID = _metodo_pago_id;
 END$$
 
@@ -755,7 +586,7 @@ CREATE PROCEDURE BUSCAR_METODO_PAGO_X_ID(
 )
 BEGIN
     SELECT METODO_PAGO_ID, NOMBRE, ACTIVO
-    FROM metodos_pago
+    FROM metodo_pago
     WHERE METODO_PAGO_ID = _metodo_pago_id AND ACTIVO = 1;
 END$$
 
@@ -763,7 +594,7 @@ DROP PROCEDURE IF EXISTS LISTAR_METODOS_PAGO$$
 CREATE PROCEDURE LISTAR_METODOS_PAGO()
 BEGIN
     SELECT METODO_PAGO_ID, NOMBRE, ACTIVO
-    FROM metodos_pago
+    FROM metodo_pago
     WHERE ACTIVO = 1;
 END$$
 
@@ -782,7 +613,7 @@ CREATE PROCEDURE INSERTAR_VENTA(
     IN  _observaciones  VARCHAR(500)
 )
 BEGIN
-    INSERT INTO ventas(CLIENTE_ID, TRABAJADOR_ID, METODO_PAGO_ID,
+    INSERT INTO venta(CLIENTE_ID, TRABAJADOR_ID, METODO_PAGO_ID,
                        CANAL_VENTA, OBSERVACIONES)
     VALUES(_cliente_id, _trabajador_id, _metodo_pago_id,
            _canal_venta, _observaciones);
@@ -794,7 +625,7 @@ CREATE PROCEDURE COMPLETAR_VENTA(
     IN _venta_id INT
 )
 BEGIN
-    UPDATE ventas SET ESTADO_VENTA = 'COMPLETADA'
+    UPDATE venta SET ESTADO_VENTA = 'COMPLETADA'
     WHERE VENTA_ID = _venta_id;
 END$$
 
@@ -804,12 +635,12 @@ CREATE PROCEDURE ANULAR_VENTA(
 )
 BEGIN
     -- Devuelve stock de cada producto del detalle
-    UPDATE productos p
-    INNER JOIN detalles_venta dv ON p.PRODUCTO_ID = dv.PRODUCTO_ID
+    UPDATE producto p
+    INNER JOIN detalle_venta dv ON p.PRODUCTO_ID = dv.PRODUCTO_ID
     SET p.STOCK = p.STOCK + dv.CANTIDAD
     WHERE dv.VENTA_ID = _venta_id;
 
-    UPDATE ventas SET ESTADO_VENTA = 'ANULADA'
+    UPDATE venta SET ESTADO_VENTA = 'ANULADA'
     WHERE VENTA_ID = _venta_id;
 END$$
 
@@ -836,8 +667,8 @@ BEGIN
            v.RUC_EMPRESA,
            v.CONTACTO_CLIENTE,
            v.MENSAJE_BOLETA
-    FROM ventas v
-    INNER JOIN metodos_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID
+    FROM venta v
+    INNER JOIN metodo_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID
     WHERE v.VENTA_ID = _venta_id AND v.ACTIVO = 1;
 END$$
 
@@ -860,8 +691,8 @@ BEGIN
            v.RUC_EMPRESA,
            v.CONTACTO_CLIENTE,
            v.MENSAJE_BOLETA
-    FROM ventas v
-    INNER JOIN metodos_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID
+    FROM venta v
+    INNER JOIN metodo_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID
     WHERE v.ACTIVO = 1
     ORDER BY v.FECHA_HORA DESC;
 END$$
@@ -883,23 +714,23 @@ BEGIN
     DECLARE v_subtotal DECIMAL(10,2);
 
     SELECT PRECIO_UNITARIO INTO v_precio
-    FROM productos WHERE PRODUCTO_ID = _producto_id;
+    FROM producto WHERE PRODUCTO_ID = _producto_id;
 
     SET v_subtotal = v_precio * _cantidad;
 
-    INSERT INTO detalles_venta(VENTA_ID, PRODUCTO_ID, CANTIDAD,
+    INSERT INTO detalle_venta(VENTA_ID, PRODUCTO_ID, CANTIDAD,
                                PRECIO_UNITARIO, SUBTOTAL)
     VALUES(_venta_id, _producto_id, _cantidad, v_precio, v_subtotal);
     SET _detalle_venta_id = LAST_INSERT_ID();
 
     -- Descontar stock
-    UPDATE productos SET STOCK = STOCK - _cantidad
+    UPDATE producto SET STOCK = STOCK - _cantidad
     WHERE PRODUCTO_ID = _producto_id;
 
     -- Recalcular monto total de la venta
-    UPDATE ventas SET MONTO_TOTAL = (
+    UPDATE venta SET MONTO_TOTAL = (
         SELECT COALESCE(SUM(SUBTOTAL), 0)
-        FROM detalles_venta WHERE VENTA_ID = _venta_id
+        FROM detalle_venta WHERE VENTA_ID = _venta_id
     ) WHERE VENTA_ID = _venta_id;
 END$$
 
@@ -913,22 +744,22 @@ BEGIN
     DECLARE v_venta_id INT;
 
     SELECT PRECIO_UNITARIO, VENTA_ID INTO v_precio, v_venta_id
-    FROM detalles_venta WHERE DETALLE_VENTA_ID = _detalle_venta_id;
+    FROM detalle_venta WHERE DETALLE_VENTA_ID = _detalle_venta_id;
 
     -- Ajustar stock: devolver cantidad anterior y descontar la nueva
-    UPDATE productos p
-    INNER JOIN detalles_venta dv ON p.PRODUCTO_ID = dv.PRODUCTO_ID
+    UPDATE producto p
+    INNER JOIN detalle_venta dv ON p.PRODUCTO_ID = dv.PRODUCTO_ID
     SET p.STOCK = p.STOCK + dv.CANTIDAD - _cantidad
     WHERE dv.DETALLE_VENTA_ID = _detalle_venta_id;
 
-    UPDATE detalles_venta
+    UPDATE detalle_venta
     SET CANTIDAD = _cantidad,
         SUBTOTAL = v_precio * _cantidad
     WHERE DETALLE_VENTA_ID = _detalle_venta_id;
 
-    UPDATE ventas SET MONTO_TOTAL = (
+    UPDATE venta SET MONTO_TOTAL = (
         SELECT COALESCE(SUM(SUBTOTAL), 0)
-        FROM detalles_venta WHERE VENTA_ID = v_venta_id
+        FROM detalle_venta WHERE VENTA_ID = v_venta_id
     ) WHERE VENTA_ID = v_venta_id;
 END$$
 
@@ -942,18 +773,18 @@ BEGIN
     DECLARE v_cantidad INT;
 
     SELECT VENTA_ID, PRODUCTO_ID, CANTIDAD INTO v_venta_id, v_producto_id, v_cantidad
-    FROM detalles_venta WHERE DETALLE_VENTA_ID = _detalle_venta_id;
+    FROM detalle_venta WHERE DETALLE_VENTA_ID = _detalle_venta_id;
 
     -- Devolver stock
-    UPDATE productos SET STOCK = STOCK + v_cantidad
+    UPDATE producto SET STOCK = STOCK + v_cantidad
     WHERE PRODUCTO_ID = v_producto_id;
 
-    DELETE FROM detalles_venta WHERE DETALLE_VENTA_ID = _detalle_venta_id;
+    DELETE FROM detalle_venta WHERE DETALLE_VENTA_ID = _detalle_venta_id;
 
     -- Recalcular monto total
-    UPDATE ventas SET MONTO_TOTAL = (
+    UPDATE venta SET MONTO_TOTAL = (
         SELECT COALESCE(SUM(SUBTOTAL), 0)
-        FROM detalles_venta WHERE VENTA_ID = v_venta_id
+        FROM detalle_venta WHERE VENTA_ID = v_venta_id
     ) WHERE VENTA_ID = v_venta_id;
 END$$
 
@@ -967,8 +798,8 @@ BEGIN
            dv.CANTIDAD,
            dv.PRECIO_UNITARIO,
            dv.SUBTOTAL
-    FROM detalles_venta dv
-    INNER JOIN productos p ON dv.PRODUCTO_ID = p.PRODUCTO_ID;
+    FROM detalle_venta dv
+    INNER JOIN producto p ON dv.PRODUCTO_ID = p.PRODUCTO_ID;
 END$$
 
 -- DAO: DetalleVentaDaoImpl.buscarPorID → "BUSCAR_DETALLE_VENTA_X_ID"
@@ -984,8 +815,8 @@ BEGIN
            dv.CANTIDAD,
            dv.PRECIO_UNITARIO,
            dv.SUBTOTAL
-    FROM detalles_venta dv
-    INNER JOIN productos p ON dv.PRODUCTO_ID = p.PRODUCTO_ID
+    FROM detalle_venta dv
+    INNER JOIN producto p ON dv.PRODUCTO_ID = p.PRODUCTO_ID
     WHERE dv.DETALLE_VENTA_ID = _detalle_venta_id;
 END$$
 
@@ -1002,8 +833,8 @@ BEGIN
            dv.CANTIDAD,
            dv.PRECIO_UNITARIO,
            dv.SUBTOTAL
-    FROM detalles_venta dv
-    INNER JOIN productos p ON dv.PRODUCTO_ID = p.PRODUCTO_ID
+    FROM detalle_venta dv
+    INNER JOIN producto p ON dv.PRODUCTO_ID = p.PRODUCTO_ID
     WHERE dv.VENTA_ID = _venta_id;
 END$$
 
@@ -1024,10 +855,10 @@ BEGIN
     DECLARE v_prioridad INT;
 
     SELECT COALESCE(MAX(PRIORIDAD), 0) + 1 INTO v_prioridad
-    FROM pedidos
+    FROM pedido
     WHERE ESTADO_PEDIDO IN ('RECIBIDO', 'EN_PROCESO');
 
-    INSERT INTO pedidos(CLIENTE_ID, DIRECCION_ENTREGA, MODALIDAD_ENTREGA,
+    INSERT INTO pedido(CLIENTE_ID, DIRECCION_ENTREGA, MODALIDAD_ENTREGA,
                         PRIORIDAD, OBSERVACIONES)
     VALUES(_cliente_id, _direccion_entrega, _modalidad_entrega,
            v_prioridad, _observaciones);
@@ -1040,7 +871,7 @@ CREATE PROCEDURE MODIFICAR_ESTADO_PEDIDO(
     IN _estado_pedido VARCHAR(20)
 )
 BEGIN
-    UPDATE pedidos SET ESTADO_PEDIDO = _estado_pedido
+    UPDATE pedido SET ESTADO_PEDIDO = _estado_pedido
     WHERE PEDIDO_ID = _pedido_id;
 END$$
 
@@ -1049,12 +880,12 @@ CREATE PROCEDURE ELIMINAR_PEDIDO(
     IN _pedido_id INT
 )
 BEGIN
-    UPDATE pedidos SET ACTIVO = 0
+    UPDATE pedido SET ACTIVO = 0
     WHERE PEDIDO_ID = _pedido_id;
 END$$
 
 -- DAO: PedidoDaoImpl.buscarPorID → "BUSCAR_PEDIDO_X_ID"
--- Nota: DDL de pedidos NO tiene columna MONTO_DESCUENTO, se eliminó del SELECT
+-- Nota: DDL de pedido NO tiene columna MONTO_DESCUENTO, se eliminó del SELECT
 DROP PROCEDURE IF EXISTS BUSCAR_PEDIDO_X_ID$$
 CREATE PROCEDURE BUSCAR_PEDIDO_X_ID(
     IN _pedido_id INT
@@ -1068,7 +899,7 @@ BEGIN
            p.DIRECCION_ENTREGA,
            p.MODALIDAD_ENTREGA,
            p.OBSERVACIONES
-    FROM pedidos p
+    FROM pedido p
     WHERE p.PEDIDO_ID = _pedido_id AND p.ACTIVO = 1;
 END$$
 
@@ -1084,7 +915,7 @@ BEGIN
            p.DIRECCION_ENTREGA,
            p.MODALIDAD_ENTREGA,
            p.OBSERVACIONES
-    FROM pedidos p
+    FROM pedido p
     WHERE p.ACTIVO = 1
     ORDER BY p.FECHA_HORA ASC;
 END$$
@@ -1107,20 +938,20 @@ BEGIN
     DECLARE v_disponible TINYINT;
 
     SELECT PRECIO_UNITARIO, STOCK INTO v_precio, v_stock
-    FROM productos WHERE PRODUCTO_ID = _producto_id;
+    FROM producto WHERE PRODUCTO_ID = _producto_id;
 
     SET v_disponible = IF(v_stock >= _cantidad, 1, 0);
 
-    INSERT INTO detalles_pedido(PEDIDO_ID, PRODUCTO_ID, CANTIDAD,
+    INSERT INTO detalle_pedido(PEDIDO_ID, PRODUCTO_ID, CANTIDAD,
                                 PRECIO_UNITARIO, SUBTOTAL, DISPONIBLE)
     VALUES(_pedido_id, _producto_id, _cantidad,
            v_precio, v_precio * _cantidad, v_disponible);
     SET _detalle_pedido_id = LAST_INSERT_ID();
 
     -- Recalcular monto total del pedido
-    UPDATE pedidos SET MONTO_TOTAL = (
+    UPDATE pedido SET MONTO_TOTAL = (
         SELECT COALESCE(SUM(SUBTOTAL), 0)
-        FROM detalles_pedido WHERE PEDIDO_ID = _pedido_id
+        FROM detalle_pedido WHERE PEDIDO_ID = _pedido_id
     ) WHERE PEDIDO_ID = _pedido_id;
 END$$
 
@@ -1134,16 +965,16 @@ BEGIN
     DECLARE v_pedido_id INT;
 
     SELECT PRECIO_UNITARIO, PEDIDO_ID INTO v_precio, v_pedido_id
-    FROM detalles_pedido WHERE DETALLE_PEDIDO_ID = _detalle_pedido_id;
+    FROM detalle_pedido WHERE DETALLE_PEDIDO_ID = _detalle_pedido_id;
 
-    UPDATE detalles_pedido
+    UPDATE detalle_pedido
     SET CANTIDAD = _cantidad,
         SUBTOTAL = v_precio * _cantidad
     WHERE DETALLE_PEDIDO_ID = _detalle_pedido_id;
 
-    UPDATE pedidos SET MONTO_TOTAL = (
+    UPDATE pedido SET MONTO_TOTAL = (
         SELECT COALESCE(SUM(SUBTOTAL), 0)
-        FROM detalles_pedido WHERE PEDIDO_ID = v_pedido_id
+        FROM detalle_pedido WHERE PEDIDO_ID = v_pedido_id
     ) WHERE PEDIDO_ID = v_pedido_id;
 END$$
 
@@ -1155,13 +986,13 @@ BEGIN
     DECLARE v_pedido_id INT;
 
     SELECT PEDIDO_ID INTO v_pedido_id
-    FROM detalles_pedido WHERE DETALLE_PEDIDO_ID = _detalle_pedido_id;
+    FROM detalle_pedido WHERE DETALLE_PEDIDO_ID = _detalle_pedido_id;
 
-    DELETE FROM detalles_pedido WHERE DETALLE_PEDIDO_ID = _detalle_pedido_id;
+    DELETE FROM detalle_pedido WHERE DETALLE_PEDIDO_ID = _detalle_pedido_id;
 
-    UPDATE pedidos SET MONTO_TOTAL = (
+    UPDATE pedido SET MONTO_TOTAL = (
         SELECT COALESCE(SUM(SUBTOTAL), 0)
-        FROM detalles_pedido WHERE PEDIDO_ID = v_pedido_id
+        FROM detalle_pedido WHERE PEDIDO_ID = v_pedido_id
     ) WHERE PEDIDO_ID = v_pedido_id;
 END$$
 
@@ -1175,8 +1006,8 @@ BEGIN
            dp.CANTIDAD,
            dp.PRECIO_UNITARIO,
            dp.SUBTOTAL
-    FROM detalles_pedido dp
-    INNER JOIN productos p ON dp.PRODUCTO_ID = p.PRODUCTO_ID;
+    FROM detalle_pedido dp
+    INNER JOIN producto p ON dp.PRODUCTO_ID = p.PRODUCTO_ID;
 END$$
 
 -- DAO: DetallePedidoDaoImpl.buscarPorID → "BUSCAR_DETALLE_PEDIDO_X_ID"
@@ -1192,8 +1023,8 @@ BEGIN
            dp.CANTIDAD,
            dp.PRECIO_UNITARIO,
            dp.SUBTOTAL
-    FROM detalles_pedido dp
-    INNER JOIN productos p ON dp.PRODUCTO_ID = p.PRODUCTO_ID
+    FROM detalle_pedido dp
+    INNER JOIN producto p ON dp.PRODUCTO_ID = p.PRODUCTO_ID
     WHERE dp.DETALLE_PEDIDO_ID = _detalle_pedido_id;
 END$$
 
@@ -1210,8 +1041,8 @@ BEGIN
            dp.CANTIDAD,
            dp.PRECIO_UNITARIO,
            dp.SUBTOTAL
-    FROM detalles_pedido dp
-    INNER JOIN productos p ON dp.PRODUCTO_ID = p.PRODUCTO_ID
+    FROM detalle_pedido dp
+    INNER JOIN producto p ON dp.PRODUCTO_ID = p.PRODUCTO_ID
     WHERE dp.PEDIDO_ID = _pedido_id;
 END$$
 
@@ -1232,7 +1063,7 @@ CREATE PROCEDURE INSERTAR_PROMOCION(
     IN  _condiciones      VARCHAR(500)
 )
 BEGIN
-    INSERT INTO promociones(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO,
+    INSERT INTO promocion(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO,
                             FECHA_INICIO, FECHA_FIN, CONDICIONES)
     VALUES(_nombre, _descripcion, _tipo_descuento, _valor_descuento,
            _fecha_inicio, _fecha_fin, _condiciones);
@@ -1251,7 +1082,7 @@ CREATE PROCEDURE MODIFICAR_PROMOCION(
     IN _condiciones       VARCHAR(500)
 )
 BEGIN
-    UPDATE promociones SET
+    UPDATE promocion SET
         NOMBRE          = _nombre,
         DESCRIPCION     = _descripcion,
         TIPO_DESCUENTO  = _tipo_descuento,
@@ -1267,7 +1098,7 @@ CREATE PROCEDURE ELIMINAR_PROMOCION(
     IN _promocion_id INT
 )
 BEGIN
-    UPDATE promociones SET ACTIVO = 0
+    UPDATE promocion SET ACTIVO = 0
     WHERE PROMOCION_ID = _promocion_id;
 END$$
 
@@ -1288,7 +1119,7 @@ BEGIN
         FECHA_FIN       AS fecha_fin,
         CONDICIONES     AS condiciones,
         ACTIVO          AS activo
-    FROM promociones
+    FROM promocion
     WHERE PROMOCION_ID = _promocion_id AND ACTIVO = 1;
 END$$
 
@@ -1306,7 +1137,7 @@ BEGIN
         FECHA_FIN       AS fecha_fin,
         CONDICIONES     AS condiciones,
         ACTIVO          AS activo
-    FROM promociones
+    FROM promocion
     WHERE ACTIVO = 1
     ORDER BY FECHA_INICIO DESC;
 END$$
@@ -1325,7 +1156,7 @@ BEGIN
         FECHA_FIN       AS fecha_fin,
         CONDICIONES     AS condiciones,
         ACTIVO          AS activo
-    FROM promociones
+    FROM promocion
     WHERE ACTIVO = 1 AND CURDATE() BETWEEN FECHA_INICIO AND FECHA_FIN;
 END$$
 
@@ -1336,7 +1167,7 @@ CREATE PROCEDURE VINCULAR_PRODUCTO_PROMOCION(
     IN _producto_id  INT
 )
 BEGIN
-    INSERT IGNORE INTO promociones_productos(PROMOCION_ID, PRODUCTO_ID)
+    INSERT IGNORE INTO promocion_producto(PROMOCION_ID, PRODUCTO_ID)
     VALUES(_promocion_id, _producto_id);
 END$$
 
@@ -1347,7 +1178,7 @@ CREATE PROCEDURE DESVINCULAR_PRODUCTO_PROMOCION(
     IN _producto_id  INT
 )
 BEGIN
-    DELETE FROM promociones_productos
+    DELETE FROM promocion_producto
     WHERE PROMOCION_ID = _promocion_id AND PRODUCTO_ID = _producto_id;
 END$$
 
@@ -1359,7 +1190,7 @@ CREATE PROCEDURE LISTAR_PRODUCTOS_POR_PROMOCION(
 )
 BEGIN
     SELECT pp.PRODUCTO_ID
-    FROM promociones_productos pp
+    FROM promocion_producto pp
     WHERE pp.PROMOCION_ID = _promocion_id;
 END$$
 
@@ -1379,7 +1210,7 @@ CREATE PROCEDURE INSERTAR_DEVOLUCION(
     IN  _fecha_hora       DATETIME
 )
 BEGIN
-    INSERT INTO devoluciones(PRODUCTO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION,
+    INSERT INTO devolucion(PRODUCTO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION,
                              CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO)
     VALUES(_producto_id, _trabajador_id, _estado_devolucion,
            _cantidad, _motivo, _fecha_hora, 1);
@@ -1397,7 +1228,7 @@ CREATE PROCEDURE MODIFICAR_DEVOLUCION(
     IN _fecha_hora         DATETIME
 )
 BEGIN
-    UPDATE devoluciones SET
+    UPDATE devolucion SET
         PRODUCTO_ID       = _producto_id,
         TRABAJADOR_ID     = _trabajador_id,
         ESTADO_DEVOLUCION = _estado_devolucion,
@@ -1413,7 +1244,7 @@ CREATE PROCEDURE ELIMINAR_DEVOLUCION(
     IN _devolucion_id INT
 )
 BEGIN
-    UPDATE devoluciones SET ACTIVO = 0
+    UPDATE devolucion SET ACTIVO = 0
     WHERE DEVOLUCION_ID = _devolucion_id;
 END$$
 
@@ -1425,7 +1256,7 @@ CREATE PROCEDURE BUSCAR_DEVOLUCION_POR_ID(
 BEGIN
     SELECT DEVOLUCION_ID, PRODUCTO_ID, TRABAJADOR_ID,
            ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO
-    FROM devoluciones
+    FROM devolucion
     WHERE DEVOLUCION_ID = _devolucion_id AND ACTIVO = 1;
 END$$
 
@@ -1435,7 +1266,7 @@ CREATE PROCEDURE LISTAR_DEVOLUCIONES_TODAS()
 BEGIN
     SELECT DEVOLUCION_ID, PRODUCTO_ID, TRABAJADOR_ID,
            ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO
-    FROM devoluciones
+    FROM devolucion
     WHERE ACTIVO = 1
     ORDER BY FECHA_HORA DESC;
 END$$
@@ -1449,7 +1280,7 @@ CREATE PROCEDURE LISTAR_DEVOLUCIONES_POR_FECHAS(
 BEGIN
     SELECT DEVOLUCION_ID, PRODUCTO_ID, TRABAJADOR_ID,
            ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO
-    FROM devoluciones
+    FROM devolucion
     WHERE ACTIVO = 1 AND FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
     ORDER BY FECHA_HORA DESC;
 END$$
@@ -1470,10 +1301,10 @@ BEGIN
            mp.NOMBRE AS METODO_PAGO,
            v.CANAL_VENTA, v.MONTO_TOTAL, v.MONTO_DESCUENTO,
            v.ESTADO_VENTA
-    FROM ventas v
-    LEFT  JOIN clientes     c  ON v.CLIENTE_ID     = c.CLIENTE_ID
-    LEFT  JOIN usuarios     uc ON c.USUARIO_ID     = uc.USUARIO_ID
-    INNER JOIN metodos_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID
+    FROM venta v
+    LEFT  JOIN cliente     c  ON v.CLIENTE_ID     = c.USUARIO_ID
+    LEFT  JOIN usuario     uc ON c.USUARIO_ID     = uc.USUARIO_ID
+    INNER JOIN metodo_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID
     WHERE DATE(v.FECHA_HORA) BETWEEN _fecha_inicio AND _fecha_fin
       AND v.ESTADO_VENTA != 'ANULADA'
     ORDER BY v.FECHA_HORA;
@@ -1485,8 +1316,8 @@ BEGIN
     SELECT p.PRODUCTO_ID, p.NOMBRE, c.NOMBRE AS CATEGORIA,
            p.STOCK, p.STOCK_MINIMO, p.UNIDAD_MEDIDA,
            (p.STOCK_MINIMO - p.STOCK) AS UNIDADES_FALTANTES
-    FROM productos p
-    INNER JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    FROM producto p
+    INNER JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID
     WHERE p.ACTIVO = 1 AND p.STOCK < p.STOCK_MINIMO
     ORDER BY (p.STOCK_MINIMO - p.STOCK) DESC;
 END$$
@@ -1502,10 +1333,10 @@ BEGIN
            SUM(dv.CANTIDAD)              AS TOTAL_VENDIDO,
            SUM(dv.SUBTOTAL)              AS INGRESO_TOTAL,
            COUNT(DISTINCT dv.VENTA_ID)   AS NUM_VENTAS
-    FROM detalles_venta dv
-    INNER JOIN productos  p ON dv.PRODUCTO_ID = p.PRODUCTO_ID
-    INNER JOIN categorias c ON p.CATEGORIA_ID = c.CATEGORIA_ID
-    INNER JOIN ventas     v ON dv.VENTA_ID    = v.VENTA_ID
+    FROM detalle_venta dv
+    INNER JOIN producto  p ON dv.PRODUCTO_ID = p.PRODUCTO_ID
+    INNER JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    INNER JOIN venta     v ON dv.VENTA_ID    = v.VENTA_ID
     WHERE DATE(v.FECHA_HORA) BETWEEN _fecha_inicio AND _fecha_fin
       AND v.ESTADO_VENTA != 'ANULADA'
     GROUP BY p.PRODUCTO_ID, p.NOMBRE, c.NOMBRE
@@ -1522,13 +1353,52 @@ BEGIN
     SELECT d.DEVOLUCION_ID, p.NOMBRE AS PRODUCTO, d.ESTADO_DEVOLUCION,
            d.CANTIDAD, d.MOTIVO, d.FECHA_HORA,
            CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS REGISTRADO_POR
-    FROM devoluciones d
-    INNER JOIN productos    p ON d.PRODUCTO_ID   = p.PRODUCTO_ID
-    INNER JOIN trabajadores t ON d.TRABAJADOR_ID = t.TRABAJADOR_ID
-    INNER JOIN usuarios     u ON t.USUARIO_ID    = u.USUARIO_ID
+    FROM devolucion d
+    INNER JOIN producto    p ON d.PRODUCTO_ID   = p.PRODUCTO_ID
+    INNER JOIN trabajador t ON d.TRABAJADOR_ID = t.USUARIO_ID
+    INNER JOIN usuario     u ON t.USUARIO_ID    = u.USUARIO_ID
     WHERE d.ESTADO_DEVOLUCION = 'APROBADO'
       AND DATE(d.FECHA_HORA) BETWEEN _fecha_inicio AND _fecha_fin
     ORDER BY d.FECHA_HORA DESC;
+END$$
+
+-- =====================================================================
+-- AUTENTICACION UNIFICADA (LOGIN ÚNICO PARA LOS 3 ROLES)
+-- Devuelve los datos del usuario + los campos propios del subtipo
+-- (cliente/trabajador/administrador) + el ROL en una sola consulta.
+-- El DAO usa ROL para instanciar el subtipo concreto polimórficamente.
+-- DAO: AuthDaoImpl.autenticar → "AUTENTICAR_USUARIO"
+-- =====================================================================
+DROP PROCEDURE IF EXISTS AUTENTICAR_USUARIO$$
+CREATE PROCEDURE AUTENTICAR_USUARIO(
+    IN _correo     VARCHAR(100),
+    IN _contrasena VARCHAR(255)
+)
+BEGIN
+    SELECT
+        u.USUARIO_ID,
+        u.NOMBRES,
+        u.APELLIDOS,
+        u.DNI,
+        u.TELEFONO,
+        u.CORREO,
+        c.DIRECCION_ENTREGA,
+        t.CARGO,
+        t.FECHA_INGRESO,
+        CASE
+            WHEN a.USUARIO_ID IS NOT NULL AND a.ACTIVO = 1 THEN 'ADMINISTRADOR'
+            WHEN t.USUARIO_ID IS NOT NULL AND t.ACTIVO = 1 THEN 'TRABAJADOR'
+            WHEN c.USUARIO_ID IS NOT NULL                  THEN 'CLIENTE'
+            ELSE NULL
+        END AS ROL
+    FROM usuario u
+    LEFT JOIN cliente       c ON u.USUARIO_ID = c.USUARIO_ID
+    LEFT JOIN trabajador    t ON u.USUARIO_ID = t.USUARIO_ID
+    LEFT JOIN administrador a ON u.USUARIO_ID = a.USUARIO_ID
+    WHERE u.CORREO     = _correo
+      AND u.CONTRASENA = _contrasena
+      AND u.ACTIVO     = 1
+    LIMIT 1;
 END$$
 
 DELIMITER ;

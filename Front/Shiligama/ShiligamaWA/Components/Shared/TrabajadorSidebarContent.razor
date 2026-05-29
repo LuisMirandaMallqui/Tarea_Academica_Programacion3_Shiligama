@@ -1,0 +1,45 @@
+@inject ISesionService Sesion
+
+<div class="sidebar-inner">
+    <div class="sidebar-brand">
+        <a href="/trabajador" class="d-flex align-items-center gap-3 text-decoration-none">
+            <div class="sb-logo"><i class="fa-solid fa-cart-shopping"></i></div>
+            <div>
+                <h1 class="sb-title">Shiligama</h1>
+                <p class="sb-subtitle">Panel de Trabajador</p>
+            </div>
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        <NavItem Href="/trabajador" Icon="fa-solid fa-clipboard-list" Label="Pedidos" MatchAll="true" />
+        <NavItem Href="/trabajador/productos" Icon="fa-solid fa-box" Label="Productos" />
+        <NavItem Href="/trabajador/registrar-venta" Icon="fa-solid fa-credit-card" Label="Registrar venta" />
+        @* Feedback JP: renombrado de "Devoluciones / Mis devoluciones" a "Devoluciones atendidas" *@
+        <NavItem Href="/trabajador/devoluciones-atendidas" Icon="fa-solid fa-rotate-left" Label="Devoluciones atendidas" />
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <i class="fa-solid fa-user"></i>
+            <div>
+                <div class="sb-username">@Nombre</div>
+                <div class="sb-userrole">Trabajador</div>
+            </div>
+        </div>
+        <a href="/" class="sidebar-link">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Cerrar sesi&oacute;n</span>
+        </a>
+    </div>
+</div>
+
+@code {
+    private string Nombre = "Carlos Mendoza";
+
+    protected override void OnInitialized()
+    {
+        if (Sesion.Actual.Autenticado && !string.IsNullOrEmpty(Sesion.Actual.NombreCompleto))
+            Nombre = Sesion.Actual.NombreCompleto;
+    }
+}

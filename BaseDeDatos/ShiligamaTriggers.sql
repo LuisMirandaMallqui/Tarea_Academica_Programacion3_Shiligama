@@ -1,182 +1,182 @@
 -- =====================================================================
--- SHILIGAMA - Triggers de Auditoria
+-- SHILIGAMA - Triggers de Auditoria (ACTUALIZADO A SINGULAR)
 -- =====================================================================
 USE `shiligama`;
 
 DELIMITER $$
 
 -- =============================================================
--- USUARIOS
+-- USUARIO
 -- =============================================================
-CREATE TRIGGER trg_usuarios_before_insert
-BEFORE INSERT ON usuarios FOR EACH ROW
+CREATE TRIGGER trg_usuario_before_insert
+BEFORE INSERT ON usuario FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_usuarios_before_update
-BEFORE UPDATE ON usuarios FOR EACH ROW
+CREATE TRIGGER trg_usuario_before_update
+BEFORE UPDATE ON usuario FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- CLIENTES
+-- CLIENTE
 -- =============================================================
-CREATE TRIGGER trg_clientes_before_insert
-BEFORE INSERT ON clientes FOR EACH ROW
+CREATE TRIGGER trg_cliente_before_insert
+BEFORE INSERT ON cliente FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_clientes_before_update
-BEFORE UPDATE ON clientes FOR EACH ROW
+CREATE TRIGGER trg_cliente_before_update
+BEFORE UPDATE ON cliente FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- ADMINISTRADORES
+-- ADMINISTRADOR
 -- =============================================================
-CREATE TRIGGER trg_administradores_before_insert
-BEFORE INSERT ON administradores FOR EACH ROW
+CREATE TRIGGER trg_administrador_before_insert
+BEFORE INSERT ON administrador FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_administradores_before_update
-BEFORE UPDATE ON administradores FOR EACH ROW
+CREATE TRIGGER trg_administrador_before_update
+BEFORE UPDATE ON administrador FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- TRABAJADORES
+-- TRABAJADOR
 -- =============================================================
-CREATE TRIGGER trg_trabajadores_before_insert
-BEFORE INSERT ON trabajadores FOR EACH ROW
+CREATE TRIGGER trg_trabajador_before_insert
+BEFORE INSERT ON trabajador FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_trabajadores_before_update
-BEFORE UPDATE ON trabajadores FOR EACH ROW
+CREATE TRIGGER trg_trabajador_before_update
+BEFORE UPDATE ON trabajador FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- CATEGORIAS
+-- CATEGORIA
 -- =============================================================
-CREATE TRIGGER trg_categorias_before_insert
-BEFORE INSERT ON categorias FOR EACH ROW
+CREATE TRIGGER trg_categoria_before_insert
+BEFORE INSERT ON categoria FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_categorias_before_update
-BEFORE UPDATE ON categorias FOR EACH ROW
+CREATE TRIGGER trg_categoria_before_update
+BEFORE UPDATE ON categoria FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- PRODUCTOS
+-- PRODUCTO
 -- =============================================================
-CREATE TRIGGER trg_productos_before_insert
-BEFORE INSERT ON productos FOR EACH ROW
+CREATE TRIGGER trg_producto_before_insert
+BEFORE INSERT ON producto FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_productos_before_update
-BEFORE UPDATE ON productos FOR EACH ROW
+CREATE TRIGGER trg_producto_before_update
+BEFORE UPDATE ON producto FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- PROMOCIONES
+-- PROMOCION
 -- =============================================================
-CREATE TRIGGER trg_promociones_before_insert
-BEFORE INSERT ON promociones FOR EACH ROW
+CREATE TRIGGER trg_promocion_before_insert
+BEFORE INSERT ON promocion FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_promociones_before_update
-BEFORE UPDATE ON promociones FOR EACH ROW
+CREATE TRIGGER trg_promocion_before_update
+BEFORE UPDATE ON promocion FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- METODOS DE PAGO
+-- METODO_PAGO
 -- =============================================================
-CREATE TRIGGER trg_metodos_pago_before_insert
-BEFORE INSERT ON metodos_pago FOR EACH ROW
+CREATE TRIGGER trg_metodo_pago_before_insert
+BEFORE INSERT ON metodo_pago FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_metodos_pago_before_update
-BEFORE UPDATE ON metodos_pago FOR EACH ROW
+CREATE TRIGGER trg_metodo_pago_before_update
+BEFORE UPDATE ON metodo_pago FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- VENTAS
+-- PEDIDO 
 -- =============================================================
-CREATE TRIGGER trg_ventas_before_insert
-BEFORE INSERT ON ventas FOR EACH ROW
+CREATE TRIGGER trg_pedido_before_insert
+BEFORE INSERT ON pedido FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_ventas_before_update
-BEFORE UPDATE ON ventas FOR EACH ROW
+CREATE TRIGGER trg_pedido_before_update
+BEFORE UPDATE ON pedido FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- PEDIDOS
+-- VENTA - Trigger para actualizar monto cuando se completa
 -- =============================================================
-CREATE TRIGGER trg_pedidos_before_insert
-BEFORE INSERT ON pedidos FOR EACH ROW
+CREATE TRIGGER trg_venta_before_insert
+BEFORE INSERT ON venta FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_pedidos_before_update
-BEFORE UPDATE ON pedidos FOR EACH ROW
+CREATE TRIGGER trg_venta_before_update
+BEFORE UPDATE ON venta FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
 -- =============================================================
--- DEVOLUCIONES
+-- MOVIMIENTO_INVENTARIO
 -- =============================================================
-CREATE TRIGGER trg_devoluciones_before_insert
-BEFORE INSERT ON devoluciones FOR EACH ROW
+CREATE TRIGGER trg_movimiento_inventario_before_insert
+BEFORE INSERT ON movimiento_inventario FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_CREACION = USER();
 END$$
 
-CREATE TRIGGER trg_devoluciones_before_update
-BEFORE UPDATE ON devoluciones FOR EACH ROW
+-- =============================================================
+-- DEVOLUCION
+-- =============================================================
+CREATE TRIGGER trg_devolucion_before_insert
+BEFORE INSERT ON devolucion FOR EACH ROW
+BEGIN
+    SET NEW.USUARIO_CREACION = USER();
+END$$
+
+CREATE TRIGGER trg_devolucion_before_update
+BEFORE UPDATE ON devolucion FOR EACH ROW
 BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
-END$$
-
--- =============================================================
--- MOVIMIENTOS DE INVENTARIO (log inmutable: solo INSERT)
--- =============================================================
-CREATE TRIGGER trg_movimientos_before_insert
-BEFORE INSERT ON movimientos_inventario FOR EACH ROW
-BEGIN
-    SET NEW.USUARIO_CREACION = USER();
 END$$
 
 DELIMITER ;

@@ -1,30 +1,29 @@
 package pe.edu.pucp.model.usuario;
+
 import java.time.LocalDate;
 
 public class Trabajador extends Usuario {
-    private int idTrabajador;
+    private String cargo;
     private LocalDate fechaIngreso;
 
     public Trabajador() {
     }
 
-    public Trabajador(int idUsuario, String email, String contrasena,
+    // Constructor completo — usa idUsuario del padre, NO tiene ID propio
+    public Trabajador(int idUsuario, String correo, String contrasena,
                       String nombres, String apellidos, String dni,
-                      String telefono,
-                      int idTrabajador,
-                      LocalDate fechaIngreso) {
-        super(idUsuario, email, contrasena, nombres, apellidos,
-                dni, telefono);
-        this.idTrabajador = idTrabajador;
+                      String telefono, String cargo, LocalDate fechaIngreso) {
+        super(idUsuario, correo, contrasena, nombres, apellidos, dni, telefono);
+        this.cargo = cargo;
         this.fechaIngreso = fechaIngreso;
     }
 
-    public int getIdTrabajador() {
-        return idTrabajador;
+    public String getCargo() {
+        return cargo;
     }
 
-    public void setIdTrabajador(int idTrabajador) {
-        this.idTrabajador = idTrabajador;
+    public void setCargo(String cargo) {
+        this.cargo = cargo;
     }
 
     public LocalDate getFechaIngreso() {
@@ -37,12 +36,11 @@ public class Trabajador extends Usuario {
 
     @Override
     public String toString() {
-        return "TrabajadorDto{" +
-                "idTrabajador=" + idTrabajador +
+        return "Trabajador{" +
+                "idUsuario=" + idUsuario +
+                ", cargo='" + cargo + '\'' +
                 ", fechaIngreso=" + fechaIngreso +
-                ", idUsuario=" + idUsuario +
-                ", nombreUsuario='" + correo + '\'' +
-                ", contrasena='" + contrasena + '\'' +
+                ", correo='" + correo + '\'' +
                 ", nombres='" + nombres + '\'' +
                 ", apellidos='" + apellidos + '\'' +
                 ", dni='" + dni + '\'' +
@@ -51,7 +49,7 @@ public class Trabajador extends Usuario {
     }
 
     @Override
-    public String obtenerRol() {
+    public String getRol() {
         return "TRABAJADOR";
     }
 }

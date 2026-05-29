@@ -1,0 +1,2 @@
+-- ARCHIVO OBSOLETO: Usar los scripts en BaseDeDatos/
+-- ShiligamaDDL.sql + ShiligamaProcedimientos.sql

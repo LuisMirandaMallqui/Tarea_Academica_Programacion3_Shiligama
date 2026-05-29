@@ -23,7 +23,7 @@ public class PedidoDaoImpl implements PedidoDao {
         Map<Integer, Object> parametrosSalida = new HashMap<>();
 
         parametrosSalida.put(1, Types.INTEGER);
-        parametrosEntrada.put(2, pedido.getCliente().getIdCliente());
+        parametrosEntrada.put(2, pedido.getCliente().getIdUsuario());
         parametrosEntrada.put(3, pedido.getDireccionEntrega());
         parametrosEntrada.put(4, pedido.getModalidadVenta().name());
         parametrosEntrada.put(5, pedido.getObservaciones());
@@ -104,7 +104,7 @@ public class PedidoDaoImpl implements PedidoDao {
         p.setObservaciones(rs.getString("OBSERVACIONES"));
 
         Cliente cliente = new Cliente();
-        cliente.setIdCliente(rs.getInt("CLIENTE_ID"));
+        cliente.setIdUsuario(rs.getInt("CLIENTE_ID"));
         p.setCliente(cliente);
 
         return p;

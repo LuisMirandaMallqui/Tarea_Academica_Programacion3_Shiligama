@@ -13,52 +13,93 @@ import java.util.Map;
 public class ClienteDaoImpl implements ClienteDao {
 
     // -------------------------------------------------------------------------
-    // INSERT — SP: INSERTAR_CLIENTE(OUT _id_cliente, IN _nombres, IN _apellidos,
-    //   IN _dni, IN _telefono, IN _correo, IN _contrasena, IN _direccion_entrega)
+    // INSERT con transaccion:
+    //   1) INSERTAR_USUARIO(OUT _usuario_id, IN _nombres, _apellidos, _dni,
+    //      _telefono, _correo, _contrasena)
+    //   2) INSERTAR_CLIENTE(IN _id_usuario, IN _direccion_entrega)
     // -------------------------------------------------------------------------
     @Override
     public int insertar(Cliente cliente) {
-        Map<Integer, Object> parametrosEntrada = new HashMap<>();
-        Map<Integer, Object> parametrosSalida = new HashMap<>();
+        int resultado = 0;
+        DBManager dbManager = DBManager.getInstance();
+        try {
+            dbManager.iniciarTransaccion();
 
-        parametrosSalida.put(1, Types.INTEGER);
-        parametrosEntrada.put(2, cliente.getNombres());
-        parametrosEntrada.put(3, cliente.getApellidos());
-        parametrosEntrada.put(4, cliente.getDni());
-        parametrosEntrada.put(5, cliente.getTelefono());
-        parametrosEntrada.put(6, cliente.getCorreo());
-        parametrosEntrada.put(7, cliente.getContrasena());
-        parametrosEntrada.put(8, cliente.getDireccionEntrega());
+            // 1) Insertar en tabla padre: usuario
+            Map<Integer, Object> paramsUsr = new HashMap<>();
+            Map<Integer, Object> paramsUsrOut = new HashMap<>();
+            paramsUsrOut.put(1, Types.INTEGER);            // OUT _usuario_id
+            paramsUsr.put(2, cliente.getNombres());
+            paramsUsr.put(3, cliente.getApellidos());
+            paramsUsr.put(4, cliente.getDni());
+            paramsUsr.put(5, cliente.getTelefono());
+            paramsUsr.put(6, cliente.getCorreo());
+            paramsUsr.put(7, cliente.getContrasena());
 
-        DBManager.getInstance().ejecutarProcedimiento(
-                "INSERTAR_CLIENTE", parametrosEntrada, parametrosSalida);
-        cliente.setIdCliente((int) parametrosSalida.get(1));
-        return cliente.getIdCliente();
+            dbManager.ejecutarProcedimientoTransaccion(
+                    "INSERTAR_USUARIO", paramsUsr, paramsUsrOut);
+            int idGenerado = (int) paramsUsrOut.get(1);
+            cliente.setIdUsuario(idGenerado);
+
+            // 2) Insertar en tabla hija: cliente
+            Map<Integer, Object> paramsCli = new HashMap<>();
+            paramsCli.put(1, idGenerado);
+            paramsCli.put(2, cliente.getDireccionEntrega());
+
+            dbManager.ejecutarProcedimientoTransaccion(
+                    "INSERTAR_CLIENTE", paramsCli, null);
+
+            dbManager.confirmarTransaccion();
+            resultado = idGenerado;
+        } catch (SQLException ex) {
+            System.out.println("Error al insertar cliente: " + ex.getMessage());
+            dbManager.cancelarTransaccion();
+        }
+        return resultado;
     }
 
     // -------------------------------------------------------------------------
-    // UPDATE — SP: MODIFICAR_CLIENTE(IN _id_cliente, IN _nombres, IN _apellidos,
-    //   IN _dni, IN _telefono, IN _correo, IN _direccion_entrega)
+    // UPDATE con transaccion:
+    //   1) MODIFICAR_USUARIO(IN _usuario_id, _nombres, _apellidos, _dni,
+    //      _telefono, _correo)
+    //   2) MODIFICAR_CLIENTE(IN _usuario_id, IN _direccion_entrega)
     // -------------------------------------------------------------------------
     @Override
     public int modificar(Cliente cliente) {
-        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        int resultado = 0;
+        DBManager dbManager = DBManager.getInstance();
+        try {
+            dbManager.iniciarTransaccion();
 
-        parametrosEntrada.put(1, cliente.getIdCliente());
-        parametrosEntrada.put(2, cliente.getNombres());
-        parametrosEntrada.put(3, cliente.getApellidos());
-        parametrosEntrada.put(4, cliente.getDni());
-        parametrosEntrada.put(5, cliente.getTelefono());
-        parametrosEntrada.put(6, cliente.getCorreo());
-        parametrosEntrada.put(7, cliente.getDireccionEntrega());
+            // 1) Modificar tabla padre: usuario
+            Map<Integer, Object> paramsUsr = new HashMap<>();
+            paramsUsr.put(1, cliente.getIdUsuario());
+            paramsUsr.put(2, cliente.getNombres());
+            paramsUsr.put(3, cliente.getApellidos());
+            paramsUsr.put(4, cliente.getDni());
+            paramsUsr.put(5, cliente.getTelefono());
+            paramsUsr.put(6, cliente.getCorreo());
 
-        return DBManager.getInstance().ejecutarProcedimiento(
-                "MODIFICAR_CLIENTE", parametrosEntrada, null);
+            dbManager.ejecutarProcedimientoTransaccion(
+                    "MODIFICAR_USUARIO", paramsUsr, null);
+
+            // 2) Modificar tabla hija: cliente
+            Map<Integer, Object> paramsCli = new HashMap<>();
+            paramsCli.put(1, cliente.getIdUsuario());
+            paramsCli.put(2, cliente.getDireccionEntrega());
+
+            resultado = dbManager.ejecutarProcedimientoTransaccion(
+                    "MODIFICAR_CLIENTE", paramsCli, null);
+
+            dbManager.confirmarTransaccion();
+        } catch (SQLException ex) {
+            System.out.println("Error al modificar cliente: " + ex.getMessage());
+            dbManager.cancelarTransaccion();
+        }
+        return resultado;
     }
 
-    // -------------------------------------------------------------------------
-    // DELETE (logico) — SP: ELIMINAR_CLIENTE(IN _id_cliente)
-    // -------------------------------------------------------------------------
+    // SP: ELIMINAR_CLIENTE(IN _usuario_id)  — desactiva en tabla usuario
     @Override
     public int eliminar(int id) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -67,9 +108,7 @@ public class ClienteDaoImpl implements ClienteDao {
                 "ELIMINAR_CLIENTE", parametrosEntrada, null);
     }
 
-    // -------------------------------------------------------------------------
-    // SELECT por ID — SP: BUSCAR_CLIENTE_X_ID(IN _id_cliente)
-    // -------------------------------------------------------------------------
+    // SP: BUSCAR_CLIENTE_X_ID(IN _usuario_id)
     @Override
     public Cliente buscarPorID(int id) {
         Cliente cliente = null;
@@ -90,9 +129,7 @@ public class ClienteDaoImpl implements ClienteDao {
         return cliente;
     }
 
-    // -------------------------------------------------------------------------
-    // SELECT todos — SP: LISTAR_CLIENTES()
-    // -------------------------------------------------------------------------
+    // SP: LISTAR_CLIENTES()
     @Override
     public List<Cliente> listarTodos() {
         List<Cliente> lista = new ArrayList<>();
@@ -111,11 +148,6 @@ public class ClienteDaoImpl implements ClienteDao {
         return lista;
     }
 
-    // -------------------------------------------------------------------------
-    // Metodos especificos de UsuarioDao
-    // -------------------------------------------------------------------------
-
-    // SP: BUSCAR_CLIENTE_X_CORREO(IN _correo)
     @Override
     public Cliente buscarPorCorreo(String correo) {
         Cliente cliente = null;
@@ -136,7 +168,6 @@ public class ClienteDaoImpl implements ClienteDao {
         return cliente;
     }
 
-    // SP: BUSCAR_CLIENTE_X_DNI(IN _dni)
     @Override
     public Cliente obtenerPorDNI(String dni) {
         Cliente cliente = null;
@@ -157,7 +188,6 @@ public class ClienteDaoImpl implements ClienteDao {
         return cliente;
     }
 
-    // SP: EXISTE_USUARIO_EN_BD(IN _correo, IN _dni) — retorna COUNT
     @Override
     public Boolean existeUsuarioEnBD(Cliente cliente) {
         Boolean existe = false;
@@ -179,13 +209,9 @@ public class ClienteDaoImpl implements ClienteDao {
         return existe;
     }
 
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet
-    // -------------------------------------------------------------------------
+    // Mapeo — usa USUARIO_ID (PK compartida padre-hijo)
     private Cliente mapearCliente(ResultSet rs) throws SQLException {
         Cliente c = new Cliente();
-        c.setIdCliente(rs.getInt("CLIENTE_ID"));
-        c.setDireccionEntrega(rs.getString("DIRECCION_ENTREGA"));
         c.setIdUsuario(rs.getInt("USUARIO_ID"));
         c.setNombres(rs.getString("NOMBRES"));
         c.setApellidos(rs.getString("APELLIDOS"));
@@ -193,6 +219,7 @@ public class ClienteDaoImpl implements ClienteDao {
         c.setTelefono(rs.getString("TELEFONO"));
         c.setCorreo(rs.getString("CORREO"));
         c.setContrasena(rs.getString("CONTRASENA"));
+        c.setDireccionEntrega(rs.getString("DIRECCION_ENTREGA"));
         return c;
     }
 }

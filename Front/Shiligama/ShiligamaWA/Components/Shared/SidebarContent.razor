@@ -1,0 +1,34 @@
+@* Contenido reusable del sidebar admin (desktop fijo + mobile offcanvas) *@
+@* Feedback JP aplicado: pestaña "Proveedores" eliminada *@
+
+<div class="sidebar-inner">
+    <div class="sidebar-brand">
+        <a href="/admin" class="d-flex align-items-center gap-3 text-decoration-none">
+            <div class="sb-logo"><i class="fa-solid fa-cart-shopping"></i></div>
+            <div>
+                <h1 class="sb-title">Shiligama</h1>
+                <p class="sb-subtitle">Panel de Administraci&oacute;n</p>
+            </div>
+        </a>
+    </div>
+
+    <nav class="sidebar-nav">
+        <NavItem Href="/admin" Icon="fa-solid fa-gauge-high" Label="Dashboard" MatchAll="true" />
+        <NavItem Href="/admin/pedidos" Icon="fa-solid fa-clipboard-list" Label="Pedidos" />
+        <NavItem Href="/admin/productos" Icon="fa-solid fa-box" Label="Productos" />
+        <NavItem Href="/admin/inventario" Icon="fa-solid fa-warehouse" Label="Inventario" />
+        <NavItem Href="/admin/ventas" Icon="fa-solid fa-arrow-trend-up" Label="Ventas" />
+        <NavItem Href="/admin/personal" Icon="fa-solid fa-users" Label="Personal" />
+        <NavItem Href="/admin/reportes" Icon="fa-solid fa-chart-column" Label="Reportes" />
+        <NavItem Href="/admin/devoluciones" Icon="fa-solid fa-rotate-left" Label="Devoluciones" />
+        <NavItem Href="/admin/notificaciones" Icon="fa-solid fa-bell" Label="Notificaciones" />
+    </nav>
+
+    <div class="sidebar-footer">
+        <NavItem Href="/admin/configuracion" Icon="fa-solid fa-gear" Label="Configuraci&oacute;n" />
+        <a href="/" class="sidebar-link">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span>Cerrar sesi&oacute;n</span>
+        </a>
+    </div>
+</div>

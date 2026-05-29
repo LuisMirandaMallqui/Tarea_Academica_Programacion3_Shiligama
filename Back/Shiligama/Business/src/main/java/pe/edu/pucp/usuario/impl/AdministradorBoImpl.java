@@ -62,7 +62,7 @@ public class AdministradorBoImpl implements AdministradorBo {
         if (admin == null) {
             throw new Exception("El administrador no puede ser nulo.");
         }
-        if (esModificacion && admin.getIdAdministrador() <= 0) {
+        if (esModificacion && admin.getIdUsuario() <= 0) {
             throw new Exception("El ID del administrador es obligatorio para la modificacion.");
         }
         validarDNI(admin.getDni());

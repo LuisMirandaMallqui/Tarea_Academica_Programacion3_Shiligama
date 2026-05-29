@@ -10,6 +10,7 @@ import pe.edu.pucp.model.venta.DetalleVenta;
 import pe.edu.pucp.model.venta.MetodoPago;
 import pe.edu.pucp.model.venta.Venta;
 import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
+import pe.edu.pucp.model.venta.VentaReporteDto;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -35,8 +36,8 @@ public class VentaDaoImpl implements VentaDao {
             Map<Integer, Object> paramsSalida = new HashMap<>();
 
             paramsSalida.put(1, Types.INTEGER);
-            paramsEntrada.put(2, venta.getCliente().getIdCliente());
-            paramsEntrada.put(3, venta.getTrabajador().getIdTrabajador());
+            paramsEntrada.put(2, venta.getCliente().getIdUsuario());
+            paramsEntrada.put(3, venta.getTrabajador().getIdUsuario());
             paramsEntrada.put(4, venta.getMetodoPago().getIdMetodoPago());
             paramsEntrada.put(5, venta.getCanalVenta().name());
             paramsEntrada.put(6, venta.getObservaciones());
@@ -44,6 +45,7 @@ public class VentaDaoImpl implements VentaDao {
             dbManager.ejecutarProcedimientoTransaccion(
                     "INSERTAR_VENTA", paramsEntrada, paramsSalida);
             venta.setIdVenta((int) paramsSalida.get(1));
+
 
             // Insertar detalles
             if (venta.getDetalles() != null) {
@@ -168,16 +170,46 @@ public class VentaDaoImpl implements VentaDao {
         v.setObservaciones(rs.getString("OBSERVACIONES"));
 
         Cliente cliente = new Cliente();
-        cliente.setIdCliente(rs.getInt("CLIENTE_ID"));
+        cliente.setIdUsuario(rs.getInt("CLIENTE_ID"));
         v.setCliente(cliente);
 
         Trabajador trabajador = new Trabajador();
-        trabajador.setIdTrabajador(rs.getInt("TRABAJADOR_ID"));
+        trabajador.setIdUsuario(rs.getInt("TRABAJADOR_ID"));
         v.setTrabajador(trabajador);
 
         MetodoPago metodoPago = new MetodoPago();
         metodoPago.setIdMetodoPago(rs.getInt("METODO_PAGO_ID"));
         metodoPago.setNombre(rs.getString("METODO_PAGO_NOMBRE"));
         v.setMetodoPago(metodoPago);
+    }
+
+    @Override
+    public List<VentaReporteDto> reporteVentasPorPeriodo(String fechaInicio, String fechaFin) {
+        List<VentaReporteDto> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, fechaInicio);
+        parametrosEntrada.put(2, fechaFin);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("REPORTE_VENTAS_POR_PERIODO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    VentaReporteDto dto = new VentaReporteDto();
+                    dto.setIdVenta(rs.getInt("VENTA_ID"));
+                    dto.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
+                    dto.setCliente(rs.getString("CLIENTE"));
+                    dto.setMetodoPago(rs.getString("METODO_PAGO"));
+                    dto.setCanalVenta(rs.getString("CANAL_VENTA"));
+                    dto.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
+                    dto.setMontoDescuento(rs.getDouble("MONTO_DESCUENTO"));
+                    dto.setEstadoVenta(rs.getString("ESTADO_VENTA"));
+                    lista.add(dto);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en reporte ventas por periodo: " + ex.getMessage());
+        }
+        return lista;
     }
 }
