@@ -108,6 +108,102 @@ public class ProductoDaoImpl implements ProductoDao {
         return lista;
     }
 
+    // SP: BUSCAR_PRODUCTOS_PAGINADO(_categoria_id, _q, _precio_min, _precio_max,
+    //                               _solo_promo, _pagina, _tamano)
+    @Override
+    public List<Producto> buscarPaginado(Integer categoriaId, String q,
+                                         Double precioMin, Double precioMax,
+                                         Boolean soloPromo, int pagina, int tamano) {
+        List<Producto> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, categoriaId);
+        parametrosEntrada.put(2, q);
+        parametrosEntrada.put(3, precioMin);
+        parametrosEntrada.put(4, precioMax);
+        parametrosEntrada.put(5, soloPromo == null ? null : (soloPromo ? 1 : 0));
+        parametrosEntrada.put(6, pagina);
+        parametrosEntrada.put(7, tamano);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_PRODUCTOS_PAGINADO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearProducto(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en buscarPaginado (productos): " + ex.getMessage());
+        }
+        return lista;
+    }
+
+    // SP: CONTAR_PRODUCTOS_FILTRADOS(_categoria_id, _q, _precio_min, _precio_max, _solo_promo)
+    @Override
+    public int contarFiltrados(Integer categoriaId, String q,
+                               Double precioMin, Double precioMax,
+                               Boolean soloPromo) {
+        int total = 0;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, categoriaId);
+        parametrosEntrada.put(2, q);
+        parametrosEntrada.put(3, precioMin);
+        parametrosEntrada.put(4, precioMax);
+        parametrosEntrada.put(5, soloPromo == null ? null : (soloPromo ? 1 : 0));
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("CONTAR_PRODUCTOS_FILTRADOS", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    total = rs.getInt("TOTAL");
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en contarFiltrados (productos): " + ex.getMessage());
+        }
+        return total;
+    }
+
+    // SP: BUSCAR_PRODUCTO_X_CODIGO_BARRAS(_codigo)
+    @Override
+    public Producto buscarPorCodigoBarras(String codigo) {
+        Producto producto = null;
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, codigo);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("BUSCAR_PRODUCTO_X_CODIGO_BARRAS", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                if (rs.next()) {
+                    producto = mapearProducto(rs);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en buscarPorCodigoBarras: " + ex.getMessage());
+        }
+        return producto;
+    }
+
+    // SP: LISTAR_PRODUCTOS_BAJO_STOCK()
+    @Override
+    public List<Producto> listarBajoStock() {
+        List<Producto> lista = new ArrayList<>();
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_PRODUCTOS_BAJO_STOCK", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearProducto(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en listarBajoStock: " + ex.getMessage());
+        }
+        return lista;
+    }
+
     private Producto mapearProducto(ResultSet rs) throws SQLException {
         Producto p = new Producto();
         p.setIdProducto(rs.getInt("PRODUCTO_ID"));

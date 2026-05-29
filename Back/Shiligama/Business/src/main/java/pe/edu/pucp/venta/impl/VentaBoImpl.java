@@ -1,5 +1,6 @@
 package pe.edu.pucp.venta.impl;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import pe.edu.pucp.model.venta.Venta;
 import pe.edu.pucp.model.venta.VentaReporteDto;
@@ -80,5 +81,24 @@ public class VentaBoImpl implements VentaBo {
             throw new Exception("La fecha de fin es obligatoria.");
         }
         return daoVenta.reporteVentasPorPeriodo(fechaInicio, fechaFin);
+    }
+
+    @Override
+    public List<Venta> listarPorFechas(LocalDateTime fechaInicio, LocalDateTime fechaFin) throws Exception {
+        if (fechaInicio == null || fechaFin == null) {
+            throw new Exception("Las fechas de inicio y fin son obligatorias.");
+        }
+        if (fechaInicio.isAfter(fechaFin)) {
+            throw new Exception("La fecha de inicio no puede ser posterior a la fecha de fin.");
+        }
+        return daoVenta.listarPorFechas(fechaInicio, fechaFin);
+    }
+
+    @Override
+    public List<Venta> listarPorTrabajador(int idTrabajador) throws Exception {
+        if (idTrabajador <= 0) {
+            throw new Exception("El ID del trabajador debe ser mayor que cero.");
+        }
+        return daoVenta.listarPorTrabajador(idTrabajador);
     }
 }

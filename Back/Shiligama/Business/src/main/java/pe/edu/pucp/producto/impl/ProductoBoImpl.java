@@ -46,6 +46,49 @@ public class ProductoBoImpl implements ProductoBo {
         return daoProducto.listarTodos();
     }
 
+    @Override
+    public List<Producto> buscarPaginado(Integer categoriaId, String q,
+                                         Double precioMin, Double precioMax,
+                                         Boolean soloPromo, int pagina, int tamano) throws Exception {
+        if (pagina < 1) {
+            throw new Exception("La pagina debe ser mayor o igual a 1.");
+        }
+        if (tamano < 1 || tamano > 100) {
+            throw new Exception("El tamano de pagina debe estar entre 1 y 100.");
+        }
+        if (precioMin != null && precioMin < 0) {
+            throw new Exception("El precio minimo no puede ser negativo.");
+        }
+        if (precioMax != null && precioMax < 0) {
+            throw new Exception("El precio maximo no puede ser negativo.");
+        }
+        if (precioMin != null && precioMax != null && precioMin > precioMax) {
+            throw new Exception("El precio minimo no puede ser mayor que el maximo.");
+        }
+        return daoProducto.buscarPaginado(categoriaId, q, precioMin, precioMax,
+                soloPromo, pagina, tamano);
+    }
+
+    @Override
+    public int contarFiltrados(Integer categoriaId, String q,
+                               Double precioMin, Double precioMax,
+                               Boolean soloPromo) throws Exception {
+        return daoProducto.contarFiltrados(categoriaId, q, precioMin, precioMax, soloPromo);
+    }
+
+    @Override
+    public Producto buscarPorCodigoBarras(String codigo) throws Exception {
+        if (codigo == null || codigo.trim().isEmpty()) {
+            throw new Exception("El codigo de barras es obligatorio.");
+        }
+        return daoProducto.buscarPorCodigoBarras(codigo.trim());
+    }
+
+    @Override
+    public List<Producto> listarBajoStock() throws Exception {
+        return daoProducto.listarBajoStock();
+    }
+
     private void validar(Producto producto, boolean esModificacion) throws Exception {
         if (producto == null) {
             throw new Exception("El producto no puede ser nulo.");

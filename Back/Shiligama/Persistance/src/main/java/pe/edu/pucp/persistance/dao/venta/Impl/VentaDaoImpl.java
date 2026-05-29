@@ -183,6 +183,59 @@ public class VentaDaoImpl implements VentaDao {
         v.setMetodoPago(metodoPago);
     }
 
+    // SP: LISTAR_VENTAS_X_FECHAS(IN _fecha_inicio DATETIME, IN _fecha_fin DATETIME)
+    @Override
+    public List<Venta> listarPorFechas(java.time.LocalDateTime fechaInicio, java.time.LocalDateTime fechaFin) {
+        List<Venta> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, Timestamp.valueOf(fechaInicio));
+        parametrosEntrada.put(2, Timestamp.valueOf(fechaFin));
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_VENTAS_X_FECHAS", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    String numeroBoleta = rs.getString("NUMERO_BOLETA");
+                    if (numeroBoleta != null && !numeroBoleta.isEmpty()) {
+                        lista.add(mapearBoleta(rs, numeroBoleta));
+                    } else {
+                        lista.add(mapearVenta(rs));
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en listarPorFechas (ventas): " + ex.getMessage());
+        }
+        return lista;
+    }
+
+    // SP: LISTAR_VENTAS_X_TRABAJADOR(IN _trabajador_id INT)
+    @Override
+    public List<Venta> listarPorTrabajador(int idTrabajador) {
+        List<Venta> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idTrabajador);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_VENTAS_X_TRABAJADOR", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    String numeroBoleta = rs.getString("NUMERO_BOLETA");
+                    if (numeroBoleta != null && !numeroBoleta.isEmpty()) {
+                        lista.add(mapearBoleta(rs, numeroBoleta));
+                    } else {
+                        lista.add(mapearVenta(rs));
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en listarPorTrabajador (ventas): " + ex.getMessage());
+        }
+        return lista;
+    }
+
     @Override
     public List<VentaReporteDto> reporteVentasPorPeriodo(String fechaInicio, String fechaFin) {
         List<VentaReporteDto> lista = new ArrayList<>();

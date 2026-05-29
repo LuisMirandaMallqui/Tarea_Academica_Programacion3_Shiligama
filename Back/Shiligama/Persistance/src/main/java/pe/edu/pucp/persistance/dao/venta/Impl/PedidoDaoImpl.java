@@ -93,6 +93,48 @@ public class PedidoDaoImpl implements PedidoDao {
         return lista;
     }
 
+    // SP: LISTAR_PEDIDOS_X_CLIENTE(IN _cliente_id)
+    @Override
+    public List<Pedido> listarPorCliente(int idCliente) {
+        List<Pedido> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idCliente);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_PEDIDOS_X_CLIENTE", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearPedido(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en listarPorCliente (pedidos): " + ex.getMessage());
+        }
+        return lista;
+    }
+
+    // SP: LISTAR_PEDIDOS_X_ESTADO(IN _estado VARCHAR)
+    @Override
+    public List<Pedido> listarPorEstado(EstadoPedido estado) {
+        List<Pedido> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, estado.name());
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_PEDIDOS_X_ESTADO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearPedido(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en listarPorEstado (pedidos): " + ex.getMessage());
+        }
+        return lista;
+    }
+
     private Pedido mapearPedido(ResultSet rs) throws SQLException {
         Pedido p = new Pedido();
         p.setIdPedido(rs.getInt("PEDIDO_ID"));

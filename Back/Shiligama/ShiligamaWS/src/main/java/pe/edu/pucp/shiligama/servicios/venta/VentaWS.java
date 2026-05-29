@@ -102,4 +102,36 @@ public class VentaWS {
                     .entity("Error al generar reporte de ventas: " + ex.getMessage()).build();
         }
     }
+
+    // GET /api/ventas/por-fechas?inicio=2025-01-01T00:00:00&fin=2025-12-31T23:59:59
+    @GET
+    @Path("/por-fechas")
+    public Response listarPorFechas(@QueryParam("inicio") String inicio,
+                                    @QueryParam("fin") String fin) {
+        try {
+            java.time.LocalDateTime fechaInicio = java.time.LocalDateTime.parse(inicio);
+            java.time.LocalDateTime fechaFin = java.time.LocalDateTime.parse(fin);
+            List<Venta> lista = ventaBo.listarPorFechas(fechaInicio, fechaFin);
+            return Response.ok(lista).build();
+        } catch (java.time.format.DateTimeParseException ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Formato de fecha inválido. Usar yyyy-MM-ddTHH:mm:ss.").build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error al listar ventas por fechas: " + ex.getMessage()).build();
+        }
+    }
+
+    // GET /api/ventas/por-trabajador/7
+    @GET
+    @Path("/por-trabajador/{idTrabajador}")
+    public Response listarPorTrabajador(@PathParam("idTrabajador") int idTrabajador) {
+        try {
+            List<Venta> lista = ventaBo.listarPorTrabajador(idTrabajador);
+            return Response.ok(lista).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error al listar ventas por trabajador: " + ex.getMessage()).build();
+        }
+    }
 }
