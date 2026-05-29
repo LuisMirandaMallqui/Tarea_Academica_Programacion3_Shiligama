@@ -39,6 +39,7 @@ public class LoginWS {
                     credenciales.getContrasena());
 
             if (usuario != null) {
+                // System.out.println(credenciales.getCorreo() + " " + credenciales.getContrasena());
                 return Response.ok(usuario).build();
             } else {
                 return Response.status(Response.Status.UNAUTHORIZED)
