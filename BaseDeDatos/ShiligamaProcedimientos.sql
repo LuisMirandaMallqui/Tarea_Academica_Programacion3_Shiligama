@@ -1401,4 +1401,412 @@ BEGIN
     LIMIT 1;
 END$$
 
+-- =====================================================================
+-- PRODUCTOS: BÚSQUEDA PAGINADA CON FILTROS
+-- Parámetros NULL = "sin filtro"; _solo_promo=1 restringe a promociones vigentes.
+-- DAO: ProductoDaoImpl.buscarPaginado / contarFiltrados
+-- =====================================================================
+DROP PROCEDURE IF EXISTS BUSCAR_PRODUCTOS_PAGINADO$$
+CREATE PROCEDURE BUSCAR_PRODUCTOS_PAGINADO(
+    IN _categoria_id INT,
+    IN _q            VARCHAR(100),
+    IN _precio_min   DECIMAL(10,2),
+    IN _precio_max   DECIMAL(10,2),
+    IN _solo_promo   TINYINT,
+    IN _pagina       INT,
+    IN _tamano       INT
+)
+BEGIN
+    DECLARE _offset INT;
+    SET _offset = (_pagina - 1) * _tamano;
+    SELECT
+        p.PRODUCTO_ID, p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, p.STOCK,
+        p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS, p.IMAGEN_URL,
+        p.ACTIVO, p.FECHA_CREACION,
+        p.CATEGORIA_ID, c.NOMBRE AS CATEGORIA_NOMBRE
+    FROM producto p
+    INNER JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    WHERE p.ACTIVO = 1
+      AND (_categoria_id IS NULL OR p.CATEGORIA_ID = _categoria_id)
+      AND (_q IS NULL OR _q = ''
+           OR p.NOMBRE        LIKE CONCAT('%', _q, '%')
+           OR p.CODIGO_BARRAS LIKE CONCAT('%', _q, '%'))
+      AND (_precio_min IS NULL OR p.PRECIO_UNITARIO >= _precio_min)
+      AND (_precio_max IS NULL OR p.PRECIO_UNITARIO <= _precio_max)
+      AND (_solo_promo IS NULL OR _solo_promo = 0 OR EXISTS (
+            SELECT 1 FROM promocion_producto pp
+            INNER JOIN promocion pr ON pp.PROMOCION_ID = pr.PROMOCION_ID
+            WHERE pp.PRODUCTO_ID = p.PRODUCTO_ID
+              AND pr.ACTIVO = 1
+              AND CURDATE() BETWEEN pr.FECHA_INICIO AND pr.FECHA_FIN))
+    ORDER BY p.PRODUCTO_ID DESC
+    LIMIT _tamano OFFSET _offset;
+END$$
+
+DROP PROCEDURE IF EXISTS CONTAR_PRODUCTOS_FILTRADOS$$
+CREATE PROCEDURE CONTAR_PRODUCTOS_FILTRADOS(
+    IN _categoria_id INT,
+    IN _q            VARCHAR(100),
+    IN _precio_min   DECIMAL(10,2),
+    IN _precio_max   DECIMAL(10,2),
+    IN _solo_promo   TINYINT
+)
+BEGIN
+    SELECT COUNT(*) AS TOTAL
+    FROM producto p
+    WHERE p.ACTIVO = 1
+      AND (_categoria_id IS NULL OR p.CATEGORIA_ID = _categoria_id)
+      AND (_q IS NULL OR _q = ''
+           OR p.NOMBRE        LIKE CONCAT('%', _q, '%')
+           OR p.CODIGO_BARRAS LIKE CONCAT('%', _q, '%'))
+      AND (_precio_min IS NULL OR p.PRECIO_UNITARIO >= _precio_min)
+      AND (_precio_max IS NULL OR p.PRECIO_UNITARIO <= _precio_max)
+      AND (_solo_promo IS NULL OR _solo_promo = 0 OR EXISTS (
+            SELECT 1 FROM promocion_producto pp
+            INNER JOIN promocion pr ON pp.PROMOCION_ID = pr.PROMOCION_ID
+            WHERE pp.PRODUCTO_ID = p.PRODUCTO_ID
+              AND pr.ACTIVO = 1
+              AND CURDATE() BETWEEN pr.FECHA_INICIO AND pr.FECHA_FIN));
+END$$
+
+-- DAO: ProductoDaoImpl.buscarPorCodigoBarras (uso clave en POS)
+DROP PROCEDURE IF EXISTS BUSCAR_PRODUCTO_X_CODIGO_BARRAS$$
+CREATE PROCEDURE BUSCAR_PRODUCTO_X_CODIGO_BARRAS(
+    IN _codigo VARCHAR(50)
+)
+BEGIN
+    SELECT
+        p.PRODUCTO_ID, p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, p.STOCK,
+        p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS, p.IMAGEN_URL,
+        p.ACTIVO, p.FECHA_CREACION,
+        p.CATEGORIA_ID, c.NOMBRE AS CATEGORIA_NOMBRE
+    FROM producto p
+    INNER JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    WHERE p.CODIGO_BARRAS = _codigo AND p.ACTIVO = 1
+    LIMIT 1;
+END$$
+
+-- DAO: ProductoDaoImpl.listarBajoStock (panel inventario admin)
+DROP PROCEDURE IF EXISTS LISTAR_PRODUCTOS_BAJO_STOCK$$
+CREATE PROCEDURE LISTAR_PRODUCTOS_BAJO_STOCK()
+BEGIN
+    SELECT
+        p.PRODUCTO_ID, p.NOMBRE, p.DESCRIPCION, p.PRECIO_UNITARIO, p.STOCK,
+        p.STOCK_MINIMO, p.UNIDAD_MEDIDA, p.CODIGO_BARRAS, p.IMAGEN_URL,
+        p.ACTIVO, p.FECHA_CREACION,
+        p.CATEGORIA_ID, c.NOMBRE AS CATEGORIA_NOMBRE
+    FROM producto p
+    INNER JOIN categoria c ON p.CATEGORIA_ID = c.CATEGORIA_ID
+    WHERE p.ACTIVO = 1 AND p.STOCK <= p.STOCK_MINIMO
+    ORDER BY (p.STOCK_MINIMO - p.STOCK) DESC;
+END$$
+
+-- =====================================================================
+-- PEDIDOS: listados filtrados
+-- =====================================================================
+-- DAO: PedidoDaoImpl.listarPorCliente
+DROP PROCEDURE IF EXISTS LISTAR_PEDIDOS_X_CLIENTE$$
+CREATE PROCEDURE LISTAR_PEDIDOS_X_CLIENTE(
+    IN _cliente_id INT
+)
+BEGIN
+    SELECT p.PEDIDO_ID, p.CLIENTE_ID, p.VENTA_ID, p.FECHA_HORA, p.MONTO_TOTAL,
+           p.ESTADO_PEDIDO, p.DIRECCION_ENTREGA, p.MODALIDAD_ENTREGA, p.OBSERVACIONES
+    FROM pedido p
+    WHERE p.CLIENTE_ID = _cliente_id AND p.ACTIVO = 1
+    ORDER BY p.FECHA_HORA DESC;
+END$$
+
+-- DAO: PedidoDaoImpl.listarPorEstado
+DROP PROCEDURE IF EXISTS LISTAR_PEDIDOS_X_ESTADO$$
+CREATE PROCEDURE LISTAR_PEDIDOS_X_ESTADO(
+    IN _estado VARCHAR(20)
+)
+BEGIN
+    SELECT p.PEDIDO_ID, p.CLIENTE_ID, p.VENTA_ID, p.FECHA_HORA, p.MONTO_TOTAL,
+           p.ESTADO_PEDIDO, p.DIRECCION_ENTREGA, p.MODALIDAD_ENTREGA, p.OBSERVACIONES
+    FROM pedido p
+    WHERE p.ESTADO_PEDIDO = _estado AND p.ACTIVO = 1
+    ORDER BY p.FECHA_HORA DESC;
+END$$
+
+-- =====================================================================
+-- VENTAS: listados filtrados
+-- =====================================================================
+-- DAO: VentaDaoImpl.listarPorFechas
+DROP PROCEDURE IF EXISTS LISTAR_VENTAS_X_FECHAS$$
+CREATE PROCEDURE LISTAR_VENTAS_X_FECHAS(
+    IN _fecha_inicio DATETIME,
+    IN _fecha_fin    DATETIME
+)
+BEGIN
+    SELECT v.VENTA_ID, v.CLIENTE_ID, v.TRABAJADOR_ID, v.METODO_PAGO_ID,
+           m.NOMBRE AS METODO_PAGO_NOMBRE,
+           v.FECHA_HORA, v.MONTO_TOTAL, v.MONTO_DESCUENTO,
+           v.CANAL_VENTA, v.ESTADO_VENTA, v.OBSERVACIONES,
+           v.NUMERO_BOLETA, v.RUC_EMPRESA, v.CONTACTO_CLIENTE, v.MENSAJE_BOLETA
+    FROM venta v
+    INNER JOIN metodo_pago m ON v.METODO_PAGO_ID = m.METODO_PAGO_ID
+    WHERE v.FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
+      AND v.ACTIVO = 1
+    ORDER BY v.FECHA_HORA DESC;
+END$$
+
+-- DAO: VentaDaoImpl.listarPorTrabajador
+DROP PROCEDURE IF EXISTS LISTAR_VENTAS_X_TRABAJADOR$$
+CREATE PROCEDURE LISTAR_VENTAS_X_TRABAJADOR(
+    IN _trabajador_id INT
+)
+BEGIN
+    SELECT v.VENTA_ID, v.CLIENTE_ID, v.TRABAJADOR_ID, v.METODO_PAGO_ID,
+           m.NOMBRE AS METODO_PAGO_NOMBRE,
+           v.FECHA_HORA, v.MONTO_TOTAL, v.MONTO_DESCUENTO,
+           v.CANAL_VENTA, v.ESTADO_VENTA, v.OBSERVACIONES,
+           v.NUMERO_BOLETA, v.RUC_EMPRESA, v.CONTACTO_CLIENTE, v.MENSAJE_BOLETA
+    FROM venta v
+    INNER JOIN metodo_pago m ON v.METODO_PAGO_ID = m.METODO_PAGO_ID
+    WHERE v.TRABAJADOR_ID = _trabajador_id AND v.ACTIVO = 1
+    ORDER BY v.FECHA_HORA DESC;
+END$$
+
+-- =====================================================================
+-- KPIs DASHBOARD ADMIN
+-- Devuelve una sola row con todos los KPIs del panel admin
+-- DAO: DashboardDaoImpl.obtenerKpisAdmin
+-- =====================================================================
+DROP PROCEDURE IF EXISTS KPI_ADMIN_DASHBOARD$$
+CREATE PROCEDURE KPI_ADMIN_DASHBOARD()
+BEGIN
+    SELECT
+        (SELECT COALESCE(SUM(v.MONTO_TOTAL), 0)
+           FROM venta v
+           WHERE DATE(v.FECHA_HORA) = CURDATE()
+             AND v.ESTADO_VENTA != 'ANULADA'
+             AND v.ACTIVO = 1)                          AS VENTAS_HOY,
+
+        (SELECT COUNT(*)
+           FROM pedido p
+           WHERE p.ESTADO_PEDIDO IN ('RECIBIDO','EN_PROCESO')
+             AND p.ACTIVO = 1)                          AS PEDIDOS_PENDIENTES,
+
+        (SELECT COUNT(*)
+           FROM producto pr
+           WHERE pr.STOCK <= pr.STOCK_MINIMO
+             AND pr.ACTIVO = 1)                         AS PRODUCTOS_BAJO_STOCK,
+
+        (SELECT COALESCE(SUM(v.MONTO_TOTAL), 0)
+           FROM venta v
+           WHERE YEAR(v.FECHA_HORA)  = YEAR(CURDATE())
+             AND MONTH(v.FECHA_HORA) = MONTH(CURDATE())
+             AND v.ESTADO_VENTA != 'ANULADA'
+             AND v.ACTIVO = 1)                          AS INGRESOS_MES;
+END$$
+
+-- =====================================================================
+-- KPIs DASHBOARD TRABAJADOR
+-- DAO: DashboardDaoImpl.obtenerKpisTrabajador
+-- =====================================================================
+DROP PROCEDURE IF EXISTS KPI_TRABAJADOR_DASHBOARD$$
+CREATE PROCEDURE KPI_TRABAJADOR_DASHBOARD(
+    IN _trabajador_id INT
+)
+BEGIN
+    SELECT
+        (SELECT COUNT(*)
+           FROM pedido p
+           WHERE p.ESTADO_PEDIDO IN ('RECIBIDO','EN_PROCESO')
+             AND DATE(p.FECHA_HORA) = CURDATE()
+             AND p.ACTIVO = 1)                          AS PEDIDOS_PENDIENTES_HOY,
+
+        (SELECT COUNT(*)
+           FROM venta v
+           WHERE v.TRABAJADOR_ID = _trabajador_id
+             AND DATE(v.FECHA_HORA) = CURDATE()
+             AND v.ESTADO_VENTA != 'ANULADA'
+             AND v.ACTIVO = 1)                          AS VENTAS_HOY,
+
+        (SELECT COALESCE(SUM(v.MONTO_TOTAL), 0)
+           FROM venta v
+           WHERE v.TRABAJADOR_ID = _trabajador_id
+             AND DATE(v.FECHA_HORA) = CURDATE()
+             AND v.ESTADO_VENTA != 'ANULADA'
+             AND v.ACTIVO = 1)                          AS MONTO_RECAUDADO_HOY,
+
+        (SELECT COUNT(*)
+           FROM devolucion d
+           WHERE d.TRABAJADOR_ID = _trabajador_id
+             AND d.ESTADO_DEVOLUCION = 'APROBADO'
+             AND DATE(d.FECHA_HORA) = CURDATE())        AS DEVOLUCIONES_ATENDIDAS_HOY;
+END$$
+
+-- =====================================================================
+-- NOTIFICACIONES
+-- =====================================================================
+DROP PROCEDURE IF EXISTS INSERTAR_NOTIFICACION$$
+CREATE PROCEDURE INSERTAR_NOTIFICACION(
+    OUT _notif_id        INT,
+    IN  _titulo          VARCHAR(150),
+    IN  _mensaje         VARCHAR(500),
+    IN  _tipo            VARCHAR(30),
+    IN  _id_destinatario INT
+)
+BEGIN
+    INSERT INTO notificacion(TITULO, MENSAJE, TIPO, LEIDA, ID_DESTINATARIO, ACTIVO)
+    VALUES(_titulo, _mensaje, _tipo, 0, _id_destinatario, 1);
+    SET _notif_id = LAST_INSERT_ID();
+END$$
+
+DROP PROCEDURE IF EXISTS MODIFICAR_NOTIFICACION$$
+CREATE PROCEDURE MODIFICAR_NOTIFICACION(
+    IN _notif_id  INT,
+    IN _titulo    VARCHAR(150),
+    IN _mensaje   VARCHAR(500),
+    IN _tipo      VARCHAR(30),
+    IN _leida     TINYINT
+)
+BEGIN
+    UPDATE notificacion
+    SET TITULO  = _titulo,
+        MENSAJE = _mensaje,
+        TIPO    = _tipo,
+        LEIDA   = _leida
+    WHERE NOTIFICACION_ID = _notif_id AND ACTIVO = 1;
+END$$
+
+-- Soft delete
+DROP PROCEDURE IF EXISTS ELIMINAR_NOTIFICACION$$
+CREATE PROCEDURE ELIMINAR_NOTIFICACION(IN _notif_id INT)
+BEGIN
+    UPDATE notificacion SET ACTIVO = 0 WHERE NOTIFICACION_ID = _notif_id;
+END$$
+
+DROP PROCEDURE IF EXISTS BUSCAR_NOTIFICACION_X_ID$$
+CREATE PROCEDURE BUSCAR_NOTIFICACION_X_ID(IN _notif_id INT)
+BEGIN
+    SELECT NOTIFICACION_ID, TITULO, MENSAJE, TIPO, LEIDA, FECHA_CREACION, ID_DESTINATARIO
+    FROM notificacion
+    WHERE NOTIFICACION_ID = _notif_id AND ACTIVO = 1;
+END$$
+
+DROP PROCEDURE IF EXISTS LISTAR_NOTIFICACIONES$$
+CREATE PROCEDURE LISTAR_NOTIFICACIONES()
+BEGIN
+    SELECT NOTIFICACION_ID, TITULO, MENSAJE, TIPO, LEIDA, FECHA_CREACION, ID_DESTINATARIO
+    FROM notificacion
+    WHERE ACTIVO = 1
+    ORDER BY FECHA_CREACION DESC;
+END$$
+
+-- Devuelve notificaciones del usuario + las broadcast (ID_DESTINATARIO IS NULL)
+DROP PROCEDURE IF EXISTS LISTAR_NOTIFICACIONES_X_USUARIO$$
+CREATE PROCEDURE LISTAR_NOTIFICACIONES_X_USUARIO(IN _usuario_id INT)
+BEGIN
+    SELECT NOTIFICACION_ID, TITULO, MENSAJE, TIPO, LEIDA, FECHA_CREACION, ID_DESTINATARIO
+    FROM notificacion
+    WHERE ACTIVO = 1
+      AND (ID_DESTINATARIO = _usuario_id OR ID_DESTINATARIO IS NULL)
+    ORDER BY FECHA_CREACION DESC;
+END$$
+
+DROP PROCEDURE IF EXISTS MARCAR_NOTIFICACION_LEIDA$$
+CREATE PROCEDURE MARCAR_NOTIFICACION_LEIDA(IN _notif_id INT)
+BEGIN
+    UPDATE notificacion SET LEIDA = 1 WHERE NOTIFICACION_ID = _notif_id;
+END$$
+
+DROP PROCEDURE IF EXISTS CONTAR_NOTIFICACIONES_NO_LEIDAS$$
+CREATE PROCEDURE CONTAR_NOTIFICACIONES_NO_LEIDAS(IN _usuario_id INT)
+BEGIN
+    SELECT COUNT(*) AS TOTAL
+    FROM notificacion
+    WHERE ACTIVO = 1
+      AND LEIDA  = 0
+      AND (ID_DESTINATARIO = _usuario_id OR ID_DESTINATARIO IS NULL);
+END$$
+
+-- =====================================================================
+-- BOLETAS (fase de una Venta — actualiza campos NUMERO_BOLETA, RUC, etc.)
+-- =====================================================================
+-- Emite una boleta sobre una venta existente.
+-- Genera un correlativo tipo B-0000123 basado en el conteo actual.
+DROP PROCEDURE IF EXISTS EMITIR_BOLETA$$
+CREATE PROCEDURE EMITIR_BOLETA(
+    IN  _venta_id INT,
+    IN  _ruc      VARCHAR(20),
+    IN  _contacto VARCHAR(150),
+    IN  _mensaje  VARCHAR(500),
+    OUT _numero   VARCHAR(20)
+)
+BEGIN
+    DECLARE _siguiente INT;
+    SELECT COUNT(*) + 1 INTO _siguiente
+    FROM venta
+    WHERE NUMERO_BOLETA IS NOT NULL;
+
+    SET _numero = CONCAT('B-', LPAD(_siguiente, 7, '0'));
+
+    UPDATE venta
+    SET NUMERO_BOLETA    = _numero,
+        RUC_EMPRESA      = _ruc,
+        CONTACTO_CLIENTE = _contacto,
+        MENSAJE_BOLETA   = _mensaje
+    WHERE VENTA_ID = _venta_id;
+END$$
+
+DROP PROCEDURE IF EXISTS BUSCAR_BOLETA_X_VENTA$$
+CREATE PROCEDURE BUSCAR_BOLETA_X_VENTA(IN _venta_id INT)
+BEGIN
+    SELECT v.VENTA_ID, v.CLIENTE_ID, v.TRABAJADOR_ID, v.METODO_PAGO_ID,
+           m.NOMBRE AS METODO_PAGO_NOMBRE,
+           v.FECHA_HORA, v.MONTO_TOTAL, v.MONTO_DESCUENTO,
+           v.CANAL_VENTA, v.ESTADO_VENTA, v.OBSERVACIONES,
+           v.NUMERO_BOLETA, v.RUC_EMPRESA, v.CONTACTO_CLIENTE, v.MENSAJE_BOLETA
+    FROM venta v
+    INNER JOIN metodo_pago m ON v.METODO_PAGO_ID = m.METODO_PAGO_ID
+    WHERE v.VENTA_ID = _venta_id
+      AND v.NUMERO_BOLETA IS NOT NULL
+      AND v.ACTIVO = 1;
+END$$
+
+DROP PROCEDURE IF EXISTS BUSCAR_BOLETA_X_NUMERO$$
+CREATE PROCEDURE BUSCAR_BOLETA_X_NUMERO(IN _numero VARCHAR(20))
+BEGIN
+    SELECT v.VENTA_ID, v.CLIENTE_ID, v.TRABAJADOR_ID, v.METODO_PAGO_ID,
+           m.NOMBRE AS METODO_PAGO_NOMBRE,
+           v.FECHA_HORA, v.MONTO_TOTAL, v.MONTO_DESCUENTO,
+           v.CANAL_VENTA, v.ESTADO_VENTA, v.OBSERVACIONES,
+           v.NUMERO_BOLETA, v.RUC_EMPRESA, v.CONTACTO_CLIENTE, v.MENSAJE_BOLETA
+    FROM venta v
+    INNER JOIN metodo_pago m ON v.METODO_PAGO_ID = m.METODO_PAGO_ID
+    WHERE v.NUMERO_BOLETA = _numero
+      AND v.ACTIVO = 1;
+END$$
+
+DROP PROCEDURE IF EXISTS LISTAR_BOLETAS$$
+CREATE PROCEDURE LISTAR_BOLETAS()
+BEGIN
+    SELECT v.VENTA_ID, v.CLIENTE_ID, v.TRABAJADOR_ID, v.METODO_PAGO_ID,
+           m.NOMBRE AS METODO_PAGO_NOMBRE,
+           v.FECHA_HORA, v.MONTO_TOTAL, v.MONTO_DESCUENTO,
+           v.CANAL_VENTA, v.ESTADO_VENTA, v.OBSERVACIONES,
+           v.NUMERO_BOLETA, v.RUC_EMPRESA, v.CONTACTO_CLIENTE, v.MENSAJE_BOLETA
+    FROM venta v
+    INNER JOIN metodo_pago m ON v.METODO_PAGO_ID = m.METODO_PAGO_ID
+    WHERE v.NUMERO_BOLETA IS NOT NULL
+      AND v.ACTIVO = 1
+    ORDER BY v.FECHA_HORA DESC;
+END$$
+
+-- Anula la boleta limpiando los campos (la venta como tal sigue existiendo).
+DROP PROCEDURE IF EXISTS ANULAR_BOLETA$$
+CREATE PROCEDURE ANULAR_BOLETA(IN _venta_id INT)
+BEGIN
+    UPDATE venta
+    SET NUMERO_BOLETA    = NULL,
+        RUC_EMPRESA      = NULL,
+        CONTACTO_CLIENTE = NULL,
+        MENSAJE_BOLETA   = NULL
+    WHERE VENTA_ID = _venta_id;
+END$$
+
 DELIMITER ;

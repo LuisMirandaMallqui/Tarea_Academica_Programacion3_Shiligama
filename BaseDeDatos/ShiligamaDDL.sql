@@ -408,6 +408,31 @@ CREATE TABLE IF NOT EXISTS `detalle_pedido` (
         FOREIGN KEY (`PEDIDO_ID`) REFERENCES `pedido` (`PEDIDO_ID`)
         ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_det_pedido_producto`
-        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`) 
+        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
         ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
+
+-- -----------------------------------------------------
+-- Tabla Notificacion
+-- ID_DESTINATARIO NULL = broadcast (la ve cualquier admin/trabajador).
+-- LEIDA es un soft-flag para que el front pueda mostrar el badge de no-leidas.
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `notificacion` ;
+CREATE TABLE IF NOT EXISTS `notificacion` (
+    `NOTIFICACION_ID`        INT            NOT NULL AUTO_INCREMENT,
+    `TITULO`                 VARCHAR(150)   NOT NULL,
+    `MENSAJE`                VARCHAR(500)   NOT NULL,
+    `TIPO`                   ENUM('STOCK_BAJO','NUEVO_PEDIDO','PEDIDO_LISTO',
+                                  'DEVOLUCION_PENDIENTE','VENTA_REGISTRADA','SISTEMA')
+                             NOT NULL DEFAULT 'SISTEMA',
+    `LEIDA`                  TINYINT        NOT NULL DEFAULT 0,
+    `FECHA_CREACION`         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `ID_DESTINATARIO`        INT            NULL DEFAULT NULL,
+    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
+    PRIMARY KEY (`NOTIFICACION_ID`),
+    INDEX `idx_notif_destinatario` (`ID_DESTINATARIO`),
+    CONSTRAINT `fk_notif_destinatario`
+        FOREIGN KEY (`ID_DESTINATARIO`) REFERENCES `usuario` (`USUARIO_ID`)
+        ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+  COMMENT = 'Notificaciones del sistema (alertas de stock, nuevos pedidos, etc.)';

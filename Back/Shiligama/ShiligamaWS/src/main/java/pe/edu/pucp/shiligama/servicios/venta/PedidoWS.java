@@ -3,6 +3,7 @@ package pe.edu.pucp.shiligama.servicios.venta;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import pe.edu.pucp.model.enums.EstadoPedido;
 import pe.edu.pucp.model.venta.Pedido;
 import pe.edu.pucp.venta.bo.PedidoBo;
 import pe.edu.pucp.venta.impl.PedidoBoImpl;
@@ -84,6 +85,37 @@ public class PedidoWS {
         } catch (Exception ex) {
             return Response.status(Response.Status.NOT_FOUND)
                     .entity("Error al eliminar pedido: " + ex.getMessage()).build();
+        }
+    }
+
+    // GET /api/pedidos/por-cliente/15  — para pantalla "Mis pedidos" del cliente
+    @GET
+    @Path("/por-cliente/{idCliente}")
+    public Response listarPorCliente(@PathParam("idCliente") int idCliente) {
+        try {
+            List<Pedido> lista = pedidoBo.listarPorCliente(idCliente);
+            return Response.ok(lista).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error al listar pedidos del cliente: " + ex.getMessage()).build();
+        }
+    }
+
+    // GET /api/pedidos/por-estado/RECIBIDO  — panel pedidos del admin
+    @GET
+    @Path("/por-estado/{estado}")
+    public Response listarPorEstado(@PathParam("estado") String estado) {
+        try {
+            EstadoPedido estadoEnum = EstadoPedido.valueOf(estado.toUpperCase());
+            List<Pedido> lista = pedidoBo.listarPorEstado(estadoEnum);
+            return Response.ok(lista).build();
+        } catch (IllegalArgumentException ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Estado inválido. Valores: RECIBIDO, EN_PROCESO, ATENDIDO, RECHAZADO, CANCELADO.")
+                    .build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error al listar pedidos por estado: " + ex.getMessage()).build();
         }
     }
 }

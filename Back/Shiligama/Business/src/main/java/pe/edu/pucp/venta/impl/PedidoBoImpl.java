@@ -1,6 +1,7 @@
 package pe.edu.pucp.venta.impl;
 
 import java.util.List;
+import pe.edu.pucp.model.enums.EstadoPedido;
 import pe.edu.pucp.model.venta.Pedido;
 import pe.edu.pucp.persistance.dao.venta.Impl.PedidoDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.dao.PedidoDao;
@@ -44,6 +45,22 @@ public class PedidoBoImpl implements PedidoBo {
     @Override
     public List<Pedido> listarTodos() throws Exception {
         return daoPedido.listarTodos();
+    }
+
+    @Override
+    public List<Pedido> listarPorCliente(int idCliente) throws Exception {
+        if (idCliente <= 0) {
+            throw new Exception("El ID del cliente debe ser mayor que cero.");
+        }
+        return daoPedido.listarPorCliente(idCliente);
+    }
+
+    @Override
+    public List<Pedido> listarPorEstado(EstadoPedido estado) throws Exception {
+        if (estado == null) {
+            throw new Exception("El estado del pedido es obligatorio.");
+        }
+        return daoPedido.listarPorEstado(estado);
     }
 
     private void validar(Pedido pedido, boolean esModificacion) throws Exception {
