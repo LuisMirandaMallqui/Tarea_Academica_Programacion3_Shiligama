@@ -16,7 +16,7 @@ public class Administrador extends Usuario {
 
     // Implementación del método abstracto (polimorfismo)
     @Override
-    public String obtenerRol() {
+    public String getRol() {
         return "ADMINISTRADOR";
     }
 }

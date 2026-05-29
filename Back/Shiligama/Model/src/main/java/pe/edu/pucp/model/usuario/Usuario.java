@@ -50,6 +50,7 @@ public abstract class Usuario {
     public void setCorreo(String correo) { this.correo = correo; }
 
 
-    // Métodos de negocio (declarados, se implementan en capa de negocio)
-    public abstract String obtenerRol();
+    // Polimórfico: cada subtipo devuelve "CLIENTE", "TRABAJADOR" o "ADMINISTRADOR".
+    // Es getter para que Jackson lo serialice como "rol" en el JSON.
+    public abstract String getRol();
 }

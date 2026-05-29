@@ -1362,4 +1362,43 @@ BEGIN
     ORDER BY d.FECHA_HORA DESC;
 END$$
 
+-- =====================================================================
+-- AUTENTICACION UNIFICADA (LOGIN ÚNICO PARA LOS 3 ROLES)
+-- Devuelve los datos del usuario + los campos propios del subtipo
+-- (cliente/trabajador/administrador) + el ROL en una sola consulta.
+-- El DAO usa ROL para instanciar el subtipo concreto polimórficamente.
+-- DAO: AuthDaoImpl.autenticar → "AUTENTICAR_USUARIO"
+-- =====================================================================
+DROP PROCEDURE IF EXISTS AUTENTICAR_USUARIO$$
+CREATE PROCEDURE AUTENTICAR_USUARIO(
+    IN _correo     VARCHAR(100),
+    IN _contrasena VARCHAR(255)
+)
+BEGIN
+    SELECT
+        u.USUARIO_ID,
+        u.NOMBRES,
+        u.APELLIDOS,
+        u.DNI,
+        u.TELEFONO,
+        u.CORREO,
+        c.DIRECCION_ENTREGA,
+        t.CARGO,
+        t.FECHA_INGRESO,
+        CASE
+            WHEN a.USUARIO_ID IS NOT NULL AND a.ACTIVO = 1 THEN 'ADMINISTRADOR'
+            WHEN t.USUARIO_ID IS NOT NULL AND t.ACTIVO = 1 THEN 'TRABAJADOR'
+            WHEN c.USUARIO_ID IS NOT NULL                  THEN 'CLIENTE'
+            ELSE NULL
+        END AS ROL
+    FROM usuario u
+    LEFT JOIN cliente       c ON u.USUARIO_ID = c.USUARIO_ID
+    LEFT JOIN trabajador    t ON u.USUARIO_ID = t.USUARIO_ID
+    LEFT JOIN administrador a ON u.USUARIO_ID = a.USUARIO_ID
+    WHERE u.CORREO     = _correo
+      AND u.CONTRASENA = _contrasena
+      AND u.ACTIVO     = 1
+    LIMIT 1;
+END$$
+
 DELIMITER ;

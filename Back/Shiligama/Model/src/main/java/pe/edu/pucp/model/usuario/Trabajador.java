@@ -49,7 +49,7 @@ public class Trabajador extends Usuario {
     }
 
     @Override
-    public String obtenerRol() {
+    public String getRol() {
         return "TRABAJADOR";
     }
 }

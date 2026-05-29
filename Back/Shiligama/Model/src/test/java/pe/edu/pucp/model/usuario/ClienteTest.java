@@ -26,6 +26,8 @@ class ClienteTest {
     }
 
     @Test
-    void obtenerRol() {
+    void getRol() {
+        Cliente c = new Cliente();
+        assertEquals("CLIENTE", c.getRol());
     }
 }
