@@ -10,6 +10,7 @@ import pe.edu.pucp.model.venta.DetalleVenta;
 import pe.edu.pucp.model.venta.MetodoPago;
 import pe.edu.pucp.model.venta.Venta;
 import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
+import pe.edu.pucp.model.venta.TopProductoDto;
 import pe.edu.pucp.model.venta.VentaReporteDto;
 
 import java.sql.*;
@@ -262,6 +263,29 @@ public class VentaDaoImpl implements VentaDao {
             }
         } catch (SQLException ex) {
             System.out.println("Error en reporte ventas por periodo: " + ex.getMessage());
+        }
+        return lista;
+    }
+
+    @Override
+    public List<TopProductoDto> topProductosVendidos() {
+        List<TopProductoDto> lista = new ArrayList<>();
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("TOP_PRODUCTOS_VENDIDOS", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    TopProductoDto dto = new TopProductoDto();
+                    dto.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                    dto.setNombre(rs.getString("NOMBRE"));
+                    dto.setImagenUrl(rs.getString("IMAGEN_URL"));
+                    dto.setTotalUnidades(rs.getInt("TOTAL_UNIDADES"));
+                    dto.setTotalIngresos(rs.getDouble("TOTAL_INGRESOS"));
+                    lista.add(dto);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en top productos vendidos: " + ex.getMessage());
         }
         return lista;
     }

@@ -5,6 +5,7 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import pe.edu.pucp.model.operacion.Devolucion;
 import pe.edu.pucp.model.operacion.MovimientoInventario;
+import pe.edu.pucp.model.venta.TopProductoDto;
 import pe.edu.pucp.model.venta.VentaReporteDto;
 import pe.edu.pucp.operacion.bo.DevolucionBO;
 import pe.edu.pucp.operacion.bo.MovimientoInventarioBO;
@@ -95,6 +96,19 @@ public class ReporteWS {
         } catch (Exception ex) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Error al obtener movimientos por producto: " + ex.getMessage()).build();
+        }
+    }
+
+    // GET /api/reportes/top-productos — top 5 más vendidos por unidades
+    @GET
+    @Path("/top-productos")
+    public Response topProductos() {
+        try {
+            List<TopProductoDto> lista = ventaBo.topProductosVendidos();
+            return Response.ok(lista).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error al obtener top productos: " + ex.getMessage()).build();
         }
     }
 }

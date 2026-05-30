@@ -19,8 +19,8 @@
     protected override async Task OnInitializedAsync()
     {
         if (!Auth.IsLoggedIn()) { Navigation.NavigateTo("/"); return; }
-        await SalesSvc.EnsureLoadedAsync();
-        _allOrders = SalesSvc.GetRecentOrders();
+        var idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
+        _allOrders = await SalesSvc.GetClientOrdersAsync(idCliente);
         ApplyFilters();
     }
 

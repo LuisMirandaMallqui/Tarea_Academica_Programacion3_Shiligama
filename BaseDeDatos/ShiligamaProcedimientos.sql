@@ -1810,3 +1810,26 @@ BEGIN
 END$$
 
 DELIMITER ;
+DELIMITER $$
+
+-- =============================================================
+-- MÓDULO REPORTES: TOP PRODUCTOS MÁS VENDIDOS
+-- =============================================================
+DROP PROCEDURE IF EXISTS TOP_PRODUCTOS_VENDIDOS$$
+CREATE PROCEDURE TOP_PRODUCTOS_VENDIDOS()
+BEGIN
+    SELECT  p.PRODUCTO_ID,
+            p.NOMBRE,
+            p.IMAGEN_URL,
+            SUM(dv.CANTIDAD)  AS TOTAL_UNIDADES,
+            SUM(dv.SUBTOTAL)  AS TOTAL_INGRESOS
+    FROM    detalle_venta dv
+    INNER JOIN producto p  ON dv.PRODUCTO_ID = p.PRODUCTO_ID
+    INNER JOIN venta v     ON dv.VENTA_ID    = v.VENTA_ID
+    WHERE   v.ESTADO_VENTA = 'COMPLETADA'
+    GROUP BY dv.PRODUCTO_ID, p.NOMBRE, p.IMAGEN_URL
+    ORDER BY TOTAL_UNIDADES DESC
+    LIMIT 5;
+END$$
+
+DELIMITER ;

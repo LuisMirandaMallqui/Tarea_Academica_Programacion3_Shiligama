@@ -9,7 +9,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await SalesSvc.EnsureLoadedAsync();
+        // recargar: true asegura datos frescos del API en cada visita
+        await SalesSvc.EnsureLoadedAsync(recargar: true);
         _orders = SalesSvc.GetRecentOrders();
     }
 
@@ -60,6 +61,20 @@
         <p class="text-muted-foreground small mt-1 mb-0">Monitorea y despacha pedidos realizados por clientes</p>
     </div>
 
+
+    <!-- Banner de diagnóstico: solo visible si el API falla -->
+    @if (SalesSvc.UltimoErrorPedidos != null)
+    {
+        <div class="alert alert-danger small py-2" role="alert">
+            <strong>Error cargando pedidos del API:</strong> @SalesSvc.UltimoErrorPedidos
+        </div>
+    }
+    else if (!_orders.Any())
+    {
+        <div class="alert alert-warning small py-2" role="alert">
+            El API respondió OK pero devolvió 0 pedidos. Verifica que el SP <code>LISTAR_PEDIDOS</code> esté creado en la BD.
+        </div>
+    }
 
     <!-- Filters -->
     <div class="card border rounded-4 mb-4 d-flex align-items-center"

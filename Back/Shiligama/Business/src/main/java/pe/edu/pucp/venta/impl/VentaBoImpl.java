@@ -3,6 +3,7 @@ package pe.edu.pucp.venta.impl;
 import java.time.LocalDateTime;
 import java.util.List;
 import pe.edu.pucp.model.venta.Venta;
+import pe.edu.pucp.model.venta.TopProductoDto;
 import pe.edu.pucp.model.venta.VentaReporteDto;
 import pe.edu.pucp.persistance.dao.venta.Impl.VentaDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
@@ -100,5 +101,10 @@ public class VentaBoImpl implements VentaBo {
             throw new Exception("El ID del trabajador debe ser mayor que cero.");
         }
         return daoVenta.listarPorTrabajador(idTrabajador);
+    }
+
+    @Override
+    public List<TopProductoDto> topProductosVendidos() throws Exception {
+        return daoVenta.topProductosVendidos();
     }
 }

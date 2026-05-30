@@ -21,7 +21,7 @@ public class Pedido {
     // VentaDto para trazabilidad:
     // el admin/trabajador puede buscar desde el pedido la venta y asi la boleta asociada
     private Venta venta; //Este se crea después que se recibe el pedido, así que lo haremos con el setter
-    private List<DetallePedido> detalles;
+    private List<DetallePedido> detalles = new ArrayList<>(); // nunca null — Yasson/JSON-B requiere lista vacía, no null
 
     public Pedido() {
     }

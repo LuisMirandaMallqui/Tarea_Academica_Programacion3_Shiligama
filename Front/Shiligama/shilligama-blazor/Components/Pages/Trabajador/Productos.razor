@@ -79,16 +79,19 @@
     </div>
 
     <!-- Filters -->
-    <div class="card p-3">
-        <div class="row g-2">
+    <div class="card border rounded-4 d-flex align-items-center" style="min-height: 72px; padding: 0 18px;">
+        <div class="row g-3 align-items-center w-100">
             <div class="col-md-8">
                 <div class="position-relative">
                     <Icons Name="Search" Class="position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px;width:16px;height:16px;" />
-                    <input type="search" @bind="_search" @bind:event="oninput" class="form-control text-foreground" placeholder="Buscar por nombre..." style="padding-left:40px;" />
+                    <input type="search" @bind="_search" @bind:event="oninput"
+                           class="form-control text-foreground"
+                           placeholder="Buscar por nombre..."
+                           style="height: 44px; padding-left: 40px;" />
                 </div>
             </div>
             <div class="col-md-4">
-                <select @bind="_categoryFilter" class="form-select text-foreground">
+                <select @bind="_categoryFilter" class="form-select text-foreground" style="height: 44px;">
                     <option value="">Categorías (todas)</option>
                     @foreach (var cat in ProductSvc.GetCategories())
                     {

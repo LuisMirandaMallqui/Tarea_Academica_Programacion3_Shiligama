@@ -231,3 +231,36 @@ VALUES
 (1, 2, 'DEVOLUCION', 2,  48, 50, 'Producto vencido devuelto al proveedor'),
 (11,3, 'ENTRADA',    20, 40, 60, 'Reabastecimiento leche'),
 (13,2, 'SALIDA',     3,  53, 50, 'Venta online procesada');
+
+-- ================================================================
+--    NOTIFICACIONES DE PRUEBA
+--    ID_DESTINATARIO NULL = broadcast para todos los admins/trabajadores
+-- ================================================================
+INSERT INTO notificacion(TITULO, MENSAJE, TIPO, LEIDA, ID_DESTINATARIO) VALUES
+('Stock crítico: Inca Kola 1.5L',
+ 'El producto "Inca Kola 1.5L" (PROD-017) tiene 0 unidades en stock. Requiere reabastecimiento urgente.',
+ 'STOCK_BAJO', 0, NULL),
+
+('Nuevo pedido recibido',
+ 'El cliente Ana Costa (ID-4) realizó el pedido PED-0001 por S/. 44.40. Modalidad: Delivery a Av. Los Pinos 300.',
+ 'NUEVO_PEDIDO', 0, NULL),
+
+('Pedido listo para despacho',
+ 'El pedido PED-0002 de Luis Huamán está listo para recojo en tienda. Estado: EN_PROCESO.',
+ 'PEDIDO_LISTO', 1, NULL),
+
+('Solicitud de devolución pendiente',
+ 'El trabajador Juan Pérez registró una devolución de 2 unidades de "Arroz Costeño 5kg". Pendiente de aprobación.',
+ 'DEVOLUCION_PENDIENTE', 0, NULL),
+
+('Stock bajo: Aceite Primor 1L',
+ 'El producto "Aceite Primor 1L" (PROD-003) tiene solo 8 unidades, por debajo del mínimo establecido (8).',
+ 'STOCK_BAJO', 1, NULL),
+
+('Venta registrada: VTA-003',
+ 'Se registró la venta VTA-003 por S/. 34.00 (canal WEB) del cliente Pedro Ramos.',
+ 'VENTA_REGISTRADA', 1, NULL),
+
+('Pedido cancelado',
+ 'El pedido PED-0005 de Jorge Villanueva fue cancelado. Motivo: Cliente no recogió en plazo.',
+ 'SISTEMA', 0, NULL);

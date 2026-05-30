@@ -6,6 +6,7 @@ import pe.edu.pucp.model.usuario.Cliente;
 import pe.edu.pucp.model.usuario.Trabajador;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Venta {
@@ -29,7 +30,7 @@ public class Venta {
     private Cliente cliente;
     private Trabajador trabajador;
     private MetodoPago metodoPago;
-    private List<DetalleVenta> detalles;
+    private List<DetalleVenta> detalles = new ArrayList<>(); // nunca null — Yasson/JSON-B requiere lista vacía, no null
 
 
     public Venta() {

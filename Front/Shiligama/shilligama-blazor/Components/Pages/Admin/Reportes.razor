@@ -2,6 +2,7 @@
 @layout AdminLayout
 @inject SalesService SalesSvc
 @inject ProductService ProductSvc
+@inject ReporteService ReporteSvc
 @inject IJSRuntime JS
 
 @code {
@@ -12,14 +13,8 @@
         .Where(s => s.Fecha.Date >= _fechaDesde.Date && s.Fecha.Date <= _fechaHasta.Date)
         .ToList();
 
-    private record TopProduct(string Name, string Image, int Units, decimal Revenue);
-
-    private List<TopProduct> TopProductsList()
-    {
-        var products = ProductSvc.GetProducts().OrderByDescending(p => p.Price).Take(5).ToList();
-        int[] units  = { 42, 35, 28, 21, 14 };
-        return products.Select((p, i) => new TopProduct(p.Name, p.Image, units[i], p.Price * units[i])).ToList();
-    }
+    // Top productos — cargados desde el API, no hardcodeados
+    private List<TopProductoItem> _topProductos = new();
 
     private void SetRangeHoy()    { _fechaDesde = DateTime.Today;             _fechaHasta = DateTime.Today; }
     private void SetRange7Days()  { _fechaDesde = DateTime.Today.AddDays(-7); _fechaHasta = DateTime.Today; }
@@ -31,6 +26,7 @@
             ProductSvc.EnsureLoadedAsync(),
             SalesSvc.EnsureLoadedAsync()
         );
+        _topProductos = await ReporteSvc.GetTopProductosAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -216,30 +212,37 @@
                 </thead>
                 <tbody>
                     @{
-                        var topList  = TopProductsList();
                         string[] medals = { "🥇", "🥈", "🥉", "4°", "5°" };
                     }
-                    @for (int i = 0; i < topList.Count; i++)
+                    @if (!_topProductos.Any())
                     {
-                        var item = topList[i];
+                        <tr>
+                            <td colspan="4" class="text-center py-4 text-muted-foreground small">
+                                Sin datos de ventas completadas aún.
+                            </td>
+                        </tr>
+                    }
+                    @for (int i = 0; i < _topProductos.Count; i++)
+                    {
+                        var item = _topProductos[i];
                         var rank = medals[i];
                         <tr class="border-bottom border-color-default">
                             <td class="px-4 py-3 fw-bold text-center" style="font-size:1.1rem;">@rank</td>
                             <td class="px-4 py-3">
                                 <div class="d-flex align-items-center gap-3">
-                                    <img src="@item.Image" class="rounded-2 object-fit-cover flex-shrink-0"
+                                    <img src="@(item.ImagenUrl ?? "")" class="rounded-2 object-fit-cover flex-shrink-0"
                                          style="width:36px;height:36px;"
                                          onerror="this.src='https://placehold.co/36/e8f5e9/1A6B3C?text=P'" />
-                                    <span class="fw-semibold text-foreground small">@item.Name</span>
+                                    <span class="fw-semibold text-foreground small">@item.Nombre</span>
                                 </div>
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <span class="badge bg-primary-subtle text-primary" style="border-radius:var(--radius);">
-                                    @item.Units ud.
+                                    @item.TotalUnidades ud.
                                 </span>
                             </td>
                             <td class="px-4 py-3 text-end fw-bold text-foreground small">
-                                S/. @item.Revenue.ToString("0.00")
+                                S/. @item.TotalIngresos.ToString("0.00")
                             </td>
                         </tr>
                     }

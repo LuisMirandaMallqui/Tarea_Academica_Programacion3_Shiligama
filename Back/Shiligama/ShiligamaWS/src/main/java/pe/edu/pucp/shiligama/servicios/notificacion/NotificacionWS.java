@@ -80,9 +80,14 @@ public class NotificacionWS {
     public Response eliminar(@PathParam("id") int id) {
         try {
             int filasAfectadas = notificacionBo.eliminar(id);
-            return Response.ok("Notificación eliminada. Filas afectadas: " + filasAfectadas).build();
+            if (filasAfectadas > 0) {
+                return Response.ok("Notificación eliminada.").build();
+            } else {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Notificación con ID " + id + " no encontrada.").build();
+            }
         } catch (Exception ex) {
-            return Response.status(Response.Status.NOT_FOUND)
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Error al eliminar notificación: " + ex.getMessage()).build();
         }
     }

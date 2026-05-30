@@ -31,6 +31,9 @@ public class SalesService
     private readonly List<Order> _orders = new();
     private bool _cargado = false;
 
+    // Diagnóstico: último error al cargar pedidos (null = sin error)
+    public string? UltimoErrorPedidos { get; private set; }
+
     public SalesService(HttpClient http, JsonSerializerOptions json)
     {
         _http = http;
@@ -54,12 +57,26 @@ public class SalesService
 
         try
         {
-            var pedidos = await _http.GetFromJsonAsync<List<PedidoApi>>("pedidos", _json);
-            _orders.Clear();
-            if (pedidos != null)
-                _orders.AddRange(pedidos.Select(p => p.ToOrder()));
+            // Primero probar si el endpoint responde (para ver el texto crudo en caso de error)
+            var response = await _http.GetAsync("pedidos");
+            if (response.IsSuccessStatusCode)
+            {
+                var pedidos = await response.Content.ReadFromJsonAsync<List<PedidoApi>>(_json);
+                _orders.Clear();
+                if (pedidos != null)
+                    _orders.AddRange(pedidos.Select(p => p.ToOrder()));
+                UltimoErrorPedidos = null;
+            }
+            else
+            {
+                var body = await response.Content.ReadAsStringAsync();
+                UltimoErrorPedidos = $"HTTP {(int)response.StatusCode}: {body}";
+            }
         }
-        catch { /* ídem */ }
+        catch (Exception ex)
+        {
+            UltimoErrorPedidos = ex.Message;
+        }
 
         _cargado = true;
     }
@@ -67,6 +84,23 @@ public class SalesService
     // ----- Getters síncronos (sobre la caché) -----
     public List<Sale>  GetSales()        => _sales;
     public List<Order> GetRecentOrders() => _orders;
+
+    // Pedidos filtrados por cliente — para la pantalla "Mis Pedidos".
+    // Llama directamente al API para obtener solo los del cliente logueado.
+    public async Task<List<Order>> GetClientOrdersAsync(int idCliente)
+    {
+        var orders = new List<Order>();
+        if (idCliente <= 0) return orders;
+        try
+        {
+            var pedidos = await _http.GetFromJsonAsync<List<PedidoApi>>(
+                $"pedidos/por-cliente/{idCliente}", _json);
+            if (pedidos != null)
+                orders.AddRange(pedidos.Select(p => p.ToOrder()));
+        }
+        catch { /* backend no disponible */ }
+        return orders;
+    }
 
     // ----- Mutaciones -----
 
@@ -371,13 +405,14 @@ class PedidoApi
     public Order ToOrder() => new Order
     {
         Id       = $"PED-{IdPedido:D4}",
-        Customer = Cliente != null
+        Customer = (Cliente != null &&
+                    !string.IsNullOrWhiteSpace($"{Cliente.Nombres} {Cliente.Apellidos}".Trim()))
                    ? $"{Cliente.Nombres} {Cliente.Apellidos}".Trim()
                    : "Cliente",
         Date     = FechaHora ?? DateTime.Now,
         Total    = (decimal)MontoTotal,
         Items    = Detalles?.Count ?? 0,
-        Status   = EstadoPedido.ToUpper() switch
+        Status   = (EstadoPedido ?? "").ToUpper() switch
         {
             "RECIBIDO"   => "pendiente",
             "EN_PROCESO" => "preparando",
@@ -386,7 +421,16 @@ class PedidoApi
             "CANCELADO"  => "cancelado",
             _            => "pendiente"
         },
-        DeliveryMethod = ModalidadVenta?.ToLower() == "presencial" ? "pickup" : "delivery",
+        DeliveryMethod = (ModalidadVenta ?? "").ToUpper() switch
+        {
+            "RECOJO_TIENDA" => "pickup",
+            _               => "delivery"
+        },
+        Channel  = (ModalidadVenta ?? "").ToUpper() switch
+        {
+            "RECOJO_TIENDA" => "Presencial",
+            _               => "Online"
+        },
         Address  = DireccionEntrega ?? string.Empty,
         TimelinePedidoRecibido = FechaHora ?? DateTime.Now,
     };
