@@ -1,0 +1,167 @@
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter] public EventCallback OnBackToLogin { get; set; }
+
+    private string _nombres  = "";
+    private string _apellidos = "";
+    private string _dni      = "";
+    private string _email    = "";
+    private string _password = "";
+    private string _confirmPassword = "";
+    private bool   _showPassword = false;
+    private string _error = "";
+    private bool   _isLoading = false;
+
+    private async Task HandleSubmit()
+    {
+        _error = "";
+
+        if (_password != _confirmPassword)
+        {
+            _error = "Las contraseñas no coinciden";
+            return;
+        }
+        if (_password.Length < 6)
+        {
+            _error = "La contraseña debe tener al menos 6 caracteres";
+            return;
+        }
+        if (!System.Text.RegularExpressions.Regex.IsMatch(_dni.Trim(), @"^\d{8}$"))
+        {
+            _error = "El DNI debe tener exactamente 8 dígitos numéricos";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_nombres))
+        {
+            _error = "El nombre es obligatorio";
+            return;
+        }
+        if (string.IsNullOrWhiteSpace(_apellidos))
+        {
+            _error = "Los apellidos son obligatorios";
+            return;
+        }
+
+        _isLoading = true;
+
+        bool ok = await Auth.RegisterAsync(_nombres.Trim(), _apellidos.Trim(), _dni.Trim(), _email.Trim(), _password);
+        if (ok)
+        {
+            Navigation.NavigateTo("/catalogo");
+        }
+        else
+        {
+            _error = "No se pudo crear la cuenta. Verifica los datos o intenta con otro correo/DNI.";
+            _isLoading = false;
+        }
+    }
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Mobile Logo -->
+    <div class="d-flex d-lg-none align-items-center gap-3">
+        <div class="d-flex align-items-center justify-content-center rounded-3 bg-primary text-white" style="width:40px;height:40px;">
+            <Icons Name="ShoppingCart" Class="w-6 h-6" />
+        </div>
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground m-0" style="font-family:'Outfit',sans-serif;">Shiligama</h1>
+            <p class="text-muted-foreground small m-0">Sistema de Gestión</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div>
+        <h2 class="fs-4 fw-semibold text-foreground m-0">Crear cuenta</h2>
+        <p class="text-muted-foreground mt-1 mb-0">Únete a Shiligama y empieza a comprar</p>
+    </div>
+
+    <!-- Register Form -->
+    <EditForm Model="this" OnValidSubmit="HandleSubmit" class="d-flex flex-column gap-3">
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="p-3 rounded-3 small text-danger"
+                 style="background-color:color-mix(in srgb,var(--destructive) 10%,transparent);border:1px solid color-mix(in srgb,var(--destructive) 20%,transparent);">
+                @_error
+            </div>
+        }
+
+        <!-- Nombre y Apellidos (2 columnas) -->
+        <div class="row g-2">
+            <div class="col-6">
+                <label class="form-label fw-medium text-foreground small">Nombres</label>
+                <div class="position-relative">
+                    <Icons Name="User" Class="position-absolute top-50 translate-middle-y text-muted-foreground" style="left:12px;width:16px;height:16px;" />
+                    <input type="text" @bind="_nombres" required class="form-control text-foreground"
+                           style="height:44px;padding-left:36px;" placeholder="Juan" />
+                </div>
+            </div>
+            <div class="col-6">
+                <label class="form-label fw-medium text-foreground small">Apellidos</label>
+                <input type="text" @bind="_apellidos" required class="form-control text-foreground"
+                       style="height:44px;" placeholder="Pérez García" />
+            </div>
+        </div>
+
+        <!-- DNI -->
+        <div>
+            <label class="form-label fw-medium text-foreground small">DNI <span class="text-muted-foreground">(8 dígitos)</span></label>
+            <div class="position-relative">
+                <Icons Name="CreditCard" Class="position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px;width:18px;height:18px;" />
+                <input type="text" @bind="_dni" required maxlength="8" pattern="\d{8}"
+                       class="form-control text-foreground"
+                       style="height:48px;padding-left:42px;" placeholder="12345678" />
+            </div>
+        </div>
+
+        <!-- Email -->
+        <div>
+            <label class="form-label fw-medium text-foreground small">Correo electrónico</label>
+            <div class="position-relative">
+                <Icons Name="Mail" Class="position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px;width:18px;height:18px;" />
+                <input type="email" @bind="_email" required class="form-control text-foreground"
+                       style="height:48px;padding-left:42px;" placeholder="tu@correo.com" />
+            </div>
+        </div>
+
+        <!-- Password -->
+        <div>
+            <label class="form-label fw-medium text-foreground small">Contraseña</label>
+            <div class="position-relative">
+                <Icons Name="Lock" Class="position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px;width:18px;height:18px;" />
+                <input type="@(_showPassword ? "text" : "password")" @bind="_password" required
+                       class="form-control text-foreground"
+                       style="height:48px;padding-left:42px;padding-right:44px;" placeholder="Mínimo 6 caracteres" />
+                <button type="button" @onclick="@(() => _showPassword = !_showPassword)"
+                        class="btn btn-link position-absolute top-50 translate-middle-y border-0 p-0 text-muted-foreground" style="right:14px;">
+                    <Icons Name="@(_showPassword ? "EyeOff" : "Eye")" Class="w-4 h-4" />
+                </button>
+            </div>
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+            <label class="form-label fw-medium text-foreground small">Confirmar contraseña</label>
+            <div class="position-relative">
+                <Icons Name="Lock" Class="position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px;width:18px;height:18px;" />
+                <input type="password" @bind="_confirmPassword" required class="form-control text-foreground"
+                       style="height:48px;padding-left:42px;" placeholder="Repite tu contraseña" />
+            </div>
+        </div>
+
+        <button type="submit" disabled="@_isLoading"
+                class="btn btn-primary w-100 fw-medium fs-6" style="height:48px;">
+            @(_isLoading ? "Creando cuenta..." : "Crear cuenta")
+        </button>
+    </EditForm>
+
+    <!-- Back to login -->
+    <p class="text-center text-muted-foreground small m-0">
+        ¿Ya tienes una cuenta?&nbsp;
+        <button type="button" @onclick="OnBackToLogin"
+                class="btn btn-link p-0 fw-medium text-primary text-decoration-none small">
+            Inicia sesión
+        </button>
+    </p>
+</div>

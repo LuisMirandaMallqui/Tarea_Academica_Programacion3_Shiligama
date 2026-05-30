@@ -1,0 +1,290 @@
+@page "/catalogo/{Id:int}"
+@layout MainLayout
+@inject ProductService ProductSvc
+@inject CartService Cart
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Product? _product;
+    private List<Product> _related = new();
+    private int _quantity = 1;
+    private bool _added = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _product = ProductSvc.GetProductById(Id);
+        if (_product == null) { Navigation.NavigateTo("/catalogo"); return; }
+        _related = ProductSvc.GetRelatedProducts(_product, 4);
+        _quantity = 1;
+        _added = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
+    }
+
+    private async Task HandleAddToCart()
+    {
+        if (_product == null) return;
+        for (int i = 0; i < _quantity; i++)
+            await Cart.AddToCartAsync(_product);
+        _added = true;
+        _quantity = 1;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _added = false;
+        StateHasChanged();
+    }
+
+    private HashSet<int> _relatedAdded = new();
+
+    private async Task AddRelatedToCart(Product p)
+    {
+        await Cart.AddToCartAsync(p);
+        _relatedAdded.Add(p.Id);
+        StateHasChanged();
+        await Task.Delay(1800);
+        _relatedAdded.Remove(p.Id);
+        StateHasChanged();
+    }
+
+    private int DiscountPct => _product?.OriginalPrice.HasValue == true
+        ? 100 - (int)(_product.Price / _product.OriginalPrice!.Value * 100) : 0;
+}
+
+@if (_product == null)
+{
+    <div class="d-flex align-items-center justify-content-center" style="min-height:60vh;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+}
+else
+{
+    <PageTitle>@_product.Name – Shiligama</PageTitle>
+
+    <div class="container-xl px-3 px-sm-4 py-4">
+        <nav class="mb-4">
+            <a href="/catalogo"
+                   class="text-muted-foreground text-decoration-none small d-inline-flex align-items-center gap-2"
+                   style="transition:color 0.2s;font-weight:500;">
+                <i class="fa-solid fa-chevron-left" style="font-size:0.85rem;"></i> Volver al catálogo
+            </a>
+        </nav>
+
+        <div class="row g-5">
+            <!-- Imagen -->
+            <div class="col-md-5">
+                <div class="rounded-3 overflow-hidden d-flex align-items-center justify-content-center"
+                     style="min-height:320px;background:var(--secondary);">
+                    <img src="@_product.Image" alt="@_product.Name"
+                         class="img-fluid rounded-3"
+                         style="max-height:320px;width:100%;object-fit:cover;"
+                         onerror="this.src='https://placehold.co/400x400/e8f5e9/1A6B3C?text=🛒'" />
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="col-md-7 d-flex flex-column gap-3">
+                <span class="text-uppercase fw-semibold text-muted-foreground"
+                      style="font-size:0.825rem;letter-spacing:0.08em;font-family:'Outfit',sans-serif;">
+                    @ProductSvc.GetCategoryName(_product.Category)
+                </span>
+
+                <h1 class="fw-bold text-foreground mb-1"
+                    style="font-family:'Outfit',sans-serif;font-size:2rem;margin-top:-8px;">
+                    @_product.Name
+                </h1>
+
+                <div class="d-flex align-items-center gap-3">
+                    @if (_product.Stock > 0)
+                    {
+                        <span class="badge badge-en-stock"
+                              style="font-size:0.75rem;font-weight:500;border-radius:6px;padding:0.35rem 0.65rem;">
+                            En stock
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-danger text-white"
+                              style="font-size:0.75rem;font-weight:600;border-radius:6px;padding:0.35rem 0.65rem;">
+                            Agotado
+                        </span>
+                    }
+                </div>
+
+                <div class="d-flex align-items-baseline gap-3 my-1">
+                    <span class="fw-bold"
+                          style="font-size:2.25rem;color:var(--primary);font-family:'Outfit',sans-serif;">
+                        S/. @_product.Price.ToString("0.00")
+                    </span>
+                    @if (_product.OriginalPrice.HasValue)
+                    {
+                        <span class="text-decoration-line-through text-muted-foreground fs-5">
+                            S/. @_product.OriginalPrice.Value.ToString("0.00")
+                        </span>
+                    }
+                </div>
+
+                <div>
+                    <h3 class="fw-bold text-foreground mb-1"
+                        style="font-size:0.85rem;letter-spacing:0.06em;font-family:'Outfit',sans-serif;">
+                        DESCRIPCIÓN
+                    </h3>
+                    <p class="text-muted-foreground lh-relaxed mb-0" style="font-size:0.95rem;">
+                        @_product.Description
+                    </p>
+                </div>
+
+                <!-- HR adaptado al tema -->
+                <hr class="border-color-default my-2" />
+
+                @if (_product.Stock > 0)
+                {
+                    <div class="d-flex flex-column gap-2">
+                        <h3 class="fw-bold text-foreground m-0"
+                            style="font-size:0.85rem;letter-spacing:0.06em;font-family:'Outfit',sans-serif;">
+                            CANTIDAD
+                        </h3>
+                        <div class="d-flex align-items-center gap-3">
+                            <!-- Contador con colores del tema -->
+                            <div class="d-flex align-items-center"
+                                 style="height:38px;border-radius:8px;overflow:hidden;
+                                border:1.5px solid var(--border);
+                                background:var(--card);">
+                                <button class="btn btn-ghost px-3 h-100 border-0 text-foreground
+                                    d-flex align-items-center justify-content-center"
+                                        @onclick="@(() => { if (_quantity > 1) _quantity--; })"
+                                        style="font-size:1.1rem;font-weight:500;">
+                                    −
+                                </button>
+                                <span class="px-3 fw-medium text-foreground d-flex align-items-center justify-content-center"
+                                      style="min-width:32px;font-size:0.95rem;">
+                                    @_quantity
+                                </span>
+                                <button class="btn btn-ghost px-3 h-100 border-0 text-foreground
+                                    d-flex align-items-center justify-content-center"
+                                        @onclick="@(() => { if (_quantity < _product.Stock) _quantity++; })"
+                                        style="font-size:1.1rem;font-weight:500;">
+                                    +
+                                </button>
+                            </div>
+                            @if (_product.Stock <= _product.MinStock)
+                            {
+                                <span class="small fw-medium" style="font-size:0.9rem; color:#f59e0b;">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>Solo @_product.Stock disponibles
+                                </span>
+                            }
+                        </div>
+                    </div>
+
+                    <button @onclick="HandleAddToCart"
+                            class="btn text-white w-100 d-flex align-items-center justify-content-center gap-2 fw-medium mt-3 mb-1"
+                            style="background-color:var(--primary);border:none;border-radius:8px;
+                        font-size:1rem;transition:background-color 0.2s;padding:.6rem 1.2rem;">
+                        @if (_added)
+                        {
+                            <i class="fa-solid fa-check" style="font-size:1rem;"></i>
+                            <span>¡Agregado!</span>
+                        }
+                        else
+                        {
+                            <i class="fa-solid fa-cart-shopping" style="font-size:1rem;"></i>
+                            <span>Agregar al carrito</span>
+                        }
+                    </button>
+
+                    <div class="text-muted-foreground" style="font-size:0.95rem;">
+                        Total: <strong class="text-foreground" style="font-size:1rem;">
+                        S/. @((_product.Price * _quantity).ToString("0.00"))
+                    </strong>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Productos relacionados -->
+    @if (_related.Any())
+    {
+        <div class="mt-5">
+            <h2 class="fs-5 fw-semibold text-foreground mb-3">Productos relacionados</h2>
+            <div class="row g-3">
+                @foreach (var p in _related)
+                {
+                    <div class="col-6 col-md-3">
+                        <div class="card h-100 d-flex flex-column overflow-hidden hover-scale"
+                             style="border-radius:var(--radius);">
+                            <a href="/catalogo/@p.Id" class="text-decoration-none d-block">
+                                <div style="height:160px;overflow:hidden;background:var(--secondary);">
+                                    <img src="@p.Image" alt="@p.Name"
+                                         class="w-100 h-100 object-fit-cover"
+                                         onerror="this.src='https://placehold.co/200x200/e8f5e9/1A6B3C?text=🛒'" />
+                                </div>
+                            </a>
+                            <div class="p-3 d-flex flex-column gap-2 flex-grow-1">
+                                @if (p.Stock > 0)
+                                {
+                                    <span class="badge badge-en-stock"
+                                          style="border-radius:6px;padding:2px 8px;font-size:.72rem;">
+                                        En stock
+                                    </span>
+                                }
+                                <a href="/catalogo/@p.Id" class="text-decoration-none">
+                                    <p class="fw-semibold text-foreground mb-0 small">@p.Name</p>
+                                </a>
+                                <div class="d-flex align-items-baseline gap-2">
+                                    <span class="fw-bold" style="font-size:1.2rem; color:var(--primary);">
+                                        S/. @p.Price.ToString("0.00")
+                                    </span>
+                                    @if (p.OriginalPrice.HasValue)
+                                    {
+                                        <span class="text-decoration-line-through text-muted-foreground"
+                                              style="font-size:.8rem;">
+                                            S/. @p.OriginalPrice.Value.ToString("0.00")
+                                        </span>
+                                    }
+                                </div>
+                                <div class="mt-auto">
+                                    @if (p.Stock > 0)
+                                    {
+                                        <button @onclick="@(() => AddRelatedToCart(p))"
+                                                class="btn text-white w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+                                                style="background-color:@(_relatedAdded.Contains(p.Id) ? "#16a34a" : "var(--primary)");
+                                            border:none;border-radius:8px;font-weight:500;
+                                            font-size:.85rem;transition:background-color 0.3s;">
+                                            @if (_relatedAdded.Contains(p.Id))
+                                            {
+                                                <i class="fa-solid fa-check"></i>
+                                                <span>¡Agregado!</span>
+                                            }
+                                            else
+                                            {
+                                                <i class="fa-solid fa-plus"></i>
+                                                <span>Agregar</span>
+                                            }
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button disabled class="btn text-white w-100 py-2"
+                                                style="background-color:#A3BFB0;border:none;
+                                            border-radius:8px;font-weight:500;
+                                            font-size:.85rem;cursor:not-allowed;">
+                                            Agotado
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+}

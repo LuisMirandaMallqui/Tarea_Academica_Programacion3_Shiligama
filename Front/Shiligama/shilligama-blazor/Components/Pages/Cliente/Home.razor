@@ -1,0 +1,35 @@
+@page "/"
+@layout EmptyLayout
+
+@code {
+    private bool _showRegister = false;
+}
+
+<PageTitle>Shiligama – Iniciar Sesión</PageTitle>
+
+<div class="d-flex min-vh-100 flex-column flex-lg-row">
+    <!-- Left Branded Panel (desktop only) -->
+    <BrandedPanel />
+
+    <!-- Right Auth Panel -->
+    <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center p-4 p-lg-5 bg-background">
+        <div class="w-100" style="max-width: 440px;">
+            @if (_showRegister)
+            {
+                <RegisterForm OnBackToLogin="@(() => _showRegister = false)" />
+            }
+            else
+            {
+                <LoginForm OnRegisterClick="@(() => _showRegister = true)" />
+            }
+        </div>
+
+        <!-- Browse without login -->
+        <a href="/catalogo"
+           class="mt-4 d-flex align-items-center gap-2 small text-muted-foreground text-decoration-none"
+           style="transition: color .2s;">
+            <Icons Name="ShoppingCart" Class="w-4 h-4" />
+            Ver catálogo sin iniciar sesión
+        </a>
+    </div>
+</div>

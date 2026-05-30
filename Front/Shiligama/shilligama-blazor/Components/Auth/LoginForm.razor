@@ -1,0 +1,146 @@
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+@code {
+    [Parameter] public EventCallback OnRegisterClick { get; set; }
+
+    private bool _showPassword = false;
+    private string _email = "";
+    private string _password = "";
+    private bool _rememberMe = false;
+    private string _error = "";
+    private bool _isLoading = false;
+
+    private async Task HandleSubmit()
+    {
+        _error = "";
+        _isLoading = true;
+
+        // Login real contra el API REST del back (POST /api/auth/login).
+        bool ok = await Auth.LoginAsync(_email, _password);
+        if (ok)
+        {
+            var redirect = Auth.CurrentUser?.Role switch
+            {
+                "administrador" => "/admin",
+                "trabajador"    => "/trabajador",
+                _               => "/catalogo"
+            };
+            Navigation.NavigateTo(redirect);
+        }
+        else
+        {
+            _error = string.IsNullOrEmpty(Auth.LastError)
+                     ? "Correo electrónico o contraseña incorrectos"
+                     : Auth.LastError;
+            _isLoading = false;
+        }
+    }
+}
+
+<div class="d-flex flex-column gap-4">
+    <!-- Mobile Logo -->
+    <div class="d-flex d-lg-none align-items-center gap-3">
+        <div class="d-flex align-items-center justify-content-center rounded-3 bg-primary text-white" style="width: 40px; height: 40px;">
+            <Icons Name="ShoppingCart" Class="w-6 h-6" />
+        </div>
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground m-0" style="font-family:'Outfit',sans-serif;">Shiligama</h1>
+            <p class="text-muted-foreground small m-0">Sistema de Gestión</p>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div>
+        <h2 class="fs-4 fw-semibold text-foreground m-0">Bienvenido de nuevo</h2>
+        <p class="text-muted-foreground mt-1 mb-0">Ingresa tus credenciales para acceder al sistema</p>
+    </div>
+
+    <!-- Login Form -->
+    <EditForm Model="this" OnValidSubmit="HandleSubmit" class="d-flex flex-column gap-3">
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div class="p-3 rounded-3 small text-danger" style="background-color: color-mix(in srgb, var(--destructive) 10%, transparent); border: 1px solid color-mix(in srgb, var(--destructive) 20%, transparent);">
+                @_error
+            </div>
+        }
+
+        <!-- Email -->
+        <div>
+            <label class="form-label fw-medium text-foreground small">Correo electrónico</label>
+            <div class="position-relative">
+                <i class="fas fa-envelope position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px; font-size:0.95rem;"></i>
+                <input type="email" @bind="_email" required
+                       class="form-control text-foreground"
+                       style="height:48px; padding-left:42px;"
+                       placeholder="tu@correo.com" />
+            </div>
+        </div>
+
+        <!-- Password -->
+        <div>
+            <label class="form-label fw-medium text-foreground small">Contraseña</label>
+            <div class="position-relative">
+                <i class="fas fa-lock position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px; font-size:0.95rem;"></i>
+                <input type="@(_showPassword ? "text" : "password")" @bind="_password" required
+                       class="form-control text-foreground"
+                       style="height:48px; padding-left:42px; padding-right:44px;"
+                       placeholder="••••••••" />
+                <button type="button" @onclick="@(() => _showPassword = !_showPassword)"
+                        class="btn btn-link position-absolute top-50 translate-middle-y border-0 p-0 text-muted-foreground"
+                        style="right:14px;">
+                    <i class="fas @(_showPassword ? "fa-eye-slash" : "fa-eye")"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Remember & Forgot -->
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <input class="form-check-input m-0" type="checkbox" id="remember" @bind="_rememberMe" />
+                <label class="form-check-label small text-muted-foreground" for="remember">Recordarme</label>
+            </div>
+            <a href="#" class="small fw-medium text-primary text-decoration-none">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" disabled="@_isLoading"
+                class="btn btn-primary w-100 fw-medium fs-6"
+                style="height:48px;">
+            @(_isLoading ? "Iniciando sesión..." : "Iniciar sesión")
+        </button>
+    </EditForm>
+
+    <!-- Register Link -->
+    <p class="text-center text-muted-foreground small m-0">
+        ¿No tienes una cuenta?&nbsp;
+        <button type="button" @onclick="OnRegisterClick" class="btn btn-link p-0 fw-medium text-primary text-decoration-none small">
+            Regístrate aquí
+        </button>
+    </p>
+
+    <!-- Test Credentials Hint -->
+    <div class="p-3 rounded-3 border border-border bg-muted" style="background-color: color-mix(in srgb, var(--muted) 50%, transparent)!important; font-size: 0.8rem;">
+        <p class="fw-medium text-muted-foreground mb-3">Cuentas de prueba para autodetectar rol:</p>
+        <div style="display: grid; grid-template-columns: 80px 1fr 1fr; gap: 8px 12px; align-items: center;">
+            <!-- Header -->
+            <div class="fw-semibold text-muted-foreground" style="font-size: 0.75rem;">Rol</div>
+            <div class="fw-semibold text-muted-foreground" style="font-size: 0.75rem;">Correo</div>
+            <div class="fw-semibold text-muted-foreground" style="font-size: 0.75rem;">Contraseña</div>
+            
+            <!-- Row 1 -->
+            <div><span class="badge bg-primary w-100 py-1.5" style="border-radius: 6px; font-size: 0.725rem;">Cliente</span></div>
+            <div class="text-muted-foreground font-monospace" style="font-size: 0.74rem; word-break: break-all;">cliente@shiligama.com</div>
+            <div class="text-muted-foreground font-monospace" style="font-size: 0.74rem; word-break: break-all;">cliente123</div>
+            
+            <!-- Row 2 -->
+            <div><span class="badge bg-success w-100 py-1.5" style="border-radius: 6px; font-size: 0.725rem;">Trabajador</span></div>
+            <div class="text-muted-foreground font-monospace" style="font-size: 0.74rem; word-break: break-all;">trabajador@shiligama.com</div>
+            <div class="text-muted-foreground font-monospace" style="font-size: 0.74rem; word-break: break-all;">trabajador123</div>
+            
+            <!-- Row 3 -->
+            <div><span class="badge bg-danger w-100 py-1.5" style="border-radius: 6px; font-size: 0.725rem;">Admin</span></div>
+            <div class="text-muted-foreground font-monospace" style="font-size: 0.74rem; word-break: break-all;">test1234@admin.com</div>
+            <div class="text-muted-foreground font-monospace" style="font-size: 0.74rem; word-break: break-all;">eldelegadolavandoselasmanos</div>
+        </div>
+    </div>
+</div>

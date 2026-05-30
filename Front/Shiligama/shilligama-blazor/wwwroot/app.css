@@ -1,0 +1,838 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+:root {
+  --background: oklch(0.98 0.005 145);
+  --foreground: oklch(0.2 0.02 145);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.02 145);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.02 145);
+  --primary: oklch(0.42 0.12 145);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.015 145);
+  --secondary-foreground: oklch(0.3 0.05 145);
+  --muted: oklch(0.96 0.01 145);
+  --muted-foreground: oklch(0.5 0.03 145);
+  --accent: oklch(0.52 0.1 145);
+  --accent-foreground: oklch(0.99 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.9 0.02 145);
+  --input: oklch(0.92 0.015 145);
+  --ring: oklch(0.42 0.12 145);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.32 0.1 145);
+  --sidebar-foreground: oklch(0.99 0 0);
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+}
+
+.dark {
+    --background: oklch(0.15 0.02 145);
+    --foreground: oklch(0.95 0.01 145);
+    --card: oklch(0.18 0.02 145);
+    --card-foreground: oklch(0.95 0.01 145);
+    --popover: oklch(0.18 0.02 145);
+    --popover-foreground: oklch(0.95 0.01 145);
+    --primary: oklch(0.52 0.12 145);
+    --primary-foreground: oklch(0.99 0 0);
+    --secondary: oklch(0.25 0.03 145);
+    --secondary-foreground: oklch(0.95 0.01 145);
+    --muted: oklch(0.25 0.02 145);
+    --muted-foreground: oklch(0.65 0.03 145);
+    --accent: oklch(0.45 0.1 145);
+    --accent-foreground: oklch(0.99 0 0);
+    --destructive: oklch(0.5 0.2 25);
+    --destructive-foreground: oklch(0.99 0 0);
+    --border: oklch(0.3 0.03 145);
+    --input: oklch(0.25 0.02 145);
+    --ring: oklch(0.52 0.12 145);
+    --sidebar: oklch(0.25 0.08 145);
+    --sidebar-foreground: oklch(0.95 0.01 145);
+    --bs-table-bg: var(--card);
+    --bs-table-color: var(--foreground);
+    --bs-table-border-color: var(--border);
+    --bs-table-striped-bg: color-mix(in srgb, var(--card) 92%, white);
+    --bs-table-striped-color: var(--foreground);
+    --bs-table-hover-bg: color-mix(in srgb, var(--primary) 10%, var(--card));
+    --bs-table-hover-color: var(--foreground);
+}
+
+    /* Dropdown en modo oscuro */
+    .dark .dropdown-menu {
+        background-color: var(--card) !important;
+        border-color: var(--border) !important;
+        color: var(--foreground) !important;
+    }
+
+    .dark .dropdown-item {
+        color: var(--foreground) !important;
+        background-color: transparent !important;
+    }
+
+        .dark .dropdown-item:hover,
+        .dark .dropdown-item:focus {
+            background-color: var(--secondary) !important;
+            color: var(--foreground) !important;
+        }
+
+    /* El separador de línea dentro del dropdown */
+    .dark .dropdown-divider {
+        border-color: var(--border) !important;
+    }
+
+    /* Texto muted dentro del dropdown (nombre/email) */
+    .dark .dropdown-menu .text-muted-foreground {
+        color: var(--muted-foreground) !important;
+    }
+
+
+    /* Tablas compatibles con modo oscuro */
+    .dark table,
+    .dark .table {
+        background-color: var(--card) !important;
+        color: var(--foreground) !important;
+    }
+
+        .dark .table th,
+        .dark .table td,
+        .dark table th,
+        .dark table td {
+            border-color: var(--border) !important;
+            color: var(--foreground) !important;
+            background-color: transparent !important; /* hereda de la tabla */
+        }
+
+        .dark .table thead th,
+        .dark table thead th {
+            color: var(--muted-foreground) !important;
+            backgrsound-color: color-mix(in srgb, var(--card) 85%, var(--border)) !important;
+        }
+
+    /* El div/card contenedor de la tabla */
+    .dark .table-responsive,
+    .dark .card:has(table) {
+        background-color: var(--card) !important;
+    }
+
+
+
+/* Global Reset & Base */
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Geist', 'Outfit', sans-serif;
+  margin: 0;
+  padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* Core Bootstrap Adaptations */
+.card {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-header {
+  background-color: transparent;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-footer {
+  background-color: transparent;
+  border-top: 1px solid var(--border);
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  border-radius: var(--radius);
+  font-weight: 500;
+  padding: 0.6rem 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active {
+  background-color: color-mix(in srgb, var(--primary) 85%, black) !important;
+  border-color: color-mix(in srgb, var(--primary) 85%, black) !important;
+  color: var(--primary-foreground) !important;
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--primary) 25%, transparent) !important;
+}
+
+.btn-secondary {
+  background-color: var(--secondary);
+  border-color: var(--border);
+  color: var(--secondary-foreground);
+  border-radius: var(--radius);
+  font-weight: 500;
+  padding: 0.6rem 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover, .btn-secondary:focus, .btn-secondary:active {
+  background-color: var(--muted) !important;
+  border-color: var(--border) !important;
+  color: var(--foreground) !important;
+}
+
+.btn-outline-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+  border-radius: var(--radius);
+  font-weight: 500;
+}
+
+.btn-outline-primary:hover, .btn-outline-primary:focus {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+.btn-danger {
+  background-color: var(--destructive);
+  border-color: var(--destructive);
+  color: var(--destructive-foreground);
+  border-radius: var(--radius);
+}
+
+.btn-danger:hover {
+  background-color: color-mix(in srgb, var(--destructive) 85%, black);
+  border-color: color-mix(in srgb, var(--destructive) 85%, black);
+}
+
+/* Forms */
+.form-control, .form-select {
+  background-color: var(--card);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  background-color: var(--card);
+  color: var(--foreground);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.7;
+}
+
+/* Badges */
+.badge {
+  border-radius: 9999px;
+  padding: 0.35em 0.65em;
+  font-weight: 500;
+}
+
+.bg-primary {
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.bg-secondary {
+  background-color: var(--secondary) !important;
+  color: var(--secondary-foreground) !important;
+}
+
+.bg-danger {
+  background-color: var(--destructive) !important;
+  color: var(--destructive-foreground) !important;
+}
+
+/* Custom UI Layout Utilities */
+.bg-background {
+  background-color: var(--background) !important;
+}
+
+.text-foreground {
+  color: var(--foreground) !important;
+}
+
+.bg-card {
+  background-color: var(--card) !important;
+}
+
+.text-card-foreground {
+  color: var(--card-foreground) !important;
+}
+
+.bg-muted {
+  background-color: var(--muted) !important;
+}
+
+.text-muted-foreground {
+  color: var(--muted-foreground) !important;
+}
+
+.border-border {
+  border-color: var(--border) !important;
+}
+
+.border-bottom-border {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.border-top-border {
+  border-top: 1px solid var(--border) !important;
+}
+
+/* Sidebar Custom Styling */
+.sidebar {
+  background-color: var(--sidebar);
+  color: var(--sidebar-foreground);
+  transition: all 0.3s ease;
+}
+
+.sidebar .nav-link {
+  color: color-mix(in srgb, var(--sidebar-foreground) 75%, transparent);
+  border-radius: var(--radius);
+  transition: all 0.2s ease;
+}
+
+.sidebar .nav-link:hover, .sidebar .nav-link.active {
+  color: var(--sidebar-foreground);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Blazor Specific Validation Rules */
+.valid.modified:not([type=checkbox]) {
+  outline: 2px solid var(--primary);
+}
+
+.invalid {
+  outline: 2px solid var(--destructive);
+}
+
+.validation-message {
+  color: var(--destructive);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  font-weight: 500;
+}
+
+/* General Modals & Sheets */
+.sheet-panel {
+  position: fixed;
+  top: 0;
+  right: -450px;
+  width: 100%;
+  max-width: 450px;
+  height: 100%;
+  background: var(--card);
+  border-left: 1px solid var(--border);
+  z-index: 1050;
+  transition: right 0.3s ease-out;
+  box-shadow: var(--shadow-lg);
+}
+
+.sheet-panel.show {
+  right: 0;
+}
+
+.sheet-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1040;
+  backdrop-filter: blur(2px);
+}
+
+/* Quick Animations */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(15px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ── Hover Scale ── */
+.hover-scale {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.hover-scale:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Modal Enter Animation ── */
+.modal-enter {
+  animation: modalEnter 0.25s ease-out;
+}
+@keyframes modalEnter {
+  from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+/* ── Order Cards Grid ── */
+.orders-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+@media (max-width: 1100px) { .orders-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px)  { .orders-grid { grid-template-columns: 1fr; } }
+
+.order-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 1rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.order-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Metric / KPI Cards ── */
+.metric-card-kpi {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease;
+}
+.metric-card-kpi:hover { transform: translateY(-2px); }
+.metric-kpi-value { font-size: 1.75rem; font-weight: 700; line-height: 1; }
+.metric-kpi-label { font-size: 0.8rem; color: var(--muted-foreground); font-weight: 500; margin-top: 2px; }
+.metric-kpi-icon {
+  width: 44px; height: 44px;
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.25rem; flex-shrink: 0;
+}
+
+/* ── Filter Pills ── */
+.filter-pills { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.filter-pill {
+  padding: 0.4rem 0.9rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted-foreground);
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.filter-pill:hover  { background: var(--secondary); color: var(--foreground); }
+.filter-pill.active { background: var(--primary); color: var(--primary-foreground); border-color: var(--primary); }
+
+/* ── Carousel ── */
+.carousel-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, var(--secondary), var(--muted));
+}
+.carousel-track {
+  display: flex;
+  transition: transform 0.5s cubic-bezier(.4,0,.2,1);
+}
+.carousel-slide {
+  min-width: 100%;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  cursor: pointer;
+}
+.carousel-btn {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 50%; width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-md); cursor: pointer; z-index: 2;
+  color: var(--foreground); font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.carousel-btn:hover { background: var(--secondary); }
+.carousel-btn.prev { left: 10px; }
+.carousel-btn.next { right: 10px; }
+.carousel-dots { display: flex; justify-content: center; gap: 6px; margin-top: 0.75rem; }
+.carousel-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--border); cursor: pointer;
+  transition: all 0.2s ease;
+}
+.carousel-dot.active { background: var(--primary); width: 22px; border-radius: 4px; }
+
+/* ── Payment Method Buttons ── */
+.payment-btn {
+  flex: 1; padding: 0.6rem 0.5rem;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  font-size: 0.82rem; font-weight: 500;
+  cursor: pointer; text-align: center;
+  transition: all 0.15s ease;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.payment-btn:hover  { border-color: var(--primary); background: var(--secondary); }
+.payment-btn.active { border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }
+
+/* ── Modal Overlay ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 1050; display: flex;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.2s ease;
+}
+.modal-container {
+  background: var(--card); border-radius: var(--radius);
+  border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  width: 100%; max-width: 520px; max-height: 85vh;
+  overflow: hidden; display: flex; flex-direction: column;
+  animation: modalEnter 0.25s ease-out;
+}
+.modal-body-scroll { overflow-y: auto; flex: 1; padding: 1rem 1.25rem; }
+
+/* ── Product Row (in modal) ── */
+.product-row-select {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.65rem 0.75rem; border-radius: calc(var(--radius) - 2px);
+  cursor: pointer; transition: background 0.15s;
+}
+.product-row-select:hover { background: var(--secondary); }
+.product-row-select.selected { background: color-mix(in srgb, var(--primary) 12%, transparent); }
+
+/* ── Stock Alert Banner ── */
+.stock-alert-banner {
+  display: flex; align-items: flex-start; gap: 1rem;
+  padding: 1rem 1.25rem; border-radius: var(--radius);
+  background: color-mix(in srgb, #f59e0b 12%, transparent);
+  border: 1px solid color-mix(in srgb, #f59e0b 40%, transparent);
+}
+
+/* ── Border color helper ── */
+.border-color-default { border-color: var(--border) !important; }
+
+/* ── Transition helper ── */
+.transition-all { transition: all 0.2s ease; }
+
+/* ── hover-shadow ── */
+.hover-shadow { transition: box-shadow 0.2s ease; }
+.hover-shadow:hover { box-shadow: var(--shadow-md) !important; }
+
+/* ── Badges de estado de pedido ── */
+.badge-entregado {
+    background-color: #d1fae5;
+    color: #065f46;
+    border: 1px solid #6ee7b7;
+}
+
+.badge-encamino {
+    background-color: #ede9fe;
+    color: #5b21b6;
+    border: 1px solid #c4b5fd;
+}
+
+.badge-preparando {
+    background-color: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+.badge-pendiente {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.badge-cancelado {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+
+/* ── Responsive: borde lateral en desktop en cards de pedido ── */
+@media (min-width: 992px) {
+    .border-lg-start {
+        border-left: 1px solid var(--bs-border-color) !important;
+    }
+
+    .border-lg-top-0 {
+        border-top: 0 !important;
+    }
+}
+
+/* ── Dark mode: badges de estado ── */
+.dark .badge-entregado {
+    background-color: #064e3b;
+    color: #6ee7b7;
+    border-color: #065f46;
+}
+
+.dark .badge-encamino {
+    background-color: #2e1065;
+    color: #c4b5fd;
+    border-color: #5b21b6;
+}
+
+.dark .badge-preparando {
+    background-color: #1e3a5f;
+    color: #93c5fd;
+    border-color: #1e40af;
+}
+
+.dark .badge-pendiente {
+    background-color: #451a03;
+    color: #fcd34d;
+    border-color: #92400e;
+}
+
+.dark .badge-cancelado {
+    background-color: #450a0a;
+    color: #fca5a5;
+    border-color: #991b1b;
+}
+
+/* ── Dark mode: inputs de fecha con borde visible ── */
+.dark input[type="date"],
+.dark .form-control,
+.dark .form-select {
+    background-color: var(--card) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+}
+
+/* ── Dark mode: cards y fondos ── */
+.dark .bg-secondary-subtle {
+    background-color: var(--secondary) !important;
+}
+
+.dark .bg-primary-subtle {
+    background-color: color-mix(in srgb, var(--primary) 20%, transparent) !important;
+}
+
+.dark .text-primary {
+    color: var(--primary) !important;
+}
+
+/* ── Dark mode: modal body ── */
+.dark .modal-content {
+    background-color: var(--card) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+}
+
+/* ── Dark mode: botones outline ── */
+.dark .btn-outline-secondary {
+    color: var(--foreground);
+    border-color: var(--border);
+}
+
+    .dark .btn-outline-secondary:hover {
+        background-color: var(--secondary);
+        color: var(--foreground);
+    }
+
+/* ── Dark mode: input-group-text ── */
+.dark .input-group-text {
+    background-color: var(--secondary) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+}
+
+/* ── Dark mode: resumen pedido y timeline ── */
+.dark [style*="background:#dbeafe"] {
+    background: #1e3a5f !important;
+}
+
+.dark [style*="background:#dcfce7"] {
+    background: #064e3b !important;
+}
+
+.dark [style*="background:#fee2e2"] {
+    background: #450a0a !important;
+}
+
+.dark [style*="background:#f0fdf4"] {
+    background: #052e16 !important;
+}
+
+.dark [style*="background:#fffbeb"] {
+    background: #451a03 !important;
+}
+
+/* ── Dark mode: checkout efectivo/yape fondos ── */
+.dark [style*="background:white"] {
+    background: var(--card) !important;
+}
+
+.dark [style*="background: white"] {
+    background: var(--card) !important;
+}
+
+.dark [style*="background-color: #009EE3"] {
+    background-color: #007ab8 !important;
+}
+
+.dark [style*="linear-gradient(135deg,#7c3aed"] {
+    background: linear-gradient(135deg,#6d28d9,#5b21b6) !important;
+}
+
+.dark [style*="linear-gradient(135deg,#16a34a"] {
+    background: linear-gradient(135deg,#15803d,#166534) !important;
+}
+
+/* ── Dark mode: carrito delivery option active ── */
+.dark .delivery-option.active {
+    background-color: rgba(13, 69, 37, 0.25) !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
+}
+
+/* ── Dark mode: card en hover ── */
+.dark .card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* ── Dark mode: alert-light ── */
+.dark .alert-light {
+    background-color: var(--secondary) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+}
+
+/* ── Dark mode: btn-group botones ── */
+.dark .btn-group .btn-outline-secondary {
+    color: var(--foreground);
+    border-color: var(--border);
+    background-color: var(--card);
+}
+
+    .dark .btn-group .btn-outline-secondary:hover {
+        background-color: var(--secondary);
+    }
+
+/* ── Badge En stock: light + dark ── */
+.badge-en-stock {
+    background-color: #E8F5E9;
+    color: #1B5E20;
+}
+
+.dark .badge-en-stock {
+    background-color: #064e3b;
+    color: #6ee7b7;
+}
+
+/* ── Dark mode: nombre producto cards (quitar override hardcodeado) ── */
+.dark .card .text-foreground {
+    color: var(--foreground) !important;
+}
+
+/* ── Dark mode: card border visible ── */
+.dark .card {
+    border-color: var(--border) !important;
+}
+
+/* ── Dark mode: precio de producto (var --primary ya se adapta) ── */
+.dark .pagination-nav-btn,
+.dark .pagination-num-btn {
+    background-color: var(--card) !important;
+    color: var(--foreground) !important;
+    border-color: var(--border) !important;
+}
+
+/* ── Dark mode: inputs rango de precio ── */
+.dark .dual-range-track {
+    background-color: var(--border);
+}
+
+.dark .dual-range-highlight {
+    background-color: var(--primary);
+}
+
+.dark .dual-range-slider::-webkit-slider-thumb {
+    background: var(--card);
+    border-color: var(--primary);
+}
+
+.dark .dual-range-slider::-moz-range-thumb {
+    background: var(--card);
+    border-color: var(--primary);
+}
+
+/* ── Dark mode: descripcion producto hardcoded colors ── */
+.dark .text-muted-foreground {
+    color: var(--muted-foreground) !important;
+}
+
+.admin-sidebar-link {
+    color: #EAF7EE !important;
+    text-decoration: none !important;
+}
+
+.admin-sidebar-link:hover {
+    color: #FFFFFF !important;
+    background-color: rgba(255, 255, 255, 0.10) !important;
+}
+
+.admin-sidebar-link.active {
+    color: #FFFFFF !important;
+    background-color: rgba(255, 255, 255, 0.18) !important;
+}
+.admin-search-icon {
+    width: 18px !important;
+    height: 18px !important;
+    left: 12px !important;
+    color: #6b7280 !important;
+    z-index: 5 !important;
+    pointer-events: none;
+}
+.admin-notification-icon {
+    width: 22px !important;
+    height: 22px !important;
+    color: #374151 !important;
+}

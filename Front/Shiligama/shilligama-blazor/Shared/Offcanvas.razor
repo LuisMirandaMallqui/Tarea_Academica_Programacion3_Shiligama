@@ -1,0 +1,26 @@
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private async Task CloseAsync()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}
+
+@if (IsOpen)
+{
+    <div class="sheet-backdrop" @onclick="CloseAsync"></div>
+    <div class="sheet-panel show d-flex flex-col p-4">
+        <div class="d-flex align-items-center justify-content-between mb-4 border-bottom pb-3 border-color-default">
+            <h5 class="font-semibold m-0 text-foreground">@Title</h5>
+            <button type="button" class="btn-close" @onclick="CloseAsync" aria-label="Close"></button>
+        </div>
+        <div class="flex-grow-1 overflow-y-auto" style="max-height: calc(100vh - 120px);">
+            @ChildContent
+        </div>
+    </div>
+}

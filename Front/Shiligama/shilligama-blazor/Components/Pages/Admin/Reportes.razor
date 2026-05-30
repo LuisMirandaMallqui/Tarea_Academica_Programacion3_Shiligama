@@ -1,0 +1,250 @@
+@page "/admin/reportes"
+@layout AdminLayout
+@inject SalesService SalesSvc
+@inject ProductService ProductSvc
+@inject IJSRuntime JS
+
+@code {
+    private DateTime _fechaDesde = DateTime.Today.AddDays(-30);
+    private DateTime _fechaHasta = DateTime.Today;
+
+    private List<Sale> FilteredSales => SalesSvc.GetSales()
+        .Where(s => s.Fecha.Date >= _fechaDesde.Date && s.Fecha.Date <= _fechaHasta.Date)
+        .ToList();
+
+    private record TopProduct(string Name, string Image, int Units, decimal Revenue);
+
+    private List<TopProduct> TopProductsList()
+    {
+        var products = ProductSvc.GetProducts().OrderByDescending(p => p.Price).Take(5).ToList();
+        int[] units  = { 42, 35, 28, 21, 14 };
+        return products.Select((p, i) => new TopProduct(p.Name, p.Image, units[i], p.Price * units[i])).ToList();
+    }
+
+    private void SetRangeHoy()    { _fechaDesde = DateTime.Today;             _fechaHasta = DateTime.Today; }
+    private void SetRange7Days()  { _fechaDesde = DateTime.Today.AddDays(-7); _fechaHasta = DateTime.Today; }
+    private void SetRange30Days() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            ProductSvc.EnsureLoadedAsync(),
+            SalesSvc.EnsureLoadedAsync()
+        );
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        StateHasChanged();
+        await RenderCharts();
+    }
+
+    private async Task RenderCharts()
+    {
+        var labels         = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+        var presencialData = new[] { 12, 19, 3,  5,  2,  3, 10 };
+        var onlineData     = new[] {  5, 12, 10, 8, 15, 20, 25 };
+
+        await JS.InvokeVoidAsync("chartHelper.renderOrdersComparisonChart",
+            "channelsComparisonChart", labels, presencialData, onlineData);
+    }
+}
+
+<PageTitle>Reportes & Estadísticas – Shiligama Admin</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">
+                <i class="fas fa-chart-pie me-2 text-primary"></i>Reportes y Estadísticas
+            </h1>
+            <p class="text-muted-foreground small mt-1 mb-0">Analítica de rendimiento comercial y canales de distribución</p>
+        </div>
+        <button type="button" class="btn btn-primary d-flex align-items-center gap-2 fw-semibold"
+                onclick="window.print();" style="border-radius: var(--radius);">
+            <i class="fas fa-print"></i> Imprimir Reporte
+        </button>
+    </div>
+
+    <!-- Date Range Filters -->
+    <div class="card p-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-12 col-md-auto">
+                <span class="small fw-semibold text-foreground">
+                    <i class="fas fa-calendar-alt me-2 text-primary"></i>Rango de fechas
+                </span>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small text-muted-foreground mb-1">Desde</label>
+                <input type="date" @bind="_fechaDesde"
+                       class="form-control form-control-sm text-foreground" />
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small text-muted-foreground mb-1">Hasta</label>
+                <input type="date" @bind="_fechaHasta"
+                       class="form-control form-control-sm text-foreground" />
+            </div>
+            <div class="col-12 col-md-auto">
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-secondary btn-sm" @onclick="SetRangeHoy"
+                            style="border-radius:var(--radius);">Hoy</button>
+                    <button class="btn btn-secondary btn-sm" @onclick="SetRange7Days"
+                            style="border-radius:var(--radius);">7 días</button>
+                    <button class="btn btn-secondary btn-sm" @onclick="SetRange30Days"
+                            style="border-radius:var(--radius);">30 días</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats Row -->
+    <div class="row g-3">
+        <div class="col-6 col-md-4">
+            <div class="metric-card-kpi">
+                <div>
+                    <div class="metric-kpi-label mb-1">Ingresos Consolidados</div>
+                    <div class="metric-kpi-value text-primary" style="font-size:1.5rem;">
+                        S/. @FilteredSales.Sum(s => s.Total).ToString("0.00")
+                    </div>
+                    <span class="text-muted-foreground small">en el período seleccionado</span>
+                </div>
+                <div class="metric-kpi-icon"
+                     style="background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary);">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4">
+            <div class="metric-card-kpi">
+                <div>
+                    <div class="metric-kpi-label mb-1">Transacciones Exitosas</div>
+                    <div class="metric-kpi-value text-foreground">
+                        @FilteredSales.Count(s => s.Estado == "completado")
+                    </div>
+                    <span class="text-muted-foreground small">de @FilteredSales.Count total</span>
+                </div>
+                <div class="metric-kpi-icon"
+                     style="background:color-mix(in srgb,#2e7d32 15%,transparent);color:#2e7d32;">
+                    <i class="fas fa-check-double"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-4">
+            <div class="metric-card-kpi">
+                <div>
+                    <div class="metric-kpi-label mb-1">Valor de Transacción</div>
+                    <div class="metric-kpi-value text-foreground">
+                        S/. @(FilteredSales.Any() ? FilteredSales.Average(s => s.Total).ToString("0.00") : "0.00")
+                    </div>
+                    <span class="text-muted-foreground small">promedio por venta</span>
+                </div>
+                <div class="metric-kpi-icon"
+                     style="background:color-mix(in srgb,#7C3AED 15%,transparent);color:#7C3AED;">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card p-4">
+                <h2 class="fs-5 fw-bold text-foreground mb-3">
+                    <i class="fas fa-chart-bar me-2" style="color:#2563EB;"></i>Distribución de Canales (Físico vs Online)
+                </h2>
+                <div style="height:280px; position:relative;">
+                    <canvas id="channelsComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Category share -->
+        <div class="col-lg-4">
+            <div class="card p-4 h-100 d-flex flex-column gap-3">
+                <div>
+                    <h2 class="fs-5 fw-bold text-foreground mb-1">
+                        <i class="fas fa-tags me-2 text-primary"></i>Participación por Categoría
+                    </h2>
+                    <p class="text-muted-foreground small mb-0">Rendimiento estimado del inventario este mes</p>
+                </div>
+
+                <div class="d-flex flex-column gap-3 mt-2">
+                    @foreach (var (cat, pct, color) in new (string, int, string)[]{
+                        ("Abarrotes",          42, "#1A6B3C"),
+                        ("Lácteos",            28, "#2e7d32"),
+                        ("Bebidas",            18, "#2563EB"),
+                        ("Snacks & Golosinas", 12, "#f59e0b"),
+                    })
+                    {
+                        <div>
+                            <div class="d-flex justify-content-between text-foreground small fw-medium mb-1">
+                                <span>@cat</span>
+                                <span>@pct%</span>
+                            </div>
+                            <div class="progress" style="height:8px;border-radius:var(--radius);">
+                                <div class="progress-bar" role="progressbar"
+                                     style="width:@(pct)%;background:@color;border-radius:var(--radius);"
+                                     aria-valuenow="@pct" aria-valuemin="0" aria-valuemax="100"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Products Table -->
+    <div class="card overflow-hidden">
+        <div class="p-4 border-bottom border-color-default">
+            <h2 class="fs-5 fw-bold text-foreground mb-0">
+                <i class="fas fa-trophy me-2" style="color:#f59e0b;"></i>Top Productos Más Vendidos
+            </h2>
+            <p class="text-muted-foreground small m-0">Basado en unidades vendidas en el período seleccionado</p>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-borderless mb-0 align-middle">
+                <thead class="border-bottom border-color-default">
+                    <tr>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">#</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Producto</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-center" style="letter-spacing:.05em;">Unidades</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Ingresos</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        var topList  = TopProductsList();
+                        string[] medals = { "🥇", "🥈", "🥉", "4°", "5°" };
+                    }
+                    @for (int i = 0; i < topList.Count; i++)
+                    {
+                        var item = topList[i];
+                        var rank = medals[i];
+                        <tr class="border-bottom border-color-default">
+                            <td class="px-4 py-3 fw-bold text-center" style="font-size:1.1rem;">@rank</td>
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <img src="@item.Image" class="rounded-2 object-fit-cover flex-shrink-0"
+                                         style="width:36px;height:36px;"
+                                         onerror="this.src='https://placehold.co/36/e8f5e9/1A6B3C?text=P'" />
+                                    <span class="fw-semibold text-foreground small">@item.Name</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="badge bg-primary-subtle text-primary" style="border-radius:var(--radius);">
+                                    @item.Units ud.
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-end fw-bold text-foreground small">
+                                S/. @item.Revenue.ToString("0.00")
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

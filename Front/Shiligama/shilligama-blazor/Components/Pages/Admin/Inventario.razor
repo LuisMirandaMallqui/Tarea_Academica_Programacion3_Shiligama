@@ -1,0 +1,217 @@
+@page "/admin/inventario"
+@layout AdminLayout
+@inject ProductService ProductSvc
+
+@code {
+    private List<Product> _products = new();
+    private string _search = "";
+    private string _categoryFilter = "";
+    private bool _lowStockOnly = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();   // trae productos + categorías del API
+        _products = ProductSvc.GetProducts();
+    }
+
+    private IEnumerable<Product> Filtered => _products.Where(p =>
+        (string.IsNullOrEmpty(_search) || p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_categoryFilter) || p.Category.Equals(_categoryFilter, StringComparison.OrdinalIgnoreCase)) &&
+        (!_lowStockOnly || p.Stock < 10)
+    );
+
+    private void AdjustStock(Product p, int amount)
+    {
+        p.Stock = Math.Max(0, p.Stock + amount);
+        StateHasChanged();
+    }
+}
+
+<PageTitle>Inventario – Shiligama Admin</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div>
+        <h1 class="fs-4 fw-bold text-foreground mb-0">
+            <i class="fas fa-warehouse me-2 text-primary"></i>Control de Almacén e Inventario
+        </h1>
+        <p class="text-muted-foreground small mt-1 mb-0">Monitorea y ajusta las existencias físicas de productos en tiempo real</p>
+    </div>
+
+    <!-- KPI Mini-cards -->
+    <div class="row g-3">
+        <div class="col-6 col-xl-3">
+            <div class="metric-card-kpi">
+                <div>
+                    <div class="metric-kpi-value text-foreground">@_products.Count</div>
+                    <div class="metric-kpi-label">Total Productos</div>
+                </div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary);">
+                    <i class="fas fa-box"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="metric-card-kpi">
+                <div>
+                    <div class="metric-kpi-value" style="color:#f59e0b;">@_products.Count(p => p.Stock > 0 && p.Stock < 10)</div>
+                    <div class="metric-kpi-label">Stock Bajo</div>
+                </div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#f59e0b 15%,transparent);color:#f59e0b;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="metric-card-kpi">
+                <div>
+                    <div class="metric-kpi-value" style="color:#c62828;">@_products.Count(p => p.Stock == 0)</div>
+                    <div class="metric-kpi-label">Agotados</div>
+                </div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#c62828 15%,transparent);color:#c62828;">
+                    <i class="fas fa-times-circle"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="metric-card-kpi">
+                <div>
+                    <div class="metric-kpi-value text-foreground" style="font-size:1rem;">Hoy, @DateTime.Now.ToString("HH:mm")</div>
+                    <div class="metric-kpi-label">Sincronizado</div>
+                </div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#2563EB 15%,transparent);color:#2563EB;">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert banner if any low stock items -->
+    @if (_products.Any(p => p.Stock < 10))
+    {
+        <div class="stock-alert-banner">
+            <div class="metric-kpi-icon flex-shrink-0" style="background:color-mix(in srgb,#f59e0b 20%,transparent);color:#f59e0b;">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div>
+                <p class="fw-semibold text-foreground m-0 small">Alerta de Existencias Bajas</p>
+                <p class="text-muted-foreground small m-0">Hay <strong>@_products.Count(p => p.Stock < 10)</strong> productos con stock menor a 10 unidades. Por favor reabastecer.</p>
+                @if (_products.Any(p => p.Stock == 0))
+                {
+                    <p class="text-muted-foreground small m-0 mt-1">
+                        <span class="text-danger fw-medium">Agotados:</span>
+                        @string.Join(", ", _products.Where(p => p.Stock == 0).Select(p => p.Name).Take(3))
+                    </p>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Search / Filter Card -->
+    <div class="card p-4" style="border-radius: 12px;">
+        <div class="row g-2 align-items-center">
+
+            <!-- Buscar producto -->
+            <div class="col-md-5">
+                <div class="position-relative">
+                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted"
+                       style="left: 16px; font-size: 14px;"></i>
+
+                    <input type="search"
+                           @bind="_search"
+                           @bind:event="oninput"
+                           class="form-control text-foreground"
+                           placeholder="Buscar por producto..."
+                           style="height: 56px; border-radius: 10px; padding-left: 42px;" />
+                </div>
+            </div>
+
+            <!-- Categorías -->
+            <div class="col-md-3">
+                <select @bind="_categoryFilter"
+                        class="form-select text-foreground"
+                        style="height: 56px; border-radius: 10px;">
+                    <option value="">Categorías (todas)</option>
+
+                    @foreach (var cat in ProductSvc.GetCategories())
+                    {
+                        <option value="@cat.Id">@cat.Name</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Checkbox existencias bajas -->
+            <div class="col-md-4">
+                <div class="form-check d-flex align-items-center gap-2 m-0">
+                    <input class="form-check-input mt-0"
+                           type="checkbox"
+                           id="lowStockChk"
+                           @bind="_lowStockOnly"
+                           style="width: 24px; height: 24px;" />
+
+                    <label class="form-check-label text-foreground small fw-medium"
+                           for="lowStockChk">
+                        Solo existencias bajas (&lt; 10)
+                    </label>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Inventory Table -->
+    <div class="card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-borderless mb-0">
+                <thead class="border-bottom border-color-default">
+                    <tr>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Código</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Producto</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Categoría</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Precio Unitario</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-center" style="letter-spacing:.05em;">Stock Actual</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Ajuste Rápido</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Filtered)
+                    {
+                        <tr class="border-bottom border-color-default align-middle">
+                            <td class="px-4 py-3 fw-medium text-muted-foreground small">PROD-@product.Id.ToString("D3")</td>
+                            <td class="px-4 py-3 d-flex align-items-center gap-3">
+                                <img src="@product.Image" alt="@product.Name" class="rounded-3 flex-shrink-0 object-fit-cover" style="width:40px;height:40px;" onerror="this.src='https://placehold.co/40px/e8f5e9/1A6B3C?text=🛒'" />
+                                <span class="fw-medium text-foreground small">@product.Name</span>
+                            </td>
+                            <td class="px-4 py-3 text-muted-foreground small">
+                                @ProductSvc.GetCategoryName(product.Category)
+                            </td>
+                            <td class="px-4 py-3 text-foreground small fw-medium">
+                                S/. @product.Price.ToString("0.00")
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="badge @(product.Stock == 0 ? "bg-danger" : product.Stock < 10 ? "bg-warning text-dark" : "bg-success") py-1.5 px-3" style="border-radius:var(--radius); font-size:.8rem;">
+                                    @product.Stock unidades
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-end">
+                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                    <button @onclick="@(() => AdjustStock(product, -1))" disabled="@(product.Stock == 0)" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width:30px;height:30px;">−</button>
+                                    <button @onclick="@(() => AdjustStock(product, 1))" class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center" style="width:30px;height:30px;">+</button>
+                                    <button @onclick="@(() => AdjustStock(product, 10))" class="btn btn-primary btn-sm px-2.5 ms-1" style="border-radius:var(--radius); font-size:.75rem;">+10 Lote</button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Filtered.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted-foreground">
+                                No hay productos en la categoría o búsqueda de inventario
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,183 @@
+@page "/admin/ventas"
+@layout AdminLayout
+@inject SalesService SalesSvc
+
+@code {
+    private List<Sale> _sales = new();
+    private string _search = "";
+    private string _channelFilter = "";
+    private string _payFilter = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SalesSvc.EnsureLoadedAsync();
+        _sales = SalesSvc.GetSales();
+    }
+
+    private IEnumerable<Sale> Filtered => _sales.Where(s =>
+        (string.IsNullOrEmpty(_search) || s.Cliente.Contains(_search, StringComparison.OrdinalIgnoreCase) || s.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_channelFilter) || s.Canal.Equals(_channelFilter, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_payFilter) || s.MetodoPago.Equals(_payFilter, StringComparison.OrdinalIgnoreCase))
+    );
+
+    private decimal TotalRevenue => Filtered.Sum(s => s.Total);
+    private decimal AvgTicket => Filtered.Any() ? Filtered.Average(s => s.Total) : 0;
+    private int TotalTransactions => Filtered.Count();
+
+    private string GetChannelClass(string ch) => ch.ToLower() switch
+    {
+        "web" => "bg-primary-subtle text-primary",
+        "presencial" => "bg-success-subtle text-success",
+        "whatsapp" => "bg-info-subtle text-info",
+        _ => "bg-light text-dark"
+    };
+
+    private string GetPayIcon(string method) => method.ToLower() switch
+    {
+        "yape" => "📱 Yape",
+        "plin" => "📱 Plin",
+        "tarjeta" => "💳 Tarjeta",
+        "efectivo" => "💵 Efectivo",
+        _ => method
+    };
+}
+
+<PageTitle>Historial de Ventas – Shiligama Admin</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div>
+        <h1 class="fs-4 fw-bold text-foreground mb-0">Historial de Ventas</h1>
+        <p class="text-muted-foreground small mt-1 mb-0">Reportes de ingresos consolidados físicos y virtuales</p>
+    </div>
+
+    <!-- Stats summary widgets -->
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="card p-3 d-flex flex-column gap-1">
+                <span class="small text-muted-foreground fw-medium">Ingresos Totales</span>
+                <span class="fs-3 fw-bold text-primary">S/. @TotalRevenue.ToString("0.00")</span>
+                <span class="text-xs text-muted-foreground mt-1">Con filtros aplicados</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 d-flex flex-column gap-1">
+                <span class="small text-muted-foreground fw-medium">Ticket Promedio</span>
+                <span class="fs-3 fw-bold text-foreground">S/. @AvgTicket.ToString("0.00")</span>
+                <span class="text-xs text-muted-foreground mt-1">Valor promedio por ticket</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-3 d-flex flex-column gap-1">
+                <span class="small text-muted-foreground fw-medium">Transacciones</span>
+                <span class="fs-3 fw-bold text-foreground">@TotalTransactions</span>
+                <span class="text-xs text-muted-foreground mt-1">Ventas registradas</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card p-4" style="border-radius: 12px;">
+        <div class="row g-2 align-items-center">
+
+            <!-- Buscar cliente o comprobante -->
+            <div class="col-md-6">
+                <div class="position-relative">
+                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted"
+                       style="left: 16px; font-size: 14px;"></i>
+
+                    <input type="search"
+                           @bind="_search"
+                           @bind:event="oninput"
+                           class="form-control text-foreground"
+                           placeholder="Buscar por cliente o comprobante..."
+                           style="height: 56px; border-radius: 10px; padding-left: 42px;" />
+                </div>
+            </div>
+
+            <!-- Filtro de canales -->
+            <div class="col-md-3">
+                <select @bind="_channelFilter"
+                        class="form-select text-foreground"
+                        style="height: 56px; border-radius: 10px;">
+                    <option value="">Todos los canales</option>
+                    <option value="web">Canal Web</option>
+                    <option value="presencial">Físico / Tienda</option>
+                    <option value="whatsapp">WhatsApp</option>
+                </select>
+            </div>
+
+            <!-- Filtro de pagos -->
+            <div class="col-md-3">
+                <select @bind="_payFilter"
+                        class="form-select text-foreground"
+                        style="height: 56px; border-radius: 10px;">
+                    <option value="">Todos los pagos</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                    <option value="yape">Yape</option>
+                    <option value="plin">Plin</option>
+                </select>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-borderless mb-0">
+                <thead class="border-bottom border-color-default">
+                    <tr>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Venta ID</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Cliente</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Fecha</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Canal</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Método Pago</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Total</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var sale in Filtered)
+                    {
+                        <tr class="border-bottom border-color-default align-middle">
+                            <td class="px-4 py-3 fw-bold text-primary small">@sale.Id</td>
+                            <td class="px-4 py-3 small">
+                                <span class="fw-medium text-foreground d-block">@sale.Cliente</span>
+                                <span class="text-xs text-muted-foreground text-capitalize">Doc: @sale.Comprobante</span>
+                            </td>
+                            <td class="px-4 py-3 text-muted-foreground small">
+                                @sale.Fecha.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+                            <td class="px-4 py-3 small">
+                                <span class="badge @(GetChannelClass(sale.Canal)) text-capitalize px-2 py-1" style="border-radius:var(--radius);">
+                                    @sale.Canal
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-foreground small">
+                                @GetPayIcon(sale.MetodoPago)
+                            </td>
+                            <td class="px-4 py-3 fw-semibold text-foreground small">
+                                S/. @sale.Total.ToString("0.00")
+                            </td>
+                            <td class="px-4 py-3 small">
+                                <span class="badge @(sale.Estado.ToLower() == "completado" ? "bg-success" : "bg-warning") px-2 py-1" style="border-radius:var(--radius);">
+                                    @sale.Estado
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Filtered.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted-foreground">
+                                No se encontraron registros de ventas
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

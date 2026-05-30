@@ -1,0 +1,170 @@
+@page "/ofertas"
+@layout MainLayout
+@inject ProductService ProductSvc
+@inject PromocionService PromoSvc
+@inject CartService Cart
+
+@code {
+    // Lista de (Promocion, sus productos)
+    private List<(Promocion Promo, List<Product> Products)> _sections = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            ProductSvc.EnsureLoadedAsync(),
+            PromoSvc.EnsureLoadedAsync()
+        );
+
+        _sections.Clear();
+        var vigentes = PromoSvc.GetVigentes();
+
+        foreach (var promo in vigentes)
+        {
+            // Obtiene los IDs de productos asociados a esta promoción
+            var ids = await PromoSvc.GetProductosDePromocionAsync(promo.Id);
+            var products = ids
+                .Select(id => ProductSvc.GetProductById(id))
+                .Where(p => p != null)
+                .Cast<Product>()
+                .ToList();
+            _sections.Add((promo, products));
+        }
+
+        _isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
+    }
+
+    private async Task AddToCart(Product p) => await Cart.AddToCartAsync(p);
+}
+
+<PageTitle>Ofertas Especiales – Shiligama</PageTitle>
+
+<div class="bg-background">
+    <div class="container-xl px-3 px-sm-4 pt-4">
+        <!-- Back -->
+        <nav class="mb-3">
+            <a href="/catalogo" class="text-muted-foreground text-decoration-none small d-inline-flex align-items-center gap-2" style="font-weight:500;">
+                <i class="fa-solid fa-chevron-left" style="font-size:0.85rem;"></i> Volver al catálogo
+            </a>
+        </nav>
+
+        <!-- Banner -->
+        <div class="p-5 rounded-4 text-white d-flex align-items-center justify-content-between gap-4 position-relative overflow-hidden"
+             style="background: linear-gradient(135deg, #7c2d12 0%, #b45309 50%, #f59e0b 100%);">
+            <div class="position-absolute rounded-circle" style="width:250px;height:250px;background:rgba(255,255,255,0.05);top:-80px;right:-50px;"></div>
+            <div class="position-relative z-1">
+                <span class="badge bg-danger mb-2 px-3 py-1" style="border-radius:var(--radius);">Descuentos de Locura</span>
+                <h1 class="fw-bold mb-2 fs-2" style="font-family:'Outfit',sans-serif;">Ahorra en Grande Hoy</h1>
+                <p class="mb-0 opacity-90 small">Explora las mejores promociones y precios rebajados en productos seleccionados.</p>
+            </div>
+            <div class="d-none d-md-block position-relative z-1" style="font-size:4.5rem;">🔥</div>
+        </div>
+    </div>
+
+    <div class="container-xl px-3 px-sm-4 py-5">
+
+        @if (_isLoading)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted-foreground small mt-3">Cargando promociones...</p>
+            </div>
+        }
+        else if (!_sections.Any())
+        {
+            <div class="text-center py-5">
+                <div class="fs-1 mb-3">🏷️</div>
+                <h3 class="text-foreground fw-semibold fs-5">No hay promociones activas</h3>
+                <p class="text-muted-foreground small">Vuelve pronto para ver nuestras increíbles ofertas.</p>
+                <a href="/catalogo" class="btn btn-primary mt-2" style="border-radius:var(--radius);">Ver catálogo general</a>
+            </div>
+        }
+        else
+        {
+            @foreach (var (promo, products) in _sections)
+            {
+                <!-- Sección por promoción -->
+                <div class="mb-5">
+                    <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                        <div>
+                            <h2 class="fs-4 fw-bold text-foreground mb-0">@promo.Nombre</h2>
+                            @if (!string.IsNullOrEmpty(promo.Descripcion))
+                            {
+                                <p class="text-muted-foreground small mb-0">@promo.Descripcion</p>
+                            }
+                        </div>
+                        <span class="badge px-3 py-2 fw-bold fs-6"
+                              style="background:color-mix(in srgb,#c62828 15%,transparent);color:#c62828;border-radius:var(--radius);">
+                            @promo.DescuentoLabel
+                        </span>
+                    </div>
+
+                    @if (!products.Any())
+                    {
+                        <p class="text-muted-foreground small">Sin productos asociados a esta promoción.</p>
+                    }
+                    else
+                    {
+                        <div class="row g-3 fade-in">
+                            @foreach (var product in products)
+                            {
+                                <div class="col-6 col-md-4 col-xl-3">
+                                    <div class="card h-100 d-flex flex-column position-relative overflow-hidden border border-color-default hover-shadow" style="transition:all .2s;">
+
+                                        <!-- Badge descuento -->
+                                        <span class="badge bg-danger position-absolute top-0 start-0 m-2 z-1 px-2 py-1 fw-semibold"
+                                              style="border-radius:calc(var(--radius) - 2px);font-size:.75rem;">
+                                            @promo.DescuentoLabel
+                                        </span>
+
+                                        @if (product.Stock == 0)
+                                        {
+                                            <div class="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center z-1"
+                                                 style="background:rgba(0,0,0,.5);border-radius:var(--radius);">
+                                                <span class="badge bg-dark fs-6">Sin stock</span>
+                                            </div>
+                                        }
+
+                                        <a href="/catalogo/@product.Id" class="text-decoration-none">
+                                            <img src="@product.Image" alt="@product.Name"
+                                                 class="w-100 object-fit-cover"
+                                                 style="height:160px;border-radius:calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;"
+                                                 onerror="this.src='https://placehold.co/300x300/e8f5e9/1A6B3C?text=🛒'" />
+                                        </a>
+
+                                        <div class="p-3 d-flex flex-column flex-grow-1">
+                                            <a href="/catalogo/@product.Id" class="text-decoration-none">
+                                                <p class="small fw-semibold mb-1 lh-sm text-foreground">@product.Name</p>
+                                            </a>
+                                            <p class="text-muted-foreground small mb-2">@ProductSvc.GetCategoryName(product.Category)</p>
+
+                                            <div class="mt-auto pt-2 d-flex align-items-center justify-content-between">
+                                                <span class="fw-bold text-danger fs-5">S/. @product.Price.ToString("0.00")</span>
+                                                <button @onclick="@(() => AddToCart(product))"
+                                                        disabled="@(product.Stock == 0)"
+                                                        class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                                                        style="border-radius:calc(var(--radius) - 2px);">
+                                                    <i class="fas fa-cart-plus"></i>
+                                                </button>
+                                            </div>
+
+                                            @if (!string.IsNullOrEmpty(promo.Condiciones))
+                                            {
+                                                <p class="text-muted-foreground mt-1 mb-0" style="font-size:0.7rem;">@promo.Condiciones</p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+</div>

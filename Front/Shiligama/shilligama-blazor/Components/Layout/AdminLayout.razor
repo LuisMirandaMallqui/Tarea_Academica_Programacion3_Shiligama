@@ -1,0 +1,295 @@
+@inherits LayoutComponentBase
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+@code {
+    private bool _isMobileSidebarOpen = false;
+
+    private void ToggleMobileSidebar()
+    {
+        _isMobileSidebarOpen = !_isMobileSidebarOpen;
+    }
+
+    private void HandleLogout()
+    {
+        Auth.Logout();
+        Navigation.NavigateTo("/");
+    }
+
+    private bool IsActive(string href)
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var target = href.TrimStart('/');
+        
+        if (string.IsNullOrEmpty(target))
+        {
+            return string.IsNullOrEmpty(relative) || relative.Equals("admin", StringComparison.OrdinalIgnoreCase);
+        }
+        
+        return relative.StartsWith(target, StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+<div class="d-flex flex-column min-vh-100 bg-background text-foreground">
+    
+    <!-- Mobile Menu Toggle Button (Floating) -->
+    <button type="button" @onclick="ToggleMobileSidebar" class="btn btn-primary d-lg-none position-fixed top-3 start-3 z-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; left: 15px; top: 10px; border-radius: var(--radius); background-color: var(--sidebar); border-color: var(--sidebar);">
+        <Icons Name="Menu" Class="w-5 h-5 text-white" />
+    </button>
+
+    <!-- Sidebar - Desktop (Fixed) -->
+    <aside class="d-none d-lg-flex flex-column position-fixed top-0 bottom-0 start-0 z-2 bg-sidebar text-white shadow-sm" style="width: 270px; background-color: #0E4927 !important; color: #F4FFF8 !important;">
+        <!-- Sidebar Brand -->
+        <div class="p-4 border-bottom border-white-10">
+            <a href="/admin" class="d-flex align-items-center gap-3 text-decoration-none text-white">
+                <div class="d-flex align-items-center justify-content-center rounded bg-white-10 flex-shrink-0" style="width: 42px; height: 42px; background: rgba(255,255,255,0.15);">
+                    <Icons Name="ShoppingCart" Class="text-white" Style="width: 24px; height: 24px; color: #FFFFFF;" />
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold m-0 leading-none" style="font-family: 'Outfit', sans-serif;">Shiligama</h1>
+                    <p class="text-xs text-white-50 m-0" style="opacity: 0.7;">Administración</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <nav class="flex-grow-1 p-3 overflow-y-auto d-flex flex-column gap-1">
+            <a href="/admin" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin") && !IsActive("/admin/pedidos") && !IsActive("/admin/productos") && !IsActive("/admin/inventario") && !IsActive("/admin/ventas") && !IsActive("/admin/proveedores") && !IsActive("/admin/personal") && !IsActive("/admin/reportes") && !IsActive("/admin/devoluciones") && !IsActive("/admin/notificaciones") ? "active" : "")">
+                <Icons Name="Store" Class="w-5 h-5" />
+                Dashboard
+            </a>
+
+            <a href="/admin/pedidos" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/pedidos") ? "active" : "") style="color: ##EAF7EE;">
+                <Icons Name="FileText" Class="w-5 h-5" />
+                Pedidos
+            </a>
+            <a href="/admin/productos" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/productos") ? "active" : "") style="color: #EAF7EE;">
+                <Icons Name="Package" Class="w-5 h-5" />
+                Productos
+            </a>
+            <a href="/admin/inventario" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/inventario") ? "active" : "") style="color: #EAF7EE;">
+                <Icons Name="Building2" Class="w-5 h-5" />
+                Inventario
+            </a>
+            <a href="/admin/ventas" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/ventas") ? "active" : "") style="color: #EAF7EE;">
+                <Icons Name="TrendingUp" Class="w-5 h-5" />
+                Ventas
+            </a>
+            <a href="/admin/proveedores" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/proveedores") ? "active" : "") style="color: #EAF7EE;">
+                <Icons Name="Truck" Class="w-5 h-5" />
+                Proveedores
+            </a>
+            <a href="/admin/personal" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/personal") ? "active" : "") style="color: #EAF7EE;">
+                <Icons Name="User" Class="w-5 h-5" />
+                Personal
+            </a>
+            <a href="/admin/reportes" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/reportes") ? "active" : "") style="color: #EAF7EE;">
+                <Icons Name="FileText" Class="w-5 h-5" />
+                Reportes
+            </a>
+            <a href="/admin/devoluciones" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/devoluciones") ? "active" : "") style="color: #EAF7EE;">
+                <Icons Name="HelpCircle" Class="w-5 h-5" />
+                Devoluciones
+            </a>
+            <a href="/admin/notificaciones" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/notificaciones") ? "active" : "") style="color: #EAF7EE;">
+                <Icons Name="Bell" Class="w-5 h-5" />
+                Notificaciones
+            </a>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="p-3 border-top border-white-10 d-flex flex-column gap-1">
+            <a href="/admin/configuracion" class="d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/configuracion") ? "active" : "")" style="color: #EAF7EE;">
+                <Icons Name="Settings" Class="w-5 h-5" />
+                Configuración
+            </a>
+            <button type="button" @onclick="HandleLogout" class="btn btn-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 border-0 text-start w-100 shadow-none" style="color: #EAF7EE;">
+                <Icons Name="LogOut" Class="w-5 h-5" />
+                Cerrar sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- Mobile Navigation Drawer -->
+    @if (_isMobileSidebarOpen)
+    {
+        <div class="sheet-backdrop z-3" @onclick="ToggleMobileSidebar"></div>
+        <div class="sheet-panel show bg-sidebar text-white p-0 d-flex flex-column justify-between z-3" style="width: 260px; background-color: var(--sidebar) !important;">
+            <div>
+                <!-- Brand Mobile Header -->
+                <div class="p-4 border-bottom border-white-10 d-flex align-items-center justify-content-between">
+                    <a href="/admin" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 text-decoration-none text-white">
+                        <div class="d-flex align-items-center justify-content-center rounded bg-white-10" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15);">
+                            <Icons Name="ShoppingCart" Class="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold m-0 leading-none" style="font-family: 'Outfit', sans-serif;">Shiligama</h1>
+                            <p class="text-xs text-white-50 m-0" style="opacity: 0.7;">Administración</p>
+                        </div>
+                    </a>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ToggleMobileSidebar"></button>
+                </div>
+
+                <!-- Navigation List Mobile -->
+                <nav class="p-3 d-flex flex-column gap-1 overflow-y-auto" style="max-height: calc(100vh - 160px);">
+                    <a href="/admin" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin") && !IsActive("/admin/pedidos") && !IsActive("/admin/productos") && !IsActive("/admin/inventario") && !IsActive("/admin/ventas") && !IsActive("/admin/proveedores") && !IsActive("/admin/personal") && !IsActive("/admin/reportes") && !IsActive("/admin/devoluciones") && !IsActive("/admin/notificaciones") ? "active" : "")">
+                        <Icons Name="Store" Class="w-5 h-5" />
+                        Dashboard
+                    </a>
+                    <a href="/admin/pedidos" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/pedidos") ? "active" : "")">
+                        <Icons Name="FileText" Class="w-5 h-5" />
+                        Pedidos
+                    </a>
+                    <a href="/admin/productos" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/productos") ? "active" : "")">
+                        <Icons Name="Package" Class="w-5 h-5" />
+                        Productos
+                    </a>
+                    <a href="/admin/inventario" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/inventario") ? "active" : "")">
+                        <Icons Name="Building2" Class="w-5 h-5" />
+                        Inventario
+                    </a>
+                    <a href="/admin/ventas" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/ventas") ? "active" : "")">
+                        <Icons Name="TrendingUp" Class="w-5 h-5" />
+                        Ventas
+                    </a>
+                    <a href="/admin/proveedores" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/proveedores") ? "active" : "")">
+                        <Icons Name="Truck" Class="w-5 h-5" />
+                        Proveedores
+                    </a>
+                    <a href="/admin/personal" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/personal") ? "active" : "")">
+                        <Icons Name="User" Class="w-5 h-5" />
+                        Personal
+                    </a>
+                    <a href="/admin/reportes" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/reportes") ? "active" : "")">
+                        <Icons Name="FileText" Class="w-5 h-5" />
+                        Reportes
+                    </a>
+                    <a href="/admin/devoluciones" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/devoluciones") ? "active" : "")">
+                        <Icons Name="HelpCircle" Class="w-5 h-5" />
+                        Devoluciones
+                    </a>
+                    <a href="/admin/notificaciones" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/notificaciones") ? "active" : "")">
+                        <Icons Name="Bell" Class="w-5 h-5" />
+                        Notificaciones
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-3 border-top border-white-10 d-flex flex-column gap-1">
+                <a href="/admin/configuracion" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/configuracion") ? "active" : "")">
+                    <Icons Name="Settings" Class="w-5 h-5" />
+                    Configuración
+                </a>
+                <button type="button" @onclick="HandleLogout" class="btn btn-link d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 border-0 text-start w-100 shadow-none" style="font-size: inherit; color: inherit;">
+                    <Icons Name="LogOut" Class="w-5 h-5" />
+                    Cerrar sesión
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Content Workspace -->
+    <div class="flex-grow-1 d-flex flex-column" style="padding-left: 0px; padding-left: 260px; max-width: 100%;">
+        
+        <!-- Top Bar Header -->
+        <header class="sticky-top bg-card border-bottom py-3 px-3 px-lg-4 border-color-default" style="z-index: 1; backdrop-filter: blur(8px); background-color: rgba(var(--bs-body-bg-rgb), 0.95);">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+                <!-- Mobile Spacer left (for float button) -->
+                <div class="d-lg-none" style="width: 48px;"></div>
+                
+                <!-- Search bar filter mock -->
+                <div class="flex-grow-1 max-w-md" style="max-width: 400px;">
+                    <div class="position-relative w-100">
+                       @*  <Icons Name="Search" Class="admin-search-icon position-absolute start-3 top-50 translate-middle-y mt-2 pt-1 w-4 h-4 text-muted-foreground" style="left: 12px;" />
+                        <input
+                            type="search"
+                            placeholder="Buscar productos, pedidos, personal..."
+                            class="form-control pl-9 border-0 bg-muted text-foreground py-2"
+                            style="padding-left: 36px; background-color: var(--secondary) !important; font-size: 0.9rem;"
+                        /> *@
+                    </div>
+                </div>
+
+                <!-- Right items -->
+                <div class="d-flex align-items-center gap-3">
+                    
+                    <!-- Theme Selector -->
+                    <ThemeSelector />
+
+                    <!-- Notifications Link -->
+                    <a href="/admin/notificaciones" class="btn btn-ghost p-2 position-relative text-foreground" style="border-radius: var(--radius);" title="Notificaciones">
+                        <Icons Name="Bell" Class="admin-notification-icon mt-1" />
+                        <span class="position-absolute top-1 start-100 translate-middle badge bg-danger border border-light rounded-circle d-flex align-items-center justify-content-center" style="width: 18px; height: 18px; font-size: 0.65rem; left: 80%;">
+                            3
+                        </span>
+                    </a>
+
+                    <!-- User drop menu -->
+                    <div class="dropdown">
+                        <button class="btn btn-ghost p-1 rounded-circle border-0 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px;">
+                            <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width: 32px; height: 32px; opacity: 0.9;">
+                                <Icons Name="User" Class="w-4 h-4" />
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end  border shadow-lg p-2" style="width: 220px; border-radius: var(--radius);">
+                            <li class="px-3 py-2 border-bottom border-color-default mb-1">
+                                <p class="text-sm font-semibold text-foreground m-0">@(Auth.CurrentUser?.Name ?? "Administrador")</p>
+                                <p class="text-xs text-muted-foreground m-0 text-truncate">@(Auth.CurrentUser?.Email ?? "admin@shiligama.com")</p>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/admin/perfil" style="border-radius: var(--radius);">
+                                    <Icons Name="User" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                    Mi Perfil
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/admin/configuracion" style="border-radius: var(--radius);">
+                                    <Icons Name="Settings" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                    Configuración
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider border-color-default"></li>
+                            <li>
+                                <button type="button" @onclick="HandleLogout" class="dropdown-item d-flex align-items-center text-danger py-2" style="border-radius: var(--radius);">
+                                    <Icons Name="LogOut" Class="w-4 h-4 me-2" />
+                                    Cerrar Sesión
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body Content -->
+        <main class="flex-grow-1 p-3 p-md-4" style="max-width: 100%;">
+            @Body
+        </main>
+    </div>
+</div>
+
+<style>
+    /* Desktop aside custom scroll */
+    aside nav::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    /* Hover bg classes for dark green drawer */
+    .hover-bg-white-10:hover {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        color: #ffffff !important;
+    }
+    
+    .hover-bg-white-10.active {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+    @@media (max-width: 991.98px) {
+        div.flex-grow-1 {
+            padding-left: 0px !important;
+        }
+    }
+</style>

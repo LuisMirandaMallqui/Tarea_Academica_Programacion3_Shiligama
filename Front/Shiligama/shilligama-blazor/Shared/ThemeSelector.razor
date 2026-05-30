@@ -1,0 +1,69 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JSRuntime
+
+@code {
+    private bool _isDarkMode = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var storedTheme = await JSRuntime.InvokeAsync<string>("localStorageHelper.getItem", "theme");
+                _isDarkMode = storedTheme == "dark";
+                await ApplyTheme();
+                StateHasChanged();
+            }
+            catch
+            {
+                // Prerender safety
+            }
+        }
+    }
+
+    private async Task ToggleTheme()
+    {
+        _isDarkMode = !_isDarkMode;
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorageHelper.setItem", "theme", _isDarkMode ? "dark" : "light");
+            await ApplyTheme();
+        }
+        catch { }
+    }
+
+    private async Task ApplyTheme()
+    {
+        try
+        {
+            if (_isDarkMode)
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.documentElement.classList.add('dark')");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("eval", "document.documentElement.classList.remove('dark')");
+            }
+        }
+        catch { }
+    }
+}
+
+<button type="button" @onclick="ToggleTheme" class="btn btn-secondary p-0 d-flex align-items-center justify-content-center border-0 shadow-sm" style="width: 40px; height: 40px; border-radius: var(--radius); background-color: var(--secondary);" title="Cambiar Tema">
+    @if (_isDarkMode)
+    {
+        <!-- Sun Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+    }
+    else
+    {
+        <!-- Moon Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+        </svg>
+    }
+</button>

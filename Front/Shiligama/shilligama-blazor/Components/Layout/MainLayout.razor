@@ -1,0 +1,280 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+@inject CartService Cart
+@inject AuthService Auth
+@inject ProductService Product
+@inject NavigationManager Navigation
+
+@code {
+    private string SearchQuery
+    {
+        get => Product.SearchQuery;
+        set => Product.NotifySearch(value);
+    }
+
+    private bool _isMobileMenuOpen = false;
+    private bool _isMobileSearchOpen = false;
+    private bool _isUserDropdownOpen = false;
+
+    private void ToggleUserDropdown()
+    {
+        _isUserDropdownOpen = !_isUserDropdownOpen;
+    }
+
+    private void CloseUserDropdown()
+    {
+        _isUserDropdownOpen = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.InitializeAsync();
+            Cart.OnChange += StateHasChanged;
+            Auth.OnChange += StateHasChanged;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleMobileMenu()
+    {
+        _isMobileMenuOpen = !_isMobileMenuOpen;
+    }
+
+    private void ToggleMobileSearch()
+    {
+        _isMobileSearchOpen = !_isMobileSearchOpen;
+    }
+
+    private void HandleSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            if (!Navigation.Uri.Contains("/catalogo", StringComparison.OrdinalIgnoreCase))
+            {
+                Navigation.NavigateTo("/catalogo");
+            }
+            _isMobileSearchOpen = false;
+        }
+    }
+
+    private void HandleLogout()
+    {
+        Auth.Logout();
+        Navigation.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        Cart.OnChange -= StateHasChanged;
+        Auth.OnChange -= StateHasChanged;
+    }
+}
+
+<style>
+    .dropdown-menu {
+        background-color: var(--card) !important;
+        border-color: var(--border) !important;
+    }
+
+    .dropdown-item {
+        color: var(--foreground) !important;
+        background-color: transparent;
+        transition: background-color 0.15s;
+    }
+
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+            background-color: var(--secondary) !important;
+            color: var(--foreground) !important;
+        }
+
+        .dropdown-item.text-danger:hover,
+        .dropdown-item.text-danger:focus {
+            background-color: color-mix(in srgb, var(--destructive) 12%, transparent) !important;
+            color: var(--destructive) !important;
+        }
+
+    .dropdown-divider {
+        border-color: var(--border) !important;
+    }
+</style>
+
+<div class="d-flex flex-column min-vh-100 bg-background text-foreground" @onclick="CloseUserDropdown">
+    <!-- Navbar Header -->
+    <header class="sticky-top z-3 w-100 border-bottom bg-card shadow-sm border-color-default" style="backdrop-filter: blur(8px); background-color: rgba(var(--bs-body-bg-rgb), 0.95);">
+        <div class="container-xl px-3 px-sm-4">
+            <div class="d-flex align-items-center justify-content-between gap-3" style="height: 64px;">
+                
+                <!-- Logo -->
+                <a href="/catalogo" class="d-flex align-items-center gap-2 text-decoration-none shrink-0">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width: 40px; height: 40px;">
+                        <Icons Name="ShoppingCart" Class="w-5 h-5" />
+                    </div>
+                    <span class="d-none d-sm-block text-xl font-bold text-foreground" style="font-family: 'Outfit', sans-serif; font-size: 1.25rem;">
+                        Shiligama
+                    </span>
+                </a>
+
+                <!-- Search Bar - Desktop -->
+                <div class="d-none d-md-flex align-items-center flex-grow-1 max-w-xl mx-auto" style="max-width: 500px;">
+                    <div class="position-relative w-100 d-flex align-items-center">
+                        <i class="fa-solid fa-magnifying-glass text-muted-foreground position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; pointer-events: none;"></i>
+                        <input
+                            type="search"
+                            placeholder="Buscar productos..."
+                            @bind="SearchQuery"
+                            @bind:event="oninput"
+                            @onkeypress="HandleSearchKeyPress"
+                            class="form-control w-100 border-0 bg-muted text-foreground"
+                            style="padding-left: 42px; height: 40px; background-color: var(--secondary) !important; border-radius: var(--radius);"
+                        />
+                    </div>
+                </div>
+
+                <!-- Right Actions -->
+                <div class="d-flex align-items-center gap-2">
+                    
+                    <!-- Mobile Search Trigger -->
+                    <button type="button" @onclick="ToggleMobileSearch" class="btn btn-ghost p-2 d-md-none text-foreground" style="border-radius: var(--radius);">
+                        <Icons Name="Search" Class="w-5 h-5" />
+                    </button>
+
+                    <!-- Theme Switcher -->
+                    <ThemeSelector />
+
+                    <!-- Cart Link -->
+                    <a href="/carrito" class="btn btn-secondary p-0 d-flex align-items-center justify-content-center border-0 shadow-sm position-relative" style="width: 40px; height: 40px; border-radius: var(--radius); background-color: var(--secondary);" title="Ver Carrito">
+                        <i class="fa-solid fa-cart-shopping text-foreground" style="font-size: 1.1rem;"></i>
+                        @if (Cart.GetCartCount() > 0)
+                        {
+                            <span class="position-absolute badge bg-primary border border-light rounded-circle d-flex align-items-center justify-content-center text-xs" style="width: 20px; height: 20px; font-size: 0.7rem; top: -6px; right: -6px; padding: 0;">
+                                @Cart.GetCartCount()
+                            </span>
+                        }
+                    </a>
+
+                    <!-- User Account Menu (Dropdown) -->
+                    <div class="dropdown position-relative">
+                        <button class="btn btn-secondary p-0 d-flex align-items-center justify-content-center border-0 shadow-sm" type="button" @onclick="ToggleUserDropdown" @onclick:stopPropagation style="width: 40px; height: 40px; border-radius: var(--radius); background-color: var(--secondary);" title="Menú de Usuario">
+                            <i class="fa-solid fa-user text-foreground" style="font-size: 1.1rem;"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end card border shadow-lg p-2 @(_isUserDropdownOpen ? "show" : "")" 
+                            style="width: 240px; border-radius: var(--radius); position: absolute; right: 0; top: 100%; display: @(_isUserDropdownOpen ? "block" : "none"); margin-top: 8px; z-index: 1000;"
+                            @onclick="CloseUserDropdown" @onclick:stopPropagation>
+                            <li class="px-3 py-2 border-bottom border-color-default mb-1">
+                                <p class="text-sm font-semibold text-foreground m-0">@(Auth.CurrentUser?.Name ?? "Cliente Invitado")</p>
+                                <p class="text-xs text-muted-foreground m-0 text-truncate">@(Auth.CurrentUser?.Email ?? "cliente@shiligama.com")</p>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/mis-pedidos" style="border-radius: var(--radius);">
+                                    <Icons Name="Package" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                    Mis Pedidos
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/ofertas" style="border-radius: var(--radius);">
+                                    <Icons Name="Calendar" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                    Ofertas
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/configuracion" style="border-radius: var(--radius);">
+                                    <Icons Name="Settings" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                    Configuración
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider border-color-default"></li>
+                            <li>
+                                <button type="button" @onclick="HandleLogout" class="dropdown-item d-flex align-items-center text-danger py-2" style="border-radius: var(--radius);">
+                                    <Icons Name="LogOut" Class="w-4 h-4 me-2" />
+                                    Cerrar Sesión
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Mobile Drawer Menu Trigger -->
+                    <button type="button" @onclick="ToggleMobileMenu" class="btn btn-ghost p-2 d-lg-none text-foreground" style="border-radius: var(--radius);">
+                        <Icons Name="Menu" Class="w-5 h-5" />
+                    </button>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Search Dropdown Drawer -->
+        @if (_isMobileSearchOpen)
+        {
+            <div class="d-md-none border-top bg-card p-3 shadow-inner border-color-default border-bottom">
+                <div class="position-relative">
+                    <Icons Name="Search" Class="position-absolute start-3 top-50 translate-middle-y w-5 h-5 text-muted-foreground" style="left: 14px;" />
+                    <input
+                        type="search"
+                        placeholder="Buscar productos..."
+                        @bind="SearchQuery"
+                        @bind:event="oninput"
+                        @onkeypress="HandleSearchKeyPress"
+                        class="form-control pl-10 bg-muted"
+                        style="padding-left: 42px; background-color: var(--secondary) !important;"
+                        autofocus
+                    />
+                </div>
+            </div>
+        }
+    </header>
+
+    <!-- Mobile Navigation Drawer (Offcanvas style) -->
+    @if (_isMobileMenuOpen)
+    {
+        <div class="sheet-backdrop" @onclick="ToggleMobileMenu"></div>
+        <div class="sheet-panel show p-4 d-flex flex-column justify-between bg-card text-foreground" style="width: 280px; max-width: 85%;">
+            <div>
+                <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-color-default">
+                    <h5 class="m-0 font-bold" style="font-family: 'Outfit', sans-serif;">Menú</h5>
+                    <button type="button" class="btn-close" @onclick="ToggleMobileMenu"></button>
+                </div>
+                <nav class="d-flex flex-column gap-2">
+                    <a href="/catalogo" @onclick="ToggleMobileMenu" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-foreground hover:bg-muted" style="border-radius: var(--radius); font-weight: 500;">
+                        <Icons Name="ShoppingCart" Class="w-5 h-5 text-primary" />
+                        Catálogo
+                    </a>
+                    <a href="/ofertas" @onclick="ToggleMobileMenu" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-foreground hover:bg-muted" style="border-radius: var(--radius); font-weight: 500;">
+                        <Icons Name="Calendar" Class="w-5 h-5 text-primary" />
+                        Ofertas
+                    </a>
+                    <a href="/mis-pedidos" @onclick="ToggleMobileMenu" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-foreground hover:bg-muted" style="border-radius: var(--radius); font-weight: 500;">
+                        <Icons Name="Package" Class="w-5 h-5 text-primary" />
+                        Mis Pedidos
+                    </a>
+                    <a href="/configuracion" @onclick="ToggleMobileMenu" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-foreground hover:bg-muted" style="border-radius: var(--radius); font-weight: 500;">
+                        <Icons Name="Settings" Class="w-5 h-5 text-primary" />
+                        Configuración
+                    </a>
+                </nav>
+            </div>
+            
+            <div class="pt-3 border-top border-color-default">
+                <button type="button" @onclick="HandleLogout" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2" style="border-radius: var(--radius);">
+                    <Icons Name="LogOut" Class="w-4 h-4" />
+                    Cerrar Sesión
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Main Content Body -->
+    <main class="flex-grow-1">
+        @Body
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-top bg-card py-4 mt-auto border-color-default">
+        <div class="container-xl text-center">
+            <p class="text-sm text-muted-foreground m-0">
+                &copy; 2026 Shiligama. Todos los derechos reservados.
+            </p>
+        </div>
+    </footer>
+</div>

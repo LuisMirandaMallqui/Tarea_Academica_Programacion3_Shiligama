@@ -1,0 +1,212 @@
+@page "/configuracion"
+@layout MainLayout
+@inject AuthService Auth
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+@code {
+    private string _nombres  = "";
+    private string _apellidos= "";
+    private string _dni      = "";
+    private string _phone    = "";
+    private string _address  = "";
+    private bool   _success  = false;
+    private bool   _saving   = false;
+    private string _error    = "";
+
+    protected override void OnInitialized()
+    {
+        if (!Auth.IsLoggedIn())
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        var u = Auth.CurrentUser!;
+        _nombres   = u.Nombres;
+        _apellidos = u.Apellidos;
+        _dni       = u.Dni ?? "";
+        _phone     = u.Telefono ?? "";
+        _address   = u.DireccionEntrega ?? "";
+    }
+
+    private async Task SaveChanges()
+    {
+        _saving = true;
+        _error  = "";
+        _success= false;
+
+        var u = Auth.CurrentUser!;
+
+        // PUT /api/clientes — actualiza MODIFICAR_USUARIO (nombres, apellidos, dni,
+        // telefono, correo) y MODIFICAR_CLIENTE (direccion_entrega).
+        // La contraseña no cambia: el SP MODIFICAR_USUARIO no la toca, pero la
+        // validación del BO la requiere como campo no vacío, así que enviamos "*".
+        var dto = new
+        {
+            idUsuario        = u.Id,
+            correo           = u.Correo,
+            contrasena       = "*",          // campo requerido por validación; SP no lo modifica
+            nombres          = _nombres.Trim(),
+            apellidos        = _apellidos.Trim(),
+            dni              = _dni.Trim(),
+            telefono         = _phone.Trim(),
+            direccionEntrega = _address.Trim()
+        };
+
+        try
+        {
+            var resp = await Http.PutAsJsonAsync("clientes", dto);
+            if (resp.IsSuccessStatusCode)
+            {
+                // Actualiza el objeto en sesión para que el navbar refleje el cambio
+                u.Nombres          = _nombres.Trim();
+                u.Apellidos        = _apellidos.Trim();
+                u.Dni              = _dni.Trim();
+                u.Telefono         = _phone.Trim();
+                u.DireccionEntrega = _address.Trim();
+                _success = true;
+            }
+            else
+            {
+                var msg = await resp.Content.ReadAsStringAsync();
+                _error = $"No se pudo guardar: {msg}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error de conexión: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+            if (_success)
+            {
+                await Task.Delay(3000);
+                _success = false;
+                StateHasChanged();
+            }
+        }
+    }
+}
+
+<PageTitle>Configuración – Shiligama</PageTitle>
+
+<div class="container-xl px-3 px-sm-4 py-4" style="max-width: 680px;">
+    <!-- Back Button -->
+    <nav class="mb-3">
+        <a href="/catalogo" class="text-muted-foreground text-decoration-none small d-inline-flex align-items-center gap-2" style="font-weight: 500;">
+            <i class="fa-solid fa-chevron-left" style="font-size: 0.85rem;"></i> Volver al catálogo
+        </a>
+    </nav>
+
+    <h1 class="fs-2 fw-bold text-foreground mb-1" style="font-family: 'Outfit', sans-serif;">Configuración</h1>
+    <p class="text-muted-foreground small mt-1 mb-4">Administra tu información personal y preferencias de entrega</p>
+
+    @if (_success)
+    {
+        <div class="alert alert-success p-3 d-flex align-items-center gap-2 mb-4" style="border-radius: var(--radius);" role="alert">
+            <i class="fa-solid fa-check text-success"></i>
+            <div>¡Tus cambios han sido guardados con éxito!</div>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger p-3 mb-4" style="border-radius: var(--radius);">@_error</div>
+    }
+
+    <EditForm Model="this" OnValidSubmit="SaveChanges" class="d-flex flex-column gap-4">
+
+        <!-- Información Personal -->
+        <div class="card p-4 d-flex flex-column gap-3 shadow-sm" style="border-radius: 12px; border: 1px solid rgba(0,0,0,0.08);">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
+                    <i class="fa-regular fa-user" style="color:#0D4525;font-size:1.1rem;"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-foreground mb-0" style="font-size:1.05rem;">Información Personal</h3>
+                    <p class="text-muted-foreground small mb-0">Tu nombre y documento de identidad</p>
+                </div>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-md-6">
+                    <label class="form-label small fw-medium text-foreground">Nombres</label>
+                    <input type="text" @bind="_nombres" required class="form-control text-foreground" style="height:44px;border-radius:8px;" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-medium text-foreground">Apellidos</label>
+                    <input type="text" @bind="_apellidos" required class="form-control text-foreground" style="height:44px;border-radius:8px;" />
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label small fw-medium text-foreground">DNI</label>
+                    <div class="position-relative">
+                        <i class="fa-regular fa-id-card text-muted-foreground position-absolute" style="left:14px;top:50%;transform:translateY(-50%);"></i>
+                        <input type="text" @bind="_dni" required maxlength="8" pattern="\d{8}"
+                               class="form-control text-foreground"
+                               style="height:44px;padding-left:42px;border-radius:8px;" />
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <label class="form-label small fw-medium text-foreground">Correo</label>
+                    <input type="email" value="@Auth.CurrentUser?.Correo" disabled
+                           class="form-control text-muted-foreground" style="height:44px;border-radius:8px;" />
+                    <div class="form-text small text-muted-foreground">El correo no se puede cambiar desde aquí.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contacto -->
+        <div class="card p-4 d-flex flex-column gap-3 shadow-sm" style="border-radius:12px;border:1px solid rgba(0,0,0,0.08);">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
+                    <i class="fa-solid fa-phone" style="color:#0D4525;font-size:1.1rem;"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-foreground mb-0" style="font-size:1.05rem;">Contacto</h3>
+                    <p class="text-muted-foreground small mb-0">Tu número de teléfono para coordinar entregas</p>
+                </div>
+            </div>
+            <div>
+                <label class="form-label small fw-medium text-foreground">Teléfono</label>
+                <div class="position-relative">
+                    <i class="fa-solid fa-phone text-muted-foreground position-absolute" style="left:14px;top:50%;transform:translateY(-50%);"></i>
+                    <input type="tel" @bind="_phone" class="form-control text-foreground"
+                           style="height:44px;padding-left:42px;border-radius:8px;" placeholder="987654321" />
+                </div>
+                <div class="form-text text-muted-foreground mt-1" style="font-size:0.75rem;">Usaremos este número para contactarte sobre tus pedidos.</div>
+            </div>
+        </div>
+
+        <!-- Dirección de Entrega -->
+        <div class="card p-4 d-flex flex-column gap-3 shadow-sm" style="border-radius:12px;border:1px solid rgba(0,0,0,0.08);">
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
+                    <i class="fa-solid fa-location-dot" style="color:#0D4525;font-size:1.1rem;"></i>
+                </div>
+                <div>
+                    <h3 class="fw-bold text-foreground mb-0" style="font-size:1.05rem;">Dirección de Entrega</h3>
+                    <p class="text-muted-foreground small mb-0">La dirección donde recibirás tus pedidos</p>
+                </div>
+            </div>
+            <div>
+                <label class="form-label small fw-medium text-foreground">Dirección completa</label>
+                <textarea @bind="_address" class="form-control text-foreground py-2" rows="3"
+                          style="border-radius:8px;resize:none;" placeholder="Av. Los Olivos 123, Lima"></textarea>
+                <div class="form-text text-muted-foreground mt-1" style="font-size:0.75rem;">Incluye referencias para facilitar la entrega.</div>
+            </div>
+        </div>
+
+        <!-- Save Bar -->
+        <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3 mt-2 mb-4">
+            <span class="text-muted-foreground small">Los cambios se guardarán en tu perfil.</span>
+            <button type="submit" disabled="@_saving"
+                    class="btn text-white px-4 py-2 fw-semibold d-flex align-items-center gap-2"
+                    style="background-color:#0D4525;border-radius:8px;border:none;">
+                @if (_saving)
+                { <span class="spinner-border spinner-border-sm me-1"></span><span>Guardando…</span> }
+                else
+                { <i class="fa-solid fa-floppy-disk"></i><span> Guardar cambios</span> }
+            </button>
+        </div>
+    </EditForm>
+</div>

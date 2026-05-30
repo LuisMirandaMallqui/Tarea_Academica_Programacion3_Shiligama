@@ -1,0 +1,244 @@
+@inherits LayoutComponentBase
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+@code {
+    private bool _isMobileSidebarOpen = false;
+
+    private void ToggleMobileSidebar()
+    {
+        _isMobileSidebarOpen = !_isMobileSidebarOpen;
+    }
+
+    private void HandleLogout()
+    {
+        Auth.Logout();
+        Navigation.NavigateTo("/");
+    }
+
+    private bool IsActive(string href)
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var target = href.TrimStart('/');
+        
+        if (string.IsNullOrEmpty(target))
+        {
+            return string.IsNullOrEmpty(relative) || relative.Equals("trabajador", StringComparison.OrdinalIgnoreCase);
+        }
+        
+        return relative.StartsWith(target, StringComparison.OrdinalIgnoreCase);
+    }
+}
+
+<div class="d-flex flex-column min-vh-100 bg-background text-foreground">
+    
+    <!-- Mobile Menu Toggle Button (Floating) -->
+    <button type="button" @onclick="ToggleMobileSidebar" class="btn btn-primary d-lg-none position-fixed top-3 start-3 z-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; left: 15px; top: 10px; border-radius: var(--radius); background-color: var(--sidebar); border-color: var(--sidebar);">
+        <Icons Name="Menu" Class="w-5 h-5 text-white" />
+    </button>
+
+    <!-- Sidebar - Desktop (Fixed) -->
+    <aside class="d-none d-lg-flex flex-column position-fixed top-0 bottom-0 start-0 z-2 bg-sidebar text-white shadow-sm" style="width: 260px; background-color: var(--sidebar) !important;">
+        <!-- Sidebar Brand -->
+        <div class="p-4 border-bottom border-white-10">
+            <a href="/trabajador" class="d-flex align-items-center gap-3 text-decoration-none text-white">
+                <div class="d-flex align-items-center justify-content-center rounded bg-white-10" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15);">
+                    <Icons Name="ShoppingCart" Class="w-6 h-6 text-white" />
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold m-0 leading-none" style="font-family: 'Outfit', sans-serif;">Shiligama</h1>
+                    <p class="text-xs text-white-50 m-0" style="opacity: 0.7;">Portal Trabajador</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <nav class="flex-grow-1 p-3 overflow-y-auto d-flex flex-column gap-1">
+            <a href="/trabajador" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/perfil") ? "active" : "")">
+                <Icons Name="FileText" Class="w-5 h-5" />
+                Pedidos Clientes
+            </a>
+            <a href="/trabajador/registrar-venta" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador/registrar-venta") ? "active" : "")" style="background-color: rgba(255, 255, 255, 0.06); margin-bottom: 8px;">
+                <Icons Name="PlusCircle" Class="w-5 h-5 text-warning" />
+                <span class="text-warning">Registrar Venta (POS)</span>
+            </a>
+            <a href="/trabajador/productos" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador/productos") ? "active" : "")">
+                <Icons Name="Package" Class="w-5 h-5" />
+                Productos
+            </a>
+            <a href="/trabajador/devoluciones" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador/devoluciones") ? "active" : "")">
+                <Icons Name="HelpCircle" Class="w-5 h-5" />
+                Devoluciones
+            </a>
+            <a href="/trabajador/perfil" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador/perfil") ? "active" : "")">
+                <Icons Name="User" Class="w-5 h-5" />
+                Mi Perfil
+            </a>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="p-3 border-top border-white-10 d-flex flex-column gap-1">
+            <div class="d-flex align-items-center gap-2 px-3 py-2.5 rounded text-white-50 text-xs" style="opacity: 0.85;">
+                <div class="d-flex align-items-center justify-content-center rounded-circle bg-white text-dark" style="width: 28px; height: 28px; font-weight: bold; font-size: 0.75rem;">
+                    CT
+                </div>
+                <div>
+                    <p class="m-0 font-semibold text-white truncate text-sm" style="max-width: 140px;">@(Auth.CurrentUser?.Name ?? "Jorge Trabajador")</p>
+                    <p class="m-0 text-xs text-white-50">Trabajador</p>
+                </div>
+            </div>
+            <button type="button" @onclick="HandleLogout" class="btn btn-link d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 border-0 text-start w-100 shadow-none" style="font-size: inherit; color: inherit;">
+                <Icons Name="LogOut" Class="w-5 h-5" />
+                Cerrar sesión
+            </button>
+        </div>
+    </aside>
+
+    <!-- Mobile Navigation Drawer -->
+    @if (_isMobileSidebarOpen)
+    {
+        <div class="sheet-backdrop z-3" @onclick="ToggleMobileSidebar"></div>
+        <div class="sheet-panel show bg-sidebar text-white p-0 d-flex flex-column justify-between z-3" style="width: 260px; background-color: var(--sidebar) !important;">
+            <div>
+                <!-- Brand Mobile Header -->
+                <div class="p-4 border-bottom border-white-10 d-flex align-items-center justify-content-between">
+                    <a href="/trabajador" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 text-decoration-none text-white">
+                        <div class="d-flex align-items-center justify-content-center rounded bg-white-10" style="width: 40px; height: 40px; background: rgba(255,255,255,0.15);">
+                            <Icons Name="ShoppingCart" Class="w-6 h-6 text-white" />
+                        </div>
+                        <div>
+                            <h1 class="text-lg font-bold m-0 leading-none" style="font-family: 'Outfit', sans-serif;">Shiligama</h1>
+                            <p class="text-xs text-white-50 m-0" style="opacity: 0.7;">Portal Trabajador</p>
+                        </div>
+                    </a>
+                    <button type="button" class="btn-close btn-close-white" @onclick="ToggleMobileSidebar"></button>
+                </div>
+
+                <!-- Navigation List Mobile -->
+                <nav class="p-3 d-flex flex-column gap-1 overflow-y-auto" style="max-height: calc(100vh - 160px);">
+                    <a href="/trabajador" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/perfil") ? "active" : "")">
+                        <Icons Name="FileText" Class="w-5 h-5" />
+                        Pedidos Clientes
+                    </a>
+                    <a href="/trabajador/registrar-venta" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador/registrar-venta") ? "active" : "")" style="background-color: rgba(255, 255, 255, 0.06); margin-bottom: 8px;">
+                        <Icons Name="PlusCircle" Class="w-5 h-5 text-warning" />
+                        <span class="text-warning">Registrar Venta (POS)</span>
+                    </a>
+                    <a href="/trabajador/productos" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador/productos") ? "active" : "")">
+                        <Icons Name="Package" Class="w-5 h-5" />
+                        Productos
+                    </a>
+                    <a href="/trabajador/devoluciones" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador/devoluciones") ? "active" : "")">
+                        <Icons Name="HelpCircle" Class="w-5 h-5" />
+                        Devoluciones
+                    </a>
+                    <a href="/trabajador/perfil" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/trabajador/perfil") ? "active" : "")">
+                        <Icons Name="User" Class="w-5 h-5" />
+                        Mi Perfil
+                    </a>
+                </nav>
+            </div>
+
+            <div class="p-3 border-top border-white-10 d-flex flex-column gap-1">
+                <div class="d-flex align-items-center gap-2 px-3 py-2.5 rounded text-white-50 text-xs" style="opacity: 0.85;">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle bg-white text-dark" style="width: 28px; height: 28px; font-weight: bold; font-size: 0.75rem;">
+                        CT
+                    </div>
+                    <div>
+                        <p class="m-0 font-semibold text-white truncate text-sm" style="max-width: 140px;">@(Auth.CurrentUser?.Name ?? "Jorge Trabajador")</p>
+                        <p class="m-0 text-xs text-white-50">Trabajador</p>
+                    </div>
+                </div>
+                <button type="button" @onclick="HandleLogout" class="btn btn-link d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 border-0 text-start w-100 shadow-none" style="font-size: inherit; color: inherit;">
+                    <Icons Name="LogOut" Class="w-5 h-5" />
+                    Cerrar sesión
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Content Workspace -->
+    <div class="flex-grow-1 d-flex flex-column" style="padding-left: 0px; padding-left: 260px; max-width: 100%;">
+        
+        <!-- Top Bar Header -->
+        <header class="sticky-top bg-card border-bottom py-3 px-3 px-lg-4 border-color-default" style="z-index: 1; backdrop-filter: blur(8px); background-color: rgba(var(--bs-body-bg-rgb), 0.95);">
+            <div class="d-flex align-items-center justify-content-between gap-3">
+                <!-- Mobile Spacer left (for float button) -->
+                <div class="d-lg-none" style="width: 48px;"></div>
+                
+                <!-- Quick Brand label for worker -->
+                <div class="flex-grow-1">
+                    <span class="badge bg-secondary font-medium text-foreground py-2 px-3" style="font-size: 0.85rem; border-radius: var(--radius);">
+                        Área de Operación
+                    </span>
+                </div>
+
+                <!-- Right items -->
+                <div class="d-flex align-items-center gap-3">
+                    
+                    <!-- Theme Selector -->
+                    <ThemeSelector />
+
+                    <!-- User drop menu -->
+                    <div class="dropdown">
+                        <button class="btn btn-ghost p-1 rounded-circle border-0 d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px;">
+                            <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width: 32px; height: 32px; opacity: 0.9;">
+                                <Icons Name="User" Class="w-4 h-4" />
+                            </div>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end card border shadow-lg p-2" style="width: 220px; border-radius: var(--radius);">
+                            <li class="px-3 py-2 border-bottom border-color-default mb-1">
+                                <p class="text-sm font-semibold text-foreground m-0">@(Auth.CurrentUser?.Name ?? "Jorge Trabajador")</p>
+                                <p class="text-xs text-muted-foreground m-0 text-truncate">@(Auth.CurrentUser?.Email ?? "trabajador@shiligama.com")</p>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/trabajador/perfil" style="border-radius: var(--radius);">
+                                    <Icons Name="User" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                    Mi Perfil
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider border-color-default"></li>
+                            <li>
+                                <button type="button" @onclick="HandleLogout" class="dropdown-item d-flex align-items-center text-danger py-2" style="border-radius: var(--radius);">
+                                    <Icons Name="LogOut" Class="w-4 h-4 me-2" />
+                                    Cerrar Sesión
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body Content -->
+        <main class="flex-grow-1 p-3 p-md-4" style="max-width: 100%;">
+            @Body
+        </main>
+    </div>
+</div>
+
+<style>
+    /* Desktop aside custom scroll */
+    aside nav::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    /* Hover bg classes for dark green drawer */
+    .hover-bg-white-10:hover {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        color: #ffffff !important;
+    }
+    
+    .hover-bg-white-10.active {
+        background-color: rgba(255, 255, 255, 0.15) !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+    @@media (max-width: 991.98px) {
+        div.flex-grow-1 {
+            padding-left: 0px !important;
+        }
+    }
+</style>

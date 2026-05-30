@@ -1,0 +1,101 @@
+@page "/admin/perfil"
+@layout AdminLayout
+@inject AuthService Auth
+
+@code {
+    private string _name = "";
+    private string _email = "";
+    private string _phone = "951 236 487";
+    private string _password = "";
+    private bool _success = false;
+
+    protected override void OnInitialized()
+    {
+        _name = Auth.CurrentUser?.Name ?? "Admin Shiligama";
+        _email = Auth.CurrentUser?.Email ?? "test1234@admin.com";
+    }
+
+    private async Task SaveProfile()
+    {
+        _success = true;
+        await Task.Delay(2000);
+        _success = false;
+        StateHasChanged();
+    }
+}
+
+<PageTitle>Mi Perfil – Shiligama Admin</PageTitle>
+
+<div class="container-fluid p-0 mx-auto" style="max-width: 900px;">
+    <!-- Header -->
+    <div>
+        <h1 class="fs-4 fw-bold text-foreground mb-0">Mi Perfil de Administrador</h1>
+        <p class="text-muted-foreground small mt-1 mb-0">Administra tus datos de contacto y credenciales de acceso</p>
+    </div>
+
+    @if (_success)
+    {
+        <div class="alert alert-success alert-dismissible fade show p-3 d-flex align-items-center gap-2" style="border-radius: var(--radius);" role="alert">
+            <Icons Name="Check" Class="w-5 h-5 text-success" />
+            <div>Tus datos de perfil han sido actualizados con éxito.</div>
+            <button type="button" class="btn-close" @onclick="@(() => _success = false)"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Main profile details -->
+        <div class="col-lg-8">
+            <EditForm Model="this" OnValidSubmit="SaveProfile" class="d-flex flex-column gap-4">
+                <div class="card p-4 d-flex flex-column gap-3 rounded-4">
+                    <h2 class="fs-5 fw-bold text-foreground mb-0">Información Personal</h2>
+                    
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Nombre completo</label>
+                        <input type="text" @bind="_name" required class="form-control text-foreground" />
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Correo electrónico corporativo</label>
+                        <input type="email" @bind="_email" required class="form-control text-foreground" />
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Teléfono móvil</label>
+                        <input type="tel" @bind="_phone" class="form-control text-foreground" />
+                    </div>
+                </div>
+
+                <div class="card p-4 d-flex flex-column gap-3 rounded-4">
+                    <h2 class="fs-5 fw-bold text-foreground mb-0">Actualizar Contraseña</h2>
+                    
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Nueva Contraseña</label>
+                        <input type="password" @bind="_password" class="form-control text-foreground" placeholder="Mínimo 8 caracteres" />
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary px-4 py-2.5 fw-semibold" style="border-radius: var(--radius);">
+                        Guardar Perfil
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+
+        <!-- Sidebar visual Card -->
+        <div class="col-lg-4">
+            <div class="card p-4 text-center rounded-4 bg-muted border-0 d-flex flex-column gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white mx-auto" style="width: 72px; height: 72px; font-size: 1.8rem;">
+                    @(_name.Length > 0 ? _name[0].ToString().ToUpper() : "A")
+                </div>
+                <div>
+                    <h3 class="fs-5 fw-bold text-foreground mb-1">@_name</h3>
+                    <span class="badge bg-primary px-2.5 py-1.5 text-uppercase tracking-wider small fw-semibold" style="border-radius: var(--radius);">Administrador</span>
+                </div>
+                <hr class="border-color-default my-1" />
+                <p class="text-xs text-muted-foreground m-0">Código ID: STF-001</p>
+                <p class="text-xs text-muted-foreground m-0">Fecha registro: Hace 2 años</p>
+            </div>
+        </div>
+    </div>
+</div>

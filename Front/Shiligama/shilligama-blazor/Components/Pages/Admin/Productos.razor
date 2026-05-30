@@ -1,0 +1,271 @@
+@page "/admin/productos"
+@layout AdminLayout
+@inject ProductService ProductSvc
+
+@code {
+    private List<Product> _products = new();
+    private List<Category> _categories = new();
+    private string _search = "";
+    private bool _showModal = false;
+    private bool _isEditing = false;
+    private Product _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();   // trae productos + categorías del API
+        _products = ProductSvc.GetProducts();
+        _categories = ProductSvc.GetCategories();
+    }
+
+    private IEnumerable<Product> Filtered => _products.Where(p =>
+        string.IsNullOrEmpty(_search) ||
+        p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase));
+
+    private bool _saving = false;
+    private string _saveError = "";
+
+    private void OpenCreate()
+    {
+        _form = new Product();
+        _isEditing = false;
+        _saveError = "";
+        _showModal = true;
+    }
+
+    private void OpenEdit(Product p)
+    {
+        _form = new Product
+        {
+            Id          = p.Id,
+            Name        = p.Name,
+            Description = p.Description,
+            Price       = p.Price,
+            Stock       = p.Stock,
+            MinStock    = p.MinStock,
+            Category    = p.Category,
+            Image       = p.Image,
+            CodigoBarras= p.CodigoBarras,
+            UnidadMedida= p.UnidadMedida
+        };
+        _isEditing = true;
+        _saveError = "";
+        _showModal = true;
+    }
+
+    private async Task Save()
+    {
+        _saving = true;
+        _saveError = "";
+        try
+        {
+            if (_isEditing)
+            {
+                await ProductSvc.UpdateProductAsync(_form);
+            }
+            else
+            {
+                await ProductSvc.AddProductAsync(_form);
+            }
+            _products = ProductSvc.GetProducts();
+            _showModal = false;
+        }
+        catch (Exception ex)
+        {
+            _saveError = $"Error al guardar: {ex.Message}";
+        }
+        finally { _saving = false; }
+    }
+
+    private async Task Delete(int id)
+    {
+        try
+        {
+            await ProductSvc.DeleteProductAsync(id);
+            _products = ProductSvc.GetProducts();
+        }
+        catch { /* si falla el API, elimina solo de la caché local */ }
+    }
+}
+
+<PageTitle>Productos – Shiligama Admin</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Productos</h1>
+            <p class="text-muted-foreground small mt-1 mb-0">@_products.Count productos registrados</p>
+        </div>
+
+        <button @onclick="OpenCreate"
+                class="btn btn-primary d-flex align-items-center gap-2 fw-medium"
+                style="border-radius:var(--radius);">
+            <i class="fa-solid fa-plus"></i>
+            Nuevo Producto
+        </button>
+    </div>
+
+    <!-- Search -->
+    <div class="card p-3">
+        <div class="position-relative">
+
+            <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted"
+               style="left:14px;"></i>
+
+            <input type="search"
+                   @bind="_search"
+                   @bind:event="oninput"
+                   class="form-control text-foreground"
+                   placeholder="Buscar productos..."
+                   style="padding-left:40px;" />
+        </div>
+    </div>
+
+
+    <!-- Table -->
+    <div class="card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-borderless mb-0">
+                <thead class="border-bottom border-color-default">
+                    <tr>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Producto</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Categoría</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Precio</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Stock</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var product in Filtered)
+                    {
+                        <tr class="border-bottom border-color-default" style="transition:background .15s;">
+                            <td class="px-4 py-3 d-flex align-items-center gap-3">
+                                <img src="@product.Image" alt="@product.Name"
+                                     class="rounded-3 flex-shrink-0 object-fit-cover"
+                                     style="width:44px;height:44px;"
+                                     onerror="this.src='https://placehold.co/44x44/e8f5e9/1A6B3C?text=🛒'" />
+                                <div>
+                                    <p class="fw-medium text-foreground mb-0 small">@product.Name</p>
+                                    @if (product.IsPromo) { <span class="badge bg-danger" style="font-size:.7rem;">Promo</span> }
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell align-middle">
+                                @ProductSvc.GetCategoryName(product.Category)
+                            </td>
+                            <td class="px-4 py-3 fw-medium text-foreground small align-middle">
+                                S/. @product.Price.ToString("0.00")
+                                @if (product.OriginalPrice.HasValue)
+                                {
+                                    <br /><span class="text-decoration-line-through text-muted-foreground" style="font-size:.75rem;">S/. @product.OriginalPrice.Value.ToString("0.00")</span>
+                                }
+                            </td>
+                            <td class="px-4 py-3 align-middle">
+                                <span class="badge @(product.Stock > 10 ? "bg-success-subtle text-success" : product.Stock > 0 ? "bg-warning-subtle text-warning" : "bg-danger-subtle text-danger")"
+                                      style="border-radius:var(--radius);font-size:.8rem;padding:.3em .7em;">
+                                    @product.Stock
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-end align-middle">
+                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                    <button @onclick="@(() => OpenEdit(product))"
+                                            class="btn btn-ghost btn-sm text-muted-foreground d-flex align-items-center gap-1"
+                                            style="border-radius:var(--radius);">
+                                        <Icons Name="Edit2" Class="w-4 h-4" />
+                                        <span class="d-none d-md-inline">Editar</span>
+                                    </button>
+                                    <button @onclick="@(async () => await Delete(product.Id))"
+                                            class="btn btn-ghost btn-sm text-danger d-flex align-items-center gap-1"
+                                            style="border-radius:var(--radius);">
+                                        <Icons Name="Trash2" Class="w-4 h-4" />
+                                        <span class="d-none d-md-inline">Eliminar</span>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    @if (!Filtered.Any())
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted-foreground">
+                                No se encontraron productos
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Product Modal -->
+@if (_showModal)
+{
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="@(() => _showModal = false)">
+        <div class="modal-dialog modal-lg modal-dialog-centered" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border">
+                <div class="modal-header border-border">
+                    <h5 class="modal-title text-foreground fw-semibold">@(_isEditing ? "Editar Producto" : "Nuevo Producto")</h5>
+                    <button type="button" class="btn-close" @onclick="@(() => _showModal = false)"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <EditForm Model="_form" OnValidSubmit="Save">
+                        @if (!string.IsNullOrEmpty(_saveError))
+                        {
+                            <div class="alert alert-danger py-2 small mb-3">@_saveError</div>
+                        }
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-medium text-foreground">Nombre *</label>
+                                <input type="text" @bind="_form.Name" required class="form-control text-foreground" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-medium text-foreground">Descripción</label>
+                                <textarea @bind="_form.Description" class="form-control text-foreground" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium text-foreground">Precio unitario *</label>
+                                <input type="number" step=".01" min="0" @bind="_form.Price" required class="form-control text-foreground" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium text-foreground">Categoría *</label>
+                                <select @bind="_form.Category" required class="form-select text-foreground">
+                                    <option value="">-- Seleccionar --</option>
+                                    @foreach (var cat in _categories)
+                                    {
+                                        <option value="@cat.Id">@cat.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-medium text-foreground">Stock *</label>
+                                <input type="number" min="0" @bind="_form.Stock" required class="form-control text-foreground" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-medium text-foreground">Stock mínimo</label>
+                                <input type="number" min="0" @bind="_form.MinStock" class="form-control text-foreground" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-medium text-foreground">Unidad de medida</label>
+                                <input type="text" @bind="_form.UnidadMedida" class="form-control text-foreground" placeholder="Bolsa, Botella…" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium text-foreground">Código de barras *</label>
+                                <input type="text" @bind="_form.CodigoBarras" required class="form-control text-foreground" placeholder="7750001000001" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-medium text-foreground">URL de imagen</label>
+                                <input type="url" @bind="_form.Image" class="form-control text-foreground" placeholder="https://..." />
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius:var(--radius);" disabled="@_saving">Cancelar</button>
+                            <button type="submit" class="btn btn-primary fw-medium" style="border-radius:var(--radius);" disabled="@_saving">
+                                @(_saving ? "Guardando…" : _isEditing ? "Guardar cambios" : "Crear producto")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}

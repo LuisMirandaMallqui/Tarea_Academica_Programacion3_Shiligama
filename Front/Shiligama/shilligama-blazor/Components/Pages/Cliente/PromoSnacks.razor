@@ -1,0 +1,173 @@
+@page "/snacks-2x1"
+@layout MainLayout
+@inject ProductService ProductSvc
+@inject CartService Cart
+
+@code {
+    private List<Product> _snacksProducts = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        // La categoría ahora tiene id numérico, así que filtramos por NOMBRE.
+        _snacksProducts = ProductSvc.GetProducts()
+            .Where(p => ProductSvc.GetCategoryName(p.Category).ToLower().Contains("snack"))
+            .ToList();
+        _isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
+    }
+
+    private async Task AddToCart(Product p) => await Cart.AddToCartAsync(p);
+}
+
+<PageTitle>2x1 en Snacks – Shiligama</PageTitle>
+
+<div class="bg-background">
+    <div class="container-xl px-3 px-sm-4 pt-4">
+        <!-- Back Button -->
+        <nav class="mb-3">
+            <a href="/catalogo" class="text-muted-foreground text-decoration-none small d-inline-flex align-items-center gap-2" style="transition: color 0.2s; font-weight: 500;">
+                <i class="fa-solid fa-chevron-left" style="font-size: 0.85rem;"></i> Volver al catálogo
+            </a>
+        </nav>
+
+        <!-- Jumbotron banner -->
+        <div class="p-5 rounded-4 text-white d-flex align-items-center justify-content-between gap-4 position-relative overflow-hidden"
+             style="background: linear-gradient(135deg, #4a1942 0%, #6b21a8 50%, #a855f7 100%);">
+            <div class="position-absolute rounded-circle" style="width: 250px; height: 250px; background: rgba(255, 255, 255, 0.05); top: -80px; right: -50px;"></div>
+            <div class="position-relative z-1 max-w-lg">
+                <span class="badge bg-danger mb-2 px-3 py-1.5 uppercase tracking-wider font-semibold" style="border-radius: var(--radius); background-color: #f59e0b !important; color: #4a1942 !important;">Duplica tu antojo</span>
+                <h1 class="fw-bold mb-2 fs-2" style="font-family: 'Outfit', sans-serif;">2x1 en Snacks Seleccionados</h1>
+                <p class="mb-0 opacity-90 small">Paga 1 y lleva 2 en galletas, papas y piqueos seleccionados. ¡Ideal para tus reuniones o antojos!</p>
+            </div>
+            <div class="d-none d-md-block fs-1 position-relative z-1" style="font-size: 4.5rem !important;">🍿</div>
+        </div>
+    </div>
+
+    <div class="container-xl px-3 px-sm-4 py-5">
+        <h2 class="fs-4 fw-bold text-foreground mb-4">Snacks en Promoción 2x1</h2>
+
+        @if (_isLoading)
+        {
+            <div class="row g-3">
+                @for (int i = 0; i < 4; i++)
+                {
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <div class="card p-3" style="height:280px; animation: pulse 1.5s infinite;">
+                            <div class="bg-muted rounded mb-2" style="height:140px;"></div>
+                            <div class="bg-muted rounded mb-1" style="height:14px; width:70%;"></div>
+                            <div class="bg-muted rounded" style="height:12px; width:40%;"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else if (!_snacksProducts.Any())
+        {
+            <div class="text-center py-5">
+                <div class="fs-1 mb-3">🍿</div>
+                <h3 class="text-foreground fw-semibold fs-5">No hay snacks en promoción en este momento</h3>
+                <p class="text-muted-foreground text-sm">Vuelve pronto para ver nuestras ofertas 2x1.</p>
+                <a href="/catalogo" class="btn btn-primary mt-2" style="border-radius: var(--radius);">
+                    Ver catálogo general
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3 fade-in">
+                @foreach (var product in _snacksProducts)
+                {
+                    <div class="col-6 col-md-4 col-xl-3">
+                        <div class="card h-100 d-flex flex-column position-relative overflow-hidden"
+                             style="transition: transform .2s, box-shadow .2s; border-radius: 16px; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 4px 12px rgba(0,0,0,0.03); cursor:pointer;">
+                            
+                            <!-- Image Section -->
+                            <div class="position-relative" style="height:170px; overflow:hidden;">
+                                <a href="/catalogo/@product.Id" class="text-decoration-none">
+                                    <img src="@product.Image" alt="@product.Name"
+                                         class="w-100 h-100 object-fit-cover"
+                                         style="transition: filter 0.3s ease; @(product.Stock == 0 ? "filter: blur(4px) opacity(0.6);" : "")"
+                                         onerror="this.src='https://placehold.co/300x300/e8f5e9/1A6B3C?text=🛒'" />
+                                </a>
+                                
+                                <span class="badge bg-danger position-absolute top-0 start-0 m-2 z-1 px-2.5 py-1.5 fw-semibold"
+                                      style="border-radius: 8px; font-size: .75rem;">
+                                    2x1
+                                </span>
+
+                                @if (product.Stock == 0)
+                                {
+                                    <!-- Agotado Overlay on Image -->
+                                    <div class="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center z-1" style="background: rgba(255,255,255,0.15);">
+                                        <span class="fw-bold text-secondary" style="font-size: 1.15rem; color: #4b5563 !important; font-family: 'Outfit', sans-serif;">Agotado</span>
+                                    </div>
+                                }
+                            </div>
+
+                            <!-- Content Section -->
+                            <div class="p-3 d-flex flex-column flex-grow-1">
+                                <!-- Stock Badge -->
+                                <div class="mb-2">
+                                    @if (product.Stock > 0)
+                                    {
+                                        <span class="badge" style="background-color: #E8F5E9; color: #1B5E20; font-size: 0.75rem; font-weight: 500; border-radius: 6px; padding: 0.3rem 0.6rem;">En stock</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge" style="background-color: #EF4444; color: white; font-size: 0.75rem; font-weight: 600; border-radius: 6px; padding: 0.3rem 0.6rem;">Agotado</span>
+                                    }
+                                </div>
+
+                                <!-- Title -->
+                                <a href="/catalogo/@product.Id" class="text-decoration-none text-foreground mb-2">
+                                    <p class="fw-bold text-foreground mb-0 lh-sm" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; height: 36px; color: #1f2937 !important;">
+                                        @product.Name
+                                    </p>
+                                </a>
+
+                                <!-- Price -->
+                                <div class="mb-3">
+                                    <span class="fw-bold" style="font-size: 1.2rem; color: #0D4525;">S/. @product.Price.ToString("0.00")</span>
+                                    @if (product.OriginalPrice.HasValue)
+                                    {
+                                        <span class="text-decoration-line-through text-muted-foreground ms-1 small" style="font-size:.8rem;">
+                                            S/. @product.OriginalPrice.Value.ToString("0.00")
+                                        </span>
+                                    }
+                                </div>
+
+                                <!-- Button -->
+                                <div class="mt-auto">
+                                    @if (product.Stock > 0)
+                                    {
+                                        <button @onclick="@(() => AddToCart(product))"
+                                                class="btn text-white w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+                                                style="background-color: #0D4525; border: none; border-radius: 8px; font-weight: 500; font-size: 0.9rem; transition: background-color 0.2s;"
+                                                title="Agregar al carrito">
+                                            <i class="fa-solid fa-plus" style="font-size: 0.85rem;"></i> Agregar
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button disabled
+                                                class="btn text-white w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+                                                style="background-color: #A3BFB0; border: none; border-radius: 8px; font-weight: 500; font-size: 0.9rem; cursor: not-allowed; opacity: 0.85;"
+                                                title="Producto Agotado">
+                                            <i class="fa-solid fa-plus" style="font-size: 0.85rem;"></i> Agregar
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>

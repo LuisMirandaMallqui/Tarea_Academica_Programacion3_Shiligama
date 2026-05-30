@@ -1,0 +1,570 @@
+@page "/checkout"
+@layout MainLayout
+@inject CartService Cart
+@inject SalesService SalesSvc
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+@code {
+    [SupplyParameterFromQuery(Name = "delivery")]
+    public string? DeliveryParam { get; set; }
+
+    private string _deliveryMethod = "delivery";
+    private string _name    = "";
+    private string _address = "";
+    private string _payMethod = "tarjeta";
+
+    private string _cardNumber = "";
+    private string _cardName   = "";
+    private string _cardExpiry = "";
+    private string _cardCvv    = "";
+
+    private decimal _cashAmount;
+    private decimal CashChange => _cashAmount >= Total ? _cashAmount - Total : 0;
+    private bool    CashEnough => _cashAmount >= Total;
+
+    private string _yapePhone     = "";
+    private string _yapeCode      = "";
+    private bool   _yapeConfirmed = false;
+
+    private bool   _isLoading = false;
+    private bool   _success   = false;
+    private string _orderId   = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.InitializeAsync();
+            if (!string.IsNullOrEmpty(DeliveryParam))
+                _deliveryMethod = DeliveryParam;
+            StateHasChanged();
+        }
+    }
+
+    private decimal Subtotal    => Cart.GetSubtotal();
+    private decimal DeliveryFee => _deliveryMethod == "delivery" ? 5m : 0m;
+    private decimal Total       => Subtotal + DeliveryFee;
+
+    private string FormatCard(string raw)
+    {
+        var digits = new string(raw.Where(char.IsDigit).ToArray());
+        if (digits.Length > 16) digits = digits[..16];
+        var parts = Enumerable.Range(0, (digits.Length + 3) / 4)
+                              .Select(i => digits.Substring(i * 4, Math.Min(4, digits.Length - i * 4)));
+        return string.Join(" ", parts);
+    }
+
+    private void OnCardNumberInput(ChangeEventArgs e)
+        => _cardNumber = FormatCard(e.Value?.ToString() ?? "");
+
+    private void OnCardExpiryInput(ChangeEventArgs e)
+    {
+        var digits = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
+        _cardExpiry = digits.Length >= 2
+            ? digits[..2] + "/" + digits[2..Math.Min(4, digits.Length)]
+            : digits;
+    }
+
+    private void OnCashQuick(decimal amount) { _cashAmount = amount; }
+
+    private void ConfirmYape()
+    {
+        if (_yapeCode.Length >= 4) _yapeConfirmed = true;
+    }
+
+    private async Task PlaceOrder()
+    {
+        _isLoading = true;
+        await Task.Delay(800);
+        _orderId = $"SHI-{DateTime.Now.Year}-{(SalesSvc.GetRecentOrders().Count + 1):D4}";
+        SalesSvc.AddOrder(
+            _name, Cart.GetCartItems().ToList(),
+            Subtotal, DeliveryFee, Total,
+            _payMethod, _deliveryMethod, _address,
+            Auth.CurrentUser?.Id ?? 0);
+        await Cart.ClearCartAsync();
+        _success   = true;
+        _isLoading = false;
+    }
+}
+
+<PageTitle>Checkout – Shiligama</PageTitle>
+
+<style>
+/* Borde de inputs adaptado a dark/light */
+.checkout-input-group .input-group-text {
+    border: 1.5px solid var(--border);
+    border-right: none;
+    background-color: var(--secondary);
+    color: var(--foreground);
+}
+.checkout-input-group .form-control {
+    border: 1.5px solid var(--border);
+    border-left: none;
+}
+.checkout-input-group .form-control:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.checkout-input-solo {
+    border: 1.5px solid var(--border) !important;
+}
+.checkout-input-solo:focus {
+    border-color: var(--primary) !important;
+}
+/* QR Yape: fondo blanco siempre (es un código QR real) */
+.yape-qr-box {
+    border: 2px solid #c4b5fd !important;
+    background: white;
+    width: 176px;
+    height: 176px;
+    border-radius: 12px;
+    padding: 10px;
+    position: relative;
+}
+/* Efectivo: fondos de la calculadora de vuelto */
+.cash-calc-ok    { background: #f0fdf4; border: 2px solid #22c55e; }
+.cash-calc-exact { background: var(--bs-primary-bg-subtle); border: 2px solid var(--primary); }
+.cash-calc-warn  { background: #fffbeb; border: 2px solid #f59e0b; }
+.cash-calc-empty { background: var(--secondary); border: 2px solid var(--border); }
+.dark .cash-calc-ok    { background: #052e16; border-color: #22c55e; }
+.dark .cash-calc-exact { background: color-mix(in srgb, var(--primary) 15%, transparent); }
+.dark .cash-calc-warn  { background: #451a03; border-color: #f59e0b; }
+/* Círculo del ícono en calculadora */
+.cash-icon-ok   { background: #bbf7d0; }
+.cash-icon-warn { background: #fde68a; }
+.cash-icon-empty{ background: var(--secondary); }
+.dark .cash-icon-ok   { background: #064e3b; }
+.dark .cash-icon-warn { background: #451a03; }
+/* Texto "falta por pagar" */
+.cash-text-warn { color: #b45309; }
+.dark .cash-text-warn { color: #fbbf24; }
+</style>
+
+@if (_success)
+{
+    <div class="container py-5 text-center" style="max-width:480px;">
+        <div class="d-flex align-items-center justify-content-center rounded-circle bg-success mx-auto mb-4"
+             style="width:80px;height:80px;">
+            <Icons Name="Check" Class="text-white" style="width:40px;height:40px;" />
+        </div>
+        <h2 class="fs-3 fw-bold text-foreground mb-2">¡Pedido confirmado!</h2>
+        <p class="text-muted-foreground mb-1">Número de orden: <strong class="text-primary">@_orderId</strong></p>
+        <p class="text-muted-foreground small">Recibirás una confirmación pronto.</p>
+        <a href="/catalogo" class="btn btn-primary mt-3 px-4" style="border-radius:var(--radius);">
+            Seguir comprando
+        </a>
+    </div>
+}
+else if (!Cart.GetCartItems().Any())
+{
+    <div class="container py-5 text-center" style="max-width:480px;">
+        <p class="text-muted-foreground">Tu carrito está vacío.</p>
+        <a href="/catalogo" class="btn btn-primary" style="border-radius:var(--radius);">Ir al catálogo</a>
+    </div>
+}
+else
+{
+    <header class="border-bottom bg-card py-3 sticky-top">
+        <div class="container-xl px-3 d-flex align-items-center" style="max-width:960px;">
+            <a href="/carrito"
+               class="text-muted-foreground text-decoration-none d-flex align-items-center gap-1 small">
+                <Icons Name="ArrowLeft" style="width:16px;height:16px;" /> Volver al carrito
+            </a>
+            <div class="mx-auto d-flex align-items-center gap-2">
+                <Icons Name="Lock" Class="text-primary" style="width:16px;height:16px;" />
+                <h1 class="fs-5 fw-semibold text-foreground mb-0">Pago Seguro</h1>
+            </div>
+            <div style="width:140px;"></div>
+        </div>
+    </header>
+
+    <div class="container-xl px-3 py-4" style="max-width:960px;">
+        <div class="row g-4">
+
+            <!-- Resumen -->
+            <div class="col-lg-5 order-2 order-lg-1">
+                <div class="card p-4 border border-border rounded-3">
+                    <h2 class="fs-5 fw-semibold text-foreground mb-3">Resumen del Pedido</h2>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        @foreach (var item in Cart.GetCartItems())
+                        {
+                            <div class="d-flex justify-content-between align-items-start small">
+                                <div>
+                                    <p class="fw-medium text-foreground mb-0">@item.Name</p>
+                                    <p class="text-muted-foreground mb-0">Cantidad: @item.Quantity</p>
+                                </div>
+                                <span class="fw-medium text-foreground ms-2">
+                                    S/. @((item.Price * item.Quantity).ToString("0.00"))
+                                </span>
+                            </div>
+                        }
+                    </div>
+                    <hr class="border-color-default" />
+                    <div class="d-flex justify-content-between small text-muted-foreground mb-1">
+                        <span>Subtotal (@Cart.GetCartItems().Sum(i => i.Quantity) productos)</span>
+                        <span>S/. @Subtotal.ToString("0.00")</span>
+                    </div>
+                    <div class="d-flex justify-content-between small text-muted-foreground mb-2">
+                        <span>Envío</span>
+                        <span>@(DeliveryFee > 0 ? $"S/. {DeliveryFee:0.00}" : "Gratis")</span>
+                    </div>
+                    <div class="d-flex justify-content-between fw-bold text-foreground pt-2 border-top border-border mb-3">
+                        <span>Total a pagar</span>
+                        <span class="text-primary">S/. @Total.ToString("0.00")</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 p-3 border border-border rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:40px;height:40px;
+                                    background:@(_deliveryMethod == "delivery"
+                                        ? "color-mix(in srgb, #3b82f6 15%, transparent)"
+                                        : "color-mix(in srgb, #22c55e 15%, transparent)");">
+                            <Icons Name="@(_deliveryMethod == "delivery" ? "Truck" : "Store")"
+                                   Class="@(_deliveryMethod == "delivery" ? "text-primary" : "text-success")"
+                                   style="width:18px;height:18px;" />
+                        </div>
+                        <div>
+                            <p class="fw-medium small mb-0">
+                                @(_deliveryMethod == "delivery" ? "Entrega a domicilio" : "Recojo en tienda")
+                            </p>
+                            @if (_deliveryMethod == "delivery")
+                            {
+                                <p class="text-muted-foreground mb-0" style="font-size:.72rem;">
+                                    Ingresa tu dirección abajo
+                                </p>
+                            }
+                        </div>
+                    </div>
+                    @if (_deliveryMethod == "delivery")
+                    {
+                        <input type="text" @bind="_address"
+                               class="form-control form-control-sm mt-2 checkout-input-solo"
+                               placeholder="Tu dirección de entrega" />
+                    }
+                </div>
+            </div>
+
+            <!-- Métodos de pago -->
+            <div class="col-lg-7 order-1 order-lg-2">
+                <div class="card p-4 border border-border rounded-3">
+                    <h2 class="fs-5 fw-bold text-foreground mb-1">Selecciona tu método de pago</h2>
+                    <p class="text-muted-foreground small mb-4">
+                        Elige cómo deseas pagar tu pedido de forma segura
+                    </p>
+
+                    <div class="btn-group w-100 mb-4" role="group">
+                        @foreach (var (key, label, icon) in new[] {
+                            ("tarjeta","Tarjeta","CreditCard"),
+                            ("yape","Yape","Smartphone"),
+                            ("efectivo","Efectivo","Banknote")})
+                        {
+                            <button type="button"
+                                    class="btn d-flex align-items-center justify-content-center gap-2
+                                           @(_payMethod == key ? "btn-primary" : "btn-outline-secondary")"
+                                    @onclick="() => _payMethod = key">
+                                <Icons Name="@icon" style="width:15px;height:15px;" />
+                                <span class="small">@label</span>
+                            </button>
+                        }
+                    </div>
+
+                    @if (_payMethod == "tarjeta")
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-border">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-2 d-flex align-items-center justify-content-center"
+                                         style="width:32px;height:32px;background:#009EE3;">
+                                        <span class="text-white fw-bold small">MP</span>
+                                    </div>
+                                    <span class="text-muted-foreground small">Procesado por Mercado Pago</span>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <div class="border rounded d-flex align-items-center justify-content-center"
+                                         style="width:44px;height:28px;background:var(--card);">
+                                        <span class="fw-bold small" style="color:#1A1F71;font-style:italic;">VISA</span>
+                                    </div>
+                                    <div class="border rounded d-flex align-items-center justify-content-center"
+                                         style="width:44px;height:28px;background:var(--card);">
+                                        <div class="d-flex">
+                                            <div class="rounded-circle bg-danger" style="width:14px;height:14px;margin-right:-4px;"></div>
+                                            <div class="rounded-circle bg-warning" style="width:14px;height:14px;"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-medium">Número de tarjeta</label>
+                                <div class="input-group checkout-input-group">
+                                    <span class="input-group-text">
+                                        <Icons Name="CreditCard" style="width:16px;height:16px;" />
+                                    </span>
+                                    <input type="text" class="form-control font-monospace"
+                                           placeholder="1234 5678 9012 3456"
+                                           maxlength="19" value="@_cardNumber" @oninput="OnCardNumberInput" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-medium">Nombre del titular</label>
+                                <div class="input-group checkout-input-group">
+                                    <span class="input-group-text">
+                                        <Icons Name="User" style="width:16px;height:16px;" />
+                                    </span>
+                                    <input type="text" class="form-control text-uppercase"
+                                           placeholder="COMO APARECE EN LA TARJETA"
+                                           @bind="_cardName" />
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-6">
+                                    <label class="form-label small fw-medium">Vencimiento</label>
+                                    <div class="input-group checkout-input-group">
+                                        <span class="input-group-text">
+                                            <Icons Name="Calendar" style="width:16px;height:16px;" />
+                                        </span>
+                                        <input type="text" class="form-control font-monospace"
+                                               placeholder="MM/AA" maxlength="5"
+                                               value="@_cardExpiry" @oninput="OnCardExpiryInput" />
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-medium">CVV</label>
+                                    <div class="input-group checkout-input-group">
+                                        <span class="input-group-text">
+                                            <Icons Name="Lock" style="width:16px;height:16px;" />
+                                        </span>
+                                        <input type="password" class="form-control font-monospace"
+                                               placeholder="•••" maxlength="4" @bind="_cardCvv" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2 p-3 rounded-3 border"
+                                 style="background:color-mix(in srgb,var(--primary) 8%,transparent);
+                                        border-color:color-mix(in srgb,var(--primary) 30%,transparent)!important;">
+                                <Icons Name="Lock" Class="text-primary flex-shrink-0"
+                                       style="width:14px;height:14px;margin-top:2px;" />
+                                <p class="text-muted-foreground mb-0 small">
+                                    Tu información de pago está encriptada y segura.
+                                    Nunca almacenamos los datos de tu tarjeta.
+                                </p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (_payMethod == "yape")
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex align-items-center gap-3 pb-3 border-bottom border-border">
+                                <div class="rounded-3 d-flex align-items-center justify-content-center"
+                                     style="width:48px;height:48px;
+                                            background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+                                    <span class="text-white fw-bold fs-5">Y</span>
+                                </div>
+                                <div>
+                                    <p class="fw-semibold text-foreground mb-0">Paga con Yape</p>
+                                    <p class="text-muted-foreground small mb-0">Escanea el QR o ingresa tu número</p>
+                                </div>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-6 d-flex flex-column align-items-center gap-2">
+                                    <div class="yape-qr-box">
+                                        <div style="display:grid;grid-template-columns:repeat(7,1fr);
+                                                    gap:2px;width:100%;height:100%;">
+                                            @for (int r = 0; r < 49; r++)
+                                            {
+                                                bool filled = (r % 3 == 0 || r % 7 == 1 || r % 5 == 2);
+                                                <div style="background:@(filled ? "#3b0764" : "white");
+                                                            border-radius:1px;"></div>
+                                            }
+                                        </div>
+                                        <div class="position-absolute top-50 start-50 translate-middle bg-white rounded-2 p-1">
+                                            <div class="rounded-2 d-flex align-items-center justify-content-center"
+                                                 style="width:28px;height:28px;
+                                                        background:linear-gradient(135deg,#7c3aed,#6d28d9);">
+                                                <span class="text-white fw-bold small">Y</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary">S/. @Total.ToString("0.00")</span>
+                                    <p class="text-muted-foreground small text-center mb-0">Escanea con tu app Yape</p>
+                                </div>
+                                <div class="col-md-6 d-flex flex-column gap-3 justify-content-center">
+                                    <p class="text-muted-foreground small text-center mb-0">— O confirma manualmente —</p>
+                                    <div>
+                                        <label class="form-label small fw-medium">Tu número Yape</label>
+                                        <div class="input-group checkout-input-group">
+                                            <span class="input-group-text">
+                                                <Icons Name="Smartphone" style="width:15px;height:15px;" />
+                                            </span>
+                                            <input type="tel" class="form-control font-monospace"
+                                                   placeholder="999 999 999" maxlength="9" @bind="_yapePhone" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="form-label small fw-medium">Código de confirmación</label>
+                                        <div class="input-group checkout-input-group">
+                                            <span class="input-group-text">
+                                                <Icons Name="Hash" style="width:15px;height:15px;" />
+                                            </span>
+                                            <input type="text" class="form-control"
+                                                   placeholder="Código de tu app Yape" @bind="_yapeCode" />
+                                        </div>
+                                        <p class="form-text">Encuéntralo en tu app tras escanear el QR</p>
+                                    </div>
+                                    @if (!_yapeConfirmed)
+                                    {
+                                        <button class="btn btn-outline-secondary btn-sm"
+                                                @onclick="ConfirmYape"
+                                                disabled="@(_yapeCode.Length < 4)">
+                                            <Icons Name="CheckCircle" style="width:14px;height:14px;" />
+                                            Confirmar pago Yape
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <div class="alert alert-success py-2 small mb-0">
+                                            <Icons Name="CheckCircle" style="width:14px;height:14px;" />
+                                            Pago Yape verificado correctamente
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="alert alert-light border small mb-0"
+                                 style="border-color:#c4b5fd!important;">
+                                <strong>Instrucciones:</strong> Abre tu app Yape, escanea el código QR
+                                y confirma el pago. Luego ingresa el código de confirmación que te da la app.
+                            </div>
+                        </div>
+                    }
+
+                    @if (_payMethod == "efectivo")
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex align-items-center gap-3 pb-3 border-bottom border-border">
+                                <div class="rounded-3 d-flex align-items-center justify-content-center"
+                                     style="width:48px;height:48px;
+                                            background:linear-gradient(135deg,#16a34a,#15803d);">
+                                    <Icons Name="Banknote" Class="text-white" style="width:22px;height:22px;" />
+                                </div>
+                                <div>
+                                    <p class="fw-semibold text-foreground mb-0">Pago en Efectivo</p>
+                                    <p class="text-muted-foreground small mb-0">Calcula tu vuelto antes de pagar</p>
+                                </div>
+                            </div>
+
+                            <div class="text-center p-4 rounded-3" style="background:var(--secondary);">
+                                <p class="text-muted-foreground small mb-1">Total a pagar</p>
+                                <p class="fw-bold text-primary mb-0" style="font-size:2rem;">
+                                    S/. @Total.ToString("0.00")
+                                </p>
+                            </div>
+
+                            <div>
+                                <label class="form-label small fw-medium">Monto rápido</label>
+                                <div class="d-grid gap-2" style="grid-template-columns:repeat(4,1fr);">
+                                    @foreach (var amount in new[] { 20m, 50m, 100m, 200m })
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm @(_cashAmount == amount ? "btn-primary" : "btn-outline-secondary")"
+                                                style="height:44px;font-weight:600;"
+                                                @onclick="() => OnCashQuick(amount)">
+                                            S/. @amount
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="form-label small fw-medium">
+                                    O ingresa el monto con el que pagarás
+                                </label>
+                                <div class="input-group checkout-input-group">
+                                    <span class="input-group-text fw-medium">S/.</span>
+                                    <input type="number" class="form-control text-center fw-bold fs-5"
+                                           style="height:52px;"
+                                           placeholder="0.00" step="0.10" min="0"
+                                           @bind="_cashAmount" @bind:event="oninput" />
+                                </div>
+                            </div>
+
+                            <div class="p-4 rounded-3
+                                @(CashEnough
+                                    ? (_cashAmount == Total ? "cash-calc-exact" : "cash-calc-ok")
+                                    : _cashAmount > 0 ? "cash-calc-warn" : "cash-calc-empty")">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0
+                                        @(CashEnough ? "cash-icon-ok" : _cashAmount > 0 ? "cash-icon-warn" : "cash-icon-empty")"
+                                         style="width:44px;height:44px;">
+                                        <Icons Name="@(CashEnough ? "Coins" : "Calculator")"
+                                               Class="@(CashEnough ? "text-success" : _cashAmount > 0 ? "text-warning" : "text-muted-foreground")"
+                                               style="width:20px;height:20px;" />
+                                    </div>
+                                    <div>
+                                        @if (_cashAmount == 0)
+                                        {
+                                            <p class="text-muted-foreground small mb-0">Tu vuelto</p>
+                                            <p class="fw-bold text-muted-foreground mb-0">
+                                                Primero selecciona o escribe el monto que pagarás
+                                            </p>
+                                        }
+                                        else if (CashEnough)
+                                        {
+                                            @if (_cashAmount == Total)
+                                            {
+                                                <p class="text-primary small fw-medium mb-0">Monto exacto</p>
+                                                <p class="fw-bold text-primary mb-0">No hay vuelto</p>
+                                            }
+                                            else
+                                            {
+                                                <p class="text-success small fw-medium mb-0">Tu vuelto será</p>
+                                                <p class="fw-bold text-success mb-0" style="font-size:1.5rem;">
+                                                    S/. @CashChange.ToString("0.00")
+                                                </p>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <p class="small fw-medium mb-0 cash-text-warn">Falta por pagar</p>
+                                            <p class="fw-bold mb-0 cash-text-warn">
+                                                S/. @((Total - _cashAmount).ToString("0.00"))
+                                            </p>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="d-flex gap-2 p-3 rounded-3" style="background:var(--secondary);">
+                                <Icons Name="Banknote" Class="text-muted-foreground flex-shrink-0"
+                                       style="width:16px;height:16px;margin-top:2px;" />
+                                <div class="small">
+                                    <p class="fw-medium text-foreground mb-1">Pago contra entrega</p>
+                                    <p class="text-muted-foreground mb-0">
+                                        El repartidor llevará el vuelto exacto.
+                                        Por favor ten el dinero listo para agilizar la entrega.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                    <button class="btn btn-primary w-100 fw-semibold mt-4 d-flex align-items-center justify-content-center gap-2"
+                            style="height:52px;border-radius:var(--radius);"
+                            disabled="@_isLoading"
+                            @onclick="PlaceOrder">
+                        @if (_isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                            <span>Procesando pago...</span>
+                        }
+                        else
+                        {
+                            <Icons Name="ShieldCheck" style="width:18px;height:18px;" />
+                            <span>Pagar S/. @Total.ToString("0.00")</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

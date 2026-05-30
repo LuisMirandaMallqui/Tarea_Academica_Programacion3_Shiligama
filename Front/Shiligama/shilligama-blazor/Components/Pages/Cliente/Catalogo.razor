@@ -1,0 +1,613 @@
+@page "/catalogo"
+@layout MainLayout
+@inject ProductService ProductSvc
+@inject CartService Cart
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+@code {
+    // ===== PAGINACIÓN DEL LADO DEL SERVIDOR =====
+    // En vez de traer TODO el catálogo y filtrar/paginar en el navegador, ahora
+    // pedimos al back solo la página actual con los filtros aplicados:
+    //   GET /api/productos/buscar?categoria=&q=&precioMin=&precioMax=&pagina=&tamano=
+    // y leemos el total desde los headers (X-Total-Count, X-Total-Pages).
+    private List<Category> _categories = new();
+    private PagedResult<Product> _page = new();
+
+    private string? _selectedCategory = null;   // id de categoría (string del int)
+    private decimal _minPrice = 0;
+    private decimal _maxPrice = 100;             // 100 = "sin tope" superior
+
+    private bool _showMobileFilters = false;
+    private bool _isLoading = true;
+
+    private int _currentPage = 1;
+    private const int PageSize = 8;
+
+    private int _carouselIndex = 0;
+    private const int _carouselTotal = 3;
+    private DotNetObjectReference<Catalogo>? _dotNetRef;
+
+    private string SearchQuery => ProductSvc.SearchQuery;
+
+    private readonly (string Icon, string Title, string Desc, string Color, string Route)[] _slides = {
+        ("fa-tags",       "Ofertas de la Semana", "Hasta 30% de descuento en productos seleccionados", "#0D4525", "/ofertas"),
+        ("fa-truck",      "Delivery Gratis",       "En compras mayores a S/. 50",                      "#1a3a5c", ""),
+        ("fa-candy-cane", "2x1 en Snacks",         "Paga 1 y lleva 2 en snacks seleccionados",        "#4a1942", "/snacks-2x1"),
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();      // carga las categorías del API
+        _categories = ProductSvc.GetCategories();
+        ProductSvc.OnSearch += OnSearchChanged;
+        await LoadAsync();                          // primera página
+    }
+
+    // Pide al back la página actual con los filtros vigentes.
+    private async Task LoadAsync()
+    {
+        // Si el usuario cruza los topes, los normalizamos (el back rechaza min>max).
+        if (_minPrice > _maxPrice) (_minPrice, _maxPrice) = (_maxPrice, _minPrice);
+
+        _isLoading = true;
+        StateHasChanged();
+
+        // 0 = sin mínimo; 100 = sin máximo (coincide con el rango del slider).
+        decimal? min = _minPrice <= 0 ? (decimal?)null : _minPrice;
+        decimal? max = _maxPrice >= 100 ? (decimal?)null : _maxPrice;
+
+        _page = await ProductSvc.SearchAsync(
+            categoriaId: _selectedCategory,
+            q: string.IsNullOrWhiteSpace(SearchQuery) ? null : SearchQuery,
+            precioMin: min,
+            precioMax: max,
+            pagina: _currentPage,
+            tamano: PageSize);
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    // Cualquier cambio de filtro vuelve a la página 1 y recarga desde el servidor.
+    private async Task SelectCategoryAsync(string? id) { _selectedCategory = id; _currentPage = 1; _showMobileFilters = false; await LoadAsync(); }
+    private async Task ApplyFiltersAsync() { _currentPage = 1; await LoadAsync(); }
+    private async Task ClearFiltersAsync() { _minPrice = 0; _maxPrice = 100; _currentPage = 1; await LoadAsync(); }
+    private async Task ClearAllAsync() { _selectedCategory = null; ProductSvc.NotifySearch(""); }
+
+    // Disparado por el buscador del navbar (evento OnSearch del ProductService).
+    private void OnSearchChanged() { _currentPage = 1; _ = InvokeAsync(LoadAsync); }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.InitializeAsync();
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("carouselHelper.startCarousel", _dotNetRef, 5000);
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void NextSlideAuto()
+    {
+        _carouselIndex = (_carouselIndex + 1) % _carouselTotal;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void NextSlide()      => _carouselIndex = (_carouselIndex + 1) % _carouselTotal;
+    private void PrevSlide()      => _carouselIndex = (_carouselIndex - 1 + _carouselTotal) % _carouselTotal;
+    private void GoToSlide(int i) => _carouselIndex = i;
+
+    private void Refresh()
+    {
+        _currentPage = 1;
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Cambia de página pidiendo esa página al servidor (no recorta en memoria).
+    private async Task GoToPage(int page)
+    {
+        if (page >= 1 && page <= _page.TotalPages && page != _currentPage)
+        {
+            _currentPage = page;
+            await LoadAsync();
+            await JS.InvokeVoidAsync("window.scrollTo", 0, 0);
+        }
+    }
+
+    private HashSet<int> _addedIds = new();
+
+    private async Task AddToCart(Product p)
+    {
+        await Cart.AddToCartAsync(p);
+        _addedIds.Add(p.Id);
+        StateHasChanged();
+        await Task.Delay(1800);
+        _addedIds.Remove(p.Id);
+        StateHasChanged();
+    }
+
+    private string GetDiscountPct(Product p) =>
+        p.OriginalPrice.HasValue ? $"-{100 - (int)(p.Price / p.OriginalPrice.Value * 100)}%" : "";
+
+    // Como ahora la categoría tiene id numérico (no slug), el ícono se elige
+    // por el NOMBRE de la categoría que viene del back.
+    private string GetCategoryIcon(string categoryName)
+    {
+        var n = (categoryName ?? "").ToLowerInvariant();
+        if (n.Contains("abarrote")) return "fa-bag-shopping";
+        if (n.Contains("bebida")) return "fa-wine-glass";
+        if (n.Contains("lácteo") || n.Contains("lacteo")) return "fa-wine-bottle";
+        if (n.Contains("snack")) return "fa-cookie-bite";
+        if (n.Contains("limpieza")) return "fa-spray-can";
+        if (n.Contains("carne") || n.Contains("embutido")) return "fa-drumstick-bite";
+        if (n.Contains("fruta") || n.Contains("verdura")) return "fa-apple-whole";
+        if (n.Contains("dulce") || n.Contains("golosina")) return "fa-candy-cane";
+        if (n.Contains("congelado")) return "fa-snowflake";
+        if (n.Contains("bebé") || n.Contains("bebe")) return "fa-baby-carriage";
+        return "fa-box";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        ProductSvc.OnSearch -= OnSearchChanged;
+        try
+        {
+            await JS.InvokeVoidAsync("carouselHelper.stopCarousel");
+        }
+        catch { }
+        _dotNetRef?.Dispose();
+    }
+}
+
+<PageTitle>Catálogo – Shiligama</PageTitle>
+
+<style>
+.active-category-btn {
+    background-color: #0D4525 !important;
+    color: white !important;
+    border-radius: var(--radius);
+    transition: all 0.2s ease;
+    border: none !important;
+}
+.active-category-btn i { color: white !important; }
+.inactive-category-btn {
+    background-color: transparent !important;
+    color: #1f2937 !important;
+    border-radius: var(--radius);
+    transition: all 0.2s ease;
+    border: none !important;
+}
+.inactive-category-btn:hover {
+    background-color: var(--secondary) !important;
+    color: #0D4525 !important;
+}
+.inactive-category-btn i { color: #4b5563 !important; }
+.inactive-category-btn:hover i { color: #0D4525 !important; }
+.dark .inactive-category-btn { color: var(--foreground) !important; }
+.dark .inactive-category-btn i { color: var(--muted-foreground) !important; }
+.dark .inactive-category-btn:hover { background-color: var(--secondary) !important; color: var(--foreground) !important; }
+.dark .inactive-category-btn:hover i { color: var(--foreground) !important; }
+
+.dual-range-container {
+    position: relative; width: 100%; height: 24px;
+    margin-top: 5px; display: flex; align-items: center;
+}
+.dual-range-track {
+    position: absolute; height: 6px; width: 100%;
+    background-color: #e2e8f0; border-radius: 3px; z-index: 1;
+}
+.dual-range-highlight {
+    position: absolute; height: 6px;
+    background-color: #0D4525; border-radius: 3px; z-index: 2;
+}
+.dual-range-slider {
+    position: absolute; width: 100%; background: transparent;
+    pointer-events: none; -webkit-appearance: none; appearance: none; z-index: 3; margin: 0;
+}
+.dual-range-slider::-webkit-slider-runnable-track { background: transparent; border: none; }
+.dual-range-slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; border: 2.5px solid #0D4525;
+    cursor: pointer; pointer-events: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15); margin-top: -6px;
+    transition: transform 0.1s ease, background-color 0.1s ease;
+}
+.dual-range-slider::-webkit-slider-thumb:hover { transform: scale(1.15); background-color: #E8F5E9; }
+.dual-range-slider::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%;
+    background: white; border: 2.5px solid #0D4525;
+    cursor: pointer; pointer-events: auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.1s ease, background-color 0.1s ease;
+}
+.dual-range-slider::-moz-range-thumb:hover { transform: scale(1.15); background-color: #E8F5E9; }
+
+.pagination-nav-btn:hover:not(.disabled) {
+    background-color: var(--secondary) !important;
+    border-color: #0D4525 !important; color: #0D4525 !important; transform: scale(1.05);
+}
+.pagination-nav-btn.disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination-num-btn { background-color: var(--card) !important; color: var(--foreground) !important; }
+.pagination-num-btn:hover:not(.active-page) {
+    background-color: var(--secondary) !important;
+    border-color: #0D4525 !important; color: #0D4525 !important; transform: scale(1.05);
+}
+.active-page {
+    background-color: #0D4525 !important; color: white !important;
+    border-color: #0D4525 !important; box-shadow: 0 4px 10px rgba(13,69,37,0.2);
+}
+.dark .active-page { box-shadow: 0 4px 10px rgba(13,69,37,0.4); }
+</style>
+
+<div class="bg-background">
+    <div class="container-xl px-3 px-sm-4 pt-4">
+        <div class="position-relative">
+            <div class="carousel-wrapper">
+                <div class="carousel-track" style="transform: translateX(-@(_carouselIndex * 100)%)">
+                    @for (int i = 0; i < _carouselTotal; i++)
+                    {
+                        var slide = _slides[i];
+                        <div class="carousel-slide text-white d-flex flex-column align-items-center justify-content-center gap-3"
+                             style="background: linear-gradient(135deg, @slide.Color 0%, color-mix(in srgb, @slide.Color 70%, #27ae60) 100%); min-height: 180px;"
+                             @onclick="@(() => { if (!string.IsNullOrEmpty(slide.Route)) Navigation.NavigateTo(slide.Route); })">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center"
+                                 style="width:56px;height:56px;background:rgba(255,255,255,0.2);">
+                                <i class="fas @slide.Icon" style="font-size:1.5rem;"></i>
+                            </div>
+                            <div>
+                                <h2 class="fw-bold mb-1 fs-5 text-center">@slide.Title</h2>
+                                <p class="mb-0 opacity-90 small text-center">@slide.Desc</p>
+                            </div>
+                            @if (!string.IsNullOrEmpty(slide.Route))
+                            {
+                                <span class="badge" style="background:rgba(255,255,255,0.25);font-size:0.8rem;">Ver ofertas &rarr;</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+            <button class="carousel-btn prev" @onclick="PrevSlide" title="Anterior">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="carousel-btn next" @onclick="NextSlide" title="Siguiente">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+        <div class="carousel-dots">
+            @for (int i = 0; i < _carouselTotal; i++)
+            {
+                var idx = i;
+                <button class="carousel-dot @(_carouselIndex == idx ? "active" : "")"
+                        @onclick="@(() => GoToSlide(idx))" aria-label="Slide @(idx+1)"></button>
+            }
+        </div>
+    </div>
+
+    <div class="container-xl px-3 px-sm-4 py-4">
+        <div class="row g-4">
+            <!-- Sidebar desktop -->
+            <div class="col-lg-3 d-none d-lg-block">
+                <div class="card p-3 d-flex flex-column gap-3">
+                    <h3 class="fw-bold text-foreground mb-1"
+                        style="font-size:0.9rem;letter-spacing:0.05em;font-family:'Outfit',sans-serif;">
+                        CATEGORIAS
+                    </h3>
+                    <div class="d-flex flex-column gap-1">
+                        <button @onclick="() => SelectCategoryAsync(null)"
+                                class="btn text-start px-3 py-2 small d-flex align-items-center gap-3
+                                       @(_selectedCategory == null ? "active-category-btn" : "inactive-category-btn")"
+                                style="border-radius:var(--radius);">
+                            <i class="fa-solid fa-box" style="font-size:1rem;width:18px;text-align:center;"></i>
+                            Todos los productos
+                        </button>
+                        @foreach (var cat in _categories)
+                        {
+                            <button @onclick="() => SelectCategoryAsync(cat.Id)"
+                                    class="btn text-start px-3 py-2 small d-flex align-items-center gap-3
+                                           @(_selectedCategory == cat.Id ? "active-category-btn" : "inactive-category-btn")"
+                                    style="border-radius:var(--radius);">
+                                <i class="fa-solid @GetCategoryIcon(cat.Name)"
+                                   style="font-size:1rem;width:18px;text-align:center;"></i>
+                                @cat.Name
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="card p-4 d-flex flex-column gap-3 mt-3">
+                    <h3 class="fw-bold text-foreground mb-1"
+                        style="font-size:0.9rem;letter-spacing:0.05em;font-family:'Outfit',sans-serif;">
+                        RANGO DE PRECIO
+                    </h3>
+                    <div class="px-1">
+                        <div class="dual-range-container">
+                            <div class="dual-range-track"></div>
+                            <div class="dual-range-highlight"
+                                 style="left:@(_minPrice)%;width:@(_maxPrice - _minPrice)%;"></div>
+                            <input type="range" class="dual-range-slider" min="0" max="100"
+                                   @bind="_minPrice" @bind:event="oninput" @onchange="ApplyFiltersAsync" />
+                            <input type="range" class="dual-range-slider" min="0" max="100"
+                                   @bind="_maxPrice" @bind:event="oninput" @onchange="ApplyFiltersAsync" />
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 mt-2">
+                        <div class="flex-grow-1">
+                            <label class="text-xs text-muted-foreground mb-1 d-block fw-medium">Min</label>
+                            <div class="position-relative">
+                                <span class="position-absolute text-muted-foreground small"
+                                      style="left:10px;top:50%;transform:translateY(-50%);font-size:0.85rem;">S/.</span>
+                                <input type="number" class="form-control text-center py-1"
+                                       @bind="_minPrice" @bind:after="ApplyFiltersAsync" min="0" max="@_maxPrice"
+                                       style="padding-left:28px;height:36px;border-radius:8px;font-size:0.9rem;" />
+                            </div>
+                        </div>
+                        <span class="text-muted-foreground mt-4">-</span>
+                        <div class="flex-grow-1">
+                            <label class="text-xs text-muted-foreground mb-1 d-block fw-medium">Max</label>
+                            <div class="position-relative">
+                                <span class="position-absolute text-muted-foreground small"
+                                      style="left:10px;top:50%;transform:translateY(-50%);font-size:0.85rem;">S/.</span>
+                                <input type="number" class="form-control text-center py-1"
+                                       @bind="_maxPrice" @bind:after="ApplyFiltersAsync" min="@_minPrice" max="100"
+                                       style="padding-left:28px;height:36px;border-radius:8px;font-size:0.9rem;" />
+                            </div>
+                        </div>
+                    </div>
+                    <button @onclick="ClearFiltersAsync"
+                            class="btn btn-outline-secondary w-100 py-2 mt-2 fw-medium"
+                            style="border-radius:var(--radius);font-size:0.85rem;">
+                        Limpiar filtros
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtro móvil -->
+            <div class="col-12 d-lg-none">
+                <button @onclick="@(() => _showMobileFilters = !_showMobileFilters)"
+                        class="btn btn-outline-primary d-flex align-items-center gap-2 small"
+                        style="border-radius:var(--radius);">
+                    <Icons Name="Filter" Class="w-4 h-4" />
+                    Filtrar
+                    @if (_selectedCategory != null)
+                    { <span class="badge bg-primary ms-1">1</span> }
+                </button>
+                @if (_showMobileFilters)
+                {
+                    <div class="card p-3 mt-2 d-flex flex-column gap-2 slide-up">
+                        <button @onclick="() => SelectCategoryAsync(null)"
+                                class="btn text-start px-3 py-2 small
+                                       @(_selectedCategory == null ? "btn-primary" : "btn-secondary")"
+                                style="border-radius:var(--radius);">
+                            Todas
+                        </button>
+                        @foreach (var cat in _categories)
+                        {
+                            <button @onclick="() => SelectCategoryAsync(cat.Id)"
+                                    class="btn text-start px-3 py-2 small
+                                           @(_selectedCategory == cat.Id ? "btn-primary" : "btn-secondary")"
+                                    style="border-radius:var(--radius);">
+                                @cat.Name
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Grid de productos -->
+            <div class="col-lg-9">
+                @if (!string.IsNullOrEmpty(SearchQuery))
+                {
+                    <p class="text-muted-foreground small mb-3">
+                        Resultados para "<strong>@SearchQuery</strong>" — @_page.TotalCount productos
+                    </p>
+                }
+                @if (_selectedCategory != null)
+                {
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="badge bg-primary py-2 px-3" style="border-radius:var(--radius);">
+                            @ProductSvc.GetCategoryName(_selectedCategory)
+                        </span>
+                        <button @onclick="() => SelectCategoryAsync(null)"
+                                class="btn btn-link btn-sm text-muted-foreground p-0 text-decoration-none">
+                            ✕ Limpiar
+                        </button>
+                    </div>
+                }
+
+                @if (_isLoading)
+                {
+                    <div class="row g-3">
+                        @for (int i = 0; i < 8; i++)
+                        {
+                            <div class="col-6 col-md-4 col-xl-3">
+                                <div class="card p-3" style="height:280px;animation:pulse 1.5s infinite;">
+                                    <div class="bg-muted rounded mb-2" style="height:140px;"></div>
+                                    <div class="bg-muted rounded mb-1" style="height:14px;width:70%;"></div>
+                                    <div class="bg-muted rounded" style="height:12px;width:40%;"></div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else if (!_page.Items.Any())
+                {
+                    <div class="text-center py-5">
+                        <div class="fs-1 mb-3">🔍</div>
+                        <h3 class="text-foreground fw-medium">No se encontraron productos</h3>
+                        <p class="text-muted-foreground">Intenta ajustar los filtros o la búsqueda</p>
+                        <button @onclick="ClearAllAsync"
+                                class="btn btn-primary mt-2" style="border-radius:var(--radius);">
+                            Ver todos
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3 fade-in">
+                        @foreach (var product in _page.Items)
+                        {
+                            <div class="col-6 col-md-4 col-xl-3">
+                                <div class="card h-100 d-flex flex-column position-relative overflow-hidden"
+                                     style="transition:transform .2s,box-shadow .2s;border-radius:16px;
+                                            border:1px solid var(--border);
+                                            box-shadow:0 4px 12px rgba(0,0,0,0.03);cursor:pointer;">
+
+                                    <!-- Imagen -->
+                                    <div class="position-relative" style="height:170px;overflow:hidden;">
+                                        <a href="/catalogo/@product.Id" class="text-decoration-none">
+                                            <img src="@product.Image" alt="@product.Name"
+                                                 class="w-100 h-100 object-fit-cover"
+                                                 style="transition:filter 0.3s ease;
+                                                        @(product.Stock == 0 ? "filter:blur(4px) opacity(0.6);" : "")"
+                                                 onerror="this.src='https://placehold.co/300x300/e8f5e9/1A6B3C?text=🛒'" />
+                                        </a>
+                                        @if (product.IsPromo && product.Stock > 0)
+                                        {
+                                            <span class="badge bg-danger position-absolute top-0 start-0 m-2 z-1"
+                                                  style="border-radius:8px;font-size:.7rem;font-weight:600;">
+                                                @GetDiscountPct(product)
+                                            </span>
+                                        }
+                                        @if (product.Stock == 0)
+                                        {
+                                            <div class="position-absolute top-0 start-0 end-0 bottom-0
+                                                        d-flex align-items-center justify-content-center z-1"
+                                                 style="background:rgba(255,255,255,0.15);">
+                                                <span class="fw-bold text-secondary"
+                                                      style="font-size:1.15rem;font-family:'Outfit',sans-serif;">
+                                                    Agotado
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+
+                                    <!-- Contenido -->
+                                    <div class="p-3 d-flex flex-column flex-grow-1">
+                                        <!-- Badge En stock / Agotado -->
+                                        <div class="mb-2">
+                                            @if (product.Stock > 0)
+                                            {
+                                                <span class="badge badge-en-stock"
+                                                      style="font-size:0.75rem;font-weight:500;
+                                                             border-radius:6px;padding:0.3rem 0.6rem;">
+                                                    En stock
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge"
+                                                      style="background-color:#EF4444;color:white;
+                                                             font-size:0.75rem;font-weight:600;
+                                                             border-radius:6px;padding:0.3rem 0.6rem;">
+                                                    Agotado
+                                                </span>
+                                            }
+                                        </div>
+
+                                        <!-- Nombre -->
+                                        <a href="/catalogo/@product.Id"
+                                           class="text-decoration-none text-foreground mb-2">
+                                            <p class="fw-bold text-foreground mb-0 lh-sm"
+                                               style="font-family:'Outfit',sans-serif;font-size:0.95rem;
+                                                      display:-webkit-box;-webkit-line-clamp:2;
+                                                      -webkit-box-orient:vertical;overflow:hidden;height:36px;">
+                                                @product.Name
+                                            </p>
+                                        </a>
+
+                                        <!-- Precio -->
+                                        <div class="mb-3">
+                                            <span class="fw-bold"
+                                                  style="font-size:1.2rem;color:var(--primary);">
+                                                S/. @product.Price.ToString("0.00")
+                                            </span>
+                                            @if (product.OriginalPrice.HasValue)
+                                            {
+                                                <span class="text-decoration-line-through text-muted-foreground ms-1 small"
+                                                      style="font-size:.8rem;">
+                                                    S/. @product.OriginalPrice.Value.ToString("0.00")
+                                                </span>
+                                            }
+                                        </div>
+
+                                        <!-- Botón Agregar (único, con feedback) -->
+                                        <div class="mt-auto">
+                                            @if (product.Stock > 0)
+                                            {
+                                                <button @onclick="@(() => AddToCart(product))"
+                                                        class="btn text-white w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+                                                        style="background-color:@(_addedIds.Contains(product.Id) ? "#16a34a" : "#0D4525");
+                                                               border:none;border-radius:8px;font-weight:500;
+                                                               font-size:0.9rem;transition:background-color 0.3s;"
+                                                        title="Agregar al carrito">
+                                                    @if (_addedIds.Contains(product.Id))
+                                                    {
+                                                        <i class="fa-solid fa-check" style="font-size:0.85rem;"></i>
+                                                        <span>¡Agregado!</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fa-solid fa-plus" style="font-size:0.85rem;"></i>
+                                                        <span>Agregar</span>
+                                                    }
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button disabled
+                                                        class="btn text-white w-100 py-2 d-flex align-items-center justify-content-center gap-2"
+                                                        style="background-color:#A3BFB0;border:none;border-radius:8px;
+                                                               font-weight:500;font-size:0.9rem;cursor:not-allowed;opacity:0.85;">
+                                                    <i class="fa-solid fa-plus" style="font-size:0.85rem;"></i>
+                                                    <span>Agotado</span>
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @if (_page.TotalPages > 1)
+                    {
+                        <div class="d-flex justify-content-center align-items-center gap-2 mt-5 mb-4">
+                            <button class="btn d-flex align-items-center justify-content-center pagination-nav-btn
+                                           @(_currentPage == 1 ? "disabled" : "")"
+                                    @onclick="(() => GoToPage(_currentPage - 1))"
+                                    disabled="@(_currentPage == 1)"
+                                    style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border);
+                                           background:var(--card);color:var(--foreground);transition:all 0.2s;">
+                                <i class="fas fa-chevron-left" style="font-size:0.85rem;"></i>
+                            </button>
+                            @for (int i = 1; i <= _page.TotalPages; i++)
+                            {
+                                var pageIndex = i;
+                                <button class="btn d-flex align-items-center justify-content-center pagination-num-btn
+                                               @(_currentPage == pageIndex ? "active-page" : "")"
+                                        @onclick="(() => GoToPage(pageIndex))"
+                                        style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border);
+                                               transition:all 0.2s;font-weight:500;">
+                                    @pageIndex
+                                </button>
+                            }
+                            <button class="btn d-flex align-items-center justify-content-center pagination-nav-btn
+                                           @(_currentPage == _page.TotalPages ? "disabled" : "")"
+                                    @onclick="(() => GoToPage(_currentPage + 1))"
+                                    disabled="@(_currentPage == _page.TotalPages)"
+                                    style="width:40px;height:40px;border-radius:50%;border:1px solid var(--border);
+                                           background:var(--card);color:var(--foreground);transition:all 0.2s;">
+                                <i class="fas fa-chevron-right" style="font-size:0.85rem;"></i>
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

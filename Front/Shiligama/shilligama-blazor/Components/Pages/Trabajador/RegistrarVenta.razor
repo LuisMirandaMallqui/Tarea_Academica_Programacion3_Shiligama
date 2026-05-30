@@ -1,0 +1,473 @@
+@page "/trabajador/registrar-venta"
+@layout TrabajadorLayout
+@inject ProductService ProductSvc
+@inject SalesService SalesSvc
+@inject AuthService Auth
+@inject IJSRuntime JS
+
+@code {
+    private List<Product> _products = new();
+    private List<CartItem> _posCart = new();
+
+    // Modal state
+    private bool _isModalOpen = false;
+    private string _modalSearch = "";
+    private Product? _selectedProduct = null;
+    private int _selectedQuantity = 1;
+
+    // POS state
+    private string _customerName = "";
+    private string _payMethod = "efectivo";
+    private string _invoiceType = "boleta";
+    private bool _success = false;
+    private bool _isProcessing = false;
+    private string _receiptId = "";
+    private string _errorMsg  = "";
+
+    // Financial calculations
+    private decimal Subtotal       => _posCart.Sum(i => i.Price * i.Quantity);
+    private decimal SubtotalSinIgv => Subtotal / 1.18m;
+    private decimal Igv            => Subtotal - SubtotalSinIgv;
+    private decimal Total          => Subtotal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _products = ProductSvc.GetProducts();
+    }
+
+    private IEnumerable<Product> ModalProducts => _products.Where(p =>
+        string.IsNullOrEmpty(_modalSearch) ||
+        p.Name.Contains(_modalSearch, StringComparison.OrdinalIgnoreCase) ||
+        p.Category.Contains(_modalSearch, StringComparison.OrdinalIgnoreCase)
+    );
+
+    private void OpenModal()
+    {
+        _isModalOpen = true;
+        _modalSearch = "";
+        _selectedProduct = null;
+        _selectedQuantity = 1;
+    }
+
+    private void CloseModal() => _isModalOpen = false;
+
+    private void SelectProduct(Product p)
+    {
+        _selectedProduct = p;
+        _selectedQuantity = 1;
+    }
+
+    private void AddSelectedToCart()
+    {
+        if (_selectedProduct == null || _selectedQuantity <= 0) return;
+
+        var existing = _posCart.FirstOrDefault(i => i.Id == _selectedProduct.Id);
+        if (existing != null)
+        {
+            existing.Quantity = Math.Min(existing.Quantity + _selectedQuantity, _selectedProduct.Stock);
+        }
+        else
+        {
+            _posCart.Add(new CartItem
+            {
+                Id       = _selectedProduct.Id,
+                Name     = _selectedProduct.Name,
+                Price    = _selectedProduct.Price,
+                Quantity = _selectedQuantity,
+                Image    = _selectedProduct.Image
+            });
+        }
+        CloseModal();
+    }
+
+    private void RemoveFromCart(int productId)
+    {
+        var item = _posCart.FirstOrDefault(i => i.Id == productId);
+        if (item != null) _posCart.Remove(item);
+    }
+
+    // ProcessSale recibe el tipo ("boleta" o "ticket") desde los botones del footer
+    private async Task ProcessSale(string type)
+    {
+        if (!_posCart.Any() || _isProcessing) return;
+        _isProcessing = true;
+        _invoiceType = type;
+        _errorMsg = "";
+
+        int idTrabajador = Auth.CurrentUser?.Id ?? 0;
+
+        int idGenerado = await SalesSvc.AddPresencialSaleAsync(
+            _customerName, _posCart, Total, _payMethod, _invoiceType, idTrabajador);
+
+        _receiptId = $"VTA-{idGenerado:D4}";
+
+        // Actualiza stock local para feedback inmediato
+        foreach (var item in _posCart)
+        {
+            var p = _products.FirstOrDefault(pr => pr.Id == item.Id);
+            if (p != null) p.Stock = Math.Max(0, p.Stock - item.Quantity);
+        }
+
+        // Si es boleta, imprime usando el helper JS del equipo
+        if (type == "boleta")
+        {
+            var boletaData = new
+            {
+                receiptId      = _receiptId,
+                customerName   = string.IsNullOrWhiteSpace(_customerName) ? "Público General" : _customerName,
+                payMethod      = _payMethod,
+                invoiceType    = _invoiceType,
+                items          = _posCart.Select(i => new
+                {
+                    name     = i.Name,
+                    quantity = i.Quantity,
+                    price    = (double)i.Price,
+                    subtotal = (double)(i.Price * i.Quantity)
+                }).ToList(),
+                subtotalSinIgv = (double)SubtotalSinIgv,
+                igv            = (double)Igv,
+                total          = (double)Total,
+                date           = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+            };
+            await JS.InvokeVoidAsync("boletaHelpers.generateAndPrintBoleta", boletaData);
+        }
+
+        _success = true;
+        _isProcessing = false;
+    }
+
+    private void ResetPOS()
+    {
+        _posCart.Clear();
+        _customerName = "";
+        _payMethod    = "efectivo";
+        _invoiceType  = "boleta";
+        _success      = false;
+        _receiptId    = "";
+        _errorMsg     = "";
+    }
+}
+
+<PageTitle>Registrar Venta – Shiligama</PageTitle>
+
+@if (_success)
+{
+    <div class="container-fluid py-4 fade-in h-100 d-flex align-items-center justify-content-center" style="background-color:#f8f9fa;">
+        <div class="card p-5 d-flex flex-column align-items-center gap-3 shadow-sm border-0" style="border-radius:var(--radius);max-width:500px;width:100%;">
+            <div class="d-flex align-items-center justify-content-center bg-success text-white rounded-circle mb-2" style="width:72px;height:72px;">
+                <Icons Name="Check" style="width:36px;height:36px;" />
+            </div>
+            <h2 class="fs-4 fw-bold text-foreground text-center">¡Venta Registrada Exitosamente!</h2>
+            <p class="text-muted-foreground small text-center">Transacción procesada bajo el ID: <strong class="text-primary">@_receiptId</strong></p>
+            <div class="w-100 bg-muted rounded p-3 text-start mt-2">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted-foreground small">Total Pagado:</span>
+                    <span class="fw-bold text-primary">S/. @Total.ToString("0.00")</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted-foreground small">Método:</span>
+                    <span class="fw-medium text-foreground text-capitalize">@_payMethod</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span class="text-muted-foreground small">Comprobante:</span>
+                    <span class="fw-medium text-foreground text-capitalize">@_invoiceType</span>
+                </div>
+            </div>
+            <div class="d-flex gap-2 w-100 justify-content-center mt-4">
+                <button @onclick="ResetPOS" class="btn btn-primary px-4 py-2 w-100" style="border-radius:var(--radius);font-weight:600;">
+                    Registrar Nueva Venta
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div style="background-color:#f8f9fa;min-height:100vh;width:100%;padding:1.5rem;">
+
+        <!-- Header -->
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h1 class="fs-3 fw-bold text-foreground mb-0" style="font-family:'Outfit',sans-serif;">Registrar Venta</h1>
+                <p class="text-muted-foreground small mt-1 mb-0">Registra una nueva venta presencial</p>
+            </div>
+            <div class="bg-white border border-color-default px-4 py-2 fw-bold text-foreground d-flex align-items-center"
+                 style="border-radius:0.6rem;font-size:1.25rem;font-family:monospace;letter-spacing:0.75px;">
+                Nueva Venta
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_errorMsg))
+        {
+            <div class="alert alert-danger py-2 small mb-3">@_errorMsg</div>
+        }
+
+        <div class="d-flex flex-column gap-3">
+
+            <!-- Tabla de Líneas de Venta -->
+            <div class="card bg-white border border-color-default shadow-sm w-100" style="border-radius:1rem;">
+                <div class="p-4 border-bottom border-color-default d-flex justify-content-between align-items-center">
+                    <h5 class="m-0 fw-bold text-foreground" style="font-size:1.05rem;">Líneas de Venta</h5>
+                    <button class="btn text-white px-3 py-2 d-flex align-items-center gap-2" @onclick="OpenModal"
+                            style="background-color:#064420;border-radius:0.5rem;font-size:0.85rem;font-weight:600;border:none;">
+                        <i class="fas fa-plus"></i> Agregar Producto
+                    </button>
+                </div>
+                <div class="p-0">
+                    @if (!_posCart.Any())
+                    {
+                        <div class="d-flex flex-column align-items-center justify-content-center py-5 text-center" style="min-height:250px;">
+                            <i class="fas fa-receipt text-muted-foreground opacity-50 mb-3" style="font-size:3.5rem;"></i>
+                            <h6 class="text-foreground fw-semibold mb-1">No hay productos agregados</h6>
+                            <p class="text-muted-foreground small mb-0">Haz clic en "Agregar Producto" para comenzar</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-borderless align-middle mb-0">
+                                <thead class="border-bottom border-color-default" style="background-color:#f8f9fa;">
+                                    <tr>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;width:15%;">Código</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;width:35%;">Nombre</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-center" style="letter-spacing:.05em;width:15%;">Cantidad</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;width:15%;">Precio Unit.</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;width:15%;">Subtotal</th>
+                                        <th class="px-4 py-3" style="width:5%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var item in _posCart)
+                                    {
+                                        <tr class="border-bottom border-color-default">
+                                            <td class="px-4 py-3 text-muted-foreground small fw-medium">@item.Id.ToString("D4")</td>
+                                            <td class="px-4 py-3 fw-bold text-foreground small">@item.Name</td>
+                                            <td class="px-4 py-3 text-center text-foreground fw-semibold small">@item.Quantity</td>
+                                            <td class="px-4 py-3 text-end text-muted-foreground small">S/ @item.Price.ToString("0.00")</td>
+                                            <td class="px-4 py-3 text-end text-foreground fw-bold small">S/ @((item.Price * item.Quantity).ToString("0.00"))</td>
+                                            <td class="px-4 py-3 text-center">
+                                                <button class="btn btn-link text-danger p-0 m-0" @onclick="@(() => RemoveFromCart(item.Id))" title="Eliminar">
+                                                    <i class="far fa-trash-alt"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <!-- Resumen -->
+                <div class="col-12 col-md-5 col-lg-4">
+                    <div class="card bg-white border border-color-default shadow-sm h-100" style="border-radius:1rem;">
+                        <div class="p-4 border-bottom border-color-default">
+                            <h5 class="m-0 fw-bold text-foreground" style="font-size:1.05rem;">Resumen</h5>
+                        </div>
+                        <div class="p-4 d-flex flex-column justify-content-between h-100">
+                            <div class="d-flex flex-column gap-3 mb-4">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted-foreground small">Subtotal (sin IGV)</span>
+                                    <span class="fw-medium text-foreground small">S/ @SubtotalSinIgv.ToString("0.00")</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="text-muted-foreground small">IGV (18%)</span>
+                                    <span class="fw-medium text-foreground small">S/ @Igv.ToString("0.00")</span>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center pt-3 border-top border-color-default mt-auto">
+                                <span class="fw-bold text-foreground" style="font-size:1.1rem;">Total</span>
+                                <span class="fw-bold" style="font-size:1.25rem;color:#064420;">S/ @Total.ToString("0.00")</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Método de Pago + Cliente -->
+                <div class="col-12 col-md-7 col-lg-8">
+                    <div class="card bg-white border border-color-default shadow-sm h-100" style="border-radius:1rem;">
+                        <div class="p-4 border-bottom border-color-default">
+                            <h5 class="m-0 fw-bold text-foreground" style="font-size:1.05rem;">Método de Pago</h5>
+                        </div>
+                        <div class="p-4 d-flex flex-column gap-3">
+                            <div class="d-flex gap-3 flex-wrap">
+                                <button type="button" @onclick='@(() => _payMethod="efectivo")' class="btn payment-method-btn @(_payMethod=="efectivo"?"active":"")">
+                                    <i class="fas fa-money-bill-wave"></i> Efectivo
+                                </button>
+                                <button type="button" @onclick='@(() => _payMethod="yape")' class="btn payment-method-btn @(_payMethod=="yape"?"active":"")">
+                                    <i class="fas fa-mobile-alt"></i> Yape
+                                </button>
+                                <button type="button" @onclick='@(() => _payMethod="plin")' class="btn payment-method-btn @(_payMethod=="plin"?"active":"")">
+                                    <i class="fas fa-mobile-alt"></i> Plin
+                                </button>
+                                <button type="button" @onclick='@(() => _payMethod="tarjeta")' class="btn payment-method-btn @(_payMethod=="tarjeta"?"active":"")">
+                                    <i class="fas fa-credit-card"></i> Tarjeta
+                                </button>
+                            </div>
+                            <div>
+                                <label class="form-label small fw-semibold text-foreground mb-1">Cliente (Opcional)</label>
+                                <input type="text" @bind="_customerName" class="form-control form-control-sm text-foreground" placeholder="Público General" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones Footer -->
+            @if (_posCart.Any())
+            {
+                <div class="d-flex justify-content-end gap-3 mt-3 pb-4">
+                    <button class="btn btn-white text-foreground fw-semibold d-flex align-items-center gap-2 border shadow-sm px-4"
+                            @onclick='@(() => ProcessSale("boleta"))' disabled="@_isProcessing"
+                            style="border-radius:0.5rem;height:44px;border-color:#dee2e6;">
+                        <i class="fas fa-receipt text-muted-foreground"></i> Generar Boleta
+                    </button>
+                    <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm"
+                            @onclick='@(() => ProcessSale("ticket"))' disabled="@_isProcessing"
+                            style="border-radius:0.5rem;height:44px;background-color:#6C8B74;border:none;">
+                        @if (_isProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm"></span>
+                            <span>Procesando...</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-check-circle"></i>
+                            <span>Confirmar Venta</span>
+                        }
+                    </button>
+                </div>
+            }
+
+        </div>
+    </div>
+}
+
+<!-- Modal Agregar Producto -->
+@if (_isModalOpen)
+{
+    <div class="modal-overlay d-flex align-items-center justify-content-center"
+         style="background-color:rgba(0,0,0,0.4);position:fixed;inset:0;z-index:1050;"
+         @onclick="CloseModal">
+        <div class="bg-white shadow-lg d-flex flex-column"
+             style="width:100%;max-width:500px;border-radius:1rem;max-height:90vh;overflow:hidden;"
+             @onclick:stopPropagation>
+
+            <div class="p-4 d-flex justify-content-between align-items-start pb-3">
+                <div>
+                    <h5 class="fw-bold text-foreground mb-1" style="font-size:1.15rem;">Agregar Producto</h5>
+                    <p class="text-muted-foreground small m-0">Busca por nombre o categoría</p>
+                </div>
+                <button class="btn btn-link text-muted-foreground p-0 m-0" style="font-size:1.2rem;" @onclick="CloseModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="px-4 pb-3">
+                <div class="position-relative">
+                    <i class="fas fa-search position-absolute text-muted-foreground"
+                       style="left:14px;top:50%;transform:translateY(-50%);font-size:0.9rem;"></i>
+                    <input type="search" @bind="_modalSearch" @bind:event="oninput"
+                           class="form-control text-foreground w-100"
+                           placeholder="Buscar producto..."
+                           style="padding-left:40px;border-radius:0.5rem;height:42px;"
+                           autofocus />
+                </div>
+            </div>
+
+            <div class="overflow-y-auto px-4 pb-2" style="max-height:300px;border-bottom:1px solid #f1f3f5;">
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var prod in ModalProducts.Take(15))
+                    {
+                        bool sel = _selectedProduct?.Id == prod.Id;
+                        <div class="p-3 d-flex justify-content-between align-items-center cursor-pointer border"
+                             style="border-radius:0.5rem;border-color:@(sel?"#d1e7dd":"#e9ecef")!important;background-color:@(sel?"#eaf4ec":"transparent");transition:all 0.2s;"
+                             @onclick="@(() => SelectProduct(prod))">
+                            <div class="d-flex flex-column">
+                                <span class="fw-bold text-foreground" style="font-size:0.9rem;">@prod.Name</span>
+                                <span class="text-muted-foreground" style="font-size:0.75rem;">Código: @prod.Id | Stock: @prod.Stock</span>
+                            </div>
+                            <span class="fw-bold text-foreground" style="font-size:0.95rem;">S/ @prod.Price.ToString("0.00")</span>
+                        </div>
+                    }
+                    @if (!ModalProducts.Any())
+                    {
+                        <div class="text-center py-4">
+                            <p class="text-muted-foreground small m-0">No se encontraron productos.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="p-4 bg-white mt-auto">
+                <div class="p-3 mb-4" style="background-color:#f6fcf8;border-radius:0.5rem;">
+                    <div class="d-flex justify-content-between mb-2 align-items-center">
+                        <span class="text-muted-foreground small">Producto seleccionado</span>
+                        <span class="fw-bold text-foreground small">@(_selectedProduct?.Name ?? "-")</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 align-items-center">
+                        <span class="text-muted-foreground small">Precio unitario</span>
+                        <span class="fw-medium text-foreground small">@(_selectedProduct != null ? $"S/ {_selectedProduct.Price:0.00}" : "-")</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="text-muted-foreground small">Cantidad</span>
+                        <div class="input-group" style="width:100px;">
+                            <input type="number" class="form-control form-control-sm text-center fw-medium bg-white"
+                                   @bind="_selectedQuantity" @bind:event="oninput"
+                                   min="1" max="@(_selectedProduct?.Stock ?? 1)"
+                                   disabled="@(_selectedProduct == null)"
+                                   style="border-radius:0.375rem;" />
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="border-color:rgba(6,68,32,0.1)!important;">
+                        <span class="fw-bold text-foreground small">Subtotal</span>
+                        <span class="fw-bold" style="color:#064420;font-size:1.1rem;">
+                            @(_selectedProduct != null ? $"S/ {(_selectedProduct.Price * _selectedQuantity):0.00}" : "S/ 0.00")
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-end gap-2">
+                    <button class="btn border px-4" @onclick="CloseModal"
+                            style="border-radius:0.5rem;font-weight:500;font-size:0.9rem;border-color:#dee2e6;">
+                        Cancelar
+                    </button>
+                    <button class="btn text-white px-4" @onclick="AddSelectedToCart"
+                            disabled="@(_selectedProduct == null)"
+                            style="background-color:#064420;border-radius:0.5rem;font-weight:600;font-size:0.9rem;">
+                        Agregar Línea
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+}
+
+<style>
+    .payment-method-btn {
+        background-color: #ffffff;
+        border: 1px solid #dee2e6;
+        color: #495057;
+        padding: 0.5rem 1.25rem;
+        border-radius: 0.5rem;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+    }
+    .payment-method-btn.active {
+        background-color: #064420;
+        border-color: #064420;
+        color: #ffffff;
+    }
+    .payment-method-btn:hover:not(.active) {
+        background-color: #f0f8f3;
+        border-color: #064420;
+        color: #064420;
+    }
+</style>

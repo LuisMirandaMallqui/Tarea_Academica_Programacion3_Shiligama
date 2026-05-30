@@ -1,0 +1,229 @@
+@page "/carrito"
+@layout MainLayout
+@inject CartService Cart
+@inject NavigationManager Navigation
+
+@code {
+    private enum DeliveryMethod { Delivery, Pickup }
+    private DeliveryMethod _deliveryMethod = DeliveryMethod.Delivery;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await Cart.InitializeAsync(); Cart.OnChange += StateHasChanged; StateHasChanged(); }
+    }
+
+    public void Dispose() => Cart.OnChange -= StateHasChanged;
+
+    private async Task Remove(int id) => await Cart.RemoveFromCartAsync(id);
+    private async Task UpdateQty(int id, int qty) => await Cart.UpdateQuantityAsync(id, qty);
+    private async Task ClearAll() => await Cart.ClearCartAsync();
+
+    private void SetDeliveryMethod(DeliveryMethod method) => _deliveryMethod = method;
+
+    private decimal Subtotal => Cart.GetSubtotal();
+    private decimal Envio => _deliveryMethod == DeliveryMethod.Pickup ? 0 : (Subtotal > 50 ? 0 : 5);
+    private decimal Total => Subtotal + Envio;
+}
+
+<PageTitle>Mi Carrito – Shiligama</PageTitle>
+
+<style>
+.delete-btn-hover:hover { transform: scale(1.15); }
+
+.delivery-option {
+    border: 1px solid var(--border) !important;
+    background-color: var(--card) !important;
+    color: var(--muted-foreground) !important;
+}
+.delivery-option i { color: var(--muted-foreground) !important; }
+.delivery-option:hover { border-color: var(--primary) !important; color: var(--primary) !important; }
+.delivery-option:hover i { color: var(--primary) !important; }
+.delivery-option.active {
+    border: 1px solid var(--primary) !important;
+    background-color: color-mix(in srgb, var(--primary) 10%, transparent) !important;
+    color: var(--primary) !important;
+}
+.delivery-option.active i { color: var(--primary) !important; }
+
+.qty-control {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--card);
+    height: 32px;
+}
+.qty-control button {
+    background: transparent;
+    border: none;
+    color: var(--foreground);
+    padding: 0 8px;
+    height: 100%;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.qty-control button:hover { background-color: var(--secondary); }
+.qty-control span {
+    color: var(--foreground);
+    font-size: 0.9rem;
+    font-weight: 500;
+    min-width: 24px;
+    text-align: center;
+}
+</style>
+
+<div class="container-xl px-3 px-sm-4 py-4">
+    <nav class="mb-4">
+        <a href="/catalogo" class="text-muted-foreground text-decoration-none small d-inline-flex align-items-center gap-2"
+           style="transition: color 0.2s; font-weight: 500;">
+            <i class="fa-solid fa-chevron-left" style="font-size: 0.85rem;"></i> Volver al catálogo
+        </a>
+    </nav>
+
+    <h1 class="fs-3 fw-bold text-foreground mb-4">Mi Carrito</h1>
+
+    @if (!Cart.GetCartItems().Any())
+    {
+        <div class="text-center py-5">
+            <div class="fs-1 mb-3">🛒</div>
+            <h3 class="text-foreground fw-medium">Tu carrito está vacío</h3>
+            <p class="text-muted-foreground">Agrega algunos productos para comenzar</p>
+            <a href="/catalogo" class="btn btn-primary mt-2" style="border-radius:var(--radius);">
+                Ver catálogo
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card d-flex flex-column gap-0">
+                    @foreach (var item in Cart.GetCartItems())
+                    {
+                        <div class="d-flex flex-column flex-sm-row gap-3 p-3 border-bottom border-color-default align-items-start align-items-sm-center position-relative">
+                            <div class="d-flex gap-3 align-items-center flex-grow-1 w-100">
+                                <img src="@item.Image" alt="@item.Name"
+                                     class="rounded-3 object-fit-cover flex-shrink-0"
+                                     style="width:80px;height:80px;"
+                                     onerror="this.src='https://placehold.co/80x80/e8f5e9/1A6B3C?text=🛒'" />
+                                <div class="flex-grow-1">
+                                    <p class="fw-semibold text-foreground mb-1"
+                                       style="font-family:'Outfit',sans-serif;font-size:1rem;">
+                                        @item.Name
+                                    </p>
+                                    <p class="fw-bold mb-0 text-primary"
+                                       style="font-size:1.1rem;font-family:'Outfit',sans-serif;">
+                                        S/. @item.Price.ToString("0.00")
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between justify-content-sm-end gap-4 w-100 w-sm-auto mt-2 mt-sm-0 pe-sm-4">
+                                <div class="d-flex flex-column align-items-start gap-1">
+                                    <span class="text-muted-foreground fw-medium text-uppercase"
+                                          style="font-size:0.725rem;">Cantidad</span>
+                                    <div class="qty-control">
+                                        <button @onclick="@(() => UpdateQty(item.Id, item.Quantity - 1))">−</button>
+                                        <span>@item.Quantity</span>
+                                        <button @onclick="@(() => UpdateQty(item.Id, item.Quantity + 1))">+</button>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex flex-column align-items-start gap-1" style="min-width:80px;">
+                                    <span class="text-muted-foreground fw-medium text-uppercase"
+                                          style="font-size:0.725rem;">Total</span>
+                                    <span class="fw-bold text-foreground"
+                                          style="font-family:'Outfit',sans-serif;font-size:1.1rem;
+                                                 height:32px;display:flex;align-items:center;">
+                                        S/. @((item.Price * item.Quantity).ToString("0.00"))
+                                    </span>
+                                </div>
+
+                                <button class="btn btn-link btn-sm text-danger p-0 border-0 delete-btn-hover align-self-end align-self-sm-center"
+                                        style="font-size:1.15rem;transition:transform 0.15s ease;margin-bottom:5px;"
+                                        @onclick="@(() => Remove(item.Id))"
+                                        title="Eliminar del carrito">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                    <div class="p-3 d-flex justify-content-end">
+                        <button @onclick="ClearAll"
+                                class="btn btn-link text-muted-foreground text-decoration-none small d-flex align-items-center gap-1">
+                            <i class="fa-regular fa-trash-can" style="font-size:0.95rem;"></i>Vaciar carrito
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4 d-flex flex-column gap-3">
+                <div class="card p-4 d-flex flex-column gap-3">
+                    <h2 class="fw-semibold text-foreground fs-5 mb-0"
+                        style="font-family:'Outfit',sans-serif;">Método de entrega</h2>
+                    <div class="d-flex gap-3">
+                        <div class="flex-grow-1 p-3 border text-center delivery-option @(_deliveryMethod == DeliveryMethod.Delivery ? "active" : "")"
+                             @onclick="@(() => SetDeliveryMethod(DeliveryMethod.Delivery))"
+                             style="cursor:pointer;transition:all 0.2s;border-radius:var(--radius);flex-basis:50%;">
+                            <i class="fa-solid fa-truck mb-2" style="font-size:1.5rem;"></i>
+                            <div class="fw-medium small">Delivery</div>
+                            <div class="text-muted-foreground text-xs mt-1">
+                                @(Subtotal > 50 ? "Gratis" : "S/. 5.00")
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 p-3 border text-center delivery-option @(_deliveryMethod == DeliveryMethod.Pickup ? "active" : "")"
+                             @onclick="@(() => SetDeliveryMethod(DeliveryMethod.Pickup))"
+                             style="cursor:pointer;transition:all 0.2s;border-radius:var(--radius);flex-basis:50%;">
+                            <i class="fa-solid fa-store mb-2" style="font-size:1.5rem;"></i>
+                            <div class="fw-medium small">Recojo en tienda</div>
+                            <div class="text-muted-foreground text-xs mt-1">Gratis</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-4 d-flex flex-column gap-3">
+                    <h2 class="fw-semibold text-foreground fs-5 mb-0">Resumen del pedido</h2>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-flex justify-content-between text-foreground small">
+                            <span>Subtotal (@Cart.GetCartCount() items)</span>
+                            <span>S/. @Subtotal.ToString("0.00")</span>
+                        </div>
+                        @if (_deliveryMethod == DeliveryMethod.Delivery)
+                        {
+                            <div class="d-flex justify-content-between text-foreground small">
+                                <span>Envío</span>
+                                <span>@(Envio == 0 ? "Gratis 🎉" : $"S/. {Envio:0.00}")</span>
+                            </div>
+                            @if (Subtotal < 50)
+                            {
+                                <p class="small text-muted-foreground bg-muted rounded-3 p-2 mb-0">
+                                    Agrega S/. @((50 - Subtotal).ToString("0.00")) más para envío gratis
+                                </p>
+                            }
+                        }
+                        <hr class="border-color-default my-1" />
+                        <div class="d-flex justify-content-between fw-bold text-foreground">
+                            <span>Total</span>
+                            <span>S/. @Total.ToString("0.00")</span>
+                        </div>
+                    </div>
+                    <a href="/checkout?delivery=@(_deliveryMethod == DeliveryMethod.Delivery ? "delivery" : "pickup")"
+                       class="btn btn-primary w-100 fw-medium d-flex align-items-center justify-content-center gap-2"
+                       style="border-radius:var(--radius);">
+                        <Icons Name="ShoppingCart" Class="w-4 h-4" />
+                        Proceder al Checkout
+                    </a>
+                    <a href="/catalogo"
+                       class="btn btn-secondary w-100 small text-decoration-none text-center"
+                       style="border-radius:var(--radius);">
+                        Continuar comprando
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@implements IDisposable

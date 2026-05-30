@@ -1,0 +1,520 @@
+@page "/mis-pedidos"
+@layout MainLayout
+@inject SalesService SalesSvc
+@inject AuthService Auth
+@inject NavigationManager Navigation
+@inject CartService Cart
+
+@code {
+    private List<Order> _allOrders = new();
+    private List<Order> _filtered = new();
+
+    private string _statusFilter = "todos";
+    private DateTime? _dateFrom;
+    private DateTime? _dateTo;
+
+    private Order? _selectedOrder;
+    private bool _showModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsLoggedIn()) { Navigation.NavigateTo("/"); return; }
+        await SalesSvc.EnsureLoadedAsync();
+        _allOrders = SalesSvc.GetRecentOrders();
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        _filtered = _allOrders.Where(o =>
+        {
+            if (_statusFilter != "todos" && o.Status != _statusFilter) return false;
+            if (_dateFrom.HasValue && o.Date.Date < _dateFrom.Value.Date) return false;
+            if (_dateTo.HasValue && o.Date.Date > _dateTo.Value.Date) return false;
+            return true;
+        }).ToList();
+    }
+
+    private void OnStatusChanged(ChangeEventArgs e)
+    { _statusFilter = e.Value?.ToString() ?? "todos"; ApplyFilters(); }
+
+    private void OnDateFromChanged(ChangeEventArgs e)
+    {
+        _dateFrom = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null : DateTime.Parse(e.Value.ToString()!);
+        ApplyFilters();
+    }
+
+    private void OnDateToChanged(ChangeEventArgs e)
+    {
+        _dateTo = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null : DateTime.Parse(e.Value.ToString()!);
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    { _statusFilter = "todos"; _dateFrom = null; _dateTo = null; ApplyFilters(); }
+
+    private void OpenDetail(Order o) { _selectedOrder = o; _showModal = true; }
+    private void CloseModal() { _showModal = false; _selectedOrder = null; }
+
+    private async Task RepeatOrder(Order o)
+    {
+        foreach (var product in o.Products)
+        {
+            var p = new Product
+            {
+                Id = product.Id,
+                Name = product.Name,
+                Price = product.Price,
+                Image = product.Image
+            };
+            // Añade cada producto respetando la cantidad original
+            for (int i = 0; i < product.Quantity; i++)
+                await Cart.AddToCartAsync(p);
+        }
+        Navigation.NavigateTo("/carrito");
+    }
+
+    private string StatusBadgeClass(string s) => s.ToLower() switch
+    {
+        "entregado" => "badge-entregado",
+        "en_camino" => "badge-encamino",
+        "preparando" => "badge-preparando",
+        "pendiente" => "badge-pendiente",
+        "cancelado" => "badge-cancelado",
+        _ => "badge-pendiente"
+    };
+    private string StatusLabel(string s) => s.ToLower() switch
+    {
+        "entregado" => "Entregado",
+        "en_camino" => "En camino",
+        "preparando" => "En preparación",
+        "pendiente" => "Pendiente",
+        "cancelado" => "Cancelado",
+        _ => s
+    };
+    private string PaymentLabel(string p) => p.ToLower() switch
+    {
+        "yape" => "Yape",
+        "plin" => "Plin",
+        "tarjeta" => "Tarjeta",
+        "efectivo" => "Efectivo",
+        _ => p
+    };
+    private string PaymentIconName(string p) => p.ToLower() switch
+    {
+        "yape" or "plin" => "Smartphone",
+        "tarjeta" => "CreditCard",
+        _ => "Banknote"
+    };
+    private string DeliveryLabel(string d) =>
+        d == "delivery" ? "Delivery" : "Recojo en tienda";
+
+    private List<(string Label, DateTime? Time, bool Done, bool Cancelled)> GetTimeline(Order o)
+    {
+        var steps = new List<(string, DateTime?, bool, bool)>();
+        bool cancelled = o.Status == "cancelado";
+
+        steps.Add(("Pedido recibido", o.TimelinePedidoRecibido, true, false));
+
+        if (cancelled)
+        {
+            steps.Add(("Cancelado", o.TimelineCancelado, true, true));
+            return steps;
+        }
+
+        steps.Add(("En preparación", o.TimelineEnPreparacion,
+            o.TimelineEnPreparacion.HasValue, false));
+        steps.Add(("Listo para envío", o.TimelineListo,
+            o.TimelineListo.HasValue, false));
+
+        if (o.DeliveryMethod == "delivery")
+            steps.Add(("En camino", o.TimelineEnCamino,
+                o.TimelineEnCamino.HasValue, false));
+
+        string lastLabel = o.DeliveryMethod == "delivery" ? "Entregado" : "Recogido";
+        steps.Add((lastLabel, o.TimelineEntregado,
+            o.TimelineEntregado.HasValue, false));
+
+        return steps;
+    }
+}
+
+<PageTitle>Mis Pedidos – Shiligama</PageTitle>
+
+<div class="container-xl px-3 px-sm-4 py-4" style="max-width:960px;">
+
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="d-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-3 flex-shrink-0"
+             style="width:48px;height:48px;">
+            <Icons Name="Package" style="width:24px;height:24px;" />
+        </div>
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">Mis Pedidos</h1>
+            <p class="text-muted-foreground small mb-0">
+                Revisa el historial de tus compras y repite tus pedidos favoritos
+            </p>
+        </div>
+    </div>
+
+    <div class="card border border-border rounded-4 p-3 mb-4">
+        <div class="d-flex flex-column flex-md-row align-items-md-center gap-2">
+            <select class="form-select form-select-sm" style="min-width:170px;max-width:220px;"
+                    @onchange="OnStatusChanged">
+                <option value="todos">Todos los estados</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="preparando">En preparación</option>
+                <option value="en_camino">En camino</option>
+                <option value="entregado">Entregado</option>
+                <option value="cancelado">Cancelado</option>
+            </select>
+
+            <div class="input-group input-group-sm" style="max-width:190px;">
+                <span class="input-group-text"
+                      style="border:1.5px solid var(--border);border-right:none;
+                    background:var(--secondary);color:var(--foreground);">
+                    <Icons Name="Calendar" style="width:13px;height:13px;" />
+                </span>
+                <input type="date" class="form-control form-control-sm"
+                       style="border:1.5px solid var(--border);border-left:none;"
+                       value="@(_dateFrom?.ToString("yyyy-MM-dd") ?? "")"
+                       @onchange="OnDateFromChanged" />
+            </div>
+
+            <div class="input-group input-group-sm" style="max-width:190px;">
+                <span class="input-group-text"
+                      style="border:1.5px solid var(--border);border-right:none;
+                    background:var(--secondary);color:var(--foreground);">
+                    <Icons Name="Calendar" style="width:13px;height:13px;" />
+                </span>
+                <input type="date" class="form-control form-control-sm"
+                       style="border:1.5px solid var(--border);border-left:none;"
+                       value="@(_dateTo?.ToString("yyyy-MM-dd") ?? "")"
+                       @onchange="OnDateToChanged" />
+            </div>
+
+            @if (_statusFilter != "todos" || _dateFrom.HasValue || _dateTo.HasValue)
+            {
+                <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1 flex-shrink-0"
+                        @onclick="ClearFilters">
+                    <Icons Name="X" style="width:13px;height:13px;" /> Limpiar
+                </button>
+            }
+        </div>
+    </div>
+
+    @if (!_filtered.Any())
+    {
+        <div class="card p-5 text-center rounded-4 border border-border">
+            <div class="fs-1 mb-3">📦</div>
+            <h3 class="text-foreground fw-semibold fs-5">No se encontraron pedidos</h3>
+            <p class="text-muted-foreground small">
+                @(_statusFilter != "todos" || _dateFrom.HasValue || _dateTo.HasValue
+                    ? "Prueba ajustando los filtros"
+                    : "Aún no has realizado ningún pedido")
+            </p>
+            <a href="/catalogo" class="btn btn-primary mt-3 px-4" style="border-radius:var(--radius);">
+                Explorar catálogo
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-3">
+            @foreach (var order in _filtered)
+            {
+                <div class="card border border-border rounded-4 overflow-hidden">
+                    <div class="d-flex flex-column flex-lg-row">
+
+                        <div class="flex-grow-1 p-3 p-sm-4">
+                            <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+                                <div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="fw-bold text-foreground">@order.Id</span>
+                                        <span class="badge rounded-pill @(StatusBadgeClass(order.Status))">
+                                            @StatusLabel(order.Status)
+                                        </span>
+                                    </div>
+                                    <p class="text-muted-foreground small mt-1 mb-0">
+                                        @order.Date.ToString("dd MMM yyyy, hh:mm tt")
+                                    </p>
+                                </div>
+                                <span class="badge border d-flex align-items-center gap-1
+                                    @(order.DeliveryMethod == "delivery"
+                                                                              ? "border-primary text-primary bg-primary-subtle"
+                                                                              : "border-success text-success bg-success-subtle")">
+                                    <Icons Name="@(order.DeliveryMethod == "delivery" ? "Truck" : "Store")"
+                                           style="width:12px;height:12px;" />
+                                    @DeliveryLabel(order.DeliveryMethod)
+                                </span>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+                                <div class="d-flex flex-shrink-0">
+                                    @for (int i = 0; i < Math.Min(order.Products.Count, 4); i++)
+                                    {
+                                        int idx = i;
+                                        <div class="rounded-2 bg-secondary-subtle d-flex align-items-center justify-content-center"
+                                             style="width:32px;height:32px;
+                                            margin-left:@(idx > 0 ? "-6px" : "0");
+                                            z-index:@(4 - idx);
+                                            border:2px solid var(--bs-body-bg);">
+                                            <Icons Name="Package" style="width:14px;height:14px;" Class="text-muted-foreground" />
+                                        </div>
+                                    }
+                                    @if (order.Products.Count > 4)
+                                    {
+                                        <div class="rounded-2 bg-primary-subtle d-flex align-items-center justify-content-center"
+                                             style="width:32px;height:32px;margin-left:-6px;
+                                            border:2px solid var(--bs-body-bg);">
+                                            <span class="small text-primary fw-bold" style="font-size:.65rem;">
+                                                +@(order.Products.Count - 4)
+                                            </span>
+                                        </div>
+                                    }
+                                </div>
+                                <div class="small">
+                                    <span class="fw-medium">@order.Products.Count productos</span>
+                                    <span class="text-muted-foreground"> – </span>
+                                    <span class="text-muted-foreground">
+                                        @string.Join(", ", order.Products.Take(2).Select(p => p.Name))
+                                        @(order.Products.Count > 2 ? "..." : "")
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="d-flex align-items-center gap-1 small">
+                                <Icons Name="@PaymentIconName(order.PaymentMethod)"
+                                       style="width:14px;height:14px;"
+                                       Class="text-muted-foreground" />
+                                <span class="text-muted-foreground">@PaymentLabel(order.PaymentMethod)</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex flex-row flex-lg-column align-items-center
+                            justify-content-between justify-content-lg-center
+                            gap-3 p-3 p-sm-4
+                            border-top border-lg-top-0 border-lg-start border-border"
+                             style="min-width:0;">
+                            <div class="text-center">
+                                <p class="text-muted-foreground mb-0"
+                                   style="font-size:.65rem;text-transform:uppercase;letter-spacing:.05em;">Total</p>
+                                <p class="fw-bold text-primary mb-0 fs-5">
+                                    S/. @order.Total.ToString("0.00")
+                                </p>
+                            </div>
+                            <div class="d-flex flex-row flex-lg-column gap-2">
+                                <button class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-1"
+                                        @onclick="() => OpenDetail(order)">
+                                    <Icons Name="Eye" style="width:13px;height:13px;" />
+                                    <span>Ver detalle</span>
+                                </button>
+                                @if (order.Status != "cancelado")
+                                {
+                                    <button class="btn btn-primary btn-sm d-flex align-items-center gap-1"
+                                            @onclick="() => RepeatOrder(order)">
+                                        <Icons Name="RotateCcw" style="width:13px;height:13px;" />
+                                        <span>Repetir</span>
+                                    </button>
+                                }
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </div>
+
+        <p class="text-center small text-muted-foreground mt-4">
+            Mostrando @_filtered.Count de @_allOrders.Count pedidos
+        </p>
+    }
+</div>
+
+@if (_showModal && _selectedOrder != null)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);"
+         @onclick="CloseModal">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down"
+             @onclick:stopPropagation="true">
+            <div class="modal-content rounded-4 border-0"
+                 style="background-color:var(--card);color:var(--foreground);">
+
+                <div class="modal-header border-bottom border-border py-3">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <h5 class="modal-title fw-bold text-foreground mb-0">
+                            @_selectedOrder.Id
+                        </h5>
+                        <span class="badge rounded-pill @(StatusBadgeClass(_selectedOrder.Status))">
+                            @StatusLabel(_selectedOrder.Status)
+                        </span>
+                    </div>
+                    <button class="btn-close ms-auto" @onclick="CloseModal"></button>
+                </div>
+
+                <div class="modal-body d-flex flex-column gap-4 py-4">
+
+                    <div class="d-flex align-items-center gap-2 small text-muted-foreground">
+                        <Icons Name="Clock" style="width:14px;height:14px;" />
+                        <span>
+                            @_selectedOrder.Date.ToString("dddd, dd 'de' MMMM 'de' yyyy, hh:mm tt",
+                                new System.Globalization.CultureInfo("es-PE"))
+                        </span>
+                    </div>
+
+                    <div class="p-3 rounded-3" style="background:var(--secondary);">
+                        <h6 class="fw-semibold small mb-3">Seguimiento del pedido</h6>
+                        @{
+                            var steps = GetTimeline(_selectedOrder);
+                            int totalSteps = steps.Count;
+                        }
+                        @for (int i = 0; i < totalSteps; i++)
+                        {
+                            var step = steps[i];
+                            bool isLast = i == totalSteps - 1;
+
+                            string circleBg = step.Cancelled ? "#fee2e2"
+                                                : step.Done ? "var(--bs-primary)"
+                                                                 : "var(--bs-secondary-bg)";
+                            string circleBorder = step.Cancelled ? "#ef4444"
+                                                : step.Done ? "var(--bs-primary)"
+                                                                 : "var(--bs-border-color)";
+                            string iconName = step.Cancelled ? "X"
+                                                : step.Done ? "Check"
+                                                                 : "Circle";
+                            string iconClass = step.Cancelled ? "text-danger"
+                                                : step.Done ? "text-white"
+                                                                 : "text-muted-foreground";
+
+                            <div class="d-flex gap-3 position-relative @(!isLast ? "pb-4" : "")">
+                                @if (!isLast)
+                                {
+                                    <div class="position-absolute"
+                                         style="left:15px;top:30px;width:2px;height:calc(100% - 10px);
+                                        background:@(step.Done ? "var(--bs-primary)" : "var(--bs-border-color)");">
+                                    </div>
+                                }
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                     style="width:32px;height:32px;z-index:1;position:relative;
+                                    background:@circleBg;border:2px solid @circleBorder;">
+                                    <Icons Name="@iconName" Class="@iconClass"
+                                           style="width:14px;height:14px;" />
+                                </div>
+                                <div class="pt-1">
+                                    <p class="fw-medium small mb-0
+                                        @(step.Cancelled ? "text-danger"
+                                                                                 : step.Done ? "text-foreground"
+                                                                                                : "text-muted-foreground")">
+                                        @step.Label
+                                    </p>
+                                    @if (step.Time.HasValue)
+                                    {
+                                        <p class="mb-0 text-muted-foreground" style="font-size:.72rem;">
+                                            @step.Time.Value.ToString("dd MMM")
+                                            – @step.Time.Value.ToString("hh:mm tt")
+                                        </p>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 p-3 border border-border rounded-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:40px;height:40px;
+                            background:@(_selectedOrder.DeliveryMethod == "delivery"
+                                                             ? "color-mix(in srgb,#3b82f6 15%,transparent)"
+                                                             : "color-mix(in srgb,#22c55e 15%,transparent)");">
+                            <Icons Name="@(_selectedOrder.DeliveryMethod == "delivery" ? "Truck" : "Store")"
+                                   Class="@(_selectedOrder.DeliveryMethod == "delivery" ? "text-primary" : "text-success")"
+                                   style="width:18px;height:18px;" />
+                        </div>
+                        <div>
+                            <p class="fw-medium small mb-0">
+                                @(_selectedOrder.DeliveryMethod == "delivery"
+                                    ? "Delivery a domicilio" : "Recojo en tienda")
+                            </p>
+                            @if (!string.IsNullOrEmpty(_selectedOrder.Address))
+                            {
+                                <p class="text-muted-foreground mb-0" style="font-size:.72rem;">
+                                    <Icons Name="MapPin" style="width:11px;height:11px;" />
+                                    @_selectedOrder.Address
+                                </p>
+                            }
+                        </div>
+                    </div>
+
+                    <div>
+                        <h6 class="fw-semibold small mb-3 d-flex align-items-center gap-1">
+                            <Icons Name="Package" Class="text-primary" style="width:14px;height:14px;" />
+                            Productos (@_selectedOrder.Products.Count)
+                        </h6>
+                        <div class="d-flex flex-column">
+                            @foreach (var item in _selectedOrder.Products)
+                            {
+                                <div class="d-flex align-items-center justify-content-between py-2 border-bottom border-border">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="rounded-2 bg-secondary-subtle d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width:36px;height:36px;">
+                                            <Icons Name="Package" style="width:14px;height:14px;"
+                                                   Class="text-muted-foreground" />
+                                        </div>
+                                        <div>
+                                            <p class="fw-medium small mb-0">@item.Name</p>
+                                            <p class="text-muted-foreground mb-0" style="font-size:.72rem;">
+                                                S/. @item.Price.ToString("0.00") × @item.Quantity
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <span class="fw-medium small flex-shrink-0 ms-2">
+                                        S/. @((item.Price * item.Quantity).ToString("0.00"))
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column gap-1">
+                        <div class="d-flex justify-content-between small text-muted-foreground">
+                            <span>Subtotal</span>
+                            <span>S/. @_selectedOrder.Subtotal.ToString("0.00")</span>
+                        </div>
+                        <div class="d-flex justify-content-between small text-muted-foreground">
+                            <span>Envío</span>
+                            <span>
+                                @(_selectedOrder.DeliveryFee > 0
+                                    ? $"S/. {_selectedOrder.DeliveryFee:0.00}" : "Gratis")
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold pt-2 border-top border-border">
+                            <span class="text-foreground">Total</span>
+                            <span class="text-primary fs-5">
+                                S/. @_selectedOrder.Total.ToString("0.00")
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 p-3 border border-border rounded-3">
+                        <div class="rounded-circle bg-secondary-subtle d-flex align-items-center justify-content-center flex-shrink-0"
+                             style="width:40px;height:40px;">
+                            <Icons Name="@PaymentIconName(_selectedOrder.PaymentMethod)"
+                                   style="width:18px;height:18px;"
+                                   Class="text-muted-foreground" />
+                        </div>
+                        <div>
+                            <p class="fw-medium small mb-0">
+                                @PaymentLabel(_selectedOrder.PaymentMethod)
+                            </p>
+                            <p class="text-muted-foreground mb-0" style="font-size:.72rem;">
+                                Método de pago
+                            </p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+}

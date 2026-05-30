@@ -1,0 +1,267 @@
+@page "/admin/proveedores"
+@layout AdminLayout
+@inject SupplierService SupplierSvc
+
+@code {
+    private List<Supplier> _suppliers = new();
+    private string _search = "";
+    private string _statusFilter = "";
+
+    // Form Modal state
+    private bool _showModal = false;
+    private bool _isEditing = false;
+    private Supplier _form = new();
+    private string _formCategoriesRaw = "";
+
+    protected override void OnInitialized()
+    {
+        _suppliers = SupplierSvc.GetSuppliers();
+    }
+
+    private IEnumerable<Supplier> Filtered => _suppliers.Where(s =>
+        (string.IsNullOrEmpty(_search) || s.RazonSocial.Contains(_search, StringComparison.OrdinalIgnoreCase) || s.Ruc.Contains(_search) || s.Contacto.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_statusFilter) || s.Estado.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
+    );
+
+    private void OpenCreate()
+    {
+        _form = new Supplier();
+        _formCategoriesRaw = "";
+        _isEditing = false;
+        _showModal = true;
+    }
+
+    private void OpenEdit(Supplier s)
+    {
+        _form = new Supplier
+        {
+            Id = s.Id,
+            RazonSocial = s.RazonSocial,
+            Ruc = s.Ruc,
+            Contacto = s.Contacto,
+            Telefono = s.Telefono,
+            Correo = s.Correo,
+            Direccion = s.Direccion,
+            Categorias = new List<string>(s.Categorias),
+            Estado = s.Estado,
+            UltimoPedido = s.UltimoPedido
+        };
+        _formCategoriesRaw = string.Join(", ", s.Categorias);
+        _isEditing = true;
+        _showModal = true;
+    }
+
+    private void Save()
+    {
+        _form.Categorias = _formCategoriesRaw
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(c => c.Trim())
+            .ToList();
+
+        if (_isEditing)
+        {
+            SupplierSvc.UpdateSupplier(_form);
+        }
+        else
+        {
+            SupplierSvc.AddSupplier(_form);
+        }
+        _showModal = false;
+        _suppliers = SupplierSvc.GetSuppliers(); // refresh
+    }
+
+    private void Delete(int id)
+    {
+        SupplierSvc.DeleteSupplier(id);
+        _suppliers = SupplierSvc.GetSuppliers(); // refresh
+    }
+
+    private void ToggleStatus(int id)
+    {
+        SupplierSvc.ToggleStatus(id);
+        StateHasChanged();
+    }
+}
+
+<PageTitle>Proveedores – Shiligama Admin</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">Directorio de Proveedores</h1>
+            <p class="text-muted-foreground small mt-1 mb-0">
+                Administra los contactos de distribuidores oficiales de mercadería
+            </p>
+        </div>
+
+        <button @onclick="OpenCreate"
+                class="btn btn-primary d-flex align-items-center gap-2 fw-semibold"
+                style="border-radius: var(--radius);">
+            <i class="fa-solid fa-plus"></i>
+            Nuevo Proveedor
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="card p-4" style="border-radius: 12px;">
+        <div class="row g-2 align-items-center">
+
+            <!-- Buscar proveedor -->
+            <div class="col-md-8">
+                <div class="position-relative">
+                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted"
+                       style="left: 16px; font-size: 14px;"></i>
+
+                    <input type="search"
+                           @bind="_search"
+                           @bind:event="oninput"
+                           class="form-control text-foreground"
+                           placeholder="Buscar por Razón Social, RUC o contacto..."
+                           style="height: 56px; border-radius: 10px; padding-left: 42px;" />
+                </div>
+            </div>
+
+            <!-- Filtro de estados -->
+            <div class="col-md-4">
+                <select @bind="_statusFilter"
+                        class="form-select text-foreground"
+                        style="height: 56px; border-radius: 10px;">
+                    <option value="">Todos los estados</option>
+                    <option value="activo">Activos</option>
+                    <option value="inactivo">Inactivos</option>
+                </select>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Cards Grid -->
+    <div class="row g-3">
+        @foreach (var sup in Filtered)
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="card p-4 h-100 d-flex flex-column gap-3">
+                    <div class="d-flex align-items-start justify-content-between gap-3">
+                        <div class="overflow-hidden">
+                            <h2 class="fs-6 fw-bold text-foreground mb-1 text-truncate" title="@sup.RazonSocial">@sup.RazonSocial</h2>
+                            <p class="text-xs text-muted-foreground m-0">RUC: @sup.Ruc</p>
+                        </div>
+                        <span class="badge @(sup.Estado == "activo" ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger")" style="border-radius: var(--radius); font-size: 0.75rem;">
+                            @sup.Estado
+                        </span>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach (var cat in sup.Categorias)
+                        {
+                            <span class="badge bg-secondary text-muted-foreground small py-1" style="border-radius: calc(var(--radius) - 2px);">@cat</span>
+                        }
+                    </div>
+
+                    <hr class="border-color-default my-0" />
+
+                    <div class="d-flex flex-column gap-1.5 flex-grow-1">
+                        <p class="small text-foreground m-0">
+                            <strong>Contacto:</strong> @sup.Contacto
+                        </p>
+                        <p class="small text-muted-foreground m-0 d-flex align-items-center gap-2">
+                            <Icons Name="Phone" Class="w-3.5 h-3.5" /> @sup.Telefono
+                        </p>
+                        <p class="small text-muted-foreground m-0 d-flex align-items-center gap-2 text-truncate" title="@sup.Correo">
+                            <Icons Name="Mail" Class="w-3.5 h-3.5" /> @sup.Correo
+                        </p>
+                        <p class="small text-muted-foreground m-0 d-flex align-items-center gap-2 text-truncate" title="@sup.Direccion">
+                            <Icons Name="MapPin" Class="w-3.5 h-3.5" /> @sup.Direccion
+                        </p>
+                    </div>
+
+                    <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top border-color-default">
+                        <span class="text-xs text-muted-foreground">
+                            U. Pedido: @sup.UltimoPedido.ToString("dd/MM/yy")
+                        </span>
+                        <div class="d-flex gap-1">
+                            <button @onclick="@(() => OpenEdit(sup))" class="btn btn-ghost btn-sm text-muted-foreground" style="border-radius: var(--radius);" title="Editar">
+                                <Icons Name="Edit2" Class="w-4 h-4" />
+                            </button>
+                            <button @onclick="@(() => ToggleStatus(sup.Id))" class="btn btn-ghost btn-sm @(sup.Estado == "activo" ? "text-warning" : "text-success")" style="border-radius: var(--radius);" title="@(sup.Estado == "activo" ? "Desactivar" : "Activar")">
+                                <Icons Name="EyeOff" Class="w-4 h-4" />
+                            </button>
+                            <button @onclick="@(() => Delete(sup.Id))" class="btn btn-ghost btn-sm text-danger" style="border-radius: var(--radius);" title="Eliminar">
+                                <Icons Name="Trash2" Class="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!Filtered.Any())
+        {
+            <div class="col-12 text-center py-5 text-muted-foreground">
+                No se encontraron proveedores
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Supplier Modal -->
+@if (_showModal)
+{
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="@(() => _showModal = false)">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border">
+                <div class="modal-header border-border">
+                    <h5 class="modal-title text-foreground fw-bold">@(_isEditing ? "Editar Proveedor" : "Nuevo Proveedor")</h5>
+                    <button type="button" class="btn-close" @onclick="@(() => _showModal = false)"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <EditForm Model="_form" OnValidSubmit="Save" class="d-flex flex-column gap-3">
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Razón Social</label>
+                            <input type="text" @bind="_form.RazonSocial" required class="form-control text-foreground" placeholder="Gloria S.A." />
+                        </div>
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">RUC</label>
+                            <input type="text" @bind="_form.Ruc" required class="form-control text-foreground" placeholder="20100058620" />
+                        </div>
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Nombre de Contacto</label>
+                            <input type="text" @bind="_form.Contacto" required class="form-control text-foreground" placeholder="Ana Mendoza" />
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-medium text-foreground">Teléfono</label>
+                                <input type="tel" @bind="_form.Telefono" required class="form-control text-foreground" placeholder="999888777" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-medium text-foreground">Correo</label>
+                                <input type="email" @bind="_form.Correo" required class="form-control text-foreground" placeholder="contacto@ventas.com" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Dirección</label>
+                            <input type="text" @bind="_form.Direccion" required class="form-control text-foreground" placeholder="Av. Industrial 123" />
+                        </div>
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Categorías (separadas por coma)</label>
+                            <input type="text" @bind="_formCategoriesRaw" required class="form-control text-foreground" placeholder="Abarrotes, Bebidas, Lácteos" />
+                        </div>
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Estado</label>
+                            <select @bind="_form.Estado" class="form-select text-foreground">
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius: var(--radius);">Cancelar</button>
+                            <button type="submit" class="btn btn-primary fw-semibold" style="border-radius: var(--radius);">
+                                @(_isEditing ? "Guardar cambios" : "Registrar")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}

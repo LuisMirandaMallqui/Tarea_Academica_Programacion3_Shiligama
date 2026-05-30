@@ -1,0 +1,117 @@
+@page "/admin/configuracion"
+@layout AdminLayout
+@inject AuthService Auth
+
+@code {
+    private string _shopName = "Shiligama Minimarket";
+    private string _currency = "PEN (S/.)";
+    private decimal _igvRate = 18.00m;
+    private bool _autoApproveOrders = true;
+    private bool _enableMockups = true;
+    private bool _success = false;
+
+    private async Task SaveSettings()
+    {
+        _success = true;
+        await Task.Delay(2000);
+        _success = false;
+        StateHasChanged();
+    }
+}
+
+<PageTitle>Configuración del Sistema – Shiligama Admin</PageTitle>
+
+<div class="container-fluid p-0 mx-auto" style="max-width: 900px;">
+    <!-- Header -->
+    <div>
+        <h1 class="fs-4 fw-bold text-foreground mb-0">Configuración General del Sistema</h1>
+        <p class="text-muted-foreground small mt-1 mb-0">Establece los parámetros globales de la tienda y del panel</p>
+    </div>
+
+    @if (_success)
+    {
+        <div class="alert alert-success alert-dismissible fade show p-3 d-flex align-items-center gap-2" style="border-radius: var(--radius);" role="alert">
+            <Icons Name="Check" Class="w-5 h-5 text-success" />
+            <div>Las configuraciones globales han sido aplicadas correctamente.</div>
+            <button type="button" class="btn-close" @onclick="@(() => _success = false)"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+        <!-- Forms column -->
+        <div class="col-lg-8">
+            <EditForm Model="this" OnValidSubmit="SaveSettings" class="d-flex flex-column gap-4">
+                <!-- Shop Details -->
+                <div class="card p-4 d-flex flex-column gap-3 rounded-4">
+                    <h2 class="fs-5 fw-bold text-foreground mb-0">Detalles del Minimarket</h2>
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Nombre Comercial</label>
+                        <input type="text" @bind="_shopName" required class="form-control text-foreground" />
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small fw-medium text-foreground">Moneda Base</label>
+                            <select @bind="_currency" class="form-select text-foreground">
+                                <option value="PEN (S/.)">Soles Peruanos (S/.)</option>
+                                <option value="USD ($)">Dólares Americanos ($)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-medium text-foreground">Impuesto IGV (%)</label>
+                            <input type="number" step="0.1" @bind="_igvRate" required class="form-control text-foreground" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Settings -->
+                <div class="card p-4 d-flex flex-column gap-3 rounded-4">
+                    <h2 class="fs-5 fw-bold text-foreground mb-0">Parámetros Operacionales</h2>
+                    
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="fw-semibold text-foreground small mb-0">Aprobación automática</p>
+                            <p class="text-muted-foreground small m-0">Acepta automáticamente las órdenes en línea</p>
+                        </div>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" role="switch" @bind="_autoApproveOrders" style="width: 2.5rem; height: 1.25rem;" />
+                        </div>
+                    </div>
+
+                    <hr class="border-color-default my-1" />
+
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div>
+                            <p class="fw-semibold text-foreground small mb-0">Persistencia simulada en memoria</p>
+                            <p class="text-muted-foreground small m-0">Mantén los datos mockups activos durante la sesión</p>
+                        </div>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" role="switch" @bind="_enableMockups" style="width: 2.5rem; height: 1.25rem;" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary px-4 py-2.5 fw-semibold" style="border-radius: var(--radius);">
+                        Guardar Configuración
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+
+        <!-- Right helper column -->
+        <div class="col-lg-4">
+            <div class="card p-4 rounded-4 bg-muted border-0 text-center d-flex flex-column gap-3">
+                <div class="d-flex align-items-center justify-content-center bg-primary text-white rounded-3 mx-auto" style="width: 48px; height: 48px;">
+                    <Icons Name="Settings" Class="w-6 h-6" />
+                </div>
+                <div>
+                    <h3 class="fs-6 fw-bold text-foreground mb-1">Información de Sistema</h3>
+                    <p class="text-xs text-muted-foreground m-0">Shiligama Blazor v1.0.0-preview</p>
+                </div>
+                <p class="small text-muted-foreground m-0 leading-relaxed">
+                    Corriendo en el entorno interactivo de alto rendimiento de .NET 10.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

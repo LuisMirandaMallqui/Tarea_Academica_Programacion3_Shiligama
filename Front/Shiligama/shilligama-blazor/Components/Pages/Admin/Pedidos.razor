@@ -1,0 +1,245 @@
+@page "/admin/pedidos"
+@layout AdminLayout
+@inject SalesService SalesSvc
+
+@code {
+    private List<Order> _orders = new();
+    private string _search = "";
+    private string _statusFilter = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SalesSvc.EnsureLoadedAsync();
+        _orders = SalesSvc.GetRecentOrders();
+    }
+
+    private IEnumerable<Order> Filtered => _orders.Where(o =>
+        (string.IsNullOrEmpty(_search) || o.Customer.Contains(_search, StringComparison.OrdinalIgnoreCase) || o.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_statusFilter) || o.Status.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
+    );
+
+    private void UpdateStatus(string id, string newStatus)
+    {
+        SalesSvc.UpdateOrderStatus(id, newStatus);
+        StateHasChanged();
+    }
+
+    private void Delete(string id)
+    {
+        SalesSvc.DeleteOrder(id);
+        StateHasChanged();
+    }
+
+    private string GetStatusClass(string status) => status.ToLower() switch
+    {
+        "entregado" => "bg-success-subtle text-success",
+        "en_camino" => "bg-primary-subtle text-primary",
+        "preparando" => "bg-warning-subtle text-warning",
+        "pendiente" => "bg-secondary text-muted-foreground",
+        "cancelado" => "bg-danger-subtle text-danger",
+        _ => "bg-light text-dark"
+    };
+
+    private string GetStatusLabel(string status) => status.ToLower() switch
+    {
+        "entregado" => "Entregado",
+        "en_camino" => "En Camino",
+        "preparando" => "Preparando",
+        "pendiente" => "Pendiente",
+        "cancelado" => "Cancelado",
+        _ => status
+    };
+}
+
+<PageTitle>Pedidos – Shiligama Admin</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div>
+        <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Pedidos</h1>
+        <p class="text-muted-foreground small mt-1 mb-0">Monitorea y despacha pedidos realizados por clientes</p>
+    </div>
+
+
+    <!-- Filters -->
+    <div class="card border rounded-4 mb-4 d-flex align-items-center"
+         style="min-height: 72px; padding: 0 18px;">
+
+        <div class="row g-3 align-items-center w-100">
+
+            <div class="col-md-8" style="transform: translateY(-11px);">
+                <div class="position-relative">
+                    <Icons Name="Search" Class="admin-search-icon position-absolute top-50 translate-middle-y mt-2 pt-1 text-muted-foreground" style="left:14px;width:16px;height:16px;" />
+                    <input type="search" @bind="_search" @bind:event="oninput" class="form-control text-foreground" placeholder="Buscar por cliente o código de pedido..." style="height: 44px; padding-left: 40px;" />
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <select @bind="_statusFilter"
+                        class="form-select text-foreground"
+                        style="height: 44px;">
+                    <option value="">Todos los estados</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="preparando">Preparando</option>
+                    <option value="en_camino">En Camino</option>
+                    <option value="entregado">Entregado</option>
+                    <option value="cancelado">Cancelado</option>
+                </select>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Grid List -->
+    <div class="card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-borderless mb-0">
+                <thead class="border-bottom border-color-default">
+                    <tr>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">
+                            Código
+                        </th>
+
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">
+                            Cliente
+                        </th>
+
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">
+                            Fecha
+                        </th>
+
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">
+                            Items
+                        </th>
+
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">
+                            Total
+                        </th>
+
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">
+                            Estado
+                        </th>
+
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">
+                            Acciones
+                        </th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    @foreach (var order in Filtered)
+                    {
+                        <tr class="border-bottom border-color-default align-middle">
+                            <td class="px-4 py-3 fw-bold text-primary small">
+                                @order.Id
+                            </td>
+
+                            <td class="px-4 py-3">
+                                <span class="fw-medium text-foreground small d-block">
+                                    @order.Customer
+                                </span>
+
+                                <span class="text-xs text-muted-foreground">
+                                    Vía @order.Channel
+                                </span>
+                            </td>
+
+                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">
+                                @order.Date.ToString("dd/MM/yyyy HH:mm")
+                            </td>
+
+                            <td class="px-4 py-3 text-foreground small d-none d-md-table-cell">
+                                @order.Items items
+                            </td>
+
+                            <td class="px-4 py-3 fw-semibold text-foreground small">
+                                S/. @order.Total.ToString("0.00")
+                            </td>
+
+                            <td class="px-4 py-3">
+                                <span class="badge @(GetStatusClass(order.Status)) py-1 px-2" style="border-radius:var(--radius); font-size:.8rem;">
+                                    @GetStatusLabel(order.Status)
+                                </span>
+                            </td>
+
+                            <td class="px-4 py-3 text-end">
+                                <div class="dropdown d-inline-block">
+                                    <button class="btn btn-ghost btn-sm text-muted-foreground"
+                                            type="button"
+                                            data-bs-toggle="dropdown"
+                                            aria-expanded="false"
+                                            style="border-radius:var(--radius);">
+                                        <i class="fa-solid fa-gear"></i>
+                                    </button>
+
+                                    <ul class="dropdown-menu dropdown-menu-end shadow border p-1" style="border-radius:var(--radius);">
+                                        <li>
+                                            <button type="button"
+                                                    @onclick="@(() => UpdateStatus(order.Id, "pendiente"))"
+                                                    class="dropdown-item py-1 small rounded">
+                                                Marcar Pendiente
+                                            </button>
+                                        </li>
+
+                                        <li>
+                                            <button type="button"
+                                                    @onclick="@(() => UpdateStatus(order.Id, "preparando"))"
+                                                    class="dropdown-item py-1 small rounded">
+                                                Preparando
+                                            </button>
+                                        </li>
+
+                                        <li>
+                                            <button type="button"
+                                                    @onclick="@(() => UpdateStatus(order.Id, "en_camino"))"
+                                                    class="dropdown-item py-1 small rounded">
+                                                En Camino
+                                            </button>
+                                        </li>
+
+                                        <li>
+                                            <button type="button"
+                                                    @onclick="@(() => UpdateStatus(order.Id, "entregado"))"
+                                                    class="dropdown-item py-1 small rounded text-success">
+                                                Entregado
+                                            </button>
+                                        </li>
+
+                                        <li>
+                                            <hr class="dropdown-divider">
+                                        </li>
+
+                                        <li>
+                                            <button type="button"
+                                                    @onclick="@(() => UpdateStatus(order.Id, "cancelado"))"
+                                                    class="dropdown-item py-1 small rounded text-danger">
+                                                Cancelar Pedido
+                                            </button>
+                                        </li>
+
+                                        <li>
+                                            <button type="button"
+                                                    @onclick="@(() => Delete(order.Id))"
+                                                    class="dropdown-item py-1 small rounded text-danger bg-danger bg-opacity-10">
+                                                Eliminar Registro
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+
+                    @if (!Filtered.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted-foreground">
+                                No se encontraron pedidos
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
