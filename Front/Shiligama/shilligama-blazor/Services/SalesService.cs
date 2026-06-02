@@ -288,9 +288,56 @@ public class SalesService
         });
     }
 
-    private async Task AddOrderAsync(string customerName, List<CartItem> items,
-                                     decimal total, string payMethod,
-                                     string deliveryMethod, string address, int idCliente)
+    // Versión pública y awaitable: devuelve el orderId string para mostrar en pantalla.
+    // Checkout.razor llama directamente a este método.
+    public async Task<string> PlaceOnlineOrderAsync(
+        string customerName, List<CartItem> items,
+        decimal subtotal, decimal deliveryFee, decimal total,
+        string payMethod, string deliveryMethod, string address, int idCliente)
+    {
+        int idPedido = await AddOrderAsync(customerName, items, total, payMethod,
+                                           deliveryMethod, address, idCliente);
+
+        string orderId = idPedido > 0
+            ? $"PED-{idPedido:D4}"
+            : $"SHI-{DateTime.Now.Year}-{(_orders.Count + 1):D4}";
+
+        // Actualizar caché local con el ID definitivo
+        _orders.Insert(0, new Order
+        {
+            Id             = orderId,
+            Customer       = customerName,
+            Date           = DateTime.Now,
+            Subtotal       = subtotal,
+            DeliveryFee    = deliveryFee,
+            Total          = total,
+            Items          = items.Sum(i => i.Quantity),
+            Status         = "pendiente",
+            DeliveryMethod = deliveryMethod,
+            PaymentMethod  = payMethod,
+            Address        = address,
+            Products       = new List<CartItem>(items),
+            TimelinePedidoRecibido = DateTime.Now,
+        });
+        _sales.Insert(0, new Sale
+        {
+            Id         = $"VTA-{_sales.Count + 1:D3}",
+            Fecha      = DateTime.Now,
+            Cliente    = customerName,
+            Canal      = "web",
+            Productos  = items,
+            Total      = total,
+            MetodoPago = payMethod,
+            Comprobante= "boleta",
+            Estado     = "pendiente"
+        });
+
+        return orderId;
+    }
+
+    private async Task<int> AddOrderAsync(string customerName, List<CartItem> items,
+                                          decimal total, string payMethod,
+                                          string deliveryMethod, string address, int idCliente)
     {
         int idMetodoPago = payMethod.ToLower() switch
         {
@@ -311,13 +358,13 @@ public class SalesService
 
         var pedido = new
         {
-            montoTotal     = (double)total,
-            estadoPedido   = "RECIBIDO",
+            montoTotal       = (double)total,
+            estadoPedido     = "RECIBIDO",
             direccionEntrega = address,
-            modalidadVenta = deliveryMethod == "delivery" ? "DELIVERY" : "PRESENCIAL",
-            observaciones  = (string?)null,
-            cliente        = idCliente > 0 ? new { idUsuario = idCliente } : null,
-            detalles       = detalles
+            modalidadVenta   = deliveryMethod == "delivery" ? "DELIVERY" : "PRESENCIAL",
+            observaciones    = (string?)null,
+            cliente          = idCliente > 0 ? new { idUsuario = idCliente } : null,
+            detalles         = detalles
         };
 
         try
@@ -326,7 +373,6 @@ public class SalesService
             if (resp.IsSuccessStatusCode)
             {
                 int idPedido = await resp.Content.ReadFromJsonAsync<int>();
-                // Insertar cada detalle — INSERTAR_DETALLE_PEDIDO recalcula MONTO_TOTAL
                 foreach (var item in items)
                 {
                     var detalle = new
@@ -339,9 +385,12 @@ public class SalesService
                     };
                     await _http.PostAsJsonAsync("detalles-pedido", detalle);
                 }
+                return idPedido;
             }
         }
         catch { /* red no disponible */ }
+
+        return 0; // 0 indica que no se pudo guardar en la BD
     }
 }
 

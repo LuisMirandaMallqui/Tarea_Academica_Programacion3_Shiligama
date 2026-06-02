@@ -3,16 +3,23 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 @inject HttpClient Http
+@inject IJSRuntime JS
+@implements IDisposable
 
 @code {
-    private string _nombres  = "";
-    private string _apellidos= "";
-    private string _dni      = "";
-    private string _phone    = "";
-    private string _address  = "";
-    private bool   _success  = false;
-    private bool   _saving   = false;
-    private string _error    = "";
+    private string _nombres   = "";
+    private string _apellidos = "";
+    private string _dni       = "";
+    private string _phone     = "";
+    private string _address   = "";
+    private bool   _success   = false;
+    private bool   _saving    = false;
+    private string _error     = "";
+
+    // ── Mapa Leaflet ──────────────────────────────────────────────────────────
+    private bool   _showMapModal    = false;
+    private string _pendingAddress  = "";
+    private DotNetObjectReference<Configuracion>? _dotnetRef;
 
     protected override void OnInitialized()
     {
@@ -32,21 +39,16 @@
 
     private async Task SaveChanges()
     {
-        _saving = true;
-        _error  = "";
-        _success= false;
+        _saving  = true;
+        _error   = "";
+        _success = false;
 
         var u = Auth.CurrentUser!;
-
-        // PUT /api/clientes — actualiza MODIFICAR_USUARIO (nombres, apellidos, dni,
-        // telefono, correo) y MODIFICAR_CLIENTE (direccion_entrega).
-        // La contraseña no cambia: el SP MODIFICAR_USUARIO no la toca, pero la
-        // validación del BO la requiere como campo no vacío, así que enviamos "*".
         var dto = new
         {
             idUsuario        = u.Id,
             correo           = u.Correo,
-            contrasena       = "*",          // campo requerido por validación; SP no lo modifica
+            contrasena       = "*",          // SP MODIFICAR_USUARIO no lo toca
             nombres          = _nombres.Trim(),
             apellidos        = _apellidos.Trim(),
             dni              = _dni.Trim(),
@@ -59,7 +61,6 @@
             var resp = await Http.PutAsJsonAsync("clientes", dto);
             if (resp.IsSuccessStatusCode)
             {
-                // Actualiza el objeto en sesión para que el navbar refleje el cambio
                 u.Nombres          = _nombres.Trim();
                 u.Apellidos        = _apellidos.Trim();
                 u.Dni              = _dni.Trim();
@@ -88,6 +89,40 @@
             }
         }
     }
+
+    // ── Mapa ──────────────────────────────────────────────────────────────────
+
+    private async Task OpenMapModal()
+    {
+        _showMapModal   = true;
+        _pendingAddress = "";
+        StateHasChanged();
+        _dotnetRef = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("mapHelpers.initMap", _dotnetRef);
+    }
+
+    private async Task CloseMapModal()
+    {
+        _showMapModal   = false;
+        _pendingAddress = "";
+        await JS.InvokeVoidAsync("mapHelpers.destroyMap");
+    }
+
+    private async Task ConfirmAddress()
+    {
+        if (!string.IsNullOrWhiteSpace(_pendingAddress))
+            _address = _pendingAddress;
+        await CloseMapModal();
+    }
+
+    [JSInvokable]
+    public void OnMapAddressSelected(string address)
+    {
+        _pendingAddress = address;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => _dotnetRef?.Dispose();
 }
 
 <PageTitle>Configuración – Shiligama</PageTitle>
@@ -120,7 +155,8 @@
         <!-- Información Personal -->
         <div class="card p-4 d-flex flex-column gap-3 shadow-sm" style="border-radius: 12px; border: 1px solid rgba(0,0,0,0.08);">
             <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
+                <div class="d-flex align-items-center justify-content-center rounded-circle"
+                     style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
                     <i class="fa-regular fa-user" style="color:#0D4525;font-size:1.1rem;"></i>
                 </div>
                 <div>
@@ -131,16 +167,19 @@
             <div class="row g-3 mt-1">
                 <div class="col-md-6">
                     <label class="form-label small fw-medium text-foreground">Nombres</label>
-                    <input type="text" @bind="_nombres" required class="form-control text-foreground" style="height:44px;border-radius:8px;" />
+                    <input type="text" @bind="_nombres" required class="form-control text-foreground"
+                           style="height:44px;border-radius:8px;" />
                 </div>
                 <div class="col-md-6">
                     <label class="form-label small fw-medium text-foreground">Apellidos</label>
-                    <input type="text" @bind="_apellidos" required class="form-control text-foreground" style="height:44px;border-radius:8px;" />
+                    <input type="text" @bind="_apellidos" required class="form-control text-foreground"
+                           style="height:44px;border-radius:8px;" />
                 </div>
                 <div class="col-md-5">
                     <label class="form-label small fw-medium text-foreground">DNI</label>
                     <div class="position-relative">
-                        <i class="fa-regular fa-id-card text-muted-foreground position-absolute" style="left:14px;top:50%;transform:translateY(-50%);"></i>
+                        <i class="fa-regular fa-id-card text-muted-foreground position-absolute"
+                           style="left:14px;top:50%;transform:translateY(-50%);"></i>
                         <input type="text" @bind="_dni" required maxlength="8" pattern="\d{8}"
                                class="form-control text-foreground"
                                style="height:44px;padding-left:42px;border-radius:8px;" />
@@ -156,9 +195,11 @@
         </div>
 
         <!-- Contacto -->
-        <div class="card p-4 d-flex flex-column gap-3 shadow-sm" style="border-radius:12px;border:1px solid rgba(0,0,0,0.08);">
+        <div class="card p-4 d-flex flex-column gap-3 shadow-sm"
+             style="border-radius:12px;border:1px solid rgba(0,0,0,0.08);">
             <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
+                <div class="d-flex align-items-center justify-content-center rounded-circle"
+                     style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
                     <i class="fa-solid fa-phone" style="color:#0D4525;font-size:1.1rem;"></i>
                 </div>
                 <div>
@@ -169,18 +210,23 @@
             <div>
                 <label class="form-label small fw-medium text-foreground">Teléfono</label>
                 <div class="position-relative">
-                    <i class="fa-solid fa-phone text-muted-foreground position-absolute" style="left:14px;top:50%;transform:translateY(-50%);"></i>
+                    <i class="fa-solid fa-phone text-muted-foreground position-absolute"
+                       style="left:14px;top:50%;transform:translateY(-50%);"></i>
                     <input type="tel" @bind="_phone" class="form-control text-foreground"
                            style="height:44px;padding-left:42px;border-radius:8px;" placeholder="987654321" />
                 </div>
-                <div class="form-text text-muted-foreground mt-1" style="font-size:0.75rem;">Usaremos este número para contactarte sobre tus pedidos.</div>
+                <div class="form-text text-muted-foreground mt-1" style="font-size:0.75rem;">
+                    Usaremos este número para contactarte sobre tus pedidos.
+                </div>
             </div>
         </div>
 
         <!-- Dirección de Entrega -->
-        <div class="card p-4 d-flex flex-column gap-3 shadow-sm" style="border-radius:12px;border:1px solid rgba(0,0,0,0.08);">
+        <div class="card p-4 d-flex flex-column gap-3 shadow-sm"
+             style="border-radius:12px;border:1px solid rgba(0,0,0,0.08);">
             <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center justify-content-center rounded-circle" style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
+                <div class="d-flex align-items-center justify-content-center rounded-circle"
+                     style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
                     <i class="fa-solid fa-location-dot" style="color:#0D4525;font-size:1.1rem;"></i>
                 </div>
                 <div>
@@ -188,25 +234,119 @@
                     <p class="text-muted-foreground small mb-0">La dirección donde recibirás tus pedidos</p>
                 </div>
             </div>
-            <div>
-                <label class="form-label small fw-medium text-foreground">Dirección completa</label>
-                <textarea @bind="_address" class="form-control text-foreground py-2" rows="3"
-                          style="border-radius:8px;resize:none;" placeholder="Av. Los Olivos 123, Lima"></textarea>
-                <div class="form-text text-muted-foreground mt-1" style="font-size:0.75rem;">Incluye referencias para facilitar la entrega.</div>
+            <div class="mt-1">
+                <label class="form-label small fw-medium text-foreground mb-2">Dirección actual</label>
+
+                @* Mostrar dirección actual *@
+                @if (!string.IsNullOrWhiteSpace(_address))
+                {
+                    <div class="d-flex align-items-start gap-2 p-3 mb-3"
+                         style="background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
+                        <i class="fa-solid fa-location-dot mt-1" style="color:#0D4525;flex-shrink:0;"></i>
+                        <span style="font-size:0.9rem;color:#374151;word-break:break-word;">@_address</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="d-flex flex-column align-items-center justify-content-center py-4 px-3 mb-3"
+                         style="border-radius:10px;border:1px dashed #d1d5db;background:#f9fafb;">
+                        <i class="fa-solid fa-map-location-dot mb-2" style="font-size:2rem;color:#c4c9d1;"></i>
+                        <span style="font-size:0.9rem;color:#6b7280;font-weight:500;">No hay dirección registrada</span>
+                        <span style="font-size:0.8rem;color:#9ca3af;">Selecciona una dirección en el mapa</span>
+                    </div>
+                }
+
+                @* Botón para abrir el mapa *@
+                <button type="button" @onclick="OpenMapModal"
+                        class="btn d-flex align-items-center gap-2 px-3 py-2"
+                        style="border:2px dashed #0D4525;border-radius:10px;background:transparent;
+                               color:#0D4525;font-weight:600;font-size:0.9rem;transition:all 0.2s;"
+                        onmouseover="this.style.backgroundColor='#f0fdf4';"
+                        onmouseout="this.style.backgroundColor='transparent';">
+                    <i class="fa-solid fa-map-location-dot"></i>
+                    @(string.IsNullOrWhiteSpace(_address) ? "Seleccionar dirección en mapa" : "Cambiar dirección")
+                </button>
+
+                <div class="form-text text-muted-foreground mt-2" style="font-size:0.75rem;">
+                    Haz clic en el mapa para obtener la dirección exacta por geocodificación inversa.
+                </div>
             </div>
         </div>
 
         <!-- Save Bar -->
         <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between gap-3 mt-2 mb-4">
-            <span class="text-muted-foreground small">Los cambios se guardarán en tu perfil.</span>
+            <span class="text-muted-foreground small">Los cambios se guardarán automáticamente en tu perfil.</span>
             <button type="submit" disabled="@_saving"
                     class="btn text-white px-4 py-2 fw-semibold d-flex align-items-center gap-2"
                     style="background-color:#0D4525;border-radius:8px;border:none;">
                 @if (_saving)
-                { <span class="spinner-border spinner-border-sm me-1"></span><span>Guardando…</span> }
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span><span>Guardando…</span>
+                }
                 else
-                { <i class="fa-solid fa-floppy-disk"></i><span> Guardar cambios</span> }
+                {
+                    <i class="fa-solid fa-floppy-disk"></i><span> Guardar cambios</span>
+                }
             </button>
         </div>
     </EditForm>
 </div>
+
+@* ===== Modal del Mapa (Leaflet + Nominatim) ===== *@
+@if (_showMapModal)
+{
+    <div style="position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.5);
+                display:flex;align-items:center;justify-content:center;"
+         @onclick="CloseMapModal">
+        <div style="background:white;border-radius:16px;width:90%;max-width:650px;
+                    box-shadow:0 25px 60px rgba(0,0,0,0.3);overflow:hidden;"
+             @onclick:stopPropagation="true">
+
+            <!-- Cabecera -->
+            <div class="d-flex align-items-center justify-content-between px-4 py-3"
+                 style="border-bottom:1px solid #e5e7eb;">
+                <h5 class="fw-bold mb-0" style="font-family:'Outfit',sans-serif;font-size:1.1rem;color:#111827;">
+                    <i class="fa-solid fa-map-location-dot me-2" style="color:#0D4525;"></i>Seleccionar dirección
+                </h5>
+                <button type="button" @onclick="CloseMapModal"
+                        style="background:none;border:none;font-size:1.3rem;color:#6b7280;cursor:pointer;line-height:1;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Mapa -->
+            <div id="address-map" style="width:100%;height:350px;"></div>
+
+            <!-- Dirección seleccionada + confirmar -->
+            <div class="px-4 py-3" style="border-top:1px solid #e5e7eb;">
+                @if (!string.IsNullOrWhiteSpace(_pendingAddress))
+                {
+                    <div class="d-flex align-items-start gap-2 mb-3 p-2"
+                         style="background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
+                        <i class="fa-solid fa-location-dot mt-1" style="color:#0D4525;flex-shrink:0;"></i>
+                        <span style="font-size:0.85rem;color:#374151;word-break:break-word;">@_pendingAddress</span>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted-foreground mb-3" style="font-size:0.85rem;">
+                        <i class="fa-solid fa-hand-pointer me-1"></i> Haz clic en el mapa para seleccionar una dirección
+                    </p>
+                }
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" @onclick="CloseMapModal"
+                            class="btn btn-outline-secondary px-3 py-2"
+                            style="border-radius:8px;font-size:0.9rem;">
+                        Cancelar
+                    </button>
+                    <button type="button" @onclick="ConfirmAddress"
+                            class="btn text-white px-3 py-2 fw-semibold d-flex align-items-center gap-2"
+                            style="background-color:#0D4525;border-radius:8px;font-size:0.9rem;border:none;"
+                            disabled="@(string.IsNullOrWhiteSpace(_pendingAddress))">
+                        <i class="fa-solid fa-check"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

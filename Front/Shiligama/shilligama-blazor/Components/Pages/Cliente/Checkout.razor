@@ -10,8 +10,8 @@
     public string? DeliveryParam { get; set; }
 
     private string _deliveryMethod = "delivery";
-    private string _name    = "";
-    private string _address = "";
+    private string _name    = "";   // se llena en OnAfterRenderAsync desde el usuario logueado
+    private string _address = "";   // ídem con DireccionEntrega
     private string _payMethod = "tarjeta";
 
     private string _cardNumber = "";
@@ -36,8 +36,18 @@
         if (firstRender)
         {
             await Cart.InitializeAsync();
+
             if (!string.IsNullOrEmpty(DeliveryParam))
                 _deliveryMethod = DeliveryParam;
+
+            // Pre-llenar con datos del usuario logueado
+            var u = Auth.CurrentUser;
+            if (u != null)
+            {
+                _name    = u.Name;                          // Nombres + Apellidos
+                _address = u.DireccionEntrega ?? "";
+            }
+
             StateHasChanged();
         }
     }
@@ -76,13 +86,15 @@
     private async Task PlaceOrder()
     {
         _isLoading = true;
-        await Task.Delay(800);
-        _orderId = $"SHI-{DateTime.Now.Year}-{(SalesSvc.GetRecentOrders().Count + 1):D4}";
-        SalesSvc.AddOrder(
-            _name, Cart.GetCartItems().ToList(),
+
+        // Llamada real al API — espera la respuesta y obtiene el ID de la BD
+        _orderId = await SalesSvc.PlaceOnlineOrderAsync(
+            _name,
+            Cart.GetCartItems().ToList(),
             Subtotal, DeliveryFee, Total,
             _payMethod, _deliveryMethod, _address,
             Auth.CurrentUser?.Id ?? 0);
+
         await Cart.ClearCartAsync();
         _success   = true;
         _isLoading = false;

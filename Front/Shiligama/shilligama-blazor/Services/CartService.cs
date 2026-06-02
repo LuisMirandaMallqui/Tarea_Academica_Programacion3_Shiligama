@@ -46,28 +46,7 @@ public class CartService
             {
                 _cartItems = JsonSerializer.Deserialize<List<CartItem>>(json) ?? new();
             }
-            else
-            {
-                // Preload default cart items as in Next.js use-cart.ts
-                _cartItems = new List<CartItem>
-                {
-                    new() {
-                        Id = 1,
-                        Name = "Arroz Extra Costeño 5kg",
-                        Price = 28.90m,
-                        Image = "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=100&h=100&fit=crop",
-                        Quantity = 2
-                    },
-                    new() {
-                        Id = 4, // Gloria Milk
-                        Name = "Leche Gloria Entera 1L",
-                        Price = 5.20m,
-                        Image = "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=100&h=100&fit=crop",
-                        Quantity = 1
-                    }
-                };
-                await SaveToLocalStorage();
-            }
+            // Si no hay carrito guardado, simplemente empieza vacío
             _isInitialized = true;
             NotifyStateChanged();
         }

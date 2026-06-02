@@ -78,33 +78,33 @@ VALUES('shiligama123', 'Jorge', 'Villanueva Ríos', '89012345', '987654328', 'jv
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA) 
 VALUES(8, 'Jr. Cusco 310');
 
--- Productos de ejemplo
-INSERT INTO producto(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO, STOCK, STOCK_MINIMO, UNIDAD_MEDIDA, CODIGO_BARRAS) VALUES
-(7, 'Arroz Costeño 5kg', 'Arroz extra graneado', 22.50, 50, 10, 'Bolsa', '7750001000001'),
-(7, 'Lentejas La Costeña 500g', 'Lentejas secas', 4.50, 30, 5, 'Bolsa', '7750001000002'),
-(8, 'Aceite Primor 1L', 'Aceite vegetal', 9.90, 40, 8, 'Botella', '7750001000003'),
-(9, 'Fideos Don Vittorio Spaghetti', 'Fideos largos 500g', 3.80, 60, 10, 'Paquete', '7750001000004'),
-(10, 'Coca-Cola 1.5L', 'Gaseosa', 7.50, 100, 20, 'Botella', '7750001000005'),
-(11, 'Frugos Durazno 1L', 'Néctar de durazno', 4.20, 45, 10, 'Caja', '7750001000006'),
-(12, 'San Luis sin gas 625ml', 'Agua mineral', 2.00, 80, 15, 'Botella', '7750001000007'),
-(13, 'Ariel 2kg', 'Detergente en polvo', 18.90, 25, 5, 'Bolsa', '7750001000008'),
-(14, 'Poett Lavanda 900ml', 'Limpiador desinfectante', 8.50, 35, 8, 'Botella', '7750001000009'),
-(1, 'Azúcar Rubia 1kg', 'Azúcar rubia', 4.20, 55, 10, 'Bolsa', '7750001000010'),
-(5,  'Leche Gloria Entera 1L',       'Leche evaporada entera',         4.80, 60, 12, 'Caja',    '7750001000011'),
-(5,  'Yogurt Gloria Fresa 1kg',       'Yogurt batido sabor fresa',      8.50, 40, 8,  'Tarro',   '7750001000012'),
-(6,  'Pringles Original 149g',        'Papas fritas en lata',          12.90, 35, 5,  'Lata',    '7750001000013'),
-(6,  'Galletas Oreo Original 176g',   'Galletas de chocolate',          6.50, 50, 10, 'Paquete', '7750001000014'),
-(1,  'Sal Marina 1kg',                'Sal fina de mesa',               2.20, 70, 15, 'Bolsa',   '7750001000015'),
-(1,  'Atún Florida en Aceite 170g',   'Conserva de atún',               4.90, 45, 10, 'Lata',    '7750001000016'),
-(10, 'Inca Kola 1.5L',                'Gaseosa nacional',               7.50, 80, 20, 'Botella', '7750001000017'),
-(10, 'Pepsi 500ml',                   'Gaseosa cola',                   3.50, 90, 20, 'Botella', '7750001000018'),
-(11, 'Néctar Pulp Mango 1L',          'Néctar de mango',                4.20, 40, 10, 'Caja',    '7750001000019'),
-(12, 'Agua San Mateo 625ml',          'Agua mineral con gas',           2.50, 100, 20,'Botella', '7750001000020'),
-(4,  'Shampoo Head & Shoulders 200ml','Shampoo anticaspa',             14.90, 25, 5,  'Frasco',  '7750001000021'),
-(4,  'Jabón Dove 90g x3',             'Jabón de tocador',               9.80, 30, 8,  'Pack',    '7750001000022'),
-(13, 'Bolsa Basura Grande x10',       'Bolsas para basura 70L',         5.90, 40, 10, 'Pack',    '7750001000023'),
-(8,  'Aceite Vegetal Ideal 900ml',    'Aceite para cocinar',            8.50, 35, 8,  'Botella', '7750001000024'),
-(9,  'Fideos Tallarin N°5 500g',      'Fideos gruesos',                  3.20, 55, 12, 'Paquete', '7750001000025');
+-- Productos de ejemplo (con IMAGEN_URL incluida)
+INSERT INTO producto(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO, STOCK, STOCK_MINIMO, UNIDAD_MEDIDA, CODIGO_BARRAS, IMAGEN_URL) VALUES
+(7,  'Arroz Costeño 5kg',              'Arroz extra graneado',            22.50,  50, 10, 'Bolsa',   '7750001000001', 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&h=300&fit=crop'),
+(7,  'Lentejas La Costeña 500g',       'Lentejas secas',                   4.50,  30,  5, 'Bolsa',   '7750001000002', 'https://images.unsplash.com/photo-1510130387422-82bed34b37e9?w=300&h=300&fit=crop'),
+(8,  'Aceite Primor 1L',               'Aceite vegetal',                   9.90,  40,  8, 'Botella', '7750001000003', 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&h=300&fit=crop'),
+(9,  'Fideos Don Vittorio Spaghetti',  'Fideos largos 500g',               3.80,  60, 10, 'Paquete', '7750001000004', 'https://images.unsplash.com/photo-1551462147-37885acc36f1?w=300&h=300&fit=crop'),
+(10, 'Coca-Cola 1.5L',                 'Gaseosa',                          7.50, 100, 20, 'Botella', '7750001000005', 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&h=300&fit=crop'),
+(11, 'Frugos Durazno 1L',              'Néctar de durazno',                4.20,  45, 10, 'Caja',    '7750001000006', 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=300&h=300&fit=crop'),
+(12, 'San Luis sin gas 625ml',         'Agua mineral',                     2.00,  80, 15, 'Botella', '7750001000007', 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=300&h=300&fit=crop'),
+(13, 'Ariel 2kg',                      'Detergente en polvo',             18.90,  25,  5, 'Bolsa',   '7750001000008', 'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=300&h=300&fit=crop'),
+(14, 'Poett Lavanda 900ml',            'Limpiador desinfectante',          8.50,  35,  8, 'Botella', '7750001000009', 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=300&h=300&fit=crop'),
+(1,  'Azúcar Rubia 1kg',               'Azúcar rubia',                     4.20,  55, 10, 'Bolsa',   '7750001000010', 'https://images.unsplash.com/photo-1621939514649-280e2ee25f60?w=300&h=300&fit=crop'),
+(5,  'Leche Gloria Entera 1L',         'Leche evaporada entera',           4.80,  60, 12, 'Caja',    '7750001000011', 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=300&h=300&fit=crop'),
+(5,  'Yogurt Gloria Fresa 1kg',        'Yogurt batido sabor fresa',        8.50,  40,  8, 'Tarro',   '7750001000012', 'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=300&h=300&fit=crop'),
+(6,  'Pringles Original 149g',         'Papas fritas en lata',            12.90,  35,  5, 'Lata',    '7750001000013', 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&h=300&fit=crop'),
+(6,  'Galletas Oreo Original 176g',    'Galletas de chocolate',            6.50,  50, 10, 'Paquete', '7750001000014', 'https://images.unsplash.com/photo-1558961363-fa8fdf82db35?w=300&h=300&fit=crop'),
+(1,  'Sal Marina 1kg',                 'Sal fina de mesa',                 2.20,  70, 15, 'Bolsa',   '7750001000015', 'https://images.unsplash.com/photo-1619280984807-a27b4d7f0a72?w=300&h=300&fit=crop'),
+(1,  'Atún Florida en Aceite 170g',    'Conserva de atún',                 4.90,  45, 10, 'Lata',    '7750001000016', 'https://images.unsplash.com/photo-1534482421-64566f976cfa?w=300&h=300&fit=crop'),
+(10, 'Inca Kola 1.5L',                 'Gaseosa nacional',                 7.50,  80, 20, 'Botella', '7750001000017', 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=300&h=300&fit=crop'),
+(10, 'Pepsi 500ml',                    'Gaseosa cola',                     3.50,  90, 20, 'Botella', '7750001000018', 'https://images.unsplash.com/photo-1629203432180-71e9f76a3e57?w=300&h=300&fit=crop'),
+(11, 'Néctar Pulp Mango 1L',           'Néctar de mango',                  4.20,  40, 10, 'Caja',    '7750001000019', 'https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=300&h=300&fit=crop'),
+(12, 'Agua San Mateo 625ml',           'Agua mineral con gas',             2.50, 100, 20, 'Botella', '7750001000020', 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=300&h=300&fit=crop'),
+(4,  'Shampoo Head & Shoulders 200ml', 'Shampoo anticaspa',               14.90,  25,  5, 'Frasco',  '7750001000021', 'https://images.unsplash.com/photo-1522916819787-2605d47a50d1?w=300&h=300&fit=crop'),
+(4,  'Jabón Dove 90g x3',              'Jabón de tocador',                 9.80,  30,  8, 'Pack',    '7750001000022', 'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=300&h=300&fit=crop'),
+(13, 'Bolsa Basura Grande x10',        'Bolsas para basura 70L',           5.90,  40, 10, 'Pack',    '7750001000023', 'https://images.unsplash.com/photo-1558449028-b53a39d100fc?w=300&h=300&fit=crop'),
+(8,  'Aceite Vegetal Ideal 900ml',     'Aceite para cocinar',              8.50,  35,  8, 'Botella', '7750001000024', 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&h=300&fit=crop'),
+(9,  'Fideos Tallarin N°5 500g',       'Fideos gruesos',                   3.20,  55, 12, 'Paquete', '7750001000025', 'https://images.unsplash.com/photo-1551462147-37885acc36f1?w=300&h=300&fit=crop');
 
 -- ================================================================
 -- PROMOCIONES

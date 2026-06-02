@@ -1,6 +1,7 @@
 @page "/admin/productos"
 @layout AdminLayout
 @inject ProductService ProductSvc
+@inject ImagenService ImagenSvc
 
 @code {
     private List<Product> _products = new();
@@ -9,6 +10,10 @@
     private bool _showModal = false;
     private bool _isEditing = false;
     private Product _form = new();
+
+    // ── Upload de imagen ──────────────────────────────────────────────────────
+    private bool _uploadingImage = false;
+    private string _uploadError = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -23,6 +28,21 @@
 
     private bool _saving = false;
     private string _saveError = "";
+
+    private async Task HandleImageSelected(InputFileChangeEventArgs e)
+    {
+        _uploadError = "";
+        _uploadingImage = true;
+        try
+        {
+            _form.Image = await ImagenSvc.UploadAsync(e.File);
+        }
+        catch (Exception ex)
+        {
+            _uploadError = ex.Message;
+        }
+        finally { _uploadingImage = false; }
+    }
 
     private void OpenCreate()
     {
@@ -252,9 +272,50 @@
                                 <label class="form-label small fw-medium text-foreground">Código de barras *</label>
                                 <input type="text" @bind="_form.CodigoBarras" required class="form-control text-foreground" placeholder="7750001000001" />
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-medium text-foreground">URL de imagen</label>
-                                <input type="url" @bind="_form.Image" class="form-control text-foreground" placeholder="https://..." />
+                            <div class="col-12">
+                                <label class="form-label small fw-medium text-foreground">Imagen del producto</label>
+
+                                @* Vista previa *@
+                                @if (!string.IsNullOrEmpty(_form.Image))
+                                {
+                                    <div class="mb-2">
+                                        <img src="@_form.Image" alt="Vista previa"
+                                             class="rounded-3 object-fit-cover border"
+                                             style="width:80px;height:80px;"
+                                             onerror="this.style.display='none'" />
+                                    </div>
+                                }
+
+                                @* Subir archivo *@
+                                <div class="mb-2">
+                                    <label class="form-label small text-muted-foreground mb-1">
+                                        Subir desde archivo (JPG / PNG / WebP, máx. 5 MB)
+                                    </label>
+                                    <InputFile OnChange="HandleImageSelected"
+                                               accept="image/jpeg,image/png,image/gif,image/webp"
+                                               class="form-control text-foreground"
+                                               disabled="@_uploadingImage" />
+                                    @if (_uploadingImage)
+                                    {
+                                        <div class="small text-muted-foreground mt-1">
+                                            <span class="spinner-border spinner-border-sm me-1"></span>Subiendo…
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(_uploadError))
+                                    {
+                                        <div class="small text-danger mt-1">@_uploadError</div>
+                                    }
+                                </div>
+
+                                @* O ingresar URL directamente *@
+                                <div>
+                                    <label class="form-label small text-muted-foreground mb-1">
+                                        O ingresar URL directamente
+                                    </label>
+                                    <input type="url" @bind="_form.Image"
+                                           class="form-control text-foreground"
+                                           placeholder="https://..." />
+                                </div>
                             </div>
                         </div>
                         <div class="d-flex justify-content-end gap-2 mt-4">
