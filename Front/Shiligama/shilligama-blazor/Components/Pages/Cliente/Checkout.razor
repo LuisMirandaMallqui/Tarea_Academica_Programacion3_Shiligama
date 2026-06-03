@@ -111,27 +111,17 @@
             _payMethod, _deliveryMethod, _address,
             Auth.CurrentUser?.Id ?? 0);
 
-        // 2) Pago con tarjeta → pasarela Izipay (modo redirección).
+        // 2) Pago con tarjeta → formulario embebido de Izipay (página /checkout/pago).
         if (_payMethod == "tarjeta")
         {
             int idPedido = ParsePedidoId(_orderId);
             if (idPedido > 0)
             {
-                var resp = await PagoSvc.IniciarPagoAsync(idPedido, Auth.CurrentUser?.Email ?? "");
-                if (resp != null && resp.Exito && !string.IsNullOrEmpty(resp.RedirectionUrl))
-                {
-                    await Cart.ClearCartAsync();
-                    // Redirige a la página segura de Izipay.
-                    Navigation.NavigateTo(resp.RedirectionUrl!, forceLoad: true);
-                    return;
-                }
-                _payError = resp?.Mensaje
-                    ?? "No se pudo iniciar el pago con Izipay. Tu pedido quedó registrado; intenta pagar nuevamente desde 'Mis pedidos'.";
+                await Cart.ClearCartAsync();
+                Navigation.NavigateTo($"/checkout/pago?pedido={idPedido}");
+                return;
             }
-            else
-            {
-                _payError = "No se pudo registrar el pedido. Verifica tu conexión e intenta de nuevo.";
-            }
+            _payError = "No se pudo registrar el pedido. Verifica tu conexión e intenta de nuevo.";
             _isLoading = false;
             return;
         }

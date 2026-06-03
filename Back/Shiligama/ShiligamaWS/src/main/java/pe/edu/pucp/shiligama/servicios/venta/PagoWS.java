@@ -46,21 +46,21 @@ public class PagoWS {
             if (dto == null || dto.getIdPedido() <= 0) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(new RespuestaIniciarPago(false,
-                                "El id del pedido es obligatorio.", null, null, 0)).build();
+                                "El id del pedido es obligatorio.", null, null, null, null, 0)).build();
             }
 
             Pedido pedido = pedidoBo.buscarPorID(dto.getIdPedido());
             if (pedido == null) {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity(new RespuestaIniciarPago(false,
-                                "El pedido no existe.", null, null, 0)).build();
+                                "El pedido no existe.", null, null, null, null, 0)).build();
             }
 
             double monto = dto.getMonto() > 0 ? dto.getMonto() : pedido.getMontoTotal();
             if (monto <= 0) {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity(new RespuestaIniciarPago(false,
-                                "El monto del pedido es inválido.", null, null, 0)).build();
+                                "El monto del pedido es inválido.", null, null, null, null, 0)).build();
             }
             String moneda = (dto.getMoneda() != null && !dto.getMoneda().isBlank())
                     ? dto.getMoneda() : "PEN";
@@ -69,7 +69,7 @@ public class PagoWS {
             if (idMetodoIzipay <= 0) {
                 return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                         .entity(new RespuestaIniciarPago(false,
-                                "No está configurado el método de pago IZIPAY.", null, null, 0)).build();
+                                "No está configurado el método de pago IZIPAY.", null, null, null, null, 0)).build();
             }
 
             // Order id único y trazable al pedido (el callback recupera el
@@ -80,29 +80,31 @@ public class PagoWS {
                     pedido.getIdPedido(), idMetodoIzipay, monto, moneda, orderId);
 
             // Izipay maneja montos en céntimos (entero).
-            String amountCents = String.valueOf(Math.round(monto * 100));
+            long amountCents = Math.round(monto * 100);
             String email = (dto.getEmail() != null && !dto.getEmail().isBlank())
                     ? dto.getEmail()
                     : (pedido.getCliente() != null ? pedido.getCliente().getCorreo() : null);
 
-            String redirectionUrl = pasarela.generarPago(email, amountCents, moneda, orderId);
+            // CreatePayment → formToken para el formulario embebido.
+            String formToken = pasarela.crearFormToken(amountCents, moneda, orderId, email);
 
-            if (redirectionUrl == null) {
+            if (formToken == null) {
                 // El pago queda PENDIENTE; el cliente puede reintentar.
                 return Response.status(Response.Status.BAD_GATEWAY)
                         .entity(new RespuestaIniciarPago(false,
-                                "No se pudo generar el pago con la pasarela. Intente nuevamente.",
-                                null, orderId, pago.getIdPago())).build();
+                                "No se pudo iniciar el pago con Izipay. Intente nuevamente.",
+                                null, null, null, orderId, pago.getIdPago())).build();
             }
 
             return Response.ok(new RespuestaIniciarPago(true,
-                    "Pago iniciado. Redirigir al cliente a la pasarela.",
-                    redirectionUrl, orderId, pago.getIdPago())).build();
+                    "Pago iniciado. Renderizar el formulario embebido.",
+                    formToken, pasarela.getPublicKey(), pasarela.getJsBase(),
+                    orderId, pago.getIdPago())).build();
 
         } catch (Exception ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity(new RespuestaIniciarPago(false,
-                            "Error al iniciar el pago: " + ex.getMessage(), null, null, 0)).build();
+                            "Error al iniciar el pago: " + ex.getMessage(), null, null, null, null, 0)).build();
         }
     }
 

@@ -1,0 +1,113 @@
+@page "/checkout/pago"
+@layout MainLayout
+@inject PagoService PagoSvc
+@inject AuthService Auth
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@implements IDisposable
+
+@code {
+    [SupplyParameterFromQuery(Name = "pedido")]
+    public int Pedido { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+    private bool _iniciado = false;
+
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<CheckoutPago>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _iniciado) return;
+        _iniciado = true;
+
+        if (Pedido <= 0)
+        {
+            _error = "Pedido inválido.";
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        await Auth.InitializeAsync();
+
+        // 1) Pedir el formToken al backend (CreatePayment).
+        var resp = await PagoSvc.IniciarPagoAsync(Pedido, Auth.CurrentUser?.Email ?? "");
+        if (resp == null || !resp.Exito || string.IsNullOrEmpty(resp.FormToken))
+        {
+            _error = resp?.Mensaje ?? "No se pudo iniciar el pago con Izipay. Tu pedido quedó registrado; "
+                     + "puedes reintentar desde 'Mis pedidos'.";
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        // 2) Renderizar el formulario embebido con el SDK Krypton.
+        try
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/izipay.js");
+            bool ok = await _module.InvokeAsync<bool>("render",
+                resp.JsBase, resp.PublicKey, resp.FormToken, _dotNetRef);
+            if (!ok) _error = "No se pudo cargar el formulario de pago de Izipay.";
+        }
+        catch (Exception ex)
+        {
+            _error = "Error al cargar el formulario de pago: " + ex.Message;
+        }
+
+        _loading = false;
+        StateHasChanged();
+    }
+
+    // Llamado desde izipay.js al terminar el pago.
+    [JSInvokable]
+    public Task OnIzipayResult(string orderStatus)
+    {
+        Navigation.NavigateTo($"/checkout/resultado?pedido={Pedido}", forceLoad: false);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}
+
+<PageTitle>Pago con tarjeta – Shiligama</PageTitle>
+
+<div class="container py-4" style="max-width:560px;">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="rounded-2 d-flex align-items-center justify-content-center px-2"
+             style="height:32px;background:#ee3a3a;">
+            <span class="text-white fw-bold small">izipay</span>
+        </div>
+        <h1 class="fs-5 fw-semibold text-foreground mb-0">Pago seguro con tarjeta</h1>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary mb-3" role="status"></div>
+            <p class="text-muted-foreground small mb-0">Cargando el formulario de pago de Izipay...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(_error))
+    {
+        <div class="alert alert-danger small d-flex gap-2 align-items-start">
+            <Icons Name="AlertCircle" style="width:16px;height:16px;margin-top:2px;" />
+            <span>@_error</span>
+        </div>
+        <a href="/mis-pedidos" class="btn btn-primary" style="border-radius:var(--radius);">Ir a mis pedidos</a>
+    }
+
+    <!-- El SDK Krypton renderiza el formulario embebido aquí -->
+    <div class="card p-4 border border-border rounded-3 @(_loading || !string.IsNullOrEmpty(_error) ? "d-none" : "")">
+        <div id="izipay-form" class="kr-embedded"></div>
+        <p class="text-muted-foreground small mt-3 mb-0 d-flex align-items-center gap-1">
+            <Icons Name="Lock" style="width:13px;height:13px;" />
+            Tus datos de tarjeta se procesan directamente en Izipay (cumplimiento PCI-DSS).
+        </p>
+    </div>
+</div>

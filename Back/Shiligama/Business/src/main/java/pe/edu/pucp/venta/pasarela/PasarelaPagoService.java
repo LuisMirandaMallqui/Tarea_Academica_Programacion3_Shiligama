@@ -1,146 +1,181 @@
 package pe.edu.pucp.venta.pasarela;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import pe.edu.pucp.config.Config;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 
 /**
- * Servicio de integración con la pasarela de pago externa <b>Izipay</b>
- * (PayZen / Lyra), siguiendo el mismo enfoque que el proyecto de referencia
- * Compu-Rangers.
+ * Integración con la pasarela <b>Izipay</b> mediante su API REST V4
+ * (formulario embebido / Krypton), siguiendo el ejemplo oficial
+ * {@code izipay-pe/Embedded-PaymentForm-Servlet-Java}.
  *
- * <p>Flujo:
+ * <p>Flujo real:
  * <ol>
- *   <li>{@link #generarPago} arma la petición de creación de pago y la envía
- *       al endpoint de formulario/token configurado; Izipay devuelve una
- *       {@code redirectionUrl} a la que el cliente es redirigido para pagar.</li>
- *   <li>Cuando el cliente termina, Izipay notifica (IPN) a nuestro callback
- *       REST con los campos {@code vads_*} firmados con HMAC-SHA256.</li>
- *   <li>El callback valida la firma con {@link #calcularFirma} y confirma el
- *       pago en la base de datos.</li>
+ *   <li>El servidor llama a {@code CreatePayment} (Basic auth con
+ *       usuario:password) y obtiene un <b>formToken</b>.</li>
+ *   <li>El frontend carga el SDK Krypton con la <b>clave pública</b> y el
+ *       formToken; el cliente paga en el formulario embebido (la tarjeta nunca
+ *       pasa por nuestro servidor → PCI-DSS).</li>
+ *   <li>Izipay devuelve el resultado firmado (kr-answer + kr-hash). La firma
+ *       se valida con HMAC-SHA256: con la <b>clave HMAC</b> para el retorno del
+ *       navegador y con la <b>password</b> para la notificación servidor (IPN).</li>
  * </ol>
  *
- * <p>Las credenciales y URLs se leen de {@code shiligama-config.properties}
- * (o variables de entorno) vía {@link Config}; nunca van hardcodeadas.
+ * <p>Credenciales en {@code shiligama-config.properties} (Back Office Izipay).
+ *
+ * <p>NOTA: implementado según la documentación V4; verificar los nombres exactos
+ * de los campos al probar con credenciales TEST reales.
  */
 public class PasarelaPagoService {
 
     /**
-     * Solicita a la pasarela la creación de un pago y devuelve la URL de
-     * redirección a la que se debe enviar al cliente. Devuelve {@code null}
-     * si la pasarela no respondió correctamente.
+     * Crea un pago en Izipay y devuelve el {@code formToken} necesario para
+     * renderizar el formulario embebido. Devuelve {@code null} si falla.
      *
-     * @param email    correo del comprador
-     * @param amount   monto en céntimos (p.ej. "S/ 25.50" -> "2550")
-     * @param currency moneda ISO ("PEN")
-     * @param orderId  identificador de orden (incluye el id de pedido)
+     * @param amountCents monto en céntimos (entero), p.ej. S/ 25.50 -> 2550
      */
-    public String generarPago(String email, String amount, String currency,
-                              String orderId) {
-        String endpoint = Config.get("izipay.create.payment.url");
-        if (endpoint == null) {
-            System.err.println("[Pasarela] Falta 'izipay.create.payment.url' en la configuración.");
+    public String crearFormToken(long amountCents, String currency, String orderId, String email) {
+        String endpoint = Config.get("izipay.endpoint",
+                "https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment");
+        String username = Config.get("izipay.username");
+        String password = Config.get("izipay.password");
+        if (username == null || password == null) {
+            System.err.println("[Izipay] Faltan credenciales (izipay.username / izipay.password).");
             return null;
         }
-        String mode = Config.get("izipay.mode", "TEST");
-        String language = Config.get("izipay.language", "es-ES");
-        String shopId = Config.get("izipay.shop.id", "");
-        String returnUrl = Config.get("izipay.return.url", "");
 
         try {
             JSONObject body = new JSONObject();
-            body.put("shopId", shopId);
-            body.put("email", email);
-            body.put("amount", amount);
-            body.put("currency", currency);
-            body.put("mode", mode);
-            body.put("language", language);
+            body.put("amount", amountCents);
+            body.put("currency", currency != null ? currency : Config.get("izipay.currency", "PEN"));
             body.put("orderId", orderId);
-            body.put("returnUrl", returnUrl);
-
-            HttpURLConnection connection = (HttpURLConnection) URI.create(endpoint)
-                    .toURL().openConnection();
-            connection.setRequestMethod("POST");
-            connection.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
-            String auth = Config.get("izipay.auth.header");
-            if (auth != null && !auth.isBlank()) {
-                connection.setRequestProperty("Authorization", auth);
+            if (email != null && !email.isBlank()) {
+                JSONObject customer = new JSONObject();
+                customer.put("email", email);
+                body.put("customer", customer);
             }
-            connection.setConnectTimeout(15000);
-            connection.setReadTimeout(15000);
-            connection.setDoOutput(true);
 
-            try (OutputStream os = connection.getOutputStream()) {
+            String auth = Base64.getEncoder().encodeToString(
+                    (username + ":" + password).getBytes(StandardCharsets.UTF_8));
+
+            HttpURLConnection conn = (HttpURLConnection) URI.create(endpoint).toURL().openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Authorization", "Basic " + auth);
+            conn.setRequestProperty("Content-Type", "application/json;charset=UTF-8");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
+            conn.setDoOutput(true);
+
+            try (OutputStream os = conn.getOutputStream()) {
                 byte[] input = body.toString().getBytes(StandardCharsets.UTF_8);
                 os.write(input, 0, input.length);
             }
 
-            int status = connection.getResponseCode();
-            if (status >= 200 && status < 300) {
-                StringBuilder response = new StringBuilder();
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(
-                        connection.getInputStream(), StandardCharsets.UTF_8))) {
-                    String line;
-                    while ((line = in.readLine()) != null) {
-                        response.append(line);
-                    }
-                }
-                JSONObject json = new JSONObject(response.toString());
-                if (json.has("redirectionUrl")) {
-                    return json.getString("redirectionUrl");
-                }
-                System.err.println("[Pasarela] Respuesta sin redirectionUrl: " + response);
-            } else {
-                System.err.println("[Pasarela] Error al generar el pago. HTTP " + status);
+            int status = conn.getResponseCode();
+            InputStream is = (status >= 200 && status < 300) ? conn.getInputStream() : conn.getErrorStream();
+            StringBuilder response = new StringBuilder();
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = in.readLine()) != null) response.append(line);
             }
+
+            JSONObject json = new JSONObject(response.toString());
+            if ("SUCCESS".equalsIgnoreCase(json.optString("status"))
+                    && json.has("answer")) {
+                return json.getJSONObject("answer").optString("formToken", null);
+            }
+            System.err.println("[Izipay] CreatePayment no exitoso: " + response);
         } catch (Exception e) {
-            System.err.println("[Pasarela] Excepción en generarPago: " + e.getMessage());
+            System.err.println("[Izipay] Excepción en crearFormToken: " + e.getMessage());
         }
         return null;
     }
 
-    /**
-     * Calcula la firma HMAC-SHA256 (codificada en Base64) de los campos del
-     * formulario IPN de Izipay, según su algoritmo: ordenar las claves
-     * alfabéticamente (excluyendo {@code signature}), concatenar los valores
-     * separados por "+", anexar la clave secreta y aplicar HMAC-SHA256.
-     */
-    public static String calcularFirma(Map<String, String> campos, String clave) {
-        List<String> claves = new ArrayList<>(campos.keySet());
-        claves.remove("signature");
-        Collections.sort(claves);
+    /** Clave pública para el SDK del navegador, en formato {@code username:publicKey}. */
+    public String getPublicKey() {
+        return Config.get("izipay.username", "") + ":" + Config.get("izipay.public.key", "");
+    }
 
-        StringBuilder data = new StringBuilder();
-        for (String c : claves) {
-            String valor = campos.get(c);
-            if (valor != null) {
-                data.append(valor).append("+");
-            }
+    /** Base del SDK JavaScript de Izipay (Krypton). */
+    public String getJsBase() {
+        return Config.get("izipay.js.base", "https://api.micuentaweb.pe");
+    }
+
+    /**
+     * Procesa la notificación de Izipay (IPN o retorno del navegador): valida la
+     * firma del {@code kr-answer} y extrae el resultado del pago.
+     *
+     * @param krAnswer   JSON con la respuesta del pago
+     * @param krHash     firma recibida (hex)
+     * @param krHashKey  "password" (IPN) o "sha256_hmac" (navegador)
+     */
+    public ResultadoPasarela procesarRespuesta(String krAnswer, String krHash, String krHashKey) {
+        ResultadoPasarela r = new ResultadoPasarela();
+        if (krAnswer == null || krHash == null) {
+            return r; // valida=false por defecto
         }
-        data.append(clave);
+
+        // La IPN firma con la "password"; el retorno del navegador con la clave HMAC.
+        String clave = "password".equalsIgnoreCase(krHashKey)
+                ? Config.get("izipay.password")
+                : Config.get("izipay.hmac.key");
+
+        String calculada = hmacSha256Hex(krAnswer, clave);
+        r.firmaValida = calculada != null && calculada.equalsIgnoreCase(krHash);
+        if (!r.firmaValida) {
+            return r;
+        }
 
         try {
-            Mac sha256 = Mac.getInstance("HmacSHA256");
-            SecretKeySpec secretKey = new SecretKeySpec(
-                    clave.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-            sha256.init(secretKey);
-            byte[] hash = sha256.doFinal(data.toString().getBytes(StandardCharsets.UTF_8));
-            return Base64.getEncoder().encodeToString(hash);
+            JSONObject answer = new JSONObject(krAnswer);
+            String orderStatus = answer.optString("orderStatus", "");
+            r.autorizado = "PAID".equalsIgnoreCase(orderStatus);
+
+            JSONObject orderDetails = answer.optJSONObject("orderDetails");
+            if (orderDetails != null) {
+                r.orderId = orderDetails.optString("orderId", null);
+            }
+            JSONArray transacciones = answer.optJSONArray("transactions");
+            if (transacciones != null && transacciones.length() > 0) {
+                r.transId = transacciones.getJSONObject(0).optString("uuid", null);
+            }
         } catch (Exception e) {
-            throw new RuntimeException("Error al calcular la firma HMAC", e);
+            System.err.println("[Izipay] Error parseando kr-answer: " + e.getMessage());
         }
+        return r;
+    }
+
+    /** HMAC-SHA256 en hexadecimal (minúsculas) del texto con la clave dada. */
+    public static String hmacSha256Hex(String texto, String clave) {
+        if (clave == null) return null;
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(clave.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] hash = mac.doFinal(texto.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(hash.length * 2);
+            for (byte b : hash) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("Error calculando HMAC-SHA256", e);
+        }
+    }
+
+    /** Resultado del procesamiento de una respuesta de la pasarela. */
+    public static class ResultadoPasarela {
+        public boolean firmaValida = false;
+        public boolean autorizado = false;
+        public String orderId;
+        public String transId;
     }
 }

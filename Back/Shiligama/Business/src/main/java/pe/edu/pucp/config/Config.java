@@ -12,8 +12,8 @@ import java.util.Properties;
  * permite cumplir RNF006/RNF010 sin hardcodear credenciales.
  *
  * Las variables de entorno tienen prioridad sobre el archivo (útil en EC2):
- * para una clave {@code izipay.merchant.key} se busca primero la variable de
- * entorno {@code IZIPAY_MERCHANT_KEY}.
+ * para una clave {@code izipay.password} se busca primero la variable de
+ * entorno {@code IZIPAY_PASSWORD}.
  */
 public final class Config {
 

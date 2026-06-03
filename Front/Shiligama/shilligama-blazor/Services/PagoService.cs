@@ -55,11 +55,13 @@ public class PagoService
 // Mapea pe.edu.pucp.model.venta.RespuestaIniciarPago
 public class RespuestaIniciarPago
 {
-    public bool   Exito          { get; set; }
-    public string? Mensaje        { get; set; }
-    public string? RedirectionUrl { get; set; }
-    public string? OrderId        { get; set; }
-    public int    IdPago         { get; set; }
+    public bool    Exito     { get; set; }
+    public string? Mensaje   { get; set; }
+    public string? FormToken { get; set; }  // token del formulario embebido Izipay
+    public string? PublicKey { get; set; }  // "username:publicKey" para el SDK
+    public string? JsBase    { get; set; }  // base del SDK Krypton
+    public string? OrderId   { get; set; }
+    public int     IdPago    { get; set; }
 }
 
 // Mapea pe.edu.pucp.model.venta.Pago (campos relevantes)
