@@ -108,3 +108,4 @@ config.local.xml
 
 # Archivos de contraseña de Git
 .git-credentials
+*.properties
