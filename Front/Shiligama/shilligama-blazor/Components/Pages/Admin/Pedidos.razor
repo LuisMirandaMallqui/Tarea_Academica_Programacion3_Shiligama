@@ -23,8 +23,10 @@
     private bool _undoAvailable = false;
     private Order? _deletedOrderBackup;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        // recargar: true asegura datos frescos del API en cada visita (conexión backend)
+        await SalesSvc.EnsureLoadedAsync(recargar: true);
         _orders = SalesSvc.GetRecentOrders();
     }
 

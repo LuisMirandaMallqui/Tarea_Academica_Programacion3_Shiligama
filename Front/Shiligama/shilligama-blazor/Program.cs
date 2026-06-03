@@ -42,6 +42,7 @@ builder.Services.AddSingleton<NotificacionService>();
 builder.Services.AddSingleton<ReporteService>();
 builder.Services.AddSingleton<ImagenService>();
 builder.Services.AddSingleton<PagoService>();
+builder.Services.AddScoped<RecuperacionService>();
 
 // SupplierService no tiene endpoint en el backend → sigue siendo local.
 builder.Services.AddSingleton<SupplierService>();
