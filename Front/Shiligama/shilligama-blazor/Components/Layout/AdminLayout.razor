@@ -1,9 +1,23 @@
 @inherits LayoutComponentBase
 @inject AuthService Auth
 @inject NavigationManager Navigation
+@inject NotificacionService NotificacionSvc
 
 @code {
     private bool _isMobileSidebarOpen = false;
+    private int _unreadCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _unreadCount = await NotificacionSvc.ContarNoLeidasAsync(Auth.CurrentUser?.Id ?? 0);
+        }
+        catch
+        {
+            _unreadCount = 0;
+        }
+    }
 
 
     private void ToggleMobileSidebar()
@@ -61,11 +75,11 @@
                 Dashboard
             </a>
 
-            <a href="/admin/pedidos" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/pedidos") ? "active" : "") style="color: ##EAF7EE;">
+            <a href="/admin/pedidos" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/pedidos") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="FileText" Class="w-5 h-5" />
                 Pedidos
             </a>
-            <a href="/admin/productos" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/productos") ? "active" : "") style="color: #EAF7EE;">
+            <a href="/admin/productos" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/productos") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="Package" Class="w-5 h-5" />
                 Productos
             </a>
@@ -73,27 +87,27 @@
                 <i class="fas fa-tags" style="width:1.25rem;text-align:center;"></i>
                 Promociones
             </a>
-            <a href="/admin/inventario" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/inventario") ? "active" : "") style="color: #EAF7EE;">
+            <a href="/admin/inventario" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/inventario") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="Building2" Class="w-5 h-5" />
                 Inventario
             </a>
-            <a href="/admin/ventas" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/ventas") ? "active" : "") style="color: #EAF7EE;">
+            <a href="/admin/ventas" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/ventas") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="TrendingUp" Class="w-5 h-5" />
                 Ventas
             </a>
-            <a href="/admin/proveedores" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/proveedores") ? "active" : "") style="color: #EAF7EE;">
+            <a href="/admin/proveedores" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/proveedores") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="Truck" Class="w-5 h-5" />
                 Proveedores
             </a>
-            <a href="/admin/personal" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/personal") ? "active" : "") style="color: #EAF7EE;">
+            <a href="/admin/personal" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/personal") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="User" Class="w-5 h-5" />
                 Personal
             </a>
-            <a href="/admin/reportes" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/reportes") ? "active" : "") style="color: #EAF7EE;">
+            <a href="/admin/reportes" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/reportes") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="FileText" Class="w-5 h-5" />
                 Reportes
             </a>
-            <a href="/admin/devoluciones" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/devoluciones") ? "active" : "") style="color: #EAF7EE;">
+            <a href="/admin/devoluciones" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/devoluciones") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="HelpCircle" Class="w-5 h-5" />
                 Devoluciones
             </a>
@@ -264,34 +278,4 @@
         </header>
 
         <!-- Main Body Content -->
-        <main class="flex-grow-1 p-3 p-md-4" style="max-width: 100%;">
-            @Body
-        </main>
-    </div>
-</div>
-
-<style>
-    /* Desktop aside custom scroll */
-    aside nav::-webkit-scrollbar {
-        width: 4px;
-    }
-    
-    /* Hover bg classes for dark green drawer */
-    .hover-bg-white-10:hover {
-        background-color: rgba(255, 255, 255, 0.08) !important;
-        color: #ffffff !important;
-    }
-    
-    .hover-bg-white-10.active {
-        background-color: rgba(255, 255, 255, 0.15) !important;
-        color: #ffffff !important;
-        font-weight: 600;
-    }
-
-    @@media (max-width: 991.98px) {
-        div.flex-grow-1 {
-            padding-left: 0px !important;
-        }
-    }
-</style>
-</RoleGate>
+        <main class="flex-gro
