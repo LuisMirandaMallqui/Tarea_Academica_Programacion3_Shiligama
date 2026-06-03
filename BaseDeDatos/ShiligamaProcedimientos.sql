@@ -1833,3 +1833,183 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
+-- =====================================================================
+-- MÓDULO PAGOS (Pasarela Izipay)
+-- =====================================================================
+DELIMITER $$
+
+-- DAO: PagoDaoImpl.insertar → "INSERTAR_PAGO"
+DROP PROCEDURE IF EXISTS INSERTAR_PAGO$$
+CREATE PROCEDURE INSERTAR_PAGO(
+    OUT _pago_id        INT,
+    IN  _pedido_id      INT,
+    IN  _metodo_pago_id INT,
+    IN  _monto          DECIMAL(10,2),
+    IN  _moneda         VARCHAR(3),
+    IN  _estado         VARCHAR(20),
+    IN  _referencia     VARCHAR(100),
+    IN  _order_id       VARCHAR(50)
+)
+BEGIN
+    INSERT INTO pago(PEDIDO_ID, METODO_PAGO_ID, MONTO, MONEDA, ESTADO,
+                     REFERENCIA, ORDER_ID, ACTIVO)
+    VALUES(_pedido_id, _metodo_pago_id, _monto, _moneda, _estado,
+           _referencia, _order_id, 1);
+    SET _pago_id = LAST_INSERT_ID();
+END$$
+
+-- DAO: PagoDaoImpl.modificar → "MODIFICAR_PAGO" (actualiza estado/referencia/fecha de confirmación)
+DROP PROCEDURE IF EXISTS MODIFICAR_PAGO$$
+CREATE PROCEDURE MODIFICAR_PAGO(
+    IN _pago_id    INT,
+    IN _estado     VARCHAR(20),
+    IN _referencia VARCHAR(100)
+)
+BEGIN
+    UPDATE pago
+    SET ESTADO     = _estado,
+        REFERENCIA = COALESCE(_referencia, REFERENCIA),
+        FECHA_PAGO = CASE WHEN _estado = 'AUTORIZADO' THEN NOW() ELSE FECHA_PAGO END
+    WHERE PAGO_ID = _pago_id;
+END$$
+
+-- Actualiza el pago localizándolo por el ORDER_ID enviado a la pasarela
+DROP PROCEDURE IF EXISTS MODIFICAR_PAGO_X_ORDER$$
+CREATE PROCEDURE MODIFICAR_PAGO_X_ORDER(
+    IN _order_id   VARCHAR(50),
+    IN _estado     VARCHAR(20),
+    IN _referencia VARCHAR(100)
+)
+BEGIN
+    UPDATE pago
+    SET ESTADO     = _estado,
+        REFERENCIA = COALESCE(_referencia, REFERENCIA),
+        FECHA_PAGO = CASE WHEN _estado = 'AUTORIZADO' THEN NOW() ELSE FECHA_PAGO END
+    WHERE ORDER_ID = _order_id;
+END$$
+
+-- DAO: PagoDaoImpl.eliminar → "ELIMINAR_PAGO" (borrado lógico)
+DROP PROCEDURE IF EXISTS ELIMINAR_PAGO$$
+CREATE PROCEDURE ELIMINAR_PAGO(
+    IN _pago_id INT
+)
+BEGIN
+    UPDATE pago SET ACTIVO = 0 WHERE PAGO_ID = _pago_id;
+END$$
+
+-- DAO: PagoDaoImpl.buscarPorID → "BUSCAR_PAGO_X_ID"
+DROP PROCEDURE IF EXISTS BUSCAR_PAGO_X_ID$$
+CREATE PROCEDURE BUSCAR_PAGO_X_ID(
+    IN _pago_id INT
+)
+BEGIN
+    SELECT PAGO_ID, PEDIDO_ID, METODO_PAGO_ID, MONTO, MONEDA, ESTADO,
+           REFERENCIA, ORDER_ID, FECHA_PAGO
+    FROM pago
+    WHERE PAGO_ID = _pago_id AND ACTIVO = 1;
+END$$
+
+-- DAO: PagoDaoImpl.buscarPorPedido → "BUSCAR_PAGO_X_PEDIDO"
+DROP PROCEDURE IF EXISTS BUSCAR_PAGO_X_PEDIDO$$
+CREATE PROCEDURE BUSCAR_PAGO_X_PEDIDO(
+    IN _pedido_id INT
+)
+BEGIN
+    SELECT PAGO_ID, PEDIDO_ID, METODO_PAGO_ID, MONTO, MONEDA, ESTADO,
+           REFERENCIA, ORDER_ID, FECHA_PAGO
+    FROM pago
+    WHERE PEDIDO_ID = _pedido_id AND ACTIVO = 1
+    ORDER BY PAGO_ID DESC;
+END$$
+
+-- DAO: PagoDaoImpl.buscarPorOrder → "BUSCAR_PAGO_X_ORDER"
+DROP PROCEDURE IF EXISTS BUSCAR_PAGO_X_ORDER$$
+CREATE PROCEDURE BUSCAR_PAGO_X_ORDER(
+    IN _order_id VARCHAR(50)
+)
+BEGIN
+    SELECT PAGO_ID, PEDIDO_ID, METODO_PAGO_ID, MONTO, MONEDA, ESTADO,
+           REFERENCIA, ORDER_ID, FECHA_PAGO
+    FROM pago
+    WHERE ORDER_ID = _order_id AND ACTIVO = 1
+    ORDER BY PAGO_ID DESC
+    LIMIT 1;
+END$$
+
+-- DAO: PagoDaoImpl.listarTodos → "LISTAR_PAGOS"
+DROP PROCEDURE IF EXISTS LISTAR_PAGOS$$
+CREATE PROCEDURE LISTAR_PAGOS()
+BEGIN
+    SELECT PAGO_ID, PEDIDO_ID, METODO_PAGO_ID, MONTO, MONEDA, ESTADO,
+           REFERENCIA, ORDER_ID, FECHA_PAGO
+    FROM pago
+    WHERE ACTIVO = 1
+    ORDER BY PAGO_ID DESC;
+END$$
+
+-- =====================================================================
+-- MÓDULO RECUPERACIÓN DE CONTRASEÑA
+-- =====================================================================
+
+-- Busca un usuario (cualquier rol) por correo. Devuelve datos mínimos
+-- para el flujo de recuperación. No expone la contraseña.
+DROP PROCEDURE IF EXISTS BUSCAR_USUARIO_X_CORREO$$
+CREATE PROCEDURE BUSCAR_USUARIO_X_CORREO(
+    IN _correo VARCHAR(100)
+)
+BEGIN
+    SELECT USUARIO_ID, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO
+    FROM usuario
+    WHERE CORREO = _correo AND ACTIVO = 1
+    LIMIT 1;
+END$$
+
+-- Actualiza únicamente la contraseña de un usuario.
+DROP PROCEDURE IF EXISTS ACTUALIZAR_CONTRASENA$$
+CREATE PROCEDURE ACTUALIZAR_CONTRASENA(
+    IN _usuario_id  INT,
+    IN _contrasena  VARCHAR(255)
+)
+BEGIN
+    UPDATE usuario SET CONTRASENA = _contrasena
+    WHERE USUARIO_ID = _usuario_id;
+END$$
+
+-- Inserta un token de recuperación de un solo uso.
+DROP PROCEDURE IF EXISTS INSERTAR_TOKEN_RECUPERACION$$
+CREATE PROCEDURE INSERTAR_TOKEN_RECUPERACION(
+    OUT _token_id    INT,
+    IN  _usuario_id  INT,
+    IN  _token       VARCHAR(100),
+    IN  _expiracion  DATETIME
+)
+BEGIN
+    INSERT INTO token_recuperacion(USUARIO_ID, TOKEN, EXPIRACION, USADO)
+    VALUES(_usuario_id, _token, _expiracion, 0);
+    SET _token_id = LAST_INSERT_ID();
+END$$
+
+-- Busca un token por su valor (para validarlo).
+DROP PROCEDURE IF EXISTS BUSCAR_TOKEN_RECUPERACION$$
+CREATE PROCEDURE BUSCAR_TOKEN_RECUPERACION(
+    IN _token VARCHAR(100)
+)
+BEGIN
+    SELECT TOKEN_ID, USUARIO_ID, TOKEN, EXPIRACION, USADO
+    FROM token_recuperacion
+    WHERE TOKEN = _token
+    LIMIT 1;
+END$$
+
+-- Marca un token como usado para que no pueda reutilizarse.
+DROP PROCEDURE IF EXISTS MARCAR_TOKEN_USADO$$
+CREATE PROCEDURE MARCAR_TOKEN_USADO(
+    IN _token_id INT
+)
+BEGIN
+    UPDATE token_recuperacion SET USADO = 1 WHERE TOKEN_ID = _token_id;
+END$$
+
+DELIMITER ;

@@ -7,27 +7,117 @@
     private string _search = "";
     private string _statusFilter = "";
 
-    protected override async Task OnInitializedAsync()
+    // Paginación
+    private int _pageSize = 8;
+    private int _currentPage = 1;
+
+    // Modales confirmación
+    private bool _showDeleteConfirm = false;
+    private bool _showDeletedToast  = false;
+    private bool _showEditConfirm   = false;
+    private bool _showEditedToast   = false;
+    private string? _pendingDeleteId;
+    private string? _pendingEditId;
+    private string? _pendingEditStatus;
+    private System.Threading.CancellationTokenSource? _undoCts;
+    private bool _undoAvailable = false;
+    private Order? _deletedOrderBackup;
+
+    protected override void OnInitialized()
     {
-        // recargar: true asegura datos frescos del API en cada visita
-        await SalesSvc.EnsureLoadedAsync(recargar: true);
         _orders = SalesSvc.GetRecentOrders();
     }
 
-    private IEnumerable<Order> Filtered => _orders.Where(o =>
-        (string.IsNullOrEmpty(_search) || o.Customer.Contains(_search, StringComparison.OrdinalIgnoreCase) || o.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_statusFilter) || o.Status.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
-    );
-
-    private void UpdateStatus(string id, string newStatus)
+    // Orden lógico de estados
+    private static readonly Dictionary<string,int> StatusOrder = new(StringComparer.OrdinalIgnoreCase)
     {
-        SalesSvc.UpdateOrderStatus(id, newStatus);
+        {"pendiente",0}, {"preparando",1}, {"en_camino",2}, {"entregado",3}, {"cancelado",4}
+    };
+
+    private IEnumerable<Order> Filtered => _orders
+        .Where(o =>
+            (string.IsNullOrEmpty(_search) ||
+             o.Customer.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+             o.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(_statusFilter) ||
+             o.Status.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
+        )
+        .OrderBy(o => StatusOrder.TryGetValue(o.Status, out var r) ? r : 99)
+        .ThenByDescending(o => o.Date);
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
+
+    private IEnumerable<Order> PagedOrders => Filtered
+        .Skip((_currentPage - 1) * _pageSize)
+        .Take(_pageSize);
+
+    private void OnSearchChanged(string v) { _search = v; _currentPage = 1; }
+    private void OnStatusChanged(string v) { _statusFilter = v; _currentPage = 1; }
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages) _currentPage = page;
+    }
+
+    // ── Eliminar con confirmación + toast + undo ──
+    private void AskDelete(string id)
+    {
+        _pendingDeleteId = id;
+        _showDeleteConfirm = true;
+    }
+    private void CancelDelete() { _showDeleteConfirm = false; _pendingDeleteId = null; }
+    private async Task ConfirmDelete()
+    {
+        if (_pendingDeleteId == null) return;
+        _deletedOrderBackup = _orders.FirstOrDefault(o => o.Id == _pendingDeleteId);
+        SalesSvc.DeleteOrder(_pendingDeleteId);
+        _showDeleteConfirm = false;
+        _pendingDeleteId = null;
+        _showDeletedToast = true;
+        _undoAvailable = true;
+        StateHasChanged();
+        _undoCts?.Cancel();
+        _undoCts = new System.Threading.CancellationTokenSource();
+        try
+        {
+            await Task.Delay(5000, _undoCts.Token);
+            _showDeletedToast = false;
+            _undoAvailable = false;
+            StateHasChanged();
+        }
+        catch (TaskCanceledException) { }
+    }
+    private void UndoDelete()
+    {
+        if (_deletedOrderBackup != null)
+        {
+            _orders.Insert(0, _deletedOrderBackup);
+            _deletedOrderBackup = null;
+        }
+        _undoCts?.Cancel();
+        _showDeletedToast = false;
+        _undoAvailable = false;
         StateHasChanged();
     }
 
-    private void Delete(string id)
+    // ── Cambio de estado con confirmación + toast ──
+    private void AskStatusChange(string id, string newStatus)
     {
-        SalesSvc.DeleteOrder(id);
+        _pendingEditId = id;
+        _pendingEditStatus = newStatus;
+        _showEditConfirm = true;
+    }
+    private void CancelEdit() { _showEditConfirm = false; _pendingEditId = null; _pendingEditStatus = null; }
+    private async Task ConfirmEdit()
+    {
+        if (_pendingEditId == null || _pendingEditStatus == null) return;
+        SalesSvc.UpdateOrderStatus(_pendingEditId, _pendingEditStatus);
+        _showEditConfirm = false;
+        _pendingEditId = null;
+        _pendingEditStatus = null;
+        _showEditedToast = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        _showEditedToast = false;
         StateHasChanged();
     }
 
@@ -36,19 +126,29 @@
         "entregado" => "bg-success-subtle text-success",
         "en_camino" => "bg-primary-subtle text-primary",
         "preparando" => "bg-warning-subtle text-warning",
-        "pendiente" => "bg-secondary text-muted-foreground",
-        "cancelado" => "bg-danger-subtle text-danger",
+        "pendiente"  => "bg-secondary text-muted-foreground",
+        "cancelado"  => "bg-danger-subtle text-danger",
         _ => "bg-light text-dark"
     };
 
     private string GetStatusLabel(string status) => status.ToLower() switch
     {
-        "entregado" => "Entregado",
-        "en_camino" => "En Camino",
+        "entregado"  => "Entregado",
+        "en_camino"  => "En Camino",
         "preparando" => "Preparando",
-        "pendiente" => "Pendiente",
-        "cancelado" => "Cancelado",
+        "pendiente"  => "Pendiente",
+        "cancelado"  => "Cancelado",
         _ => status
+    };
+
+    private string GetPendingStatusLabel(string? s) => s?.ToLower() switch
+    {
+        "pendiente"  => "Pendiente",
+        "preparando" => "Preparando",
+        "en_camino"  => "En Camino",
+        "entregado"  => "Entregado",
+        "cancelado"  => "Cancelado",
+        _ => s ?? ""
     };
 }
 
@@ -57,42 +157,27 @@
 <div class="d-flex flex-column gap-4">
     <!-- Header -->
     <div>
-        <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Pedidos</h1>
-        <p class="text-muted-foreground small mt-1 mb-0">Monitorea y despacha pedidos realizados por clientes</p>
+        <h1 class="page-title mb-0">Gestión de Pedidos</h1>
+        <p class="page-subtitle">Monitorea y despacha pedidos realizados por clientes</p>
     </div>
 
-
-    <!-- Banner de diagnóstico: solo visible si el API falla -->
-    @if (SalesSvc.UltimoErrorPedidos != null)
-    {
-        <div class="alert alert-danger small py-2" role="alert">
-            <strong>Error cargando pedidos del API:</strong> @SalesSvc.UltimoErrorPedidos
-        </div>
-    }
-    else if (!_orders.Any())
-    {
-        <div class="alert alert-warning small py-2" role="alert">
-            El API respondió OK pero devolvió 0 pedidos. Verifica que el SP <code>LISTAR_PEDIDOS</code> esté creado en la BD.
-        </div>
-    }
-
     <!-- Filters -->
-    <div class="card border rounded-4 mb-4 d-flex align-items-center"
-         style="min-height: 72px; padding: 0 18px;">
-
+    <div class="card border rounded-4 mb-0 d-flex align-items-center" style="min-height:72px; padding:0 18px;">
         <div class="row g-3 align-items-center w-100">
-
-            <div class="col-md-8" style="transform: translateY(-11px);">
+            <div class="col-md-8" style="transform:translateY(-11px);">
                 <div class="position-relative">
                     <Icons Name="Search" Class="admin-search-icon position-absolute top-50 translate-middle-y mt-2 pt-1 text-muted-foreground" style="left:14px;width:16px;height:16px;" />
-                    <input type="search" @bind="_search" @bind:event="oninput" class="form-control text-foreground" placeholder="Buscar por cliente o código de pedido..." style="height: 44px; padding-left: 40px;" />
+                    <input type="search" value="@_search"
+                           @oninput="@(e => OnSearchChanged(e.Value?.ToString() ?? ""))"
+                           class="form-control text-foreground"
+                           placeholder="Buscar por cliente o código de pedido..."
+                           style="height:44px; padding-left:40px;" />
                 </div>
             </div>
-
             <div class="col-md-4">
-                <select @bind="_statusFilter"
-                        class="form-select text-foreground"
-                        style="height: 44px;">
+                <select value="@_statusFilter"
+                        @onchange="@(e => OnStatusChanged(e.Value?.ToString() ?? ""))"
+                        class="form-select text-foreground" style="height:44px;">
                     <option value="">Todos los estados</option>
                     <option value="pendiente">Pendiente</option>
                     <option value="preparando">Preparando</option>
@@ -101,160 +186,215 @@
                     <option value="cancelado">Cancelado</option>
                 </select>
             </div>
-
         </div>
     </div>
 
-    <!-- Grid List -->
-    <div class="card overflow-hidden">
-        <div class="table-responsive">
+    <!-- Table -->
+    <div class="card" style="overflow:visible;">
+        <div class="table-responsive" style="overflow:visible;">
             <table class="table table-borderless mb-0">
                 <thead class="border-bottom border-color-default">
                     <tr>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">
-                            Código
-                        </th>
-
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">
-                            Cliente
-                        </th>
-
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">
-                            Fecha
-                        </th>
-
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">
-                            Items
-                        </th>
-
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">
-                            Total
-                        </th>
-
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">
-                            Estado
-                        </th>
-
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">
-                            Acciones
-                        </th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Código</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Cliente</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Fecha</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Items</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Total</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Estado</th>
+                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
                     </tr>
                 </thead>
-
                 <tbody>
-                    @foreach (var order in Filtered)
+                    @foreach (var order in PagedOrders)
                     {
                         <tr class="border-bottom border-color-default align-middle">
-                            <td class="px-4 py-3 fw-bold text-primary small">
-                                @order.Id
-                            </td>
-
+                            <td class="px-4 py-3 fw-bold text-primary small">@order.Id</td>
                             <td class="px-4 py-3">
-                                <span class="fw-medium text-foreground small d-block">
-                                    @order.Customer
-                                </span>
-
-                                <span class="text-xs text-muted-foreground">
-                                    Vía @order.Channel
-                                </span>
+                                <span class="fw-medium text-foreground small d-block">@order.Customer</span>
+                                <span class="text-xs text-muted-foreground">Vía @order.Channel</span>
                             </td>
-
                             <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">
                                 @order.Date.ToString("dd/MM/yyyy HH:mm")
                             </td>
-
-                            <td class="px-4 py-3 text-foreground small d-none d-md-table-cell">
-                                @order.Items items
-                            </td>
-
-                            <td class="px-4 py-3 fw-semibold text-foreground small">
-                                S/. @order.Total.ToString("0.00")
-                            </td>
-
+                            <td class="px-4 py-3 text-foreground small d-none d-md-table-cell">@order.Items items</td>
+                            <td class="px-4 py-3 fw-semibold text-foreground small">S/. @order.Total.ToString("0.00")</td>
                             <td class="px-4 py-3">
-                                <span class="badge @(GetStatusClass(order.Status)) py-1 px-2" style="border-radius:var(--radius); font-size:.8rem;">
+                                <span class="badge @(GetStatusClass(order.Status)) py-1 px-2" style="border-radius:var(--radius);font-size:.8rem;">
                                     @GetStatusLabel(order.Status)
                                 </span>
                             </td>
-
                             <td class="px-4 py-3 text-end">
-                                <div class="dropdown d-inline-block">
-                                    <button class="btn btn-ghost btn-sm text-muted-foreground"
-                                            type="button"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false"
-                                            style="border-radius:var(--radius);">
-                                        <i class="fa-solid fa-gear"></i>
+                                <div class="d-flex align-items-center justify-content-end gap-1">
+                                    <!-- Engranaje: cambio de estado -->
+                                    <div class="dropdown d-inline-block">
+                                        <button class="btn btn-ghost btn-sm text-muted-foreground"
+                                                type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                                style="border-radius:var(--radius);" title="Cambiar estado">
+                                            <i class="fa-solid fa-gear"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border p-1" style="border-radius:var(--radius);">
+                                            <li><h6 class="dropdown-header small">Cambiar estado</h6></li>
+                                            <li>
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "pendiente"))"
+                                                        class="dropdown-item py-1 small rounded">
+                                                    <i class="fa-solid fa-clock me-2 text-secondary"></i>Marcar Pendiente
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "preparando"))"
+                                                        class="dropdown-item py-1 small rounded">
+                                                    <i class="fa-solid fa-box-open me-2 text-warning"></i>Marcar Preparando
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "en_camino"))"
+                                                        class="dropdown-item py-1 small rounded">
+                                                    <i class="fa-solid fa-truck me-2 text-primary"></i>Marcar En Camino
+                                                </button>
+                                            </li>
+                                            <li>
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "entregado"))"
+                                                        class="dropdown-item py-1 small rounded text-success">
+                                                    <i class="fa-solid fa-circle-check me-2"></i>Marcar Entregado
+                                                </button>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "cancelado"))"
+                                                        class="dropdown-item py-1 small rounded text-danger">
+                                                    <i class="fa-solid fa-ban me-2"></i>Marcar Cancelado
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <!-- Basurero rojo aparte -->
+                                    <button type="button" @onclick="@(() => AskDelete(order.Id))"
+                                            class="btn btn-ghost btn-sm text-danger"
+                                            style="border-radius:var(--radius);" title="Eliminar registro">
+                                        <i class="fa-solid fa-trash"></i>
                                     </button>
-
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border p-1" style="border-radius:var(--radius);">
-                                        <li>
-                                            <button type="button"
-                                                    @onclick="@(() => UpdateStatus(order.Id, "pendiente"))"
-                                                    class="dropdown-item py-1 small rounded">
-                                                Marcar Pendiente
-                                            </button>
-                                        </li>
-
-                                        <li>
-                                            <button type="button"
-                                                    @onclick="@(() => UpdateStatus(order.Id, "preparando"))"
-                                                    class="dropdown-item py-1 small rounded">
-                                                Preparando
-                                            </button>
-                                        </li>
-
-                                        <li>
-                                            <button type="button"
-                                                    @onclick="@(() => UpdateStatus(order.Id, "en_camino"))"
-                                                    class="dropdown-item py-1 small rounded">
-                                                En Camino
-                                            </button>
-                                        </li>
-
-                                        <li>
-                                            <button type="button"
-                                                    @onclick="@(() => UpdateStatus(order.Id, "entregado"))"
-                                                    class="dropdown-item py-1 small rounded text-success">
-                                                Entregado
-                                            </button>
-                                        </li>
-
-                                        <li>
-                                            <hr class="dropdown-divider">
-                                        </li>
-
-                                        <li>
-                                            <button type="button"
-                                                    @onclick="@(() => UpdateStatus(order.Id, "cancelado"))"
-                                                    class="dropdown-item py-1 small rounded text-danger">
-                                                Cancelar Pedido
-                                            </button>
-                                        </li>
-
-                                        <li>
-                                            <button type="button"
-                                                    @onclick="@(() => Delete(order.Id))"
-                                                    class="dropdown-item py-1 small rounded text-danger bg-danger bg-opacity-10">
-                                                Eliminar Registro
-                                            </button>
-                                        </li>
-                                    </ul>
                                 </div>
                             </td>
                         </tr>
                     }
-
-                    @if (!Filtered.Any())
+                    @if (!PagedOrders.Any())
                     {
                         <tr>
-                            <td colspan="7" class="text-center py-5 text-muted-foreground">
-                                No se encontraron pedidos
-                            </td>
+                            <td colspan="7" class="text-center py-5 text-muted-foreground">No se encontraron pedidos</td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
     </div>
+
+    <!-- Paginación -->
+    @if (TotalPages > 1)
+    {
+        <div class="d-flex justify-content-center align-items-center gap-2 py-2">
+            <button class="btn btn-sm rounded-circle pag-btn" @onclick="@(() => GoToPage(_currentPage - 1))" disabled="@(_currentPage == 1)" style="width:36px;height:36px;">
+                <i class="fa-solid fa-chevron-left" style="font-size:.75rem;"></i>
+            </button>
+            @for (int p = 1; p <= TotalPages; p++)
+            {
+                var pg = p;
+                <button class="btn btn-sm rounded-circle pag-btn @(pg == _currentPage ? "pag-active" : "")"
+                        @onclick="@(() => GoToPage(pg))"
+                        style="width:36px;height:36px;font-size:.85rem;font-weight:600;">
+                    @pg
+                </button>
+            }
+            <button class="btn btn-sm rounded-circle pag-btn" @onclick="@(() => GoToPage(_currentPage + 1))" disabled="@(_currentPage == TotalPages)" style="width:36px;height:36px;">
+                <i class="fa-solid fa-chevron-right" style="font-size:.75rem;"></i>
+            </button>
+        </div>
+    }
 </div>
+
+<!-- ── Modal: Confirmar Eliminar ── -->
+@if (_showDeleteConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">🗑️</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Eliminar registro?</h5>
+                    <p class="text-muted-foreground small mb-4">Esta acción eliminará el pedido <strong>@_pendingDeleteId</strong>. Podrás deshacer durante 5 segundos.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="CancelDelete">Cancelar</button>
+                        <button type="button" class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ConfirmDelete">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Modal: Confirmar Cambio de Estado ── -->
+@if (_showEditConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">⚙️</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Cambiar estado?</h5>
+                    <p class="text-muted-foreground small mb-4">El pedido <strong>@_pendingEditId</strong> pasará a <strong>@GetPendingStatusLabel(_pendingEditStatus)</strong>.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="CancelEdit">Cancelar</button>
+                        <button type="button" class="btn btn-primary" style="border-radius:var(--radius);" @onclick="ConfirmEdit">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Toast: Eliminado ── -->
+@if (_showDeletedToast)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+        <div class="toast show align-items-center text-white border-0" style="background:#1A6B3C;border-radius:var(--radius);min-width:280px;">
+            <div class="d-flex align-items-center gap-2 px-3 py-2">
+                <i class="fa-solid fa-circle-check"></i>
+                <span class="small flex-grow-1">Pedido eliminado</span>
+                @if (_undoAvailable)
+                {
+                    <button type="button" class="btn btn-sm btn-link text-white p-0 text-decoration-underline" @onclick="UndoDelete">Deshacer</button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Toast: Estado actualizado ── -->
+@if (_showEditedToast)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+        <div class="toast show align-items-center text-white border-0" style="background:#1A6B3C;border-radius:var(--radius);min-width:280px;">
+            <div class="d-flex align-items-center gap-2 px-3 py-2">
+                <i class="fa-solid fa-circle-check"></i>
+                <span class="small">Estado actualizado correctamente</span>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .pag-btn {
+        background: var(--card);
+        border: 1px solid var(--border);
+        color: var(--foreground);
+        transition: all .15s;
+    }
+    .pag-btn:hover:not(:disabled) {
+        background: var(--secondary);
+    }
+    .pag-btn:disabled { opacity: .4; }
+    .pag-active {
+        background: #1A6B3C !important;
+        color: #fff !important;
+        border-color: #1A6B3C !important;
+    }
+</style>

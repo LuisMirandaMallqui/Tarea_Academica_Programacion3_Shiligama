@@ -1,0 +1,78 @@
+@page "/checkout/resultado"
+@layout MainLayout
+@inject PagoService PagoSvc
+
+@code {
+    // Izipay redirige aquí al terminar. Si conocemos el id de pedido
+    // (?pedido=12) consultamos el estado real del pago; si no, mostramos
+    // un mensaje genérico (la confirmación definitiva la hace el callback IPN).
+    [SupplyParameterFromQuery(Name = "pedido")]
+    public int Pedido { get; set; }
+
+    private bool _cargando = true;
+    private string? _estado;   // AUTORIZADO | RECHAZADO | PENDIENTE | null
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (Pedido > 0)
+            {
+                var info = await PagoSvc.ConsultarPorPedidoAsync(Pedido);
+                _estado = info?.Estado;
+            }
+            _cargando = false;
+            StateHasChanged();
+        }
+    }
+}
+
+<PageTitle>Resultado del pago – Shiligama</PageTitle>
+
+<div class="container py-5 text-center" style="max-width:480px;">
+    @if (_cargando)
+    {
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <p class="text-muted-foreground">Verificando el estado de tu pago...</p>
+    }
+    else if (_estado == "AUTORIZADO")
+    {
+        <div class="d-flex align-items-center justify-content-center rounded-circle bg-success mx-auto mb-4"
+             style="width:80px;height:80px;">
+            <Icons Name="Check" Class="text-white" style="width:40px;height:40px;" />
+        </div>
+        <h2 class="fs-3 fw-bold text-foreground mb-2">¡Pago confirmado!</h2>
+        <p class="text-muted-foreground mb-1">Tu pedido <strong class="text-primary">#@Pedido</strong> fue pagado correctamente.</p>
+        <p class="text-muted-foreground small">Ya estamos preparando tu pedido.</p>
+    }
+    else if (_estado == "RECHAZADO" || _estado == "CANCELADO")
+    {
+        <div class="d-flex align-items-center justify-content-center rounded-circle bg-danger mx-auto mb-4"
+             style="width:80px;height:80px;">
+            <Icons Name="AlertCircle" Class="text-white" style="width:40px;height:40px;" />
+        </div>
+        <h2 class="fs-3 fw-bold text-foreground mb-2">El pago no se completó</h2>
+        <p class="text-muted-foreground mb-1">Tu pedido quedó registrado, pero el pago fue @(_estado!.ToLower()).</p>
+        <p class="text-muted-foreground small">Puedes reintentar el pago desde "Mis pedidos".</p>
+    }
+    else
+    {
+        <div class="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-4"
+             style="width:80px;height:80px;background:color-mix(in srgb,var(--primary) 15%,transparent);">
+            <Icons Name="AlertCircle" Class="text-primary" style="width:40px;height:40px;" />
+        </div>
+        <h2 class="fs-3 fw-bold text-foreground mb-2">Estamos confirmando tu pago</h2>
+        <p class="text-muted-foreground small">
+            En cuanto Izipay confirme la operación, tu pedido se actualizará automáticamente.
+            Puedes revisar el estado en "Mis pedidos".
+        </p>
+    }
+
+    @if (!_cargando)
+    {
+        <div class="d-flex gap-2 justify-content-center mt-4">
+            <a href="/mis-pedidos" class="btn btn-primary px-4" style="border-radius:var(--radius);">Mis pedidos</a>
+            <a href="/catalogo" class="btn btn-outline-secondary px-4" style="border-radius:var(--radius);">Seguir comprando</a>
+        </div>
+    }
+</div>

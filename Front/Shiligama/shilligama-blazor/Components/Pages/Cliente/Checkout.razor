@@ -3,6 +3,7 @@
 @inject CartService Cart
 @inject SalesService SalesSvc
 @inject AuthService Auth
+@inject PagoService PagoSvc
 @inject NavigationManager Navigation
 
 @code {
@@ -30,6 +31,20 @@
     private bool   _isLoading = false;
     private bool   _success   = false;
     private string _orderId   = "";
+    private string? _payError;
+
+    // El pedido para delivery requiere dirección.
+    private bool CanPlaceOrder =>
+        _deliveryMethod != "delivery" || !string.IsNullOrWhiteSpace(_address);
+
+    // Extrae el id numérico del pedido del código "PED-0012".
+    private int ParsePedidoId(string orderId)
+    {
+        if (!string.IsNullOrEmpty(orderId) && orderId.StartsWith("PED-")
+            && int.TryParse(orderId[4..], out var id))
+            return id;
+        return 0;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -85,9 +100,10 @@
 
     private async Task PlaceOrder()
     {
+        _payError = null;
         _isLoading = true;
 
-        // Llamada real al API — espera la respuesta y obtiene el ID de la BD
+        // 1) Registrar el pedido en el backend (devuelve "PED-0012").
         _orderId = await SalesSvc.PlaceOnlineOrderAsync(
             _name,
             Cart.GetCartItems().ToList(),
@@ -95,6 +111,32 @@
             _payMethod, _deliveryMethod, _address,
             Auth.CurrentUser?.Id ?? 0);
 
+        // 2) Pago con tarjeta → pasarela Izipay (modo redirección).
+        if (_payMethod == "tarjeta")
+        {
+            int idPedido = ParsePedidoId(_orderId);
+            if (idPedido > 0)
+            {
+                var resp = await PagoSvc.IniciarPagoAsync(idPedido, Auth.CurrentUser?.Email ?? "");
+                if (resp != null && resp.Exito && !string.IsNullOrEmpty(resp.RedirectionUrl))
+                {
+                    await Cart.ClearCartAsync();
+                    // Redirige a la página segura de Izipay.
+                    Navigation.NavigateTo(resp.RedirectionUrl!, forceLoad: true);
+                    return;
+                }
+                _payError = resp?.Mensaje
+                    ?? "No se pudo iniciar el pago con Izipay. Tu pedido quedó registrado; intenta pagar nuevamente desde 'Mis pedidos'.";
+            }
+            else
+            {
+                _payError = "No se pudo registrar el pedido. Verifica tu conexión e intenta de nuevo.";
+            }
+            _isLoading = false;
+            return;
+        }
+
+        // 3) Yape / Efectivo → confirmación directa (pago manual / contra entrega).
         await Cart.ClearCartAsync();
         _success   = true;
         _isLoading = false;
@@ -286,11 +328,11 @@ else
                         <div class="d-flex flex-column gap-3">
                             <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-border">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-2 d-flex align-items-center justify-content-center"
-                                         style="width:32px;height:32px;background:#009EE3;">
-                                        <span class="text-white fw-bold small">MP</span>
+                                    <div class="rounded-2 d-flex align-items-center justify-content-center px-2"
+                                         style="height:32px;background:#ee3a3a;">
+                                        <span class="text-white fw-bold small">izipay</span>
                                     </div>
-                                    <span class="text-muted-foreground small">Procesado por Mercado Pago</span>
+                                    <span class="text-muted-foreground small">Procesado de forma segura por Izipay</span>
                                 </div>
                                 <div class="d-flex gap-1">
                                     <div class="border rounded d-flex align-items-center justify-content-center"
@@ -306,59 +348,28 @@ else
                                     </div>
                                 </div>
                             </div>
-                            <div>
-                                <label class="form-label small fw-medium">Número de tarjeta</label>
-                                <div class="input-group checkout-input-group">
-                                    <span class="input-group-text">
-                                        <Icons Name="CreditCard" style="width:16px;height:16px;" />
-                                    </span>
-                                    <input type="text" class="form-control font-monospace"
-                                           placeholder="1234 5678 9012 3456"
-                                           maxlength="19" value="@_cardNumber" @oninput="OnCardNumberInput" />
+
+                            <div class="text-center p-4 rounded-3" style="background:var(--secondary);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3"
+                                     style="width:56px;height:56px;background:color-mix(in srgb,var(--primary) 15%,transparent);">
+                                    <Icons Name="CreditCard" Class="text-primary" style="width:26px;height:26px;" />
                                 </div>
+                                <p class="fw-semibold text-foreground mb-1">Pago con tarjeta vía Izipay</p>
+                                <p class="text-muted-foreground small mb-0">
+                                    Al continuar te llevaremos a la pasarela segura de Izipay para ingresar
+                                    los datos de tu tarjeta (Visa, Mastercard, Amex o Diners). Al terminar,
+                                    volverás automáticamente a la tienda.
+                                </p>
                             </div>
-                            <div>
-                                <label class="form-label small fw-medium">Nombre del titular</label>
-                                <div class="input-group checkout-input-group">
-                                    <span class="input-group-text">
-                                        <Icons Name="User" style="width:16px;height:16px;" />
-                                    </span>
-                                    <input type="text" class="form-control text-uppercase"
-                                           placeholder="COMO APARECE EN LA TARJETA"
-                                           @bind="_cardName" />
-                                </div>
-                            </div>
-                            <div class="row g-3">
-                                <div class="col-6">
-                                    <label class="form-label small fw-medium">Vencimiento</label>
-                                    <div class="input-group checkout-input-group">
-                                        <span class="input-group-text">
-                                            <Icons Name="Calendar" style="width:16px;height:16px;" />
-                                        </span>
-                                        <input type="text" class="form-control font-monospace"
-                                               placeholder="MM/AA" maxlength="5"
-                                               value="@_cardExpiry" @oninput="OnCardExpiryInput" />
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label small fw-medium">CVV</label>
-                                    <div class="input-group checkout-input-group">
-                                        <span class="input-group-text">
-                                            <Icons Name="Lock" style="width:16px;height:16px;" />
-                                        </span>
-                                        <input type="password" class="form-control font-monospace"
-                                               placeholder="•••" maxlength="4" @bind="_cardCvv" />
-                                    </div>
-                                </div>
-                            </div>
+
                             <div class="d-flex gap-2 p-3 rounded-3 border"
                                  style="background:color-mix(in srgb,var(--primary) 8%,transparent);
                                         border-color:color-mix(in srgb,var(--primary) 30%,transparent)!important;">
                                 <Icons Name="Lock" Class="text-primary flex-shrink-0"
                                        style="width:14px;height:14px;margin-top:2px;" />
                                 <p class="text-muted-foreground mb-0 small">
-                                    Tu información de pago está encriptada y segura.
-                                    Nunca almacenamos los datos de tu tarjeta.
+                                    Por tu seguridad, los datos de tu tarjeta se ingresan directamente en
+                                    Izipay. Shiligama nunca los recibe ni almacena (cumplimiento PCI-DSS).
                                 </p>
                             </div>
                         </div>
@@ -560,19 +571,30 @@ else
                         </div>
                     }
 
-                    <button class="btn btn-primary w-100 fw-semibold mt-4 d-flex align-items-center justify-content-center gap-2"
+                    @if (!string.IsNullOrEmpty(_payError))
+                    {
+                        <div class="alert alert-danger small mt-3 mb-0">@_payError</div>
+                    }
+                    @if (_deliveryMethod == "delivery" && string.IsNullOrWhiteSpace(_address))
+                    {
+                        <p class="text-muted-foreground small mt-3 mb-0 d-flex align-items-center gap-1">
+                            <Icons Name="MapPin" style="width:13px;height:13px;" />
+                            Ingresa tu dirección de entrega para continuar.
+                        </p>
+                    }
+                    <button class="btn btn-primary w-100 fw-semibold mt-3 d-flex align-items-center justify-content-center gap-2"
                             style="height:52px;border-radius:var(--radius);"
-                            disabled="@_isLoading"
+                            disabled="@(_isLoading || !CanPlaceOrder)"
                             @onclick="PlaceOrder">
                         @if (_isLoading)
                         {
                             <span class="spinner-border spinner-border-sm"></span>
-                            <span>Procesando pago...</span>
+                            <span>Procesando...</span>
                         }
                         else
                         {
                             <Icons Name="ShieldCheck" style="width:18px;height:18px;" />
-                            <span>Pagar S/. @Total.ToString("0.00")</span>
+                            <span>@(_payMethod == "tarjeta" ? "Continuar a Izipay" : $"Pagar S/. {Total:0.00}")</span>
                         }
                     </button>
                 </div>

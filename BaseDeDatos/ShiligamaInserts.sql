@@ -12,7 +12,8 @@ INSERT INTO metodo_pago(NOMBRE, DESCRIPCION) VALUES
 ('Efectivo', 'Pago en efectivo en tienda'),
 ('Yape', 'Pago mediante aplicación Yape'),
 ('Plin', 'Pago mediante aplicación Plin'),
-('Tarjeta de débito', 'Pago con tarjeta de débito');
+('Tarjeta de débito', 'Pago con tarjeta de débito'),
+('IZIPAY', 'Pago con tarjeta vía pasarela externa Izipay (modo pruebas)');
 
 -- Categorías raíz
 INSERT INTO categoria(NOMBRE, DESCRIPCION) VALUES

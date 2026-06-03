@@ -436,3 +436,71 @@ CREATE TABLE IF NOT EXISTS `notificacion` (
         ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
   COMMENT = 'Notificaciones del sistema (alertas de stock, nuevos pedidos, etc.)';
+
+-- =====================================================================
+-- MÓDULO PAGOS (Pasarela Izipay) y RECUPERACIÓN DE CONTRASEÑA
+-- Añadido para: pasarela de pago externa (RF008) y recuperación de
+-- contraseña por correo (asociado al RF015 - cuentas de cliente).
+-- =====================================================================
+
+-- -----------------------------------------------------
+-- Tabla Pago
+-- Registra cada transacción de pago asociada a un pedido del portal web.
+-- Por cumplimiento (PCI-DSS) NO se almacenan datos sensibles de tarjeta;
+-- solo el estado, monto, método y la referencia/transacción del proveedor.
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`pago` ;
+CREATE TABLE IF NOT EXISTS `pago` (
+    -- Primary Key
+    `PAGO_ID`                INT            NOT NULL AUTO_INCREMENT,
+    -- Atributos
+    `PEDIDO_ID`              INT            NOT NULL,
+    `METODO_PAGO_ID`         INT            NOT NULL,
+    `MONTO`                  DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
+    `MONEDA`                 VARCHAR(3)     NOT NULL DEFAULT 'PEN',
+    `ESTADO`                 ENUM('PENDIENTE','AUTORIZADO','RECHAZADO','CANCELADO')
+                             NOT NULL DEFAULT 'PENDIENTE',
+    `REFERENCIA`             VARCHAR(100)   NULL DEFAULT NULL COMMENT 'ID de transacción del proveedor (vads_trans_id)',
+    `ORDER_ID`               VARCHAR(50)    NULL DEFAULT NULL COMMENT 'Identificador de orden enviado a la pasarela (vads_order_id)',
+    `FECHA_PAGO`             DATETIME       NULL DEFAULT NULL COMMENT 'Momento en que la pasarela confirmó el pago',
+    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
+    PRIMARY KEY (`PAGO_ID`),
+    -- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó',
+    INDEX `fk_pago_pedido_idx` (`PEDIDO_ID`),
+    INDEX `fk_pago_metodo_pago_idx` (`METODO_PAGO_ID`),
+    INDEX `idx_pago_order` (`ORDER_ID`),
+    CONSTRAINT `fk_pago_pedido`
+        FOREIGN KEY (`PEDIDO_ID`) REFERENCES `pedido` (`PEDIDO_ID`)
+        ON UPDATE CASCADE,
+    CONSTRAINT `fk_pago_metodo_pago`
+        FOREIGN KEY (`METODO_PAGO_ID`) REFERENCES `metodo_pago` (`METODO_PAGO_ID`)
+        ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Transacciones de pago de los pedidos (integración con pasarela Izipay).';
+
+-- -----------------------------------------------------
+-- Tabla Token_Recuperacion
+-- Tokens de un solo uso para el flujo de recuperación de contraseña.
+-- El token viaja por correo; expira y se invalida tras su uso.
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`token_recuperacion` ;
+CREATE TABLE IF NOT EXISTS `token_recuperacion` (
+    `TOKEN_ID`               INT            NOT NULL AUTO_INCREMENT,
+    `USUARIO_ID`             INT            NOT NULL,
+    `TOKEN`                  VARCHAR(100)   NOT NULL,
+    `EXPIRACION`             DATETIME       NOT NULL,
+    `USADO`                  TINYINT        NOT NULL DEFAULT 0,
+    `FECHA_CREACION`         DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`TOKEN_ID`),
+    UNIQUE INDEX `uq_token` (`TOKEN`),
+    INDEX `fk_token_usuario_idx` (`USUARIO_ID`),
+    CONSTRAINT `fk_token_usuario`
+        FOREIGN KEY (`USUARIO_ID`) REFERENCES `usuario` (`USUARIO_ID`)
+        ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Tokens de un solo uso para recuperación de contraseña.';

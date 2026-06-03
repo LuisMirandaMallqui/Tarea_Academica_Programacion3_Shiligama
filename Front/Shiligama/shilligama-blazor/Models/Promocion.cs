@@ -14,6 +14,10 @@ public class Promocion
     public string? Condiciones    { get; set; }
     public bool    Activo         { get; set; } = true;
 
+    // IDs de productos vinculados (tabla promocion_producto). Se gestiona en el
+    // cliente; la persistencia se hace vía PromocionService.Asociar/Desasociar.
+    public System.Collections.Generic.List<int> ProductoIds { get; set; } = new();
+
     // Computed: true si hoy está dentro del rango de fechas
     public bool EsVigente => Activo
         && DateTime.Today >= FechaInicio.Date
