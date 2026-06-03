@@ -109,3 +109,4 @@ config.local.xml
 # Archivos de contraseña de Git
 .git-credentials
 *.properties
+Back/Shiligama/Business/src/main/resources/shiligama-config.properties
