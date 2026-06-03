@@ -3,6 +3,7 @@
 
 @code {
     [Parameter] public EventCallback OnRegisterClick { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
 
     private bool _showPassword = false;
     private string _email = "";
@@ -20,13 +21,21 @@
         bool ok = await Auth.LoginAsync(_email, _password);
         if (ok)
         {
-            var redirect = Auth.CurrentUser?.Role switch
+            var safeReturn = GetSafeReturnUrl();
+            if (safeReturn is not null && Auth.IsCliente())
             {
-                "administrador" => "/admin",
-                "trabajador"    => "/trabajador",
-                _               => "/catalogo"
-            };
-            Navigation.NavigateTo(redirect);
+                Navigation.NavigateTo(safeReturn);
+            }
+            else
+            {
+                var redirect = Auth.CurrentUser?.Role switch
+                {
+                    "administrador" => "/admin",
+                    "trabajador"    => "/trabajador",
+                    _               => "/catalogo"
+                };
+                Navigation.NavigateTo(redirect);
+            }
         }
         else
         {
@@ -35,6 +44,13 @@
                      : Auth.LastError;
             _isLoading = false;
         }
+    }
+
+    private string? GetSafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl)) return null;
+        if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//")) return null;
+        return ReturnUrl;
     }
 }
 

@@ -1,18 +1,10 @@
 @inherits LayoutComponentBase
 @inject AuthService Auth
 @inject NavigationManager Navigation
-@inject NotificacionService NotifSvc
 
 @code {
     private bool _isMobileSidebarOpen = false;
-    private int _unreadCount = 0;
 
-    protected override async Task OnInitializedAsync()
-    {
-        // Contar notificaciones no leídas para el badge
-        var notifs = await NotifSvc.GetAllAsync();
-        _unreadCount = notifs.Count(n => !n.Leida);
-    }
 
     private void ToggleMobileSidebar()
     {
@@ -39,8 +31,9 @@
     }
 }
 
+<RoleGate RequiredRole="administrador">
 <div class="d-flex flex-column min-vh-100 bg-background text-foreground">
-    
+
     <!-- Mobile Menu Toggle Button (Floating) -->
     <button type="button" @onclick="ToggleMobileSidebar" class="btn btn-primary d-lg-none position-fixed top-3 start-3 z-3 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px; left: 15px; top: 10px; border-radius: var(--radius); background-color: var(--sidebar); border-color: var(--sidebar);">
         <Icons Name="Menu" Class="w-5 h-5 text-white" />
@@ -99,10 +92,6 @@
             <a href="/admin/devoluciones" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/devoluciones") ? "active" : "") style="color: #EAF7EE;">
                 <Icons Name="HelpCircle" Class="w-5 h-5" />
                 Devoluciones
-            </a>
-            <a href="/admin/notificaciones" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/notificaciones") ? "active" : "") style="color: #EAF7EE;">
-                <Icons Name="Bell" Class="w-5 h-5" />
-                Notificaciones
             </a>
         </nav>
 
@@ -176,10 +165,6 @@
                     <a href="/admin/devoluciones" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/devoluciones") ? "active" : "")">
                         <Icons Name="HelpCircle" Class="w-5 h-5" />
                         Devoluciones
-                    </a>
-                    <a href="/admin/notificaciones" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/notificaciones") ? "active" : "")">
-                        <Icons Name="Bell" Class="w-5 h-5" />
-                        Notificaciones
                     </a>
                 </nav>
             </div>
@@ -305,3 +290,4 @@
         }
     }
 </style>
+</RoleGate>

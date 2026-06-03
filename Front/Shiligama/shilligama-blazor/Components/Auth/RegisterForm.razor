@@ -3,6 +3,7 @@
 
 @code {
     [Parameter] public EventCallback OnBackToLogin { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
 
     private string _nombres          = "";
     private string _apellidos        = "";
@@ -35,12 +36,19 @@
             _nombres.Trim(), _apellidos.Trim(), _dni.Trim(), _email.Trim(), _password);
 
         if (ok)
-            Navigation.NavigateTo("/catalogo");
+            Navigation.NavigateTo(GetSafeReturnUrl() ?? "/catalogo");
         else
         {
             _error = "No se pudo crear la cuenta. Verifica los datos o intenta con otro correo/DNI.";
             _isLoading = false;
         }
+    }
+
+    private string? GetSafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl)) return null;
+        if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//")) return null;
+        return ReturnUrl;
     }
 }
 

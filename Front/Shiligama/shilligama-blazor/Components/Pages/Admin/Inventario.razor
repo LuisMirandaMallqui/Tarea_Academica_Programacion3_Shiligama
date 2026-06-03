@@ -7,17 +7,19 @@
     private string _search = "";
     private string _categoryFilter = "";
     private bool _lowStockOnly = false;
+    private bool _agotadosOnly = false;
 
     protected override async Task OnInitializedAsync()
     {
-        await ProductSvc.EnsureLoadedAsync();   // trae productos + categorías del API
+        await ProductSvc.EnsureLoadedAsync();
         _products = ProductSvc.GetProducts();
     }
 
     private IEnumerable<Product> Filtered => _products.Where(p =>
         (string.IsNullOrEmpty(_search) || p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
         (string.IsNullOrEmpty(_categoryFilter) || p.Category.Equals(_categoryFilter, StringComparison.OrdinalIgnoreCase)) &&
-        (!_lowStockOnly || p.Stock < 10)
+        (!_lowStockOnly || (p.Stock > 0 && p.Stock < 10)) &&
+        (!_agotadosOnly || p.Stock == 0)
     );
 
     private void AdjustStock(Product p, int amount)
@@ -140,18 +142,20 @@
                 </select>
             </div>
 
-            <!-- Checkbox existencias bajas -->
-            <div class="col-md-4">
+            <!-- Checkboxes de stock -->
+            <div class="col-md-4 d-flex flex-column gap-2">
                 <div class="form-check d-flex align-items-center gap-2 m-0">
-                    <input class="form-check-input mt-0"
-                           type="checkbox"
-                           id="lowStockChk"
-                           @bind="_lowStockOnly"
-                           style="width: 24px; height: 24px;" />
-
-                    <label class="form-check-label text-foreground small fw-medium"
-                           for="lowStockChk">
-                        Solo existencias bajas (&lt; 10)
+                    <input class="form-check-input mt-0" type="checkbox" id="lowStockChk"
+                           @bind="_lowStockOnly" style="width:20px;height:20px;" />
+                    <label class="form-check-label text-foreground small fw-medium" for="lowStockChk">
+                        Solo stock bajo (1–9 uds.)
+                    </label>
+                </div>
+                <div class="form-check d-flex align-items-center gap-2 m-0">
+                    <input class="form-check-input mt-0" type="checkbox" id="agotadosChk"
+                           @bind="_agotadosOnly" style="width:20px;height:20px;" />
+                    <label class="form-check-label text-danger small fw-medium" for="agotadosChk">
+                        Solo agotados (stock = 0)
                     </label>
                 </div>
             </div>

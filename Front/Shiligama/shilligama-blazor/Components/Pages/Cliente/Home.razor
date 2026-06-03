@@ -2,7 +2,18 @@
 @layout EmptyLayout
 
 @code {
-    private bool _showRegister = false;
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "register")]
+    public bool RegisterQuery { get; set; }
+
+    private bool _showRegister;
+
+    protected override void OnParametersSet()
+    {
+        _showRegister = RegisterQuery;
+    }
 }
 
 <PageTitle>Shiligama – Iniciar Sesión</PageTitle>
@@ -16,11 +27,11 @@
         <div class="w-100" style="max-width: 440px;">
             @if (_showRegister)
             {
-                <RegisterForm OnBackToLogin="@(() => _showRegister = false)" />
+                <RegisterForm ReturnUrl="@ReturnUrl" OnBackToLogin="@(() => _showRegister = false)" />
             }
             else
             {
-                <LoginForm OnRegisterClick="@(() => _showRegister = true)" />
+                <LoginForm ReturnUrl="@ReturnUrl" OnRegisterClick="@(() => _showRegister = true)" />
             }
         </div>
 

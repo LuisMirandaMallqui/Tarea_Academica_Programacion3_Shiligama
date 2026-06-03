@@ -13,4 +13,5 @@ public class Staff
     public string Avatar { get; set; } = string.Empty;
     public DateTime FechaIngreso { get; set; } = DateTime.Now;
     public string Estado { get; set; } = "activo"; // "activo" | "inactivo"
+    public string Turno { get; set; } = "tiempo-completo"; // "mañana" | "tarde" | "noche" | "tiempo-completo"
 }

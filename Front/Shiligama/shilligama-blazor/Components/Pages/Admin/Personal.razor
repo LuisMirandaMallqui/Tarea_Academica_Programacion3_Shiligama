@@ -1,6 +1,7 @@
 @page "/admin/personal"
 @layout AdminLayout
 @inject StaffService StaffSvc
+@inject AuthService Auth
 
 @code {
     private List<Staff> _staff = new();
@@ -11,6 +12,12 @@
     private bool _showModal = false;
     private bool _isEditing = false;
     private Staff _form = new();
+    private bool _isEditingSelf = false;   // true cuando el admin edita su propio registro
+
+    // Confirmación de eliminación
+    private bool _showConfirmDelete = false;
+    private string _deleteId = "";
+    private string _deleteName = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -34,16 +41,19 @@
     {
         _form = new Staff
         {
-            Id = s.Id,
-            Nombre = s.Nombre,
-            Dni = s.Dni,
-            Rol = s.Rol,
-            Telefono = s.Telefono,
-            Correo = s.Correo,
-            Avatar = s.Avatar,
-            FechaIngreso = s.FechaIngreso,
-            Estado = s.Estado
+            Id          = s.Id,
+            Nombre      = s.Nombre,
+            Dni         = s.Dni,
+            Rol         = s.Rol,
+            Telefono    = s.Telefono,
+            Correo      = s.Correo,
+            Avatar      = s.Avatar,
+            FechaIngreso= s.FechaIngreso,
+            Estado      = s.Estado,
+            Turno       = s.Turno
         };
+        // Detectar si el admin está editando su propio registro (para bloquear cambio de rol)
+        _isEditingSelf = Auth.CurrentUser?.Id.ToString() == s.Id;
         _isEditing = true;
         _showModal = true;
     }
@@ -62,10 +72,18 @@
         _staff = StaffSvc.GetStaff(); // refresh
     }
 
-    private void Delete(string id)
+    private void AskDelete(Staff s)
     {
-        StaffSvc.DeleteStaff(id);
-        _staff = StaffSvc.GetStaff(); // refresh
+        _deleteId   = s.Id;
+        _deleteName = s.Nombre;
+        _showConfirmDelete = true;
+    }
+
+    private void ConfirmDelete()
+    {
+        _showConfirmDelete = false;
+        StaffSvc.DeleteStaff(_deleteId);
+        _staff = StaffSvc.GetStaff();
     }
 
     private void ToggleStatus(string id)
@@ -229,9 +247,9 @@
                                         <i class="fa-solid @(s.Estado == "activo" ? "fa-eye-slash" : "fa-eye")"></i>
                                     </button>
 
-                                    @if (s.Id != "STF-001")
+                                    @if (s.Id != Auth.CurrentUser?.Id.ToString())
                                     {
-                                        <button @onclick="@(() => Delete(s.Id))"
+                                        <button @onclick="@(() => AskDelete(s))"
                                                 class="btn btn-sm btn-light text-danger"
                                                 style="border-radius: var(--radius);"
                                                 title="Eliminar">
@@ -256,6 +274,28 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Confirmar Eliminación Trabajador -->
+@if (_showConfirmDelete)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <i class="fa-solid fa-triangle-exclamation text-danger mb-3" style="font-size:2rem;"></i>
+                    <h5 class="fw-bold text-foreground mb-1">¿Eliminar trabajador?</h5>
+                    <p class="text-muted-foreground small mb-3">
+                        <strong>@_deleteName</strong> será eliminado del sistema de forma permanente.
+                    </p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button class="btn btn-secondary" @onclick="@(() => _showConfirmDelete = false)">Cancelar</button>
+                        <button class="btn btn-danger fw-medium" @onclick="ConfirmDelete">Sí, eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 <!-- Staff Modal -->
 @if (_showModal)
@@ -287,23 +327,47 @@
                             <label class="form-label small fw-medium text-foreground">Correo electrónico</label>
                             <input type="email" @bind="_form.Correo" required class="form-control text-foreground" placeholder="marcos@shiligama.com" />
                         </div>
-                        <div>
-                            <label class="form-label small fw-medium text-foreground">Rol</label>
-                            <select @bind="_form.Rol" class="form-select text-foreground">
-                                <option value="trabajador">Trabajador</option>
-                                <option value="administrador">Administrador</option>
-                            </select>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-medium text-foreground">Rol</label>
+                                @if (_isEditingSelf)
+                                {
+                                    <input type="text" value="@_form.Rol" disabled
+                                           class="form-control text-muted-foreground" />
+                                    <div class="form-text text-muted-foreground small">
+                                        <i class="fas fa-lock me-1"></i>No puedes cambiar tu propio rol.
+                                    </div>
+                                }
+                                else
+                                {
+                                    <select @bind="_form.Rol" class="form-select text-foreground">
+                                        <option value="trabajador">Trabajador</option>
+                                        <option value="administrador">Administrador</option>
+                                    </select>
+                                }
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-medium text-foreground">Turno</label>
+                                <select @bind="_form.Turno" class="form-select text-foreground">
+                                    <option value="tiempo-completo">Tiempo completo</option>
+                                    <option value="mañana">Mañana (6am – 2pm)</option>
+                                    <option value="tarde">Tarde (2pm – 10pm)</option>
+                                    <option value="noche">Noche (10pm – 6am)</option>
+                                </select>
+                            </div>
                         </div>
-                        <div>
-                            <label class="form-label small fw-medium text-foreground">Avatar URL (opcional)</label>
-                            <input type="url" @bind="_form.Avatar" class="form-control text-foreground" placeholder="https://..." />
-                        </div>
-                        <div>
-                            <label class="form-label small fw-medium text-foreground">Estado</label>
-                            <select @bind="_form.Estado" class="form-select text-foreground">
-                                <option value="activo">Activo</option>
-                                <option value="inactivo">Inactivo</option>
-                            </select>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label small fw-medium text-foreground">Estado</label>
+                                <select @bind="_form.Estado" class="form-select text-foreground">
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-medium text-foreground">Avatar URL (opcional)</label>
+                                <input type="url" @bind="_form.Avatar" class="form-control text-foreground" placeholder="https://..." />
+                            </div>
                         </div>
                         <div class="d-flex justify-content-end gap-2 mt-3">
                             <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius: var(--radius);">Cancelar</button>

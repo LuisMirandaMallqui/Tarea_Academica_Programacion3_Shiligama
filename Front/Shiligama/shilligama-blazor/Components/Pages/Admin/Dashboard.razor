@@ -151,7 +151,7 @@
     <!-- Recent Sales + Quick Stats -->
     <div class="row g-4">
         <!-- Recent Transactions Table -->
-        <div class="col-lg-8">
+        <div class="col-12">
             <div class="card overflow-hidden">
                 <div class="d-flex align-items-center justify-content-between p-4 border-bottom border-color-default">
                     <div>
@@ -207,27 +207,5 @@
             </div>
         </div>
 
-        <!-- Quick Links -->
-        <div class="col-lg-4">
-            <div class="card p-4 h-100 d-flex flex-column gap-2">
-                <h2 class="fs-5 fw-semibold text-foreground mb-2">Acceso Rápido</h2>
-                @foreach (var (href, icon, label, color) in new[]{
-                    ("/admin/inventario",   "fa-boxes",           "Gestionar Inventario",  "#1A6B3C"),
-                    ("/admin/personal",     "fa-users",           "Gestionar Personal",    "#2563EB"),
-                    ("/admin/reportes",     "fa-chart-bar",       "Ver Reportes",          "#7C3AED"),
-                    ("/admin/proveedores",  "fa-truck",           "Proveedores",           "#EA580C"),
-                    ("/admin/devoluciones", "fa-undo-alt",        "Devoluciones",          "#c62828"),
-                })
-                {
-                    <a href="@href" class="d-flex align-items-center gap-3 p-3 rounded text-decoration-none hover-shadow transition-all" style="border:1px solid var(--border);border-radius:var(--radius)!important;">
-                        <div class="metric-kpi-icon" style="width:36px;height:36px;font-size:1rem;background:color-mix(in srgb,@color 15%,transparent);color:@color;">
-                            <i class="fas @icon"></i>
-                        </div>
-                        <span class="fw-medium text-foreground small">@label</span>
-                        <i class="fas fa-chevron-right text-muted-foreground ms-auto" style="font-size:0.75rem;"></i>
-                    </a>
-                }
-            </div>
-        </div>
     </div>
 </div>

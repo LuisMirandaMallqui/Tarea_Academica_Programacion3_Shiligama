@@ -1,0 +1,49 @@
+@inject AuthService Auth
+@inject NavigationManager Navigation
+
+@if (!_ready)
+{
+    <div class="d-flex flex-column align-items-center justify-content-center min-vh-100 gap-3 bg-background text-foreground">
+        <div class="spinner-border text-primary" role="status" aria-hidden="true"></div>
+        <p class="text-muted-foreground small m-0">Verificando acceso…</p>
+    </div>
+}
+else if (_allowed)
+{
+    @ChildContent
+}
+
+@code {
+    [Parameter, EditorRequired]
+    public string RequiredRole { get; set; } = "";
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private bool _ready;
+    private bool _allowed;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await Auth.InitializeAsync();
+
+        _allowed = RequiredRole switch
+        {
+            "administrador" => Auth.IsAdmin(),
+            "trabajador"    => Auth.IsWorker(),
+            _               => Auth.IsLoggedIn()
+        };
+
+        _ready = true;
+
+        if (!_allowed)
+        {
+            Navigation.NavigateTo("/", replace: true);
+            return;
+        }
+
+        StateHasChanged();
+    }
+}
