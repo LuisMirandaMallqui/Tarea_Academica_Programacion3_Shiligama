@@ -14,8 +14,8 @@ public class Order
     public string Status { get; set; } = "pendiente";
     // "delivery" | "pickup"
     public string DeliveryMethod { get; set; } = "delivery";
-    // "yape" | "plin" | "tarjeta" | "efectivo"
-    public string PaymentMethod { get; set; } = "efectivo";
+    // "yape" | "plin" | "tarjeta" | "efectivo" | "" (desconocido para pedidos online sin venta creada)
+    public string PaymentMethod { get; set; } = "";
     public string Address { get; set; } = string.Empty;
     // Lista de productos del pedido
     public List<CartItem> Products { get; set; } = new();

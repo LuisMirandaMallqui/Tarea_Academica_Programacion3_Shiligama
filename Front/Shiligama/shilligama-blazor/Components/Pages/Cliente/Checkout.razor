@@ -2,8 +2,8 @@
 @layout MainLayout
 @inject CartService Cart
 @inject SalesService SalesSvc
+@inject PromocionService PromoSvc
 @inject AuthService Auth
-@inject PagoService PagoSvc
 @inject NavigationManager Navigation
 
 @code {
@@ -14,11 +14,6 @@
     private string _name    = "";   // se llena en OnAfterRenderAsync desde el usuario logueado
     private string _address = "";   // ídem con DireccionEntrega
     private string _payMethod = "tarjeta";
-
-    private string _cardNumber = "";
-    private string _cardName   = "";
-    private string _cardExpiry = "";
-    private string _cardCvv    = "";
 
     private decimal _cashAmount;
     private decimal CashChange => _cashAmount >= Total ? _cashAmount - Total : 0;
@@ -32,6 +27,22 @@
     private bool   _success   = false;
     private string _orderId   = "";
     private string? _payError;
+    private bool   _showLoginRequired = false;
+
+    // ── Mapa de dirección ────────────────────────────────────────────────────
+    private MapAddressPicker? _mapPicker;
+
+    private async Task OpenMapModal()
+    {
+        if (_mapPicker != null)
+            await _mapPicker.OpenAsync();
+    }
+
+    private void OnMapAddressSelected(string address)
+    {
+        _address = address;
+        StateHasChanged();
+    }
 
     // El pedido para delivery requiere dirección.
     private bool CanPlaceOrder =>
@@ -51,6 +62,7 @@
         if (firstRender)
         {
             await Cart.InitializeAsync();
+            await PromoSvc.EnsureLoadedAsync();
 
             if (!string.IsNullOrEmpty(DeliveryParam))
                 _deliveryMethod = DeliveryParam;
@@ -67,29 +79,12 @@
         }
     }
 
-    private decimal Subtotal    => Cart.GetSubtotal();
-    private decimal DeliveryFee => _deliveryMethod == "delivery" ? 5m : 0m;
+    // Subtotal aplicando promos vigentes del backend (lógica en PromocionHelper)
+    private decimal Subtotal    => PromocionHelper.TotalConPromos(
+                                       Cart.GetCartItems(),
+                                       PromoSvc.GetVigentes());
+    private decimal DeliveryFee => Cart.GetDeliveryFee(_deliveryMethod == "delivery");
     private decimal Total       => Subtotal + DeliveryFee;
-
-    private string FormatCard(string raw)
-    {
-        var digits = new string(raw.Where(char.IsDigit).ToArray());
-        if (digits.Length > 16) digits = digits[..16];
-        var parts = Enumerable.Range(0, (digits.Length + 3) / 4)
-                              .Select(i => digits.Substring(i * 4, Math.Min(4, digits.Length - i * 4)));
-        return string.Join(" ", parts);
-    }
-
-    private void OnCardNumberInput(ChangeEventArgs e)
-        => _cardNumber = FormatCard(e.Value?.ToString() ?? "");
-
-    private void OnCardExpiryInput(ChangeEventArgs e)
-    {
-        var digits = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).ToArray());
-        _cardExpiry = digits.Length >= 2
-            ? digits[..2] + "/" + digits[2..Math.Min(4, digits.Length)]
-            : digits;
-    }
 
     private void OnCashQuick(decimal amount) { _cashAmount = amount; }
 
@@ -101,6 +96,15 @@
     private async Task PlaceOrder()
     {
         _payError = null;
+
+        // Exigir login de cliente antes de registrar el pedido.
+        // Sin idCliente el SP INSERTAR_PEDIDO rechaza por FK/NOT NULL.
+        if (!Auth.IsCliente())
+        {
+            _showLoginRequired = true;
+            return;
+        }
+
         _isLoading = true;
 
         // 1) Registrar el pedido en el backend (devuelve "PED-0012").
@@ -118,7 +122,9 @@
             if (idPedido > 0)
             {
                 await Cart.ClearCartAsync();
-                Navigation.NavigateTo($"/checkout/pago?pedido={idPedido}");
+                // Pasamos el total para que el backend pueda usar el monto correcto
+                // (el SP INSERTAR_PEDIDO no guarda MONTO_TOTAL, queda en 0 en la BD)
+                Navigation.NavigateTo($"/checkout/pago?pedido={idPedido}&total={Total:F2}");
                 return;
             }
             _payError = "No se pudo registrar el pedido. Verifica tu conexión e intenta de nuevo.";
@@ -134,6 +140,12 @@
 }
 
 <PageTitle>Checkout – Shiligama</PageTitle>
+
+<LoginRequiredModal IsOpen="_showLoginRequired"
+                    IsOpenChanged="@((v) => _showLoginRequired = v)"
+                    ReturnUrl="/checkout" />
+
+<MapAddressPicker @ref="_mapPicker" OnAddressSelected="OnMapAddressSelected" />
 
 <style>
 /* Borde de inputs adaptado a dark/light */
@@ -282,9 +294,27 @@ else
                     </div>
                     @if (_deliveryMethod == "delivery")
                     {
-                        <input type="text" @bind="_address"
-                               class="form-control form-control-sm mt-2 checkout-input-solo"
-                               placeholder="Tu dirección de entrega" />
+                        <div class="mt-2">
+                            @if (!string.IsNullOrWhiteSpace(_address))
+                            {
+                                <div class="d-flex align-items-start gap-2 p-2 mb-2"
+                                     style="background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:.82rem;">
+                                    <Icons Name="MapPin" Class="text-success flex-shrink-0" style="width:14px;height:14px;margin-top:2px;" />
+                                    <span>@_address</span>
+                                </div>
+                            }
+                            <div class="d-flex gap-2">
+                                <input type="text" @bind="_address"
+                                       class="form-control form-control-sm checkout-input-solo flex-grow-1"
+                                       placeholder="Ingresa tu dirección" />
+                                <button type="button" @onclick="OpenMapModal"
+                                        class="btn btn-sm btn-outline-secondary flex-shrink-0 d-flex align-items-center gap-1"
+                                        title="Seleccionar en mapa">
+                                    <Icons Name="MapPin" style="width:13px;height:13px;" />
+                                    <span class="d-none d-sm-inline">Mapa</span>
+                                </button>
+                            </div>
+                        </div>
                     }
                 </div>
             </div>

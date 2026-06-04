@@ -9,6 +9,17 @@
     private string _apellidos        = "";
     private string _dni              = "";
     private string _email            = "";
+
+    // Filtra el DNI: solo dígitos, máx. 8 caracteres.
+    // onkeydown en el HTML bloquea las letras antes de que lleguen al input.
+    // Este método limpia el valor por si pegan texto con letras.
+    private void OnDniInput(ChangeEventArgs e)
+    {
+        _dni = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(8).ToArray());
+        // Fuerza a Blazor a actualizar el DOM con el valor filtrado
+        StateHasChanged();
+    }
+
     private string _password         = "";
     private string _confirmPassword  = "";
     private bool   _showPassword     = false;
@@ -105,9 +116,12 @@
             <div class="position-relative">
                 <i class="fas fa-id-card position-absolute top-50 translate-middle-y text-muted-foreground"
                    style="left:14px;font-size:0.95rem;"></i>
-                <input type="text" @bind="_dni" required maxlength="8" pattern="\d{8}"
+                <input type="text" value="@_dni" @oninput="OnDniInput" required maxlength="8"
+                       inputmode="numeric" pattern="\d{8}"
                        class="form-control text-foreground"
-                       style="height:48px;padding-left:42px;" placeholder="12345678" />
+                       style="height:48px;padding-left:42px;" placeholder="12345678"
+                       onkeydown="return event.key.length>1||event.ctrlKey||event.metaKey||(event.key>='0'&&event.key<='9')"
+                       onpaste="event.preventDefault();let t=event.clipboardData.getData('text').replace(/\D/g,'').slice(0,8);document.execCommand('insertText',false,t)" />
             </div>
         </div>
 

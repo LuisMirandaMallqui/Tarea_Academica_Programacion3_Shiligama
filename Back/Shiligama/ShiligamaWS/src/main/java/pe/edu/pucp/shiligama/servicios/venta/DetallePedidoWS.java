@@ -31,6 +31,19 @@ public class DetallePedidoWS {
         }
     }
 
+    /** GET /api/detalles-pedido/por-pedido/{idPedido} */
+    @GET
+    @Path("/por-pedido/{idPedido}")
+    public Response listarPorPedido(@PathParam("idPedido") int idPedido) {
+        try {
+            List<DetallePedido> detalles = detallePedidoBo.listarPorPedido(idPedido);
+            return Response.ok(detalles).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error al listar detalles del pedido: " + ex.getMessage()).build();
+        }
+    }
+
     @GET
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {

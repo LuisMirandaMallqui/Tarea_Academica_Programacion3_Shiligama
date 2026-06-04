@@ -30,10 +30,10 @@
         _orders = SalesSvc.GetRecentOrders();
     }
 
-    // Orden lógico de estados
+    // Orden lógico de estados (1:1 con EstadoPedido del backend)
     private static readonly Dictionary<string,int> StatusOrder = new(StringComparer.OrdinalIgnoreCase)
     {
-        {"pendiente",0}, {"preparando",1}, {"en_camino",2}, {"entregado",3}, {"cancelado",4}
+        {"recibido",0}, {"en_proceso",1}, {"atendido",2}, {"rechazado",3}, {"cancelado",4}
     };
 
     private IEnumerable<Order> Filtered => _orders
@@ -112,7 +112,7 @@
     private async Task ConfirmEdit()
     {
         if (_pendingEditId == null || _pendingEditStatus == null) return;
-        SalesSvc.UpdateOrderStatus(_pendingEditId, _pendingEditStatus);
+        await SalesSvc.UpdateOrderStatusAsync(_pendingEditId, _pendingEditStatus);
         _showEditConfirm = false;
         _pendingEditId = null;
         _pendingEditStatus = null;
@@ -125,30 +125,30 @@
 
     private string GetStatusClass(string status) => status.ToLower() switch
     {
-        "entregado" => "bg-success-subtle text-success",
-        "en_camino" => "bg-primary-subtle text-primary",
-        "preparando" => "bg-warning-subtle text-warning",
-        "pendiente"  => "bg-secondary text-muted-foreground",
+        "atendido"   => "bg-success-subtle text-success",
+        "en_proceso" => "bg-warning-subtle text-warning",
+        "recibido"   => "bg-secondary text-muted-foreground",
+        "rechazado"  => "bg-danger-subtle text-danger",
         "cancelado"  => "bg-danger-subtle text-danger",
         _ => "bg-light text-dark"
     };
 
     private string GetStatusLabel(string status) => status.ToLower() switch
     {
-        "entregado"  => "Entregado",
-        "en_camino"  => "En Camino",
-        "preparando" => "Preparando",
-        "pendiente"  => "Pendiente",
+        "recibido"   => "Recibido",
+        "en_proceso" => "En proceso",
+        "atendido"   => "Atendido",
+        "rechazado"  => "Rechazado",
         "cancelado"  => "Cancelado",
         _ => status
     };
 
     private string GetPendingStatusLabel(string? s) => s?.ToLower() switch
     {
-        "pendiente"  => "Pendiente",
-        "preparando" => "Preparando",
-        "en_camino"  => "En Camino",
-        "entregado"  => "Entregado",
+        "recibido"   => "Recibido",
+        "en_proceso" => "En proceso",
+        "atendido"   => "Atendido",
+        "rechazado"  => "Rechazado",
         "cancelado"  => "Cancelado",
         _ => s ?? ""
     };
@@ -181,10 +181,10 @@
                         @onchange="@(e => OnStatusChanged(e.Value?.ToString() ?? ""))"
                         class="form-select text-foreground" style="height:44px;">
                     <option value="">Todos los estados</option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="preparando">Preparando</option>
-                    <option value="en_camino">En Camino</option>
-                    <option value="entregado">Entregado</option>
+                    <option value="recibido">Recibido</option>
+                    <option value="en_proceso">En proceso</option>
+                    <option value="atendido">Atendido</option>
+                    <option value="rechazado">Rechazado</option>
                     <option value="cancelado">Cancelado</option>
                 </select>
             </div>
@@ -237,34 +237,34 @@
                                         <ul class="dropdown-menu dropdown-menu-end shadow border p-1" style="border-radius:var(--radius);">
                                             <li><h6 class="dropdown-header small">Cambiar estado</h6></li>
                                             <li>
-                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "pendiente"))"
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "recibido"))"
                                                         class="dropdown-item py-1 small rounded">
-                                                    <i class="fa-solid fa-clock me-2 text-secondary"></i>Marcar Pendiente
+                                                    <i class="fa-solid fa-inbox me-2 text-secondary"></i>Recibido
                                                 </button>
                                             </li>
                                             <li>
-                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "preparando"))"
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "en_proceso"))"
                                                         class="dropdown-item py-1 small rounded">
-                                                    <i class="fa-solid fa-box-open me-2 text-warning"></i>Marcar Preparando
+                                                    <i class="fa-solid fa-box-open me-2 text-warning"></i>En proceso
                                                 </button>
                                             </li>
                                             <li>
-                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "en_camino"))"
-                                                        class="dropdown-item py-1 small rounded">
-                                                    <i class="fa-solid fa-truck me-2 text-primary"></i>Marcar En Camino
-                                                </button>
-                                            </li>
-                                            <li>
-                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "entregado"))"
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "atendido"))"
                                                         class="dropdown-item py-1 small rounded text-success">
-                                                    <i class="fa-solid fa-circle-check me-2"></i>Marcar Entregado
+                                                    <i class="fa-solid fa-circle-check me-2"></i>Atendido
                                                 </button>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
+                                                <button type="button" @onclick="@(() => AskStatusChange(order.Id, "rechazado"))"
+                                                        class="dropdown-item py-1 small rounded text-danger">
+                                                    <i class="fa-solid fa-xmark me-2"></i>Rechazado
+                                                </button>
+                                            </li>
+                                            <li>
                                                 <button type="button" @onclick="@(() => AskStatusChange(order.Id, "cancelado"))"
                                                         class="dropdown-item py-1 small rounded text-danger">
-                                                    <i class="fa-solid fa-ban me-2"></i>Marcar Cancelado
+                                                    <i class="fa-solid fa-ban me-2"></i>Cancelado
                                                 </button>
                                             </li>
                                         </ul>

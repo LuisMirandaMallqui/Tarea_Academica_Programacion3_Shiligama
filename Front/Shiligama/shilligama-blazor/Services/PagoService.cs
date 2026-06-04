@@ -3,6 +3,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using shilligama_blazor.Models;
 
 namespace shilligama_blazor.Services;
 
@@ -26,11 +27,19 @@ public class PagoService
         _json = json;
     }
 
-    public async Task<RespuestaIniciarPago?> IniciarPagoAsync(int idPedido, string email)
+    /// <param name="monto">Total del pedido. Se envía explícitamente porque el SP
+    /// INSERTAR_PEDIDO no guarda MONTO_TOTAL en la BD, por lo que pedido.getMontoTotal()
+    /// devolvería 0 y el backend rechazaría el pago.</param>
+    public async Task<RespuestaIniciarPago?> IniciarPagoAsync(int idPedido, string email, decimal monto = 0)
     {
         try
         {
-            var body = new { idPedido = idPedido, email = email };
+            var body = new
+            {
+                idPedido,
+                email,
+                monto = monto > 0 ? (double)monto : 0
+            };
             var resp = await _http.PostAsJsonAsync("pagos/iniciar", body);
             if (resp.IsSuccessStatusCode)
             {
@@ -52,24 +61,4 @@ public class PagoService
     }
 }
 
-// Mapea pe.edu.pucp.model.venta.RespuestaIniciarPago
-public class RespuestaIniciarPago
-{
-    public bool    Exito     { get; set; }
-    public string? Mensaje   { get; set; }
-    public string? FormToken { get; set; }  // token del formulario embebido Izipay
-    public string? PublicKey { get; set; }  // "username:publicKey" para el SDK
-    public string? JsBase    { get; set; }  // base del SDK Krypton
-    public string? OrderId   { get; set; }
-    public int     IdPago    { get; set; }
-}
-
-// Mapea pe.edu.pucp.model.venta.Pago (campos relevantes)
-public class RespuestaPagoEstado
-{
-    public int     IdPago  { get; set; }
-    public int     IdPedido{ get; set; }
-    public double  Monto   { get; set; }
-    public string? Estado  { get; set; } // PENDIENTE | AUTORIZADO | RECHAZADO | CANCELADO
-    public string? Referencia { get; set; }
-}
+// ── RespuestaIniciarPago y RespuestaPagoEstado se encuentran en Models/RespuestaPago.cs ──

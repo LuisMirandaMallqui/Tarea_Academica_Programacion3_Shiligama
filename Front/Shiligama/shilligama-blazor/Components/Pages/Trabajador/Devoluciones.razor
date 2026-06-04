@@ -10,6 +10,7 @@
     private string _motivoFilter = "";
     private bool _showModal = false;
     private Return _form = new();
+    private int _selectedProductId = 0;   // id del producto seleccionado en el selector
 
     protected override async Task OnInitializedAsync()
     {
@@ -32,28 +33,35 @@
         _form = new Return
         {
             Quantity = 1,
-            RegisteredBy = Auth.CurrentUser?.Name ?? "Jorge Trabajador"
+            RegisteredBy = Auth.CurrentUser?.Name ?? "Trabajador"
         };
+        _selectedProductId = 0;
         _showModal = true;
     }
 
-    private void Save()
+    private async Task Save()
     {
-        var prod = ProductSvc.GetProducts().FirstOrDefault(p => p.Name.Equals(_form.Product, StringComparison.OrdinalIgnoreCase));
+        // Obtener producto seleccionado del catálogo
+        var prod = _selectedProductId > 0
+            ? ProductSvc.GetProductById(_selectedProductId)
+            : null;
+
         if (prod != null)
         {
+            _form.Product     = prod.Name;
             _form.ProductCode = $"PROD-{prod.Id:D3}";
-            _form.Amount = prod.Price * _form.Quantity;
+            _form.Amount      = prod.Price * _form.Quantity;
         }
         else
         {
             _form.ProductCode = "PROD-GEN";
-            _form.Amount = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
+            _form.Amount      = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
         }
 
-        ReturnsSvc.AddReturn(_form);
+        int idTrabajador = Auth.CurrentUser?.IdUsuario ?? 0;
+        await ReturnsSvc.AddReturnAsync(_form, _selectedProductId, idTrabajador);
         _showModal = false;
-        _returns = ReturnsSvc.GetReturns(); // refresh
+        _returns = ReturnsSvc.GetReturns();
     }
 }
 
@@ -195,32 +203,49 @@
                 </div>
                 <div class="modal-body p-4">
                     <EditForm Model="_form" OnValidSubmit="Save" class="d-flex flex-column gap-3">
+                        <!-- Selector de producto del catálogo -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Nombre del Producto</label>
-                            <input type="text" @bind="_form.Product" required class="form-control text-foreground" placeholder="Pechuga de Pollo" />
+                            <label class="form-label small fw-medium text-foreground">Producto</label>
+                            <select @bind="_selectedProductId" class="form-select text-foreground" required>
+                                <option value="0">— Seleccionar producto —</option>
+                                @foreach (var p in ProductSvc.GetProducts().OrderBy(p => p.Name))
+                                {
+                                    <option value="@p.Id">@p.Name</option>
+                                }
+                            </select>
                         </div>
+                        <!-- Cantidad y Motivo -->
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="form-label small fw-medium text-foreground">Cantidad</label>
-                                <input type="number" @bind="_form.Quantity" required class="form-control text-foreground" min="1" />
+                                <input type="number" @bind="_form.Quantity" required
+                                       class="form-control text-foreground" min="1" />
                             </div>
                             <div class="col-6">
                                 <label class="form-label small fw-medium text-foreground">Motivo</label>
                                 <select @bind="_form.Reason" class="form-select text-foreground" required>
-                                    <option value="">Seleccionar motivo</option>
+                                    <option value="">— Seleccionar —</option>
                                     <option value="Vencido">Vencido</option>
                                     <option value="Dañado">Dañado / Roto</option>
                                     <option value="Error de pedido">Error de pedido</option>
+                                    <option value="Merma">Merma / Pérdida</option>
                                 </select>
                             </div>
                         </div>
+                        <!-- Observación -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Observaciones detalladas</label>
-                            <textarea @bind="_form.Observations" class="form-control text-foreground" rows="3" placeholder="Detalle adicional del estado..."></textarea>
+                            <label class="form-label small fw-medium text-foreground">Observación</label>
+                            <textarea @bind="_form.Observations" class="form-control text-foreground"
+                                      rows="2" placeholder="Detalle adicional..."></textarea>
                         </div>
-                        <div class="d-flex justify-content-end gap-2 mt-3">
-                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius: var(--radius);">Cancelar</button>
-                            <button type="submit" class="btn btn-primary fw-semibold" style="border-radius: var(--radius);">
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <button type="button" @onclick="@(() => _showModal = false)"
+                                    class="btn btn-secondary" style="border-radius:var(--radius);">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary fw-semibold"
+                                    style="border-radius:var(--radius);"
+                                    disabled="@(_selectedProductId == 0 || string.IsNullOrEmpty(_form.Reason))">
                                 Registrar
                             </button>
                         </div>

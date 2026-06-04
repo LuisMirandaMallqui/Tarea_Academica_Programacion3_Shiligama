@@ -48,10 +48,14 @@ public class RecuperacionBoImpl implements RecuperacionBo {
         String baseUrl = Config.get("app.frontend.url", "http://localhost:3000");
         String enlace = baseUrl + "/restablecer-password?token=" + tokenValor;
 
-        // 3) Enviar el correo HTML.
+        // 3) Enviar el correo HTML. Propagar excepción para que el WS la muestre.
         String asunto = "Shiligama — Recuperación de contraseña";
         String html = construirHtml(usuario.getNombres(), enlace, minutos);
-        EnvioCorreo.getInstance().enviarEmail(List.of(usuario.getCorreo()), asunto, html);
+        boolean enviado = EnvioCorreo.getInstance()
+                .enviarEmail(List.of(usuario.getCorreo()), asunto, html);
+        if (!enviado) {
+            throw new Exception("No se pudo enviar el correo de recuperación.");
+        }
 
         return true;
     }

@@ -2,6 +2,7 @@
 @layout MainLayout
 @inject ProductService ProductSvc
 @inject CartService Cart
+@inject PromocionService PromoSvc
 @inject IJSRuntime JS
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
@@ -36,14 +37,6 @@
         ("fa-truck",      "Delivery Gratis",       "En compras mayores a S/. 50",                      "#1a3a5c", ""),
         ("fa-candy-cane", "2x1 en Snacks",         "Paga 1 y lleva 2 en snacks seleccionados",        "#4a1942", "/snacks-2x1"),
     };
-
-    protected override async Task OnInitializedAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();      // carga las categorías del API
-        _categories = ProductSvc.GetCategories();
-        ProductSvc.OnSearch += OnSearchChanged;
-        await LoadAsync();                          // primera página
-    }
 
     // Pide al back la página actual con los filtros vigentes.
     private async Task LoadAsync()
@@ -119,6 +112,21 @@
     }
 
     private HashSet<int> _addedIds = new();
+    // IDs de productos con promoción 2×1 vigente
+    private HashSet<int> _promo2x1Ids = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _categories = ProductSvc.GetCategories();
+        ProductSvc.OnSearch += OnSearchChanged;
+        await PromoSvc.EnsureLoadedAsync();
+        _promo2x1Ids = PromoSvc.GetVigentes()
+            .Where(p => p.Es2x1)
+            .SelectMany(p => p.ProductoIds)
+            .ToHashSet();
+        await LoadAsync();
+    }
 
     private async Task AddToCart(Product p)
     {
@@ -129,6 +137,14 @@
         _addedIds.Remove(p.Id);
         StateHasChanged();
     }
+
+    // Devuelve la promo vigente de un producto (null si no tiene)
+    private Promocion? GetPromo(int productId) =>
+        PromoSvc.GetVigentes().FirstOrDefault(p => p.ProductoIds.Contains(productId));
+
+    // Precio efectivo para mostrar en la tarjeta (1 unidad con promo aplicada)
+    private decimal PrecioEfectivo(Product p) =>
+        PromocionHelper.PrecioEfectivo(p.Price, 1, GetPromo(p.Id));
 
     private string GetDiscountPct(Product p) =>
         p.OriginalPrice.HasValue ? $"-{100 - (int)(p.Price / p.OriginalPrice.Value * 100)}%" : "";
@@ -473,6 +489,14 @@
                                                 @GetDiscountPct(product)
                                             </span>
                                         }
+                                        @if (_promo2x1Ids.Contains(product.Id) && product.Stock > 0)
+                                        {
+                                            <span class="badge position-absolute top-0 end-0 m-2 z-1"
+                                                  style="background:#7c3aed;border-radius:8px;
+                                                         font-size:.72rem;font-weight:700;letter-spacing:.03em;">
+                                                2×1
+                                            </span>
+                                        }
                                         @if (product.Stock == 0)
                                         {
                                             <div class="position-absolute top-0 start-0 end-0 bottom-0
@@ -521,12 +545,28 @@
                                         </a>
 
                                         <!-- Precio -->
+                                        @{
+                                            var _promo    = GetPromo(product.Id);
+                                            var _efectivo = PrecioEfectivo(product);
+                                            bool _tienePromo = _promo != null && _promo.EsVigente && _efectivo < product.Price;
+                                        }
                                         <div class="mb-3">
                                             <span class="fw-bold"
                                                   style="font-size:1.2rem;color:var(--primary);">
-                                                S/. @product.Price.ToString("0.00")
+                                                S/. @_efectivo.ToString("0.00")
                                             </span>
-                                            @if (product.OriginalPrice.HasValue)
+                                            @if (_tienePromo)
+                                            {
+                                                <span class="text-decoration-line-through text-muted-foreground ms-1 small"
+                                                      style="font-size:.8rem;">
+                                                    S/. @product.Price.ToString("0.00")
+                                                </span>
+                                                <span class="badge ms-1"
+                                                      style="background:#7c3aed;font-size:.65rem;vertical-align:middle;">
+                                                    @_promo!.DescuentoLabel
+                                                </span>
+                                            }
+                                            else if (product.OriginalPrice.HasValue)
                                             {
                                                 <span class="text-decoration-line-through text-muted-foreground ms-1 small"
                                                       style="font-size:.8rem;">

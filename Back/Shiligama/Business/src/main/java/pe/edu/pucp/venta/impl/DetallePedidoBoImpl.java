@@ -46,6 +46,14 @@ public class DetallePedidoBoImpl implements DetallePedidoBo {
         return daoDetallePedido.listarTodos();
     }
 
+    @Override
+    public List<DetallePedido> listarPorPedido(int idPedido) throws Exception {
+        if (idPedido <= 0) {
+            throw new Exception("El ID del pedido debe ser mayor que cero.");
+        }
+        return daoDetallePedido.listarPorPedido(idPedido);
+    }
+
     private void validar(DetallePedido detallePedido, boolean esModificacion) throws Exception {
         if (detallePedido == null) {
             throw new Exception("El detalle de pedido no puede ser nulo.");

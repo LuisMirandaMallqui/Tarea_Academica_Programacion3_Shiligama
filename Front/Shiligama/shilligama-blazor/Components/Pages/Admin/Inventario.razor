@@ -22,9 +22,16 @@
         (!_agotadosOnly || p.Stock == 0)
     );
 
-    private void AdjustStock(Product p, int amount)
+    // AdjustStock persiste el cambio en el backend vía PUT /api/productos.
+    // Usa la misma instancia de Product que está en la caché de ProductSvc.
+    private async Task AdjustStock(Product p, int amount)
     {
         p.Stock = Math.Max(0, p.Stock + amount);
+        try
+        {
+            await ProductSvc.UpdateProductAsync(p);
+        }
+        catch { /* si el backend no está disponible el cambio queda en caché local */ }
         StateHasChanged();
     }
 }

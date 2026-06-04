@@ -15,8 +15,8 @@ import java.util.Map;
 
 public class PedidoDaoImpl implements PedidoDao {
 
-    // SP: INSERTAR_PEDIDO(OUT _pedido_id, IN _cliente_id, IN _direccion_entrega,
-    //   IN _modalidad_venta, IN _observaciones)
+    // SP: INSERTAR_PEDIDO(OUT _pedido_id, IN _cliente_id, IN _monto_total,
+    //   IN _direccion_entrega, IN _modalidad_entrega, IN _observaciones)
     @Override
     public int insertar(Pedido pedido) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -24,9 +24,10 @@ public class PedidoDaoImpl implements PedidoDao {
 
         parametrosSalida.put(1, Types.INTEGER);
         parametrosEntrada.put(2, pedido.getCliente().getIdUsuario());
-        parametrosEntrada.put(3, pedido.getDireccionEntrega());
-        parametrosEntrada.put(4, pedido.getModalidadVenta().name());
-        parametrosEntrada.put(5, pedido.getObservaciones());
+        parametrosEntrada.put(3, pedido.getMontoTotal());
+        parametrosEntrada.put(4, pedido.getDireccionEntrega());
+        parametrosEntrada.put(5, pedido.getModalidadVenta().name());
+        parametrosEntrada.put(6, pedido.getObservaciones());
 
         DBManager.getInstance().ejecutarProcedimiento(
                 "INSERTAR_PEDIDO", parametrosEntrada, parametrosSalida);

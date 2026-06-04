@@ -4,11 +4,14 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using shilligama_blazor.Models;
 
 namespace shilligama_blazor.Services;
 
 // ============================================================================
 // NotificacionService — lee y gestiona notificaciones desde el API REST.
+//
+// NotificacionItem se encuentra en Models/NotificacionItem.cs
 //
 // Endpoints:
 //   GET  /api/notificaciones                     → todas las notificaciones
@@ -17,29 +20,6 @@ namespace shilligama_blazor.Services;
 //   PUT  /api/notificaciones/{id}/marcar-leida
 //   DELETE /api/notificaciones/{id}
 // ============================================================================
-public class NotificacionItem
-{
-    public int     IdNotificacion  { get; set; }
-    public string  Titulo         { get; set; } = string.Empty;
-    public string  Mensaje        { get; set; } = string.Empty;
-    public string? Tipo           { get; set; }  // STOCK_BAJO, NUEVO_PEDIDO, DEVOLUCION_PENDIENTE, etc.
-    public bool    Leida          { get; set; }
-    public DateTime? FechaCreacion { get; set; }
-    public int?    IdDestinatario { get; set; }
-
-    // Mapea el tipo de la BD al tipo visual usado en la UI
-    public string TipoVisual => Tipo?.ToUpper() switch
-    {
-        "STOCK_BAJO"           => "warning",
-        "DEVOLUCION_PENDIENTE" => "danger",
-        "NUEVO_PEDIDO"         => "info",
-        "PEDIDO_LISTO"         => "info",
-        "VENTA_REGISTRADA"     => "info",
-        "SISTEMA"              => "warning",
-        _                      => "info"
-    };
-}
-
 public class NotificacionService
 {
     private readonly HttpClient _http;

@@ -70,8 +70,11 @@ public class PedidoBoImpl implements PedidoBo {
         if (esModificacion && pedido.getIdPedido() <= 0) {
             throw new Exception("El ID del pedido es obligatorio para la modificacion.");
         }
-        if (pedido.getCliente() == null) {
+        if (!esModificacion && pedido.getCliente() == null) {
             throw new Exception("El pedido debe tener un cliente asignado.");
+        }
+        if (!esModificacion && pedido.getMontoTotal() <= 0) {
+            throw new Exception("El monto total del pedido debe ser mayor que cero.");
         }
     }
 }

@@ -3,10 +3,12 @@ package pe.edu.pucp.shiligama.servicios.auth;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import pe.edu.pucp.correo.EnvioCorreo;
 import pe.edu.pucp.model.seguridad.RestablecerPasswordDto;
 import pe.edu.pucp.model.seguridad.SolicitarRecuperacionDto;
 import pe.edu.pucp.usuario.bo.RecuperacionBo;
 import pe.edu.pucp.usuario.impl.RecuperacionBoImpl;
+import java.util.List;
 
 /**
  * Web Service REST para la recuperación de contraseña por correo.
@@ -24,6 +26,32 @@ import pe.edu.pucp.usuario.impl.RecuperacionBoImpl;
 public class RecuperacionWS {
 
     private final RecuperacionBo recuperacionBo = new RecuperacionBoImpl();
+
+    /**
+     * GET /api/recuperacion/test-correo?email=tu@correo.com
+     * Envía un correo de prueba y devuelve OK o el error SMTP exacto.
+     * SOLO para desarrollo local — eliminar antes de producción.
+     */
+    @GET
+    @Path("/test-correo")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response testCorreo(@QueryParam("email") String email) {
+        if (email == null || email.isBlank()) {
+            return Response.status(400).entity("Falta ?email=tu@correo.com").build();
+        }
+        try {
+            EnvioCorreo.getInstance().enviarEmail(
+                List.of(email),
+                "Shiligama — Test SMTP",
+                "<h2>✅ El correo SMTP funciona correctamente.</h2>"
+                + "<p>Si ves este mensaje, la configuración de Gmail está bien.</p>"
+            );
+            return Response.ok("Correo enviado exitosamente a " + email).build();
+        } catch (Exception ex) {
+            return Response.status(500)
+                    .entity("ERROR SMTP: " + ex.getMessage()).build();
+        }
+    }
 
     @POST
     @Path("/solicitar")

@@ -99,6 +99,13 @@ public class PasarelaPagoService {
         } catch (Exception e) {
             System.err.println("[Izipay] Excepción en crearFormToken: " + e.getMessage());
         }
+
+        // Fallback demo: cuando la cuenta Izipay aún no está validada, retornar
+        // el token especial "DEMO" para que el front pueda simular el pago.
+        if ("true".equalsIgnoreCase(Config.get("izipay.demo", "false"))) {
+            System.out.println("[Izipay] DEMO mode activo — usando token simulado.");
+            return "DEMO";
+        }
         return null;
     }
 
@@ -107,9 +114,9 @@ public class PasarelaPagoService {
         return Config.get("izipay.username", "") + ":" + Config.get("izipay.public.key", "");
     }
 
-    /** Base del SDK JavaScript de Izipay (Krypton). */
+    /** Base del SDK JavaScript de Izipay (Krypton). Diferente del endpoint de API. */
     public String getJsBase() {
-        return Config.get("izipay.js.base", "https://api.micuentaweb.pe");
+        return Config.get("izipay.js.base", "https://static.micuentaweb.pe");
     }
 
     /**

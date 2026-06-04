@@ -70,6 +70,27 @@ public class DetallePedidoDaoImpl implements DetallePedidoDao {
         return detalle;
     }
 
+    // SP: LISTAR_DETALLES_POR_PEDIDO(IN _pedido_id)
+    @Override
+    public List<DetallePedido> listarPorPedido(int idPedido) {
+        List<DetallePedido> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idPedido);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_DETALLES_POR_PEDIDO", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearDetallePedido(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar detalles por pedido: " + ex.getMessage());
+        }
+        return lista;
+    }
+
     // SP: LISTAR_DETALLES_PEDIDO()
     @Override
     public List<DetallePedido> listarTodos() {

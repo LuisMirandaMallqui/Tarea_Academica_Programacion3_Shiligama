@@ -847,6 +847,7 @@ DROP PROCEDURE IF EXISTS INSERTAR_PEDIDO$$
 CREATE PROCEDURE INSERTAR_PEDIDO(
     OUT _pedido_id         INT,
     IN  _cliente_id        INT,
+    IN  _monto_total       DECIMAL(10,2),
     IN  _direccion_entrega VARCHAR(255),
     IN  _modalidad_entrega VARCHAR(20),
     IN  _observaciones     VARCHAR(500)
@@ -858,9 +859,9 @@ BEGIN
     FROM pedido
     WHERE ESTADO_PEDIDO IN ('RECIBIDO', 'EN_PROCESO');
 
-    INSERT INTO pedido(CLIENTE_ID, DIRECCION_ENTREGA, MODALIDAD_ENTREGA,
+    INSERT INTO pedido(CLIENTE_ID, MONTO_TOTAL, DIRECCION_ENTREGA, MODALIDAD_ENTREGA,
                         PRIORIDAD, OBSERVACIONES)
-    VALUES(_cliente_id, _direccion_entrega, _modalidad_entrega,
+    VALUES(_cliente_id, _monto_total, _direccion_entrega, _modalidad_entrega,
            v_prioridad, _observaciones);
     SET _pedido_id = LAST_INSERT_ID();
 END$$

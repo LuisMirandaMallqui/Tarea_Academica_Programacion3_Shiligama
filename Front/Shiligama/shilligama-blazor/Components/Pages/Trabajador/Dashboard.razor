@@ -32,10 +32,10 @@
 
         bool matchFilter = _selectedFilter switch
         {
-            "pendiente"  => o.Status == "pendiente",
-            "preparando" => o.Status == "preparando",
-            "en_camino"  => o.Status == "en_camino",
-            "entregado"  => o.Status == "entregado",
+            "recibido"   => o.Status == "recibido",
+            "en_proceso" => o.Status == "en_proceso",
+            "atendido"   => o.Status == "atendido",
+            "rechazado"  => o.Status == "rechazado",
             "cancelado"  => o.Status == "cancelado",
             _            => true
         };
@@ -46,9 +46,9 @@
 
     private void SetFilter(string f) { _selectedFilter = f; _currentPage = 1; }
 
-    private void UpdateStatus(string id, string newStatus)
+    private async Task UpdateStatus(string id, string newStatus)
     {
-        SalesSvc.UpdateOrderStatus(id, newStatus);
+        await SalesSvc.UpdateOrderStatusAsync(id, newStatus);
         RefreshList();
         if (_detailOrder?.Id == id)
             _detailOrder = _allOrders.FirstOrDefault(o => o.Id == id);
@@ -58,46 +58,46 @@
     private void CloseModal()        => _showDetailModal = false;
     private void ClearSearch()       { _searchTerm = ""; _currentPage = 1; }
 
-    private void SiguienteAccion(Order o)
+    private async Task SiguienteAccion(Order o)
     {
+        // Flujo lineal según estados del backend: RECIBIDO → EN_PROCESO → ATENDIDO
         var next = o.Status switch
         {
-            "pendiente"  => "preparando",
-            "preparando" => "en_camino",
-            "en_camino"  => "entregado",
+            "recibido"   => "en_proceso",
+            "en_proceso" => "atendido",
             _            => ""
         };
-        if (!string.IsNullOrEmpty(next)) UpdateStatus(o.Id, next);
+        if (!string.IsNullOrEmpty(next)) await UpdateStatus(o.Id, next);
     }
 
-    private void CancelarOrder(Order o) => UpdateStatus(o.Id, "cancelado");
+    private async Task CancelarOrder(Order o) => await UpdateStatus(o.Id, "cancelado");
 
     private string GetStatusLabel(string s) => s switch
     {
-        "pendiente"  => "Pendiente",
-        "preparando" => "En preparación",
-        "en_camino"  => "Listo para entrega",
-        "entregado"  => "Entregado",
+        "recibido"   => "Recibido",
+        "en_proceso" => "En proceso",
+        "atendido"   => "Atendido",
+        "rechazado"  => "Rechazado",
         "cancelado"  => "Cancelado",
         _            => s
     };
 
     private string GetStatusBadgeStyle(string s) => s switch
     {
-        "pendiente"  => "background:#fff3e0;color:#b25e00;font-weight:600;",
-        "preparando" => "background:#e3f2fd;color:#0d6efd;font-weight:600;",
-        "en_camino"  => "background:#e8f5e9;color:#0f5132;font-weight:600;",
-        "entregado"  => "background:#e8f5e9;color:#198754;font-weight:600;",
+        "recibido"   => "background:#fff3e0;color:#b25e00;font-weight:600;",
+        "en_proceso" => "background:#e3f2fd;color:#0d6efd;font-weight:600;",
+        "atendido"   => "background:#e8f5e9;color:#198754;font-weight:600;",
+        "rechazado"  => "background:#ffebee;color:#c62828;font-weight:600;",
         "cancelado"  => "background:#ffebee;color:#c62828;font-weight:600;",
         _            => "background:#f5f5f5;color:#555;font-weight:600;"
     };
 
     private string GetLeftBorderClass(string s) => s switch
     {
-        "pendiente"  => "border-left-pendiente",
-        "preparando" => "border-left-preparando",
-        "en_camino"  => "border-left-listo",
-        "entregado"  => "border-left-entregado",
+        "recibido"   => "border-left-pendiente",
+        "en_proceso" => "border-left-preparando",
+        "atendido"   => "border-left-entregado",
+        "rechazado"  => "border-left-cancelado",
         "cancelado"  => "border-left-cancelado",
         _            => ""
     };
@@ -113,9 +113,8 @@
 
     private string GetNextActionLabel(string s) => s switch
     {
-        "pendiente"  => "Iniciar Preparación",
-        "preparando" => "Marcar listo",
-        "en_camino"  => "Marcar entregado",
+        "recibido"   => "Iniciar proceso",
+        "en_proceso" => "Marcar atendido",
         _            => ""
     };
 
@@ -144,8 +143,8 @@
             <div class="worker-kpi-card kpi-pendiente">
                 <div class="metric-kpi-icon" style="background:color-mix(in srgb,#e67e22 15%,transparent);color:#e67e22;"><i class="fas fa-clock"></i></div>
                 <div>
-                    <div class="metric-kpi-value text-foreground">@CountByStatus("pendiente")</div>
-                    <div class="metric-kpi-label">Pendientes</div>
+                    <div class="metric-kpi-value text-foreground">@CountByStatus("recibido")</div>
+                    <div class="metric-kpi-label">Recibidos</div>
                 </div>
             </div>
         </div>
@@ -153,8 +152,8 @@
             <div class="worker-kpi-card kpi-preparando">
                 <div class="metric-kpi-icon" style="background:color-mix(in srgb,#1976d2 15%,transparent);color:#1976d2;"><i class="fas fa-box-open"></i></div>
                 <div>
-                    <div class="metric-kpi-value text-foreground">@CountByStatus("preparando")</div>
-                    <div class="metric-kpi-label">En preparación</div>
+                    <div class="metric-kpi-value text-foreground">@CountByStatus("en_proceso")</div>
+                    <div class="metric-kpi-label">En proceso</div>
                 </div>
             </div>
         </div>
@@ -162,8 +161,8 @@
             <div class="worker-kpi-card kpi-encamino">
                 <div class="metric-kpi-icon" style="background:color-mix(in srgb,#2e7d32 15%,transparent);color:#2e7d32;"><i class="fas fa-truck"></i></div>
                 <div>
-                    <div class="metric-kpi-value text-foreground">@CountByStatus("en_camino")</div>
-                    <div class="metric-kpi-label">En camino</div>
+                    <div class="metric-kpi-value text-foreground">@CountByStatus("atendido")</div>
+                    <div class="metric-kpi-label">Atendidos</div>
                 </div>
             </div>
         </div>
@@ -171,8 +170,8 @@
             <div class="worker-kpi-card kpi-entregado">
                 <div class="metric-kpi-icon" style="background:color-mix(in srgb,#5e35b1 15%,transparent);color:#5e35b1;"><i class="fas fa-check-circle"></i></div>
                 <div>
-                    <div class="metric-kpi-value text-foreground">@CountByStatus("entregado")</div>
-                    <div class="metric-kpi-label">Entregados hoy</div>
+                    <div class="metric-kpi-value text-foreground">@(CountByStatus("rechazado") + CountByStatus("cancelado"))</div>
+                    <div class="metric-kpi-label">Rechazados/Cancelados</div>
                 </div>
             </div>
         </div>
@@ -188,11 +187,11 @@
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 bg-card p-3 border border-color-default shadow-sm" style="border-radius:var(--radius);">
         <div class="filter-pills flex-grow-1">
             <button class="filter-pill @(_selectedFilter=="todos"?"active":"")"      @onclick='@(()=>SetFilter("todos"))'>Todos (@_allOrders.Count)</button>
-            <button class="filter-pill @(_selectedFilter=="pendiente"?"active":"")"  @onclick='@(()=>SetFilter("pendiente"))'><i class="fas fa-clock me-1"></i>Pendientes (@CountByStatus("pendiente"))</button>
-            <button class="filter-pill @(_selectedFilter=="preparando"?"active":"")" @onclick='@(()=>SetFilter("preparando"))'><i class="fas fa-box-open me-1"></i>En preparación (@CountByStatus("preparando"))</button>
-            <button class="filter-pill @(_selectedFilter=="en_camino"?"active":"")"  @onclick='@(()=>SetFilter("en_camino"))'><i class="fas fa-truck me-1"></i>Listos para entrega (@CountByStatus("en_camino"))</button>
-            <button class="filter-pill @(_selectedFilter=="entregado"?"active":"")"  @onclick='@(()=>SetFilter("entregado"))'><i class="fas fa-check-circle me-1"></i>Entregados (@CountByStatus("entregado"))</button>
-            <button class="filter-pill @(_selectedFilter=="cancelado"?"active":"")"  @onclick='@(()=>SetFilter("cancelado"))'><i class="fas fa-times me-1"></i>Cancelados (@CountByStatus("cancelado"))</button>
+            <button class="filter-pill @(_selectedFilter=="recibido"?"active":"")"   @onclick='@(()=>SetFilter("recibido"))'><i class="fas fa-inbox me-1"></i>Recibidos (@CountByStatus("recibido"))</button>
+            <button class="filter-pill @(_selectedFilter=="en_proceso"?"active":"")" @onclick='@(()=>SetFilter("en_proceso"))'><i class="fas fa-box-open me-1"></i>En proceso (@CountByStatus("en_proceso"))</button>
+            <button class="filter-pill @(_selectedFilter=="atendido"?"active":"")"   @onclick='@(()=>SetFilter("atendido"))'><i class="fas fa-check-circle me-1"></i>Atendidos (@CountByStatus("atendido"))</button>
+            <button class="filter-pill @(_selectedFilter=="rechazado"?"active":"")"  @onclick='@(()=>SetFilter("rechazado"))'><i class="fas fa-xmark me-1"></i>Rechazados (@CountByStatus("rechazado"))</button>
+            <button class="filter-pill @(_selectedFilter=="cancelado"?"active":"")"  @onclick='@(()=>SetFilter("cancelado"))'><i class="fas fa-ban me-1"></i>Cancelados (@CountByStatus("cancelado"))</button>
         </div>
         <div class="d-flex align-items-center gap-2" style="max-width:420px;width:100%;">
             <div class="position-relative flex-grow-1">
@@ -295,7 +294,7 @@
 
                     <!-- Fila 6: Botones de acción -->
                     <div class="d-flex gap-2 align-items-center mt-2 w-100">
-                        @if (order.Status == "entregado" || order.Status == "cancelado")
+                        @if (order.Status == "atendido" || order.Status == "rechazado" || order.Status == "cancelado")
                         {
                             <button class="btn btn-secondary btn-sm w-100 py-2 d-flex align-items-center justify-content-center gap-2"
                                     @onclick="@(() => VerDetalle(order))"
@@ -311,40 +310,32 @@
                                 <i class="fas fa-eye" style="font-size:0.78rem;"></i> Ver detalle
                             </button>
 
-                            @if (order.Status == "pendiente")
+                            @if (order.Status == "recibido")
                             {
                                 <button class="btn btn-sm text-white py-2 px-3 flex-grow-1 d-flex align-items-center justify-content-between gap-2"
                                         @onclick="@(() => SiguienteAccion(order))"
                                         style="background:#064e3b;border:1px solid #064e3b;border-radius:var(--radius);font-size:0.8rem;font-weight:600;">
-                                    <span class="d-flex align-items-center gap-2"><i class="fas fa-utensils" style="font-size:0.78rem;"></i> Iniciar preparación</span>
+                                    <span class="d-flex align-items-center gap-2"><i class="fas fa-utensils" style="font-size:0.78rem;"></i> Iniciar proceso</span>
                                     <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
                                 </button>
                                 <button class="btn btn-light btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0"
-                                        @onclick="@(() => CancelarOrder(order))"
+                                        @onclick="@(async () => await CancelarOrder(order))"
                                         style="width:36px;height:36px;border:1px solid #fee2e2;color:#dc3545;background:#fff;" title="Cancelar">
                                     <i class="fas fa-times" style="font-size:0.78rem;"></i>
                                 </button>
                             }
-                            else if (order.Status == "preparando")
+                            else if (order.Status == "en_proceso")
                             {
                                 <button class="btn btn-sm text-white py-2 px-3 flex-grow-1 d-flex align-items-center justify-content-between gap-2"
                                         @onclick="@(() => SiguienteAccion(order))"
                                         style="background:#064e3b;border:1px solid #064e3b;border-radius:var(--radius);font-size:0.8rem;font-weight:600;">
-                                    <span class="d-flex align-items-center gap-2"><i class="fas fa-box-open" style="font-size:0.78rem;"></i> Marcar listo</span>
+                                    <span class="d-flex align-items-center gap-2"><i class="fas fa-check-circle" style="font-size:0.78rem;"></i> Marcar atendido</span>
                                     <i class="fas fa-chevron-right" style="font-size:0.7rem;"></i>
                                 </button>
                                 <button class="btn btn-light btn-sm rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0"
-                                        @onclick="@(() => CancelarOrder(order))"
+                                        @onclick="@(async () => await CancelarOrder(order))"
                                         style="width:36px;height:36px;border:1px solid #fee2e2;color:#dc3545;background:#fff;" title="Cancelar">
                                     <i class="fas fa-times" style="font-size:0.78rem;"></i>
-                                </button>
-                            }
-                            else if (order.Status == "en_camino")
-                            {
-                                <button class="btn btn-sm text-white py-2 px-3 flex-grow-1 d-flex align-items-center justify-content-center gap-2"
-                                        @onclick="@(() => SiguienteAccion(order))"
-                                        style="background:#064e3b;border:1px solid #064e3b;border-radius:var(--radius);font-size:0.8rem;font-weight:600;">
-                                    <i class="fas fa-check-circle" style="font-size:0.82rem;"></i> Marcar entregado
                                 </button>
                             }
                         }

@@ -86,7 +86,8 @@ public class SalesService
     public List<Order> GetRecentOrders() => _orders;
 
     // Pedidos filtrados por cliente — para la pantalla "Mis Pedidos".
-    // Llama directamente al API para obtener solo los del cliente logueado.
+    // Enriquece cada pedido con sus líneas de detalle (GET /detalles-pedido/por-pedido/{id})
+    // para que "Mis Pedidos" muestre los productos y el método de pago correcto.
     public async Task<List<Order>> GetClientOrdersAsync(int idCliente)
     {
         var orders = new List<Order>();
@@ -95,8 +96,38 @@ public class SalesService
         {
             var pedidos = await _http.GetFromJsonAsync<List<PedidoApi>>(
                 $"pedidos/por-cliente/{idCliente}", _json);
-            if (pedidos != null)
-                orders.AddRange(pedidos.Select(p => p.ToOrder()));
+            if (pedidos == null) return orders;
+
+            foreach (var p in pedidos)
+            {
+                var order = p.ToOrder();
+
+                // Cargar líneas de detalle para mostrar productos
+                try
+                {
+                    var detalles = await _http.GetFromJsonAsync<List<DetallePedidoApi>>(
+                        $"detalles-pedido/por-pedido/{p.IdPedido}", _json);
+
+                    if (detalles != null && detalles.Count > 0)
+                    {
+                        order.Products = detalles.Select(d => new CartItem
+                        {
+                            Id       = d.Producto?.IdProducto ?? 0,
+                            Name     = d.Producto?.Nombre ?? "Producto",
+                            Price    = (decimal)(d.PrecioUnitario),
+                            Quantity = d.Cantidad,
+                            Image    = ""
+                        }).ToList();
+                        order.Items = order.Products.Count;
+
+                        // Subtotal real desde los detalles
+                        order.Subtotal = order.Products.Sum(x => x.Price * x.Quantity);
+                    }
+                }
+                catch { /* si falla, Products queda vacío */ }
+
+                orders.Add(order);
+            }
         }
         catch { /* backend no disponible */ }
         return orders;
@@ -227,19 +258,67 @@ public class SalesService
         });
     }
 
-    public void UpdateOrderStatus(string id, string status)
+    // Convierte el status interno del front al valor ENUM que espera el backend.
+    public static string ToBackendEstado(string status) => status.ToLower() switch
     {
+        "recibido"   => "RECIBIDO",
+        "en_proceso" => "EN_PROCESO",
+        "atendido"   => "ATENDIDO",
+        "rechazado"  => "RECHAZADO",
+        "cancelado"  => "CANCELADO",
+        _            => status.ToUpper()
+    };
+
+    public async Task UpdateOrderStatusAsync(string id, string status)
+    {
+        // Actualizar caché local
         var order = _orders.FirstOrDefault(o => o.Id == id);
         if (order != null) order.Status = status;
-
         var sale = _sales.FirstOrDefault(s => s.Id == id.Replace("PED-", "VTA-"));
-        if (sale != null) sale.Estado = status == "entregado" ? "completado" : status;
+        if (sale != null) sale.Estado = status == "atendido" ? "completado" : status;
+
+        // Persiste en el backend
+        if (int.TryParse(id.StartsWith("PED-") ? id[4..] : id, out var numId) && numId > 0)
+        {
+            var dto = new { idPedido = numId, estadoPedido = ToBackendEstado(status) };
+            try { await _http.PutAsJsonAsync("pedidos", dto); }
+            catch { /* red no disponible */ }
+        }
     }
+
+    // Mantener versión síncrona legacy para no romper referencias existentes
+    public void UpdateOrderStatus(string id, string status)
+        => _ = UpdateOrderStatusAsync(id, status);
 
     public void DeleteOrder(string id)
     {
         var order = _orders.FirstOrDefault(o => o.Id == id);
         if (order != null) _orders.Remove(order);
+    }
+
+    // Cancela un pedido del cliente (solo si aún está en estado RECIBIDO y dentro del tiempo límite).
+    // Llama a PUT /api/pedidos con estado CANCELADO.
+    // Returns: true si se canceló en el backend, false si hubo error (se actualiza la caché de todas formas).
+    public async Task<bool> CancelOrderAsync(int idPedido)
+    {
+        var pedido = new { idPedido, estadoPedido = "CANCELADO" };
+        try
+        {
+            var resp = await _http.PutAsJsonAsync("pedidos", pedido);
+            if (resp.IsSuccessStatusCode)
+            {
+                // Actualizar caché local
+                var order = _orders.FirstOrDefault(o => o.Id == $"PED-{idPedido:D4}");
+                if (order != null) order.Status = "cancelado";
+                return true;
+            }
+        }
+        catch { /* red no disponible */ }
+
+        // Actualización optimista de la caché
+        var localOrder = _orders.FirstOrDefault(o => o.Id == $"PED-{idPedido:D4}");
+        if (localOrder != null) localOrder.Status = "cancelado";
+        return false;
     }
 
     // Pedido online del cliente (Checkout.razor).
@@ -394,137 +473,4 @@ public class SalesService
     }
 }
 
-// ── Clases que mapean el JSON del backend (antes en VentaApi.cs / PedidoApi.cs) ──
-
-// Refleja Venta del backend Java
-class VentaApi
-{
-    public int IdVenta { get; set; }
-    public int IdPedido { get; set; }
-    public DateTime? FechaHora { get; set; }
-    public double MontoTotal { get; set; }
-    public double MontoDescuento { get; set; }
-    public string CanalVenta { get; set; } = string.Empty;
-    public string EstadoVenta { get; set; } = string.Empty;
-    public string? Observaciones { get; set; }
-    public UserRef? Cliente { get; set; }
-    public UserRef? Trabajador { get; set; }
-    public MetodoPagoRef? MetodoPago { get; set; }
-    public List<DetalleVentaApi>? Detalles { get; set; }
-
-    public Sale ToSale() => new Sale
-    {
-        Id         = $"VTA-{IdVenta:D3}",
-        Fecha      = FechaHora ?? DateTime.Now,
-        Cliente    = Cliente != null
-                     ? $"{Cliente.Nombres} {Cliente.Apellidos}".Trim()
-                     : "Público General",
-        Canal      = CanalVenta.ToLower() switch
-        {
-            "presencial" => "presencial",
-            "web"        => "web",
-            "whatsapp"   => "whatsapp",
-            _            => "presencial"
-        },
-        Total      = (decimal)MontoTotal,
-        MetodoPago = MetodoPago?.Nombre?.ToLower() ?? "efectivo",
-        Comprobante= "boleta",
-        Estado     = EstadoVenta.ToLower() switch
-        {
-            "completada" => "completado",
-            "anulada"    => "cancelado",
-            _            => "completado"
-        }
-    };
-}
-
-// Refleja Pedido del backend Java
-class PedidoApi
-{
-    public int IdPedido { get; set; }
-    public DateTime? FechaHora { get; set; }
-    public double MontoTotal { get; set; }
-    public string EstadoPedido { get; set; } = string.Empty;
-    public string? DireccionEntrega { get; set; }
-    public string? ModalidadVenta { get; set; }
-    public string? Observaciones { get; set; }
-    public UserRef? Cliente { get; set; }
-    public List<DetallePedidoApi>? Detalles { get; set; }
-
-    public Order ToOrder() => new Order
-    {
-        Id       = $"PED-{IdPedido:D4}",
-        Customer = (Cliente != null &&
-                    !string.IsNullOrWhiteSpace($"{Cliente.Nombres} {Cliente.Apellidos}".Trim()))
-                   ? $"{Cliente.Nombres} {Cliente.Apellidos}".Trim()
-                   : "Cliente",
-        Date     = FechaHora ?? DateTime.Now,
-        Total    = (decimal)MontoTotal,
-        Items    = Detalles?.Count ?? 0,
-        Status   = (EstadoPedido ?? "").ToUpper() switch
-        {
-            "RECIBIDO"   => "pendiente",
-            "EN_PROCESO" => "preparando",
-            "ATENDIDO"   => "entregado",
-            "RECHAZADO"  => "cancelado",
-            "CANCELADO"  => "cancelado",
-            _            => "pendiente"
-        },
-        DeliveryMethod = (ModalidadVenta ?? "").ToUpper() switch
-        {
-            "RECOJO_TIENDA" => "pickup",
-            _               => "delivery"
-        },
-        Channel  = (ModalidadVenta ?? "").ToUpper() switch
-        {
-            "RECOJO_TIENDA" => "Presencial",
-            _               => "Online"
-        },
-        Address  = DireccionEntrega ?? string.Empty,
-        TimelinePedidoRecibido = FechaHora ?? DateTime.Now,
-    };
-}
-
-// Clases de referencia compartidas (MetodoPago, Usuario, Producto)
-class MetodoPagoRef
-{
-    public int IdMetodoPago { get; set; }
-    public string Nombre { get; set; } = string.Empty;
-}
-
-class UserRef
-{
-    public int IdUsuario { get; set; }
-    public string Nombres { get; set; } = string.Empty;
-    public string Apellidos { get; set; } = string.Empty;
-    public string? Correo { get; set; }
-    public string? Dni { get; set; }
-    public string? Telefono { get; set; }
-    public string? Cargo { get; set; }
-    public string? Rol { get; set; }
-}
-
-class DetalleVentaApi
-{
-    public int IdDetalleVenta { get; set; }
-    public int Cantidad { get; set; }
-    public double PrecioUnitario { get; set; }
-    public double Subtotal { get; set; }
-    public ProductoRef? Producto { get; set; }
-}
-
-class DetallePedidoApi
-{
-    public int IdDetallePedido { get; set; }
-    public int Cantidad { get; set; }
-    public double PrecioUnitario { get; set; }
-    public double Subtotal { get; set; }
-    public ProductoRef? Producto { get; set; }
-}
-
-class ProductoRef
-{
-    public int IdProducto { get; set; }
-    public string Nombre { get; set; } = string.Empty;
-    public double PrecioUnitario { get; set; }
-}
+// ── VentaApi, PedidoApi y clases de referencia se encuentran en Models/Api/SalesApiModels.cs ──

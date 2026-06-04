@@ -34,80 +34,80 @@ public class EnvioCorreo {
 
     private static EnvioCorreo instancia;
 
-    private final String emailOrigen;
-    private final String passwordOrigen;
-    private final Properties properties;
-    private final Authenticator autenticador;
+    private EnvioCorreo() { }
 
-    private EnvioCorreo() {
-        this.emailOrigen = Config.get("correo.emailOrigen", "");
-        this.passwordOrigen = Config.get("correo.password", "");
+    public static synchronized EnvioCorreo getInstance() {
+        if (instancia == null) instancia = new EnvioCorreo();
+        return instancia;
+    }
 
-        this.properties = new Properties();
-        properties.put("mail.smtp.host", Config.get("correo.smtp.host", "smtp.gmail.com"));
-        properties.put("mail.smtp.ssl.trust", Config.get("correo.smtp.host", "smtp.gmail.com"));
-        properties.setProperty("mail.smtp.starttls.enable", "true");
-        properties.setProperty("mail.smtp.port", Config.get("correo.smtp.port", "587"));
-        properties.setProperty("mail.smtp.user", emailOrigen);
-        properties.setProperty("mail.smtp.ssl.protocols", "TLSv1.2");
-        properties.setProperty("mail.smtp.auth", "true");
+    public static synchronized void resetInstancia() {
+        instancia = null;
+    }
 
-        this.autenticador = new Authenticator() {
+    /**
+     * Envía un correo HTML a uno o más destinatarios.
+     * Las credenciales se leen en CADA llamada desde Config para que un cambio
+     * en shiligama-config.properties + reinicio de Tomcat sea suficiente.
+     *
+     * @return true si el correo se envió correctamente.
+     * @throws Exception con el mensaje de error SMTP para que el WS lo propague.
+     */
+    public boolean enviarEmail(List<String> destinatariosCorreos, String asunto,
+                               String contenidoHtml) throws Exception {
+        if (destinatariosCorreos == null || destinatariosCorreos.isEmpty()) return false;
+
+        // Leer credenciales frescas cada vez
+        String emailOrigen   = Config.get("correo.emailOrigen", "");
+        String passwordOrigen = Config.get("correo.password", "");
+        String smtpHost      = Config.get("correo.smtp.host", "smtp.gmail.com");
+        String smtpPort      = Config.get("correo.smtp.port", "587");
+
+        if (emailOrigen.isBlank() || passwordOrigen.isBlank()) {
+            throw new Exception(
+                "Falta configurar correo.emailOrigen / correo.password en shiligama-config.properties.");
+        }
+
+        Properties props = new Properties();
+        props.put("mail.smtp.host",             smtpHost);
+        props.put("mail.smtp.ssl.trust",        smtpHost);
+        props.put("mail.smtp.starttls.enable",  "true");
+        props.put("mail.smtp.port",             smtpPort);
+        props.put("mail.smtp.user",             emailOrigen);
+        props.put("mail.smtp.ssl.protocols",    "TLSv1.2");
+        props.put("mail.smtp.auth",             "true");
+
+        Authenticator auth = new Authenticator() {
             @Override
             protected PasswordAuthentication getPasswordAuthentication() {
                 return new PasswordAuthentication(emailOrigen, passwordOrigen);
             }
         };
-    }
 
-    public static synchronized EnvioCorreo getInstance() {
-        if (instancia == null) {
-            instancia = new EnvioCorreo();
-        }
-        return instancia;
-    }
+        Session session = Session.getInstance(props, auth);
+        // Activar debug SMTP en consola para ver el handshake completo
+        session.setDebug(true);
 
-    /**
-     * Envía un correo HTML a uno o más destinatarios (en copia oculta).
-     *
-     * @return true si el correo se envió correctamente.
-     */
-    public boolean enviarEmail(List<String> destinatariosCorreos, String asunto,
-                               String contenidoHtml) {
-        if (destinatariosCorreos == null || destinatariosCorreos.isEmpty()) {
-            return false;
-        }
-        if (emailOrigen == null || emailOrigen.isBlank()
-                || passwordOrigen == null || passwordOrigen.isBlank()) {
-            System.err.println("[EnvioCorreo] Falta configurar correo.emailOrigen / correo.password.");
-            return false;
-        }
-        try {
-            Session session = Session.getInstance(properties, autenticador);
-            MimeMessage correo = new MimeMessage(session);
-            correo.setFrom(new InternetAddress(emailOrigen));
+        MimeMessage correo = new MimeMessage(session);
+        correo.setFrom(new InternetAddress(emailOrigen));
 
-            InternetAddress[] destinatarios = new InternetAddress[destinatariosCorreos.size()];
-            for (int i = 0; i < destinatariosCorreos.size(); i++) {
-                destinatarios[i] = new InternetAddress(destinatariosCorreos.get(i));
-            }
-            correo.setRecipients(Message.RecipientType.BCC, destinatarios);
-            correo.setSubject(asunto, "UTF-8");
-            correo.setSentDate(new java.util.Date());
+        InternetAddress[] dests = destinatariosCorreos.stream()
+                .map(d -> { try { return new InternetAddress(d); }
+                            catch (Exception ex) { throw new RuntimeException(ex); } })
+                .toArray(InternetAddress[]::new);
+        // TO (no BCC) para evitar problemas con filtros anti-spam en pruebas
+        correo.setRecipients(Message.RecipientType.TO, dests);
+        correo.setSubject(asunto, "UTF-8");
+        correo.setSentDate(new java.util.Date());
 
-            MimeBodyPart cuerpoHtml = new MimeBodyPart();
-            cuerpoHtml.setContent(contenidoHtml, "text/html; charset=utf-8");
+        MimeBodyPart cuerpoHtml = new MimeBodyPart();
+        cuerpoHtml.setContent(contenidoHtml, "text/html; charset=utf-8");
+        Multipart contenido = new MimeMultipart();
+        contenido.addBodyPart(cuerpoHtml);
+        correo.setContent(contenido);
 
-            Multipart contenido = new MimeMultipart();
-            contenido.addBodyPart(cuerpoHtml);
-            correo.setContent(contenido);
-
-            Transport.send(correo);
-            System.out.println("[EnvioCorreo] Correo enviado correctamente a " + destinatariosCorreos);
-            return true;
-        } catch (Exception e) {
-            System.err.println("[EnvioCorreo] Error al enviar el correo: " + e.getMessage());
-            return false;
-        }
+        Transport.send(correo);
+        System.out.println("[EnvioCorreo] Correo enviado a " + destinatariosCorreos);
+        return true;
     }
 }

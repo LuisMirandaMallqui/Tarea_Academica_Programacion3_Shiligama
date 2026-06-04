@@ -1,0 +1,106 @@
+@inject IJSRuntime JS
+@implements IDisposable
+
+@code {
+    /// <summary>Callback invocado cuando el usuario confirma una dirección del mapa.</summary>
+    [Parameter] public EventCallback<string> OnAddressSelected { get; set; }
+
+    private bool   _show           = false;
+    private string _pendingAddress = "";
+    private DotNetObjectReference<MapAddressPicker>? _dotnetRef;
+
+    /// <summary>Abre el modal e inicializa el mapa Leaflet.</summary>
+    public async Task OpenAsync()
+    {
+        _show           = true;
+        _pendingAddress = "";
+        StateHasChanged();
+        _dotnetRef?.Dispose();
+        _dotnetRef = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("mapHelpers.initMap", _dotnetRef);
+    }
+
+    /// <summary>Cierra el modal y destruye la instancia del mapa.</summary>
+    public async Task CloseAsync()
+    {
+        _show           = false;
+        _pendingAddress = "";
+        await JS.InvokeVoidAsync("mapHelpers.destroyMap");
+        StateHasChanged();
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(_pendingAddress))
+            await OnAddressSelected.InvokeAsync(_pendingAddress);
+        await CloseAsync();
+    }
+
+    /// <summary>Llamado desde JS (Leaflet geocodificación inversa) con la dirección seleccionada.</summary>
+    [JSInvokable]
+    public void OnMapAddressSelected(string address)
+    {
+        _pendingAddress = address;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => _dotnetRef?.Dispose();
+}
+
+@if (_show)
+{
+    <div style="position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.5);
+                display:flex;align-items:center;justify-content:center;"
+         @onclick="CloseAsync">
+        <div style="background:white;border-radius:16px;width:90%;max-width:650px;
+                    box-shadow:0 25px 60px rgba(0,0,0,0.3);overflow:hidden;"
+             @onclick:stopPropagation="true">
+
+            <!-- Cabecera -->
+            <div class="d-flex align-items-center justify-content-between px-4 py-3"
+                 style="border-bottom:1px solid #e5e7eb;">
+                <h5 class="fw-bold mb-0" style="font-family:'Outfit',sans-serif;font-size:1.1rem;color:#111827;">
+                    <i class="fa-solid fa-map-location-dot me-2" style="color:#0D4525;"></i>Seleccionar dirección
+                </h5>
+                <button type="button" @onclick="CloseAsync"
+                        style="background:none;border:none;font-size:1.3rem;color:#6b7280;cursor:pointer;line-height:1;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Mapa -->
+            <div id="address-map" style="width:100%;height:350px;"></div>
+
+            <!-- Dirección seleccionada + confirmar -->
+            <div class="px-4 py-3" style="border-top:1px solid #e5e7eb;">
+                @if (!string.IsNullOrWhiteSpace(_pendingAddress))
+                {
+                    <div class="d-flex align-items-start gap-2 mb-3 p-2"
+                         style="background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
+                        <i class="fa-solid fa-location-dot mt-1" style="color:#0D4525;flex-shrink:0;"></i>
+                        <span style="font-size:0.85rem;color:#374151;word-break:break-word;">@_pendingAddress</span>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted-foreground mb-3" style="font-size:0.85rem;">
+                        <i class="fa-solid fa-hand-pointer me-1"></i> Haz clic en el mapa para seleccionar una dirección
+                    </p>
+                }
+                <div class="d-flex gap-2 justify-content-end">
+                    <button type="button" @onclick="CloseAsync"
+                            class="btn btn-outline-secondary px-3 py-2"
+                            style="border-radius:8px;font-size:0.9rem;">
+                        Cancelar
+                    </button>
+                    <button type="button" @onclick="ConfirmAsync"
+                            class="btn text-white px-3 py-2 fw-semibold d-flex align-items-center gap-2"
+                            style="background-color:#0D4525;border-radius:8px;font-size:0.9rem;border:none;"
+                            disabled="@(string.IsNullOrWhiteSpace(_pendingAddress))">
+                        <i class="fa-solid fa-check"></i> Confirmar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}

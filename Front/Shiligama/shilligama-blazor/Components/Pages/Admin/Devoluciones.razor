@@ -11,6 +11,7 @@
     // New Return Form Modal state
     private bool _showModal = false;
     private Return _form = new();
+    private int _selectedProductId = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -35,29 +36,34 @@
         _form = new Return
         {
             Quantity = 1,
-            RegisteredBy = Auth.CurrentUser?.Name ?? "Admin Shiligama"
+            RegisteredBy = Auth.CurrentUser?.Name ?? "Admin"
         };
+        _selectedProductId = 0;
         _showModal = true;
     }
 
-    private void Save()
+    private async Task Save()
     {
-        // Try to fetch product code and price dynamically from product list
-        var prod = ProductSvc.GetProducts().FirstOrDefault(p => p.Name.Equals(_form.Product, StringComparison.OrdinalIgnoreCase));
+        var prod = _selectedProductId > 0
+            ? ProductSvc.GetProductById(_selectedProductId)
+            : null;
+
         if (prod != null)
         {
+            _form.Product     = prod.Name;
             _form.ProductCode = $"PROD-{prod.Id:D3}";
-            _form.Amount = prod.Price * _form.Quantity;
+            _form.Amount      = prod.Price * _form.Quantity;
         }
         else
         {
             _form.ProductCode = "PROD-GEN";
-            _form.Amount = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
+            _form.Amount      = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
         }
 
-        ReturnsSvc.AddReturn(_form);
+        int idAdmin = Auth.CurrentUser?.IdUsuario ?? 0;
+        await ReturnsSvc.AddReturnAsync(_form, _selectedProductId, idAdmin);
         _showModal = false;
-        _returns = ReturnsSvc.GetReturns(); // refresh
+        _returns = ReturnsSvc.GetReturns();
     }
 
     private void Delete(string id)
@@ -196,8 +202,14 @@
                 <div class="modal-body p-4">
                     <EditForm Model="_form" OnValidSubmit="Save" class="d-flex flex-column gap-3">
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Nombre del Producto</label>
-                            <input type="text" @bind="_form.Product" required class="form-control text-foreground" placeholder="Pechuga de Pollo" />
+                            <label class="form-label small fw-medium text-foreground">Producto</label>
+                            <select @bind="_selectedProductId" class="form-select text-foreground" required>
+                                <option value="0">— Seleccionar producto —</option>
+                                @foreach (var p in ProductSvc.GetProducts().OrderBy(p => p.Name))
+                                {
+                                    <option value="@p.Id">@p.Name</option>
+                                }
+                            </select>
                         </div>
                         <div class="row g-2">
                             <div class="col-6">
@@ -207,20 +219,27 @@
                             <div class="col-6">
                                 <label class="form-label small fw-medium text-foreground">Motivo</label>
                                 <select @bind="_form.Reason" class="form-select text-foreground" required>
-                                    <option value="">Seleccionar motivo</option>
+                                    <option value="">— Seleccionar —</option>
                                     <option value="Vencido">Vencido</option>
                                     <option value="Dañado">Dañado / Roto</option>
                                     <option value="Error de pedido">Error de pedido</option>
+                                    <option value="Merma">Merma / Pérdida</option>
                                 </select>
                             </div>
                         </div>
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Observaciones detalladas</label>
-                            <textarea @bind="_form.Observations" class="form-control text-foreground" rows="3" placeholder="Detalle adicional del estado..."></textarea>
+                            <label class="form-label small fw-medium text-foreground">Observación</label>
+                            <textarea @bind="_form.Observations" class="form-control text-foreground"
+                                      rows="2" placeholder="Detalle adicional..."></textarea>
                         </div>
-                        <div class="d-flex justify-content-end gap-2 mt-3">
-                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius: var(--radius);">Cancelar</button>
-                            <button type="submit" class="btn btn-primary fw-semibold" style="border-radius: var(--radius);">
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <button type="button" @onclick="@(() => _showModal = false)"
+                                    class="btn btn-secondary" style="border-radius:var(--radius);">
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary fw-semibold"
+                                    style="border-radius:var(--radius);"
+                                    disabled="@(_selectedProductId == 0 || string.IsNullOrEmpty(_form.Reason))">
                                 Registrar
                             </button>
                         </div>

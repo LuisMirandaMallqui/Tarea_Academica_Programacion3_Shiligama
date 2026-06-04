@@ -36,6 +36,19 @@ public class CartService
         return _cartItems.Sum(item => item.Price * item.Quantity);
     }
 
+    // ── Tarifa de delivery (regla única del negocio) ─────────────────────
+    // Tarifa base de S/ 5.00; gratis a partir de S/ 50.00 de subtotal.
+    public const decimal DeliveryFeeBase = 5.00m;
+    public const decimal FreeDeliveryThreshold = 50.00m;
+
+    /// Tarifa de envío según la modalidad y el subtotal actual.
+    /// isDelivery=false (recojo en tienda) => sin costo.
+    public decimal GetDeliveryFee(bool isDelivery)
+    {
+        if (!isDelivery) return 0m;
+        return GetSubtotal() > FreeDeliveryThreshold ? 0m : DeliveryFeeBase;
+    }
+
     public async Task InitializeAsync()
     {
         if (_isInitialized) return;
@@ -67,10 +80,10 @@ public class CartService
         {
             _cartItems.Add(new CartItem
             {
-                Id = product.Id,
-                Name = product.Name,
-                Price = product.Price,
-                Image = product.Image,
+                Id       = product.Id,
+                Name     = product.Name,
+                Price    = product.Price,
+                Image    = product.Image,
                 Quantity = 1
             });
         }

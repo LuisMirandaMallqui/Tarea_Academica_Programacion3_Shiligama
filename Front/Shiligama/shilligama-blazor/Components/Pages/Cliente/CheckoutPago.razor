@@ -10,6 +10,11 @@
     [SupplyParameterFromQuery(Name = "pedido")]
     public int Pedido { get; set; }
 
+    // Total del carrito: el SP INSERTAR_PEDIDO no guarda MONTO_TOTAL en la BD,
+    // así que lo pasamos por URL para que Izipay reciba el monto correcto.
+    [SupplyParameterFromQuery(Name = "total")]
+    public decimal Total { get; set; }
+
     private bool _loading = true;
     private string? _error;
     private bool _iniciado = false;
@@ -33,7 +38,8 @@
         await Auth.InitializeAsync();
 
         // 1) Pedir el formToken al backend (CreatePayment).
-        var resp = await PagoSvc.IniciarPagoAsync(Pedido, Auth.CurrentUser?.Email ?? "");
+        // Se pasa el total explícitamente porque INSERTAR_PEDIDO no persiste MONTO_TOTAL.
+        var resp = await PagoSvc.IniciarPagoAsync(Pedido, Auth.CurrentUser?.Email ?? "", Total);
         if (resp == null || !resp.Exito || string.IsNullOrEmpty(resp.FormToken))
         {
             _error = resp?.Mensaje ?? "No se pudo iniciar el pago con Izipay. Tu pedido quedó registrado; "

@@ -3,19 +3,12 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
+using shilligama_blazor.Models;
 
 namespace shilligama_blazor.Services;
 
-// DTO que mapea TopProductoDto del backend Java
-public class TopProductoItem
-{
-    public int    IdProducto    { get; set; }
-    public string Nombre        { get; set; } = string.Empty;
-    public string? ImagenUrl    { get; set; }
-    public int    TotalUnidades { get; set; }
-    public double TotalIngresos { get; set; }
-}
-
+// ============================================================================
+// TopProductoItem se encuentra en Models/TopProductoItem.cs
 // ============================================================================
 // ReporteService — consultas analíticas del panel de administración.
 //

@@ -3,8 +3,6 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 @inject HttpClient Http
-@inject IJSRuntime JS
-@implements IDisposable
 
 @code {
     private string _nombres   = "";
@@ -15,11 +13,35 @@
     private bool   _success   = false;
     private bool   _saving    = false;
     private string _error     = "";
+    private bool   _showConfirm = false;
+
+    // Permite solo dígitos en el DNI (máx. 8), bloqueando letras.
+    private void OnDniInput(ChangeEventArgs e)
+    {
+        var soloDigitos = new string((e.Value?.ToString() ?? "")
+            .Where(char.IsDigit).Take(8).ToArray());
+        _dni = soloDigitos;
+    }
+
+    // Valida y pide confirmación antes de guardar.
+    private void PedirConfirmacion()
+    {
+        _error = "";
+        if (string.IsNullOrWhiteSpace(_nombres) || string.IsNullOrWhiteSpace(_apellidos))
+        {
+            _error = "Nombres y apellidos son obligatorios.";
+            return;
+        }
+        if (_dni.Length != 8)
+        {
+            _error = "El DNI debe tener exactamente 8 dígitos.";
+            return;
+        }
+        _showConfirm = true;
+    }
 
     // ── Mapa Leaflet ──────────────────────────────────────────────────────────
-    private bool   _showMapModal    = false;
-    private string _pendingAddress  = "";
-    private DotNetObjectReference<Configuracion>? _dotnetRef;
+    private MapAddressPicker? _mapPicker;
 
     protected override void OnInitialized()
     {
@@ -39,6 +61,7 @@
 
     private async Task SaveChanges()
     {
+        _showConfirm = false;
         _saving  = true;
         _error   = "";
         _success = false;
@@ -94,35 +117,15 @@
 
     private async Task OpenMapModal()
     {
-        _showMapModal   = true;
-        _pendingAddress = "";
+        if (_mapPicker != null)
+            await _mapPicker.OpenAsync();
+    }
+
+    private void OnMapAddressSelected(string address)
+    {
+        _address = address;
         StateHasChanged();
-        _dotnetRef = DotNetObjectReference.Create(this);
-        await JS.InvokeVoidAsync("mapHelpers.initMap", _dotnetRef);
     }
-
-    private async Task CloseMapModal()
-    {
-        _showMapModal   = false;
-        _pendingAddress = "";
-        await JS.InvokeVoidAsync("mapHelpers.destroyMap");
-    }
-
-    private async Task ConfirmAddress()
-    {
-        if (!string.IsNullOrWhiteSpace(_pendingAddress))
-            _address = _pendingAddress;
-        await CloseMapModal();
-    }
-
-    [JSInvokable]
-    public void OnMapAddressSelected(string address)
-    {
-        _pendingAddress = address;
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose() => _dotnetRef?.Dispose();
 }
 
 <PageTitle>Configuración – Shiligama</PageTitle>
@@ -150,7 +153,7 @@
         <div class="alert alert-danger p-3 mb-4" style="border-radius: var(--radius);">@_error</div>
     }
 
-    <EditForm Model="this" OnValidSubmit="SaveChanges" class="d-flex flex-column gap-4">
+    <EditForm Model="this" OnValidSubmit="PedirConfirmacion" class="d-flex flex-column gap-4">
 
         <!-- Información Personal -->
         <div class="card p-4 d-flex flex-column gap-3 shadow-sm" style="border-radius: 12px; border: 1px solid rgba(0,0,0,0.08);">
@@ -180,10 +183,12 @@
                     <div class="position-relative">
                         <i class="fa-regular fa-id-card text-muted-foreground position-absolute"
                            style="left:14px;top:50%;transform:translateY(-50%);"></i>
-                        <input type="text" @bind="_dni" required maxlength="8" pattern="\d{8}"
-                               class="form-control text-foreground"
-                               style="height:44px;padding-left:42px;border-radius:8px;" />
+                        <input type="text" value="@_dni"
+                               readonly disabled
+                               class="form-control text-muted-foreground"
+                               style="height:44px;padding-left:42px;border-radius:8px;cursor:not-allowed;" />
                     </div>
+                    <div class="form-text small text-muted-foreground">El DNI no puede modificarse.</div>
                 </div>
                 <div class="col-md-7">
                     <label class="form-label small fw-medium text-foreground">Correo</label>
@@ -292,59 +297,32 @@
     </EditForm>
 </div>
 
-@* ===== Modal del Mapa (Leaflet + Nominatim) ===== *@
-@if (_showMapModal)
+@* ===== Modal del Mapa — componente reutilizable ===== *@
+<MapAddressPicker @ref="_mapPicker" OnAddressSelected="OnMapAddressSelected" />
+
+@* ===== Modal de confirmación al modificar datos ===== *@
+@if (_showConfirm)
 {
-    <div style="position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.5);
-                display:flex;align-items:center;justify-content:center;"
-         @onclick="CloseMapModal">
-        <div style="background:white;border-radius:16px;width:90%;max-width:650px;
-                    box-shadow:0 25px 60px rgba(0,0,0,0.3);overflow:hidden;"
-             @onclick:stopPropagation="true">
-
-            <!-- Cabecera -->
-            <div class="d-flex align-items-center justify-content-between px-4 py-3"
-                 style="border-bottom:1px solid #e5e7eb;">
-                <h5 class="fw-bold mb-0" style="font-family:'Outfit',sans-serif;font-size:1.1rem;color:#111827;">
-                    <i class="fa-solid fa-map-location-dot me-2" style="color:#0D4525;"></i>Seleccionar dirección
-                </h5>
-                <button type="button" @onclick="CloseMapModal"
-                        style="background:none;border:none;font-size:1.3rem;color:#6b7280;cursor:pointer;line-height:1;">
-                    <i class="fa-solid fa-xmark"></i>
-                </button>
-            </div>
-
-            <!-- Mapa -->
-            <div id="address-map" style="width:100%;height:350px;"></div>
-
-            <!-- Dirección seleccionada + confirmar -->
-            <div class="px-4 py-3" style="border-top:1px solid #e5e7eb;">
-                @if (!string.IsNullOrWhiteSpace(_pendingAddress))
-                {
-                    <div class="d-flex align-items-start gap-2 mb-3 p-2"
-                         style="background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
-                        <i class="fa-solid fa-location-dot mt-1" style="color:#0D4525;flex-shrink:0;"></i>
-                        <span style="font-size:0.85rem;color:#374151;word-break:break-word;">@_pendingAddress</span>
-                    </div>
-                }
-                else
-                {
-                    <p class="text-muted-foreground mb-3" style="font-size:0.85rem;">
-                        <i class="fa-solid fa-hand-pointer me-1"></i> Haz clic en el mapa para seleccionar una dirección
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+            <div class="modal-content" style="border-radius:14px;">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.4rem;">✏️</div>
+                    <h5 class="fw-bold mb-1" style="color:#111827;">¿Estás seguro?</h5>
+                    <p class="text-muted-foreground small mb-4">
+                        Se actualizará tu información personal con los datos ingresados.
                     </p>
-                }
-                <div class="d-flex gap-2 justify-content-end">
-                    <button type="button" @onclick="CloseMapModal"
-                            class="btn btn-outline-secondary px-3 py-2"
-                            style="border-radius:8px;font-size:0.9rem;">
-                        Cancelar
-                    </button>
-                    <button type="button" @onclick="ConfirmAddress"
-                            class="btn text-white px-3 py-2 fw-semibold d-flex align-items-center gap-2"
-                            style="background-color:#0D4525;border-radius:8px;font-size:0.9rem;border:none;"
-                            disabled="@(string.IsNullOrWhiteSpace(_pendingAddress))">
-                        <i class="fa-solid fa-check"></i> Confirmar
-                    </button>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-outline-secondary px-3"
+                                style="border-radius:8px;" @onclick="@(() => _showConfirm = false)">
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn text-white px-3 fw-semibold"
+                                style="background-color:#0D4525;border-radius:8px;border:none;"
+                                @onclick="SaveChanges">
+                            Sí, guardar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

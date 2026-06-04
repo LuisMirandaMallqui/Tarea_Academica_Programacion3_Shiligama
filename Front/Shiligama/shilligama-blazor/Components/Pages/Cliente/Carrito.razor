@@ -1,6 +1,7 @@
 @page "/carrito"
 @layout MainLayout
 @inject CartService Cart
+@inject PromocionService PromoSvc
 @inject NavigationManager Navigation
 
 @code {
@@ -9,7 +10,13 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender) { await Cart.InitializeAsync(); Cart.OnChange += StateHasChanged; StateHasChanged(); }
+        if (firstRender)
+        {
+            await Cart.InitializeAsync();
+            await PromoSvc.EnsureLoadedAsync();
+            Cart.OnChange += StateHasChanged;
+            StateHasChanged();
+        }
     }
 
     public void Dispose() => Cart.OnChange -= StateHasChanged;
@@ -20,8 +27,19 @@
 
     private void SetDeliveryMethod(DeliveryMethod method) => _deliveryMethod = method;
 
-    private decimal Subtotal => Cart.GetSubtotal();
-    private decimal Envio => _deliveryMethod == DeliveryMethod.Pickup ? 0 : (Subtotal > 50 ? 0 : 5);
+    private Promocion? GetPromo(int productId) =>
+        PromoSvc.GetVigentes().FirstOrDefault(p => p.ProductoIds.Contains(productId));
+
+    // Precio efectivo por línea (con descuento de promo si aplica)
+    private decimal LineTotal(CartItem item)
+    {
+        var promo = GetPromo(item.Id);
+        return PromocionHelper.PrecioEfectivo(item.Price, item.Quantity, promo);
+    }
+
+    private decimal Subtotal => Cart.GetCartItems()
+                                    .Sum(i => LineTotal(i));
+    private decimal Envio => Cart.GetDeliveryFee(_deliveryMethod == DeliveryMethod.Delivery);
     private decimal Total => Subtotal + Envio;
 }
 
@@ -113,9 +131,25 @@
                                        style="font-family:'Outfit',sans-serif;font-size:1rem;">
                                         @item.Name
                                     </p>
+                                    @{
+                                        var _itemPromo = GetPromo(item.Id);
+                                        bool _itemHasPromo = _itemPromo != null && _itemPromo.EsVigente;
+                                        decimal _itemPrecioEfectivo = PromocionHelper.PrecioEfectivo(item.Price, 1, _itemPromo);
+                                    }
                                     <p class="fw-bold mb-0 text-primary"
                                        style="font-size:1.1rem;font-family:'Outfit',sans-serif;">
-                                        S/. @item.Price.ToString("0.00")
+                                        S/. @_itemPrecioEfectivo.ToString("0.00")
+                                        @if (_itemHasPromo && _itemPrecioEfectivo < item.Price)
+                                        {
+                                            <span class="text-decoration-line-through text-muted-foreground ms-1"
+                                                  style="font-size:.8rem;font-weight:400;">
+                                                S/. @item.Price.ToString("0.00")
+                                            </span>
+                                            <span class="badge ms-1"
+                                                  style="background:#7c3aed;font-size:.6rem;vertical-align:middle;">
+                                                @_itemPromo!.DescuentoLabel
+                                            </span>
+                                        }
                                     </p>
                                 </div>
                             </div>
@@ -137,7 +171,7 @@
                                     <span class="fw-bold text-foreground"
                                           style="font-family:'Outfit',sans-serif;font-size:1.1rem;
                                                  height:32px;display:flex;align-items:center;">
-                                        S/. @((item.Price * item.Quantity).ToString("0.00"))
+                                        S/. @LineTotal(item).ToString("0.00")
                                     </span>
                                 </div>
 
