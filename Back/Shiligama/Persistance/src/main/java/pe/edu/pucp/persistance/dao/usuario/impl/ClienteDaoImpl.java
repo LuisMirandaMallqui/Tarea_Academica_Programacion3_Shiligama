@@ -110,7 +110,7 @@ public class ClienteDaoImpl implements ClienteDao {
 
     // SP: BUSCAR_CLIENTE_X_ID(IN _usuario_id)
     @Override
-    public Cliente buscarPorID(int id) {
+    public Cliente buscarPorId(int id) {
         Cliente cliente = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

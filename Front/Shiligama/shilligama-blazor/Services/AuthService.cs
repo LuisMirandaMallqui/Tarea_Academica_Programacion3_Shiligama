@@ -133,6 +133,11 @@ public class AuthService
     public bool IsWorker()   => CurrentUser?.Role == "trabajador";
     public bool IsCliente()  => CurrentUser?.Role == "cliente";
 
+    // Sincroniza el CurrentUser en memoria con localStorage.
+    // Llamar desde fuera cuando se actualiza el perfil (ej: Configuracion.razor)
+    // para que los datos persistan tras un refresh.
+    public Task SyncSessionAsync() => PersistSessionAsync();
+
     private async Task PersistSessionAsync()
     {
         if (CurrentUser is null) return;

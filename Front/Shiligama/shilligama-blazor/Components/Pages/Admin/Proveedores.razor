@@ -2,87 +2,6 @@
 @layout AdminLayout
 @inject SupplierService SupplierSvc
 
-@code {
-    private List<Supplier> _suppliers = new();
-    private string _search = "";
-    private string _statusFilter = "";
-
-    // Form Modal state
-    private bool _showModal = false;
-    private bool _isEditing = false;
-    private Supplier _form = new();
-    private string _formCategoriesRaw = "";
-
-    protected override void OnInitialized()
-    {
-        _suppliers = SupplierSvc.GetSuppliers();
-    }
-
-    private IEnumerable<Supplier> Filtered => _suppliers.Where(s =>
-        (string.IsNullOrEmpty(_search) || s.RazonSocial.Contains(_search, StringComparison.OrdinalIgnoreCase) || s.Ruc.Contains(_search) || s.Contacto.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_statusFilter) || s.Estado.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
-    );
-
-    private void OpenCreate()
-    {
-        _form = new Supplier();
-        _formCategoriesRaw = "";
-        _isEditing = false;
-        _showModal = true;
-    }
-
-    private void OpenEdit(Supplier s)
-    {
-        _form = new Supplier
-        {
-            Id = s.Id,
-            RazonSocial = s.RazonSocial,
-            Ruc = s.Ruc,
-            Contacto = s.Contacto,
-            Telefono = s.Telefono,
-            Correo = s.Correo,
-            Direccion = s.Direccion,
-            Categorias = new List<string>(s.Categorias),
-            Estado = s.Estado,
-            UltimoPedido = s.UltimoPedido
-        };
-        _formCategoriesRaw = string.Join(", ", s.Categorias);
-        _isEditing = true;
-        _showModal = true;
-    }
-
-    private void Save()
-    {
-        _form.Categorias = _formCategoriesRaw
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(c => c.Trim())
-            .ToList();
-
-        if (_isEditing)
-        {
-            SupplierSvc.UpdateSupplier(_form);
-        }
-        else
-        {
-            SupplierSvc.AddSupplier(_form);
-        }
-        _showModal = false;
-        _suppliers = SupplierSvc.GetSuppliers(); // refresh
-    }
-
-    private void Delete(int id)
-    {
-        SupplierSvc.DeleteSupplier(id);
-        _suppliers = SupplierSvc.GetSuppliers(); // refresh
-    }
-
-    private void ToggleStatus(int id)
-    {
-        SupplierSvc.ToggleStatus(id);
-        StateHasChanged();
-    }
-}
-
 <PageTitle>Proveedores – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -264,4 +183,85 @@
             </div>
         </div>
     </div>
+}
+
+@code {
+    private List<Supplier> _suppliers = new();
+    private string _search = "";
+    private string _statusFilter = "";
+
+    // Form Modal state
+    private bool _showModal = false;
+    private bool _isEditing = false;
+    private Supplier _form = new();
+    private string _formCategoriesRaw = "";
+
+    protected override void OnInitialized()
+    {
+        _suppliers = SupplierSvc.GetSuppliers();
+    }
+
+    private IEnumerable<Supplier> Filtered => _suppliers.Where(s =>
+        (string.IsNullOrEmpty(_search) || s.RazonSocial.Contains(_search, StringComparison.OrdinalIgnoreCase) || s.Ruc.Contains(_search) || s.Contacto.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_statusFilter) || s.Estado.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
+    );
+
+    private void OpenCreate()
+    {
+        _form = new Supplier();
+        _formCategoriesRaw = "";
+        _isEditing = false;
+        _showModal = true;
+    }
+
+    private void OpenEdit(Supplier s)
+    {
+        _form = new Supplier
+        {
+            Id = s.Id,
+            RazonSocial = s.RazonSocial,
+            Ruc = s.Ruc,
+            Contacto = s.Contacto,
+            Telefono = s.Telefono,
+            Correo = s.Correo,
+            Direccion = s.Direccion,
+            Categorias = new List<string>(s.Categorias),
+            Estado = s.Estado,
+            UltimoPedido = s.UltimoPedido
+        };
+        _formCategoriesRaw = string.Join(", ", s.Categorias);
+        _isEditing = true;
+        _showModal = true;
+    }
+
+    private void Save()
+    {
+        _form.Categorias = _formCategoriesRaw
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(c => c.Trim())
+            .ToList();
+
+        if (_isEditing)
+        {
+            SupplierSvc.UpdateSupplier(_form);
+        }
+        else
+        {
+            SupplierSvc.AddSupplier(_form);
+        }
+        _showModal = false;
+        _suppliers = SupplierSvc.GetSuppliers(); // refresh
+    }
+
+    private void Delete(int id)
+    {
+        SupplierSvc.DeleteSupplier(id);
+        _suppliers = SupplierSvc.GetSuppliers(); // refresh
+    }
+
+    private void ToggleStatus(int id)
+    {
+        SupplierSvc.ToggleStatus(id);
+        StateHasChanged();
+    }
 }

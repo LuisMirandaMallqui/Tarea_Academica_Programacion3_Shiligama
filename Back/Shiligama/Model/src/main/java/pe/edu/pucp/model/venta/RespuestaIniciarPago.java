@@ -1,17 +1,39 @@
 package pe.edu.pucp.model.venta;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
 /**
  * Respuesta del endpoint que inicia un pago. Contiene los datos que el
  * frontend necesita para renderizar el formulario embebido de Izipay
  * (SDK Krypton): el formToken, la clave pública y la base del SDK.
  */
+@XmlType(name = "RespuestaIniciarPago")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class RespuestaIniciarPago {
+    @XmlElement(name = "exito")
+    @JsonbProperty("exito")
     private boolean exito;
+    @XmlElement(name = "mensaje")
+    @JsonbProperty("mensaje")
     private String mensaje;
+    @XmlElement(name = "formToken")
+    @JsonbProperty("formToken")
     private String formToken;
+    @XmlElement(name = "publicKey")
+    @JsonbProperty("publicKey")
     private String publicKey;
+    @XmlElement(name = "jsBase")
+    @JsonbProperty("jsBase")
     private String jsBase;
+    @XmlElement(name = "orderId")
+    @JsonbProperty("orderId")
     private String orderId;
+    @XmlElement(name = "idPago")
+    @JsonbProperty("idPago")
     private int idPago;
 
     public RespuestaIniciarPago() {

@@ -3,96 +3,6 @@
 @inject AuthService Auth
 @inject HttpClient Http
 
-@code {
-    private bool _isEditing = false;
-    private bool _saving    = false;
-    private bool _success   = false;
-    private string _error   = "";
-
-    // Campos editables
-    private string _email = "";
-    private string _phone = "";
-
-    // Campos de solo lectura (muestran datos del usuario logueado)
-    private string _firstName = "";
-    private string _lastName  = "";
-    private string _dni       = "";
-
-    protected override void OnInitialized()
-    {
-        if (Auth.CurrentUser != null)
-        {
-            _firstName = Auth.CurrentUser.Nombres;
-            _lastName  = Auth.CurrentUser.Apellidos;
-            _dni       = Auth.CurrentUser.Dni   ?? "";
-            _email     = Auth.CurrentUser.Email;
-            _phone     = Auth.CurrentUser.Telefono ?? "";
-        }
-    }
-
-    private void EnableEditing()  { _isEditing = true;  _success = false; _error = ""; }
-    private void CancelEditing()
-    {
-        _isEditing = false;
-        // Restaurar valores originales
-        _email = Auth.CurrentUser?.Email       ?? "";
-        _phone = Auth.CurrentUser?.Telefono    ?? "";
-    }
-
-    private async Task SaveProfile()
-    {
-        _saving = true;
-        _error  = "";
-        try
-        {
-            // PUT /api/trabajadores — actualiza MODIFICAR_USUARIO (nombres, apellidos,
-            // dni, telefono, correo). La contraseña se envía como "*" porque la
-            // validación del BO la requiere pero MODIFICAR_USUARIO no la modifica.
-            var dto = new
-            {
-                idUsuario  = Auth.CurrentUser!.Id,
-                nombres    = _firstName,
-                apellidos  = _lastName,
-                dni        = _dni,
-                correo     = _email,
-                contrasena = "*",
-                telefono   = _phone,
-                cargo      = Auth.CurrentUser.Cargo ?? "Cajero"
-            };
-
-            var resp = await Http.PutAsJsonAsync("trabajadores", dto);
-            if (resp.IsSuccessStatusCode)
-            {
-                // Actualizar objeto en sesión
-                Auth.CurrentUser.Telefono = _phone;
-                _isEditing = false;
-                _success   = true;
-                await Task.Delay(3000);
-                _success = false;
-                StateHasChanged();
-            }
-            else
-            {
-                var msg = await resp.Content.ReadAsStringAsync();
-                _error = $"No se pudo guardar: {msg}";
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = $"Error de conexión: {ex.Message}";
-        }
-        finally { _saving = false; }
-    }
-
-    private string GetInitials(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return "T";
-        var parts = name.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
-        return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
-    }
-}
-
 <PageTitle>Mi Perfil – Shiligama</PageTitle>
 
 <div class="profile-container d-flex flex-column gap-4 mx-auto py-3">
@@ -263,3 +173,93 @@
     .dark .btn-profile-action { background-color: var(--secondary); border-color: var(--border); color: var(--foreground); }
     .dark .btn-profile-action:hover { background-color: var(--border); }
 </style>
+
+@code {
+    private bool _isEditing = false;
+    private bool _saving    = false;
+    private bool _success   = false;
+    private string _error   = "";
+
+    // Campos editables
+    private string _email = "";
+    private string _phone = "";
+
+    // Campos de solo lectura (muestran datos del usuario logueado)
+    private string _firstName = "";
+    private string _lastName  = "";
+    private string _dni       = "";
+
+    protected override void OnInitialized()
+    {
+        if (Auth.CurrentUser != null)
+        {
+            _firstName = Auth.CurrentUser.Nombres;
+            _lastName  = Auth.CurrentUser.Apellidos;
+            _dni       = Auth.CurrentUser.Dni   ?? "";
+            _email     = Auth.CurrentUser.Email;
+            _phone     = Auth.CurrentUser.Telefono ?? "";
+        }
+    }
+
+    private void EnableEditing()  { _isEditing = true;  _success = false; _error = ""; }
+    private void CancelEditing()
+    {
+        _isEditing = false;
+        // Restaurar valores originales
+        _email = Auth.CurrentUser?.Email       ?? "";
+        _phone = Auth.CurrentUser?.Telefono    ?? "";
+    }
+
+    private async Task SaveProfile()
+    {
+        _saving = true;
+        _error  = "";
+        try
+        {
+            // PUT /api/trabajadores — actualiza MODIFICAR_USUARIO (nombres, apellidos,
+            // dni, telefono, correo). La contraseña se envía como "*" porque la
+            // validación del BO la requiere pero MODIFICAR_USUARIO no la modifica.
+            var dto = new
+            {
+                idUsuario  = Auth.CurrentUser!.Id,
+                nombres    = _firstName,
+                apellidos  = _lastName,
+                dni        = _dni,
+                correo     = _email,
+                contrasena = "*",
+                telefono   = _phone,
+                cargo      = Auth.CurrentUser.Cargo ?? "Cajero"
+            };
+
+            var resp = await Http.PutAsJsonAsync("trabajadores", dto);
+            if (resp.IsSuccessStatusCode)
+            {
+                // Actualizar objeto en sesión
+                Auth.CurrentUser.Telefono = _phone;
+                _isEditing = false;
+                _success   = true;
+                await Task.Delay(3000);
+                _success = false;
+                StateHasChanged();
+            }
+            else
+            {
+                var msg = await resp.Content.ReadAsStringAsync();
+                _error = $"No se pudo guardar: {msg}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error de conexión: {ex.Message}";
+        }
+        finally { _saving = false; }
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "T";
+        var parts = name.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+    }
+}

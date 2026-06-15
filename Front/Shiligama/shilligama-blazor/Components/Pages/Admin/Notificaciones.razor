@@ -2,49 +2,6 @@
 @layout AdminLayout
 @inject NotificacionService NotifSvc
 
-@code {
-    private List<NotificacionItem> _notifications = new();
-    private bool _loading = true;
-
-    protected override async Task OnInitializedAsync()
-    {
-        _notifications = await NotifSvc.GetAllAsync();
-        _loading = false;
-    }
-
-    private async Task MarkAsRead(int id)
-    {
-        await NotifSvc.MarcarLeidaAsync(id);
-        var item = _notifications.FirstOrDefault(n => n.IdNotificacion == id);
-        if (item != null) { item.Leida = true; StateHasChanged(); }
-    }
-
-    private async Task Delete(int id)
-    {
-        await NotifSvc.EliminarAsync(id);
-        _notifications.RemoveAll(n => n.IdNotificacion == id);
-        StateHasChanged();
-    }
-
-    private async Task ClearAll()
-    {
-        foreach (var n in _notifications.ToList())
-            await NotifSvc.EliminarAsync(n.IdNotificacion);
-        _notifications.Clear();
-        StateHasChanged();
-    }
-
-    private string GetIcon(string? tipo) => tipo?.ToUpper() switch
-    {
-        "STOCK_BAJO"           => "fa-triangle-exclamation",
-        "DEVOLUCION_PENDIENTE" => "fa-rotate-left",
-        "NUEVO_PEDIDO"         => "fa-cart-shopping",
-        "PEDIDO_LISTO"         => "fa-box-open",
-        "VENTA_REGISTRADA"     => "fa-receipt",
-        _                      => "fa-bell"
-    };
-}
-
 <PageTitle>Notificaciones – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4 mx-auto" style="max-width: 900px; width: 100%;">
@@ -120,3 +77,46 @@
         </div>
     }
 </div>
+
+@code {
+    private List<NotificacionItem> _notifications = new();
+    private bool _loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _notifications = await NotifSvc.GetAllAsync();
+        _loading = false;
+    }
+
+    private async Task MarkAsRead(int id)
+    {
+        await NotifSvc.MarcarLeidaAsync(id);
+        var item = _notifications.FirstOrDefault(n => n.IdNotificacion == id);
+        if (item != null) { item.Leida = true; StateHasChanged(); }
+    }
+
+    private async Task Delete(int id)
+    {
+        await NotifSvc.EliminarAsync(id);
+        _notifications.RemoveAll(n => n.IdNotificacion == id);
+        StateHasChanged();
+    }
+
+    private async Task ClearAll()
+    {
+        foreach (var n in _notifications.ToList())
+            await NotifSvc.EliminarAsync(n.IdNotificacion);
+        _notifications.Clear();
+        StateHasChanged();
+    }
+
+    private string GetIcon(string? tipo) => tipo?.ToUpper() switch
+    {
+        "STOCK_BAJO"           => "fa-triangle-exclamation",
+        "DEVOLUCION_PENDIENTE" => "fa-rotate-left",
+        "NUEVO_PEDIDO"         => "fa-cart-shopping",
+        "PEDIDO_LISTO"         => "fa-box-open",
+        "VENTA_REGISTRADA"     => "fa-receipt",
+        _                      => "fa-bell"
+    };
+}

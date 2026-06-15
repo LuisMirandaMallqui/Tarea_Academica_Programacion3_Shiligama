@@ -2,54 +2,6 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 
-@code {
-    private bool _isMobileSidebarOpen = false;
-    private bool _isDropdownOpen = false;
-    private bool _showTurnosModal = false;
-
-    private void ToggleMobileSidebar() => _isMobileSidebarOpen = !_isMobileSidebarOpen;
-    private void ToggleDropdown()      => _isDropdownOpen = !_isDropdownOpen;
-    private void CloseDropdown()       => _isDropdownOpen = false;
-    private void ShowTurnosModal()     { _showTurnosModal = true; _isDropdownOpen = false; }
-    private void CloseTurnosModal()    => _showTurnosModal = false;
-
-    private void HandleLogout()
-    {
-        Auth.Logout();
-        Navigation.NavigateTo("/");
-    }
-
-    private bool IsActive(string href)
-    {
-        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
-        var target   = href.TrimStart('/');
-        if (string.IsNullOrEmpty(target))
-            return string.IsNullOrEmpty(relative) || relative.Equals("trabajador", StringComparison.OrdinalIgnoreCase);
-        return relative.StartsWith(target, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private string HeaderTitle
-    {
-        get
-        {
-            var rel = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
-            if (rel.Contains("productos"))        return "Catálogo de Productos";
-            if (rel.Contains("registrar-venta"))  return "Registrar Venta (POS)";
-            if (rel.Contains("devoluciones"))      return "Mis Devoluciones";
-            if (rel.Contains("perfil"))            return "Mi Perfil";
-            return "Pedidos Clientes";
-        }
-    }
-
-    private string GetInitials(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return "T";
-        var parts = name.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
-        return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
-    }
-}
-
 <RoleGate RequiredRole="trabajador">
 <div class="d-flex flex-column min-vh-100 bg-background text-foreground">
 
@@ -294,3 +246,51 @@
     }
 </style>
 </RoleGate>
+
+@code {
+    private bool _isMobileSidebarOpen = false;
+    private bool _isDropdownOpen = false;
+    private bool _showTurnosModal = false;
+
+    private void ToggleMobileSidebar() => _isMobileSidebarOpen = !_isMobileSidebarOpen;
+    private void ToggleDropdown()      => _isDropdownOpen = !_isDropdownOpen;
+    private void CloseDropdown()       => _isDropdownOpen = false;
+    private void ShowTurnosModal()     { _showTurnosModal = true; _isDropdownOpen = false; }
+    private void CloseTurnosModal()    => _showTurnosModal = false;
+
+    private void HandleLogout()
+    {
+        Auth.Logout();
+        Navigation.NavigateTo("/");
+    }
+
+    private bool IsActive(string href)
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var target   = href.TrimStart('/');
+        if (string.IsNullOrEmpty(target))
+            return string.IsNullOrEmpty(relative) || relative.Equals("trabajador", StringComparison.OrdinalIgnoreCase);
+        return relative.StartsWith(target, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string HeaderTitle
+    {
+        get
+        {
+            var rel = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
+            if (rel.Contains("productos"))        return "Catálogo de Productos";
+            if (rel.Contains("registrar-venta"))  return "Registrar Venta (POS)";
+            if (rel.Contains("devoluciones"))      return "Mis Devoluciones";
+            if (rel.Contains("perfil"))            return "Mi Perfil";
+            return "Pedidos Clientes";
+        }
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return "T";
+        var parts = name.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
+        return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+    }
+}

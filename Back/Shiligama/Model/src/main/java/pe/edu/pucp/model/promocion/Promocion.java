@@ -5,24 +5,54 @@ import pe.edu.pucp.model.producto.Producto;
 
 import java.time.LocalDate;
 import java.util.List;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
 /**
  * Clase que representa una promoción en el sistema.
  * Una promoción puede ser de tipo porcentaje o monto fijo,
  * y tiene una fecha de inicio y fin de vigencia.
  */
+@XmlType(name = "Promocion")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Promocion {
     // ================= ATRIBUTOS =================
+    @XmlElement(name = "idPromocion")
+    @JsonbProperty("idPromocion")
     private int idPromocion;
+    @XmlElement(name = "nombre")
+    @JsonbProperty("nombre")
     private String nombre;
+    @XmlElement(name = "descripcion")
+    @JsonbProperty("descripcion")
     private String descripcion;
+    @XmlElement(name = "tipoDescuento")
+    @JsonbProperty("tipoDescuento")
     private TipoDescuento tipoDescuento; // "PORCENTAJE" o "MONTO_FIJO"
+    @XmlElement(name = "valorDescuento")
+    @JsonbProperty("valorDescuento")
     private double valorDescuento;
+    @XmlElement(name = "fechaInicio")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaInicio")
     private LocalDate fechaInicio;
+    @XmlElement(name = "fechaFin")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaFin")
     private LocalDate fechaFin;
+    @XmlElement(name = "condiciones")
+    @JsonbProperty("condiciones")
     private String condiciones;
+    @XmlElement(name = "activo")
+    @JsonbProperty("activo")
     private boolean activo;
 
+    @XmlElement(name = "productos")
+    @JsonbProperty("productos")
     private List<Producto> productos; //CORREGIR ESTO, VER EL TEMA SOLO USAR LA ID
 
     // ================= CONSTRUCTORES =================

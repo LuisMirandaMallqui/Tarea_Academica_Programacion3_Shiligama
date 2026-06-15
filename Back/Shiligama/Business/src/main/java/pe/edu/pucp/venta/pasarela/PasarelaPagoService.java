@@ -46,6 +46,13 @@ public class PasarelaPagoService {
      * @param amountCents monto en céntimos (entero), p.ej. S/ 25.50 -> 2550
      */
     public String crearFormToken(long amountCents, String currency, String orderId, String email) {
+        // Modo demo: saltarse la API real y devolver el token simulado directamente.
+        // Cambiar izipay.demo=false en shiligama-config.properties para usar Izipay real.
+        if ("true".equalsIgnoreCase(Config.get("izipay.demo", "false"))) {
+            System.out.println("[Izipay] DEMO mode activo — usando token simulado.");
+            return "DEMO";
+        }
+
         String endpoint = Config.get("izipay.endpoint",
                 "https://api.micuentaweb.pe/api-payment/V4/Charge/CreatePayment");
         String username = Config.get("izipay.username");
@@ -98,13 +105,6 @@ public class PasarelaPagoService {
             System.err.println("[Izipay] CreatePayment no exitoso: " + response);
         } catch (Exception e) {
             System.err.println("[Izipay] Excepción en crearFormToken: " + e.getMessage());
-        }
-
-        // Fallback demo: cuando la cuenta Izipay aún no está validada, retornar
-        // el token especial "DEMO" para que el front pueda simular el pago.
-        if ("true".equalsIgnoreCase(Config.get("izipay.demo", "false"))) {
-            System.out.println("[Izipay] DEMO mode activo — usando token simulado.");
-            return "DEMO";
         }
         return null;
     }

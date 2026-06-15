@@ -9,17 +9,10 @@ import pe.edu.pucp.venta.impl.BoletaBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Boletas (comprobantes de venta).
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/boletas
- *
- * Operaciones específicas: emitir (sobre una venta existente), buscar, listar,
- * anular. NO hay CRUD genérico porque Boleta es una fase de Venta.
- */
 @Path("/boletas")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class BoletaWS {
+public class BoletaRS {
 
     private final BoletaBo boletaBo = new BoletaBoImpl();
 

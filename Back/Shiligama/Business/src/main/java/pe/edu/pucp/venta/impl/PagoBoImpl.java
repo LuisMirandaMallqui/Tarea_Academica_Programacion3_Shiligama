@@ -42,11 +42,11 @@ public class PagoBoImpl implements PagoBo {
     }
 
     @Override
-    public Pago buscarPorID(int id) throws Exception {
+    public Pago buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del pago debe ser mayor que cero.");
         }
-        return pagoDao.buscarPorID(id);
+        return pagoDao.buscarPorId(id);
     }
 
     @Override

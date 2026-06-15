@@ -9,14 +9,10 @@ import pe.edu.pucp.notificacion.impl.NotificacionBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Notificaciones.
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/notificaciones
- */
 @Path("/notificaciones")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class NotificacionWS {
+public class NotificacionRS {
 
     private final NotificacionBo notificacionBo = new NotificacionBoImpl();
 
@@ -35,7 +31,7 @@ public class NotificacionWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Notificacion notif = notificacionBo.buscarPorID(id);
+            Notificacion notif = notificacionBo.buscarPorId(id);
             if (notif != null) {
                 return Response.ok(notif).build();
             } else {

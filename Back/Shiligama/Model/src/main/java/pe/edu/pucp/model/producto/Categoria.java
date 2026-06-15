@@ -1,10 +1,28 @@
 package pe.edu.pucp.model.producto;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
+@XmlType(name = "Categoria")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Categoria {
+    @XmlElement(name = "idCategoria")
+    @JsonbProperty("idCategoria")
     private int idCategoria;
+    @XmlElement(name = "nombre")
+    @JsonbProperty("nombre")
     private String nombre;
+    @XmlElement(name = "descripcion")
+    @JsonbProperty("descripcion")
     private String descripcion;
+    @XmlElement(name = "categoriaPadre")
+    @JsonbProperty("categoriaPadre")
     private Categoria categoriaPadre;
+    @XmlElement(name = "estado")
+    @JsonbProperty("estado")
     private boolean estado;
 
     public Categoria() {

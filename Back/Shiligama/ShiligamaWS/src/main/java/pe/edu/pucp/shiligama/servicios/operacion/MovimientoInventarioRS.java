@@ -11,14 +11,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-/**
- * Web Service REST para Movimientos de Inventario.
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/movimientos-inventario
- */
 @Path("/movimientos-inventario")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class MovimientoInventarioWS {
+public class MovimientoInventarioRS {
 
     private final MovimientoInventarioBO movimientoBo = new MovimientoInventarioBoImpl();
 
@@ -37,7 +33,7 @@ public class MovimientoInventarioWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            MovimientoInventario mov = movimientoBo.buscarPorID(id);
+            MovimientoInventario mov = movimientoBo.buscarPorId(id);
             if (mov != null) {
                 return Response.ok(mov).build();
             } else {

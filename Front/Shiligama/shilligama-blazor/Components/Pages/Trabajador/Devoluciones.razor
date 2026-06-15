@@ -4,67 +4,6 @@
 @inject ProductService ProductSvc
 @inject AuthService Auth
 
-@code {
-    private List<Return> _returns = new();
-    private string _search = "";
-    private string _motivoFilter = "";
-    private bool _showModal = false;
-    private Return _form = new();
-    private int _selectedProductId = 0;   // id del producto seleccionado en el selector
-
-    protected override async Task OnInitializedAsync()
-    {
-        await Task.WhenAll(
-            ProductSvc.EnsureLoadedAsync(),
-            ReturnsSvc.EnsureLoadedAsync()
-        );
-        _returns = ReturnsSvc.GetReturns();
-    }
-
-    private IEnumerable<Return> Filtered => _returns.Where(r =>
-        (string.IsNullOrEmpty(_search) ||
-        r.Product.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
-        r.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_motivoFilter) || r.Reason.Equals(_motivoFilter, StringComparison.OrdinalIgnoreCase))
-    );
-
-    private void OpenCreate()
-    {
-        _form = new Return
-        {
-            Quantity = 1,
-            RegisteredBy = Auth.CurrentUser?.Name ?? "Trabajador"
-        };
-        _selectedProductId = 0;
-        _showModal = true;
-    }
-
-    private async Task Save()
-    {
-        // Obtener producto seleccionado del catálogo
-        var prod = _selectedProductId > 0
-            ? ProductSvc.GetProductById(_selectedProductId)
-            : null;
-
-        if (prod != null)
-        {
-            _form.Product     = prod.Name;
-            _form.ProductCode = $"PROD-{prod.Id:D3}";
-            _form.Amount      = prod.Price * _form.Quantity;
-        }
-        else
-        {
-            _form.ProductCode = "PROD-GEN";
-            _form.Amount      = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
-        }
-
-        int idTrabajador = Auth.CurrentUser?.IdUsuario ?? 0;
-        await ReturnsSvc.AddReturnAsync(_form, _selectedProductId, idTrabajador);
-        _showModal = false;
-        _returns = ReturnsSvc.GetReturns();
-    }
-}
-
 <PageTitle>Registro de Devoluciones – Shiligama</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -254,4 +193,65 @@
             </div>
         </div>
     </div>
+}
+
+@code {
+    private List<Return> _returns = new();
+    private string _search = "";
+    private string _motivoFilter = "";
+    private bool _showModal = false;
+    private Return _form = new();
+    private int _selectedProductId = 0;   // id del producto seleccionado en el selector
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            ProductSvc.EnsureLoadedAsync(),
+            ReturnsSvc.EnsureLoadedAsync()
+        );
+        _returns = ReturnsSvc.GetReturns();
+    }
+
+    private IEnumerable<Return> Filtered => _returns.Where(r =>
+        (string.IsNullOrEmpty(_search) ||
+        r.Product.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+        r.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_motivoFilter) || r.Reason.Equals(_motivoFilter, StringComparison.OrdinalIgnoreCase))
+    );
+
+    private void OpenCreate()
+    {
+        _form = new Return
+        {
+            Quantity = 1,
+            RegisteredBy = Auth.CurrentUser?.Name ?? "Trabajador"
+        };
+        _selectedProductId = 0;
+        _showModal = true;
+    }
+
+    private async Task Save()
+    {
+        // Obtener producto seleccionado del catálogo
+        var prod = _selectedProductId > 0
+            ? ProductSvc.GetProductById(_selectedProductId)
+            : null;
+
+        if (prod != null)
+        {
+            _form.Product     = prod.Name;
+            _form.ProductCode = $"PROD-{prod.Id:D3}";
+            _form.Amount      = prod.Price * _form.Quantity;
+        }
+        else
+        {
+            _form.ProductCode = "PROD-GEN";
+            _form.Amount      = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
+        }
+
+        int idTrabajador = Auth.CurrentUser?.IdUsuario ?? 0;
+        await ReturnsSvc.AddReturnAsync(_form, _selectedProductId, idTrabajador);
+        _showModal = false;
+        _returns = ReturnsSvc.GetReturns();
+    }
 }

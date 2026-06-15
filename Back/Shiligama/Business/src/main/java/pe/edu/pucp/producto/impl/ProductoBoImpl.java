@@ -34,11 +34,11 @@ public class ProductoBoImpl implements ProductoBo {
     }
 
     @Override
-    public Producto buscarPorID(int id) throws Exception {
+    public Producto buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del producto debe ser mayor que cero.");
         }
-        return daoProducto.buscarPorID(id);
+        return daoProducto.buscarPorId(id);
     }
 
     @Override

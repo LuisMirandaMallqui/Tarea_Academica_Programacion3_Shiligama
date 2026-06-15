@@ -88,7 +88,7 @@ public class AdministradorDaoImpl implements AdministradorDao {
 
     // SP: BUSCAR_ADMINISTRADOR_X_ID(IN _usuario_id)
     @Override
-    public Administrador buscarPorID(int id) {
+    public Administrador buscarPorId(int id) {
         Administrador admin = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

@@ -23,19 +23,14 @@ import java.util.UUID;
 @Path("/imagenes")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class ImagenWS {
+public class ImagenRS {
 
     private static final long MAX_BYTES = 5L * 1024 * 1024; // 5 MB
-
-    // ── Configuración ─────────────────────────────────────────────────────────
 
     /** Directorio local donde se guardan las imágenes. */
     private static final String IMAGES_DIR = resolverDirectorio();
 
-    /**
-     * URL base pública para construir la URL de cada imagen.
-     * Debe coincidir con la URL del back tal como lo accede el front.
-     */
+    
     private static final String IMAGES_URL_BASE = resolverUrlBase();
 
     private static String resolverDirectorio() {
@@ -55,8 +50,6 @@ public class ImagenWS {
         return url.endsWith("/") ? url : url + "/";
     }
 
-    // ── Endpoints ─────────────────────────────────────────────────────────────
-
     /**
      * Sube una imagen recibida en Base64.
      * Body JSON: { "nombreArchivo": "foto.jpg", "datosBase64": "...", "tipoContenido": "image/jpeg" }
@@ -66,15 +59,13 @@ public class ImagenWS {
     @Path("/upload")
     public Response subirImagen(ImagenUploadRequest req) {
         try {
-            // ── Validar tipo de contenido ──────────────────────────────────────
-            String tipo = req.getTipoContenido();
+                    String tipo = req.getTipoContenido();
             if (tipo == null || !tipo.startsWith("image/")) {
                 return respuestaError(Response.Status.BAD_REQUEST,
                         "Solo se permiten imágenes (image/jpeg, image/png, etc.)");
             }
 
-            // ── Validar datos base64 ───────────────────────────────────────────
-            String datos = req.getDatosBase64();
+                    String datos = req.getDatosBase64();
             if (datos == null || datos.isBlank()) {
                 return respuestaError(Response.Status.BAD_REQUEST,
                         "No se recibieron datos de imagen.");
@@ -94,8 +85,7 @@ public class ImagenWS {
                         "La imagen supera el tamaño máximo permitido de 5 MB.");
             }
 
-            // ── Preparar directorio ────────────────────────────────────────────
-            File dir = new File(IMAGES_DIR);
+                    File dir = new File(IMAGES_DIR);
             if (!dir.exists() && !dir.mkdirs()) {
                 return respuestaError(Response.Status.INTERNAL_SERVER_ERROR,
                         "No se pudo crear el directorio de imágenes.");
@@ -106,8 +96,7 @@ public class ImagenWS {
             String nombreUnico = UUID.randomUUID().toString() + extension;
             File archivo = new File(IMAGES_DIR + nombreUnico);
 
-            // ── Guardar ────────────────────────────────────────────────────────
-            try (FileOutputStream fos = new FileOutputStream(archivo)) {
+                    try (FileOutputStream fos = new FileOutputStream(archivo)) {
                 fos.write(bytes);
             }
 
@@ -144,8 +133,6 @@ public class ImagenWS {
                 .header("Cache-Control", "public, max-age=86400")
                 .build();
     }
-
-    // ── Utilidades privadas ───────────────────────────────────────────────────
 
     private String resolverExtension(String mimeType, String nombreArchivo) {
         switch (mimeType) {

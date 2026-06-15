@@ -86,34 +86,34 @@ function _renderizarFormularioDemo(dotNetRef) {
             <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;
                         padding:10px 14px;margin-bottom:18px;font-size:.82rem;color:#856404;
                         display:flex;align-items:center;gap:8px;">
-                <span style="font-size:1rem;">⚠️</span>
-                <span><strong>Modo demo</strong> — Cuenta Izipay en validación. Datos no procesados.</span>
+                <span style="font-size:1rem;">&#x26A0;&#xFE0F;</span>
+                <span><strong>Modo demo</strong> &mdash; Cuenta Izipay en validaci&oacute;n. Datos no procesados.</span>
             </div>
 
             <div style="margin-bottom:14px;">
                 <label style="display:block;font-size:.82rem;font-weight:600;color:#374151;margin-bottom:4px;">
-                    Número de tarjeta</label>
-                <input id="demo-card" type="text" placeholder="4111 1111 1111 1111" maxlength="19"
+                    N&uacute;mero de tarjeta</label>
+                <input id="demo-card" type="text" inputmode="numeric"
+                       placeholder="4111 1111 1111 1111" maxlength="19"
                        style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;
-                              font-size:.9rem;box-sizing:border-box;letter-spacing:.06em;"
-                       oninput="this.value=this.value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim().slice(0,19)" />
+                              font-size:.9rem;box-sizing:border-box;letter-spacing:.06em;" />
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;">
                 <div>
                     <label style="display:block;font-size:.82rem;font-weight:600;color:#374151;margin-bottom:4px;">
                         Vencimiento</label>
-                    <input id="demo-exp" type="text" placeholder="MM/AA" maxlength="5"
+                    <input id="demo-exp" type="text" inputmode="numeric"
+                           placeholder="MM/AA" maxlength="5"
                            style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;
-                                  font-size:.9rem;box-sizing:border-box;"
-                           oninput="let v=this.value.replace(/\D/g,'');if(v.length>2)v=v.slice(0,2)+'/'+v.slice(2,4);this.value=v;" />
+                                  font-size:.9rem;box-sizing:border-box;" />
                 </div>
                 <div>
                     <label style="display:block;font-size:.82rem;font-weight:600;color:#374151;margin-bottom:4px;">
                         CVV</label>
-                    <input id="demo-cvv" type="text" placeholder="123" maxlength="4"
+                    <input id="demo-cvv" type="text" inputmode="numeric"
+                           placeholder="123" maxlength="4"
                            style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;
-                                  font-size:.9rem;box-sizing:border-box;"
-                           oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)" />
+                                  font-size:.9rem;box-sizing:border-box;" />
                 </div>
             </div>
             <div style="margin-bottom:18px;">
@@ -121,39 +121,59 @@ function _renderizarFormularioDemo(dotNetRef) {
                     Nombre en la tarjeta</label>
                 <input id="demo-name" type="text" placeholder="NOMBRE APELLIDO"
                        style="width:100%;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;
-                              font-size:.9rem;box-sizing:border-box;text-transform:uppercase;"
-                       oninput="this.value=this.value.toUpperCase()" />
+                              font-size:.9rem;box-sizing:border-box;text-transform:uppercase;" />
             </div>
 
             <div style="display:flex;gap:6px;align-items:center;margin-bottom:16px;font-size:.75rem;color:#6b7280;">
                 <span style="background:#e5e7eb;border-radius:4px;padding:2px 7px;font-weight:700;">VISA</span>
                 <span style="background:#e5e7eb;border-radius:4px;padding:2px 7px;font-weight:700;">MC</span>
                 <span style="background:#e5e7eb;border-radius:4px;padding:2px 7px;font-weight:700;">AMEX</span>
-                <span style="margin-left:auto;">🔒 Simulación segura (demo)</span>
+                <span style="margin-left:auto;">&#x1F512; Simulaci&oacute;n segura (demo)</span>
             </div>
 
             <button id="demo-pay-btn"
                     style="width:100%;padding:13px;background:#ee3a3a;color:white;border:none;
                            border-radius:8px;font-size:.95rem;font-weight:700;cursor:pointer;
-                           display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s;"
-                    onmouseover="this.style.background='#cc2a2a'"
-                    onmouseout="this.style.background='#ee3a3a'">
-                <span style="font-weight:900;letter-spacing:.03em;">izipay</span>&nbsp;— Pagar (demo)
+                           display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s;">
+                <span style="font-weight:900;letter-spacing:.03em;">izipay</span>&nbsp;&mdash; Pagar (demo)
             </button>
             <p style="font-size:.72rem;color:#9ca3af;text-align:center;margin-top:10px;">
                 Prueba: <code style="background:#f3f4f6;padding:1px 5px;border-radius:3px;">4111 1111 1111 1111</code>
-                &nbsp;·&nbsp;12/26 &nbsp;·&nbsp; 123
+                &nbsp;&middot;&nbsp;12/26 &nbsp;&middot;&nbsp; 123
             </p>
         </div>`;
 
-    document.getElementById("demo-pay-btn").addEventListener("click", async () => {
-        const btn = document.getElementById("demo-pay-btn");
+    // Formatters via addEventListener — evita conflictos de parseo HTML y CSP con atributos inline
+    document.getElementById("demo-card").addEventListener("input", function () {
+        const digits = this.value.replace(/\D/g, "").slice(0, 16);
+        this.value = digits ? digits.match(/.{1,4}/g).join(" ") : "";
+    });
+
+    document.getElementById("demo-exp").addEventListener("input", function () {
+        const v = this.value.replace(/\D/g, "").slice(0, 4);
+        this.value = v.length > 2 ? v.slice(0, 2) + "/" + v.slice(2) : v;
+    });
+
+    document.getElementById("demo-cvv").addEventListener("input", function () {
+        this.value = this.value.replace(/\D/g, "").slice(0, 4);
+    });
+
+    document.getElementById("demo-name").addEventListener("input", function () {
+        const pos = this.selectionStart;
+        this.value = this.value.toUpperCase();
+        this.setSelectionRange(pos, pos);
+    });
+
+    const btn = document.getElementById("demo-pay-btn");
+    btn.addEventListener("mouseover", () => { btn.style.background = "#cc2a2a"; });
+    btn.addEventListener("mouseout",  () => { btn.style.background = "#ee3a3a"; });
+
+    btn.addEventListener("click", async () => {
         btn.disabled = true;
         btn.innerHTML = `<span style="border:3px solid rgba(255,255,255,.4);border-top-color:white;
                                      border-radius:50%;width:18px;height:18px;animation:spin .8s linear infinite;
                                      display:inline-block;"></span>&nbsp; Procesando...`;
 
-        // Añadir animación de spinner
         if (!document.getElementById("demo-spin-style")) {
             const st = document.createElement("style");
             st.id = "demo-spin-style";

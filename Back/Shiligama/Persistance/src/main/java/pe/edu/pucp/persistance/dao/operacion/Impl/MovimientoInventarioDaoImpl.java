@@ -49,7 +49,7 @@ public class MovimientoInventarioDaoImpl implements MovimientoInventarioDao {
 
     // SP: BUSCAR_MOVIMIENTO_POR_ID(IN _movimiento_id)
     @Override
-    public MovimientoInventario buscarPorID(int id) {
+    public MovimientoInventario buscarPorId(int id) {
         MovimientoInventario m = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

@@ -34,11 +34,11 @@ public class AdministradorBoImpl implements AdministradorBo {
     }
 
     @Override
-    public Administrador buscarPorID(int id) throws Exception {
+    public Administrador buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del administrador debe ser mayor que cero.");
         }
-        return daoAdministrador.buscarPorID(id);
+        return daoAdministrador.buscarPorId(id);
     }
 
     @Override

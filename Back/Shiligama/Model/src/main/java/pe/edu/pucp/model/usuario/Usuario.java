@@ -1,12 +1,34 @@
 package pe.edu.pucp.model.usuario;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
+@XmlType(name = "Usuario")
+@XmlAccessorType(XmlAccessType.FIELD)
 public abstract class Usuario {
+    @XmlElement(name = "idUsuario")
+    @JsonbProperty("idUsuario")
     protected int idUsuario;
+    @XmlElement(name = "correo")
+    @JsonbProperty("correo")
     protected String correo; //Será usado como usuario para inicio de sesion
+    @XmlElement(name = "contrasena")
+    @JsonbProperty("contrasena")
     protected String contrasena;
+    @XmlElement(name = "nombres")
+    @JsonbProperty("nombres")
     protected String nombres;
+    @XmlElement(name = "apellidos")
+    @JsonbProperty("apellidos")
     protected String apellidos;
+    @XmlElement(name = "dni")
+    @JsonbProperty("dni")
     protected String dni;
+    @XmlElement(name = "telefono")
+    @JsonbProperty("telefono")
     protected String telefono;
 
     // Constructor vacío (necesario para persistencia)

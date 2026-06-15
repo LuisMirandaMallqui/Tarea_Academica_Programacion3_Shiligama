@@ -19,16 +19,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-/**
- * Web Service de REPORTES agregados del sistema.
- * Centraliza en un solo recurso REST las consultas analíticas que el panel
- * de administración necesita (ventas, devoluciones, movimientos de stock).
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/reportes
- */
 @Path("/reportes")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class ReporteWS {
+public class ReporteRS {
 
     private final VentaBo ventaBo = new VentaBoImpl();
     private final DevolucionBO devolucionBo = new DevolucionBoImpl();

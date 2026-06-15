@@ -7,178 +7,6 @@
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
-@code {
-    // ===== PAGINACIÓN DEL LADO DEL SERVIDOR =====
-    // En vez de traer TODO el catálogo y filtrar/paginar en el navegador, ahora
-    // pedimos al back solo la página actual con los filtros aplicados:
-    //   GET /api/productos/buscar?categoria=&q=&precioMin=&precioMax=&pagina=&tamano=
-    // y leemos el total desde los headers (X-Total-Count, X-Total-Pages).
-    private List<Category> _categories = new();
-    private PagedResult<Product> _page = new();
-
-    private string? _selectedCategory = null;   // id de categoría (string del int)
-    private decimal _minPrice = 0;
-    private decimal _maxPrice = 100;             // 100 = "sin tope" superior
-
-    private bool _showMobileFilters = false;
-    private bool _isLoading = true;
-
-    private int _currentPage = 1;
-    private const int PageSize = 8;
-
-    private int _carouselIndex = 0;
-    private const int _carouselTotal = 3;
-    private DotNetObjectReference<Catalogo>? _dotNetRef;
-
-    private string SearchQuery => ProductSvc.SearchQuery;
-
-    private readonly (string Icon, string Title, string Desc, string Color, string Route)[] _slides = {
-        ("fa-tags",       "Ofertas de la Semana", "Hasta 30% de descuento en productos seleccionados", "#0D4525", "/ofertas"),
-        ("fa-truck",      "Delivery Gratis",       "En compras mayores a S/. 50",                      "#1a3a5c", ""),
-        ("fa-candy-cane", "2x1 en Snacks",         "Paga 1 y lleva 2 en snacks seleccionados",        "#4a1942", "/snacks-2x1"),
-    };
-
-    // Pide al back la página actual con los filtros vigentes.
-    private async Task LoadAsync()
-    {
-        // Si el usuario cruza los topes, los normalizamos (el back rechaza min>max).
-        if (_minPrice > _maxPrice) (_minPrice, _maxPrice) = (_maxPrice, _minPrice);
-
-        _isLoading = true;
-        StateHasChanged();
-
-        // 0 = sin mínimo; 100 = sin máximo (coincide con el rango del slider).
-        decimal? min = _minPrice <= 0 ? (decimal?)null : _minPrice;
-        decimal? max = _maxPrice >= 100 ? (decimal?)null : _maxPrice;
-
-        _page = await ProductSvc.SearchAsync(
-            categoriaId: _selectedCategory,
-            q: string.IsNullOrWhiteSpace(SearchQuery) ? null : SearchQuery,
-            precioMin: min,
-            precioMax: max,
-            pagina: _currentPage,
-            tamano: PageSize);
-
-        _isLoading = false;
-        StateHasChanged();
-    }
-
-    // Cualquier cambio de filtro vuelve a la página 1 y recarga desde el servidor.
-    private async Task SelectCategoryAsync(string? id) { _selectedCategory = id; _currentPage = 1; _showMobileFilters = false; await LoadAsync(); }
-    private async Task ApplyFiltersAsync() { _currentPage = 1; await LoadAsync(); }
-    private async Task ClearFiltersAsync() { _minPrice = 0; _maxPrice = 100; _currentPage = 1; await LoadAsync(); }
-    private async Task ClearAllAsync() { _selectedCategory = null; ProductSvc.NotifySearch(""); }
-
-    // Disparado por el buscador del navbar (evento OnSearch del ProductService).
-    private void OnSearchChanged() { _currentPage = 1; _ = InvokeAsync(LoadAsync); }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Cart.InitializeAsync();
-            _dotNetRef = DotNetObjectReference.Create(this);
-            await JS.InvokeVoidAsync("carouselHelper.startCarousel", _dotNetRef, 5000);
-            StateHasChanged();
-        }
-    }
-
-    [JSInvokable]
-    public void NextSlideAuto()
-    {
-        _carouselIndex = (_carouselIndex + 1) % _carouselTotal;
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void NextSlide()      => _carouselIndex = (_carouselIndex + 1) % _carouselTotal;
-    private void PrevSlide()      => _carouselIndex = (_carouselIndex - 1 + _carouselTotal) % _carouselTotal;
-    private void GoToSlide(int i) => _carouselIndex = i;
-
-    private void Refresh()
-    {
-        _currentPage = 1;
-        InvokeAsync(StateHasChanged);
-    }
-
-    // Cambia de página pidiendo esa página al servidor (no recorta en memoria).
-    private async Task GoToPage(int page)
-    {
-        if (page >= 1 && page <= _page.TotalPages && page != _currentPage)
-        {
-            _currentPage = page;
-            await LoadAsync();
-            await JS.InvokeVoidAsync("window.scrollTo", 0, 0);
-        }
-    }
-
-    private HashSet<int> _addedIds = new();
-    // IDs de productos con promoción 2×1 vigente
-    private HashSet<int> _promo2x1Ids = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();
-        _categories = ProductSvc.GetCategories();
-        ProductSvc.OnSearch += OnSearchChanged;
-        await PromoSvc.EnsureLoadedAsync();
-        _promo2x1Ids = PromoSvc.GetVigentes()
-            .Where(p => p.Es2x1)
-            .SelectMany(p => p.ProductoIds)
-            .ToHashSet();
-        await LoadAsync();
-    }
-
-    private async Task AddToCart(Product p)
-    {
-        await Cart.AddToCartAsync(p);
-        _addedIds.Add(p.Id);
-        StateHasChanged();
-        await Task.Delay(1800);
-        _addedIds.Remove(p.Id);
-        StateHasChanged();
-    }
-
-    // Devuelve la promo vigente de un producto (null si no tiene)
-    private Promocion? GetPromo(int productId) =>
-        PromoSvc.GetVigentes().FirstOrDefault(p => p.ProductoIds.Contains(productId));
-
-    // Precio efectivo para mostrar en la tarjeta (1 unidad con promo aplicada)
-    private decimal PrecioEfectivo(Product p) =>
-        PromocionHelper.PrecioEfectivo(p.Price, 1, GetPromo(p.Id));
-
-    private string GetDiscountPct(Product p) =>
-        p.OriginalPrice.HasValue ? $"-{100 - (int)(p.Price / p.OriginalPrice.Value * 100)}%" : "";
-
-    // Como ahora la categoría tiene id numérico (no slug), el ícono se elige
-    // por el NOMBRE de la categoría que viene del back.
-    private string GetCategoryIcon(string categoryName)
-    {
-        var n = (categoryName ?? "").ToLowerInvariant();
-        if (n.Contains("abarrote")) return "fa-bag-shopping";
-        if (n.Contains("bebida")) return "fa-wine-glass";
-        if (n.Contains("lácteo") || n.Contains("lacteo")) return "fa-wine-bottle";
-        if (n.Contains("snack")) return "fa-cookie-bite";
-        if (n.Contains("limpieza")) return "fa-spray-can";
-        if (n.Contains("carne") || n.Contains("embutido")) return "fa-drumstick-bite";
-        if (n.Contains("fruta") || n.Contains("verdura")) return "fa-apple-whole";
-        if (n.Contains("dulce") || n.Contains("golosina")) return "fa-candy-cane";
-        if (n.Contains("congelado")) return "fa-snowflake";
-        if (n.Contains("bebé") || n.Contains("bebe")) return "fa-baby-carriage";
-        return "fa-box";
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        ProductSvc.OnSearch -= OnSearchChanged;
-        try
-        {
-            await JS.InvokeVoidAsync("carouselHelper.stopCarousel");
-        }
-        catch { }
-        _dotNetRef?.Dispose();
-    }
-}
-
 <PageTitle>Catálogo – Shiligama</PageTitle>
 
 <style>
@@ -651,3 +479,175 @@
         </div>
     </div>
 </div>
+
+@code {
+    // ===== PAGINACIÓN DEL LADO DEL SERVIDOR =====
+    // En vez de traer TODO el catálogo y filtrar/paginar en el navegador, ahora
+    // pedimos al back solo la página actual con los filtros aplicados:
+    //   GET /api/productos/buscar?categoria=&q=&precioMin=&precioMax=&pagina=&tamano=
+    // y leemos el total desde los headers (X-Total-Count, X-Total-Pages).
+    private List<Category> _categories = new();
+    private PagedResult<Product> _page = new();
+
+    private string? _selectedCategory = null;   // id de categoría (string del int)
+    private decimal _minPrice = 0;
+    private decimal _maxPrice = 100;             // 100 = "sin tope" superior
+
+    private bool _showMobileFilters = false;
+    private bool _isLoading = true;
+
+    private int _currentPage = 1;
+    private const int PageSize = 8;
+
+    private int _carouselIndex = 0;
+    private const int _carouselTotal = 3;
+    private DotNetObjectReference<Catalogo>? _dotNetRef;
+
+    private string SearchQuery => ProductSvc.SearchQuery;
+
+    private readonly (string Icon, string Title, string Desc, string Color, string Route)[] _slides = {
+        ("fa-tags",       "Ofertas de la Semana", "Hasta 30% de descuento en productos seleccionados", "#0D4525", "/ofertas"),
+        ("fa-truck",      "Delivery Gratis",       "En compras mayores a S/. 50",                      "#1a3a5c", ""),
+        ("fa-candy-cane", "2x1 en Snacks",         "Paga 1 y lleva 2 en snacks seleccionados",        "#4a1942", "/snacks-2x1"),
+    };
+
+    // Pide al back la página actual con los filtros vigentes.
+    private async Task LoadAsync()
+    {
+        // Si el usuario cruza los topes, los normalizamos (el back rechaza min>max).
+        if (_minPrice > _maxPrice) (_minPrice, _maxPrice) = (_maxPrice, _minPrice);
+
+        _isLoading = true;
+        StateHasChanged();
+
+        // 0 = sin mínimo; 100 = sin máximo (coincide con el rango del slider).
+        decimal? min = _minPrice <= 0 ? (decimal?)null : _minPrice;
+        decimal? max = _maxPrice >= 100 ? (decimal?)null : _maxPrice;
+
+        _page = await ProductSvc.SearchAsync(
+            categoriaId: _selectedCategory,
+            q: string.IsNullOrWhiteSpace(SearchQuery) ? null : SearchQuery,
+            precioMin: min,
+            precioMax: max,
+            pagina: _currentPage,
+            tamano: PageSize);
+
+        _isLoading = false;
+        StateHasChanged();
+    }
+
+    // Cualquier cambio de filtro vuelve a la página 1 y recarga desde el servidor.
+    private async Task SelectCategoryAsync(string? id) { _selectedCategory = id; _currentPage = 1; _showMobileFilters = false; await LoadAsync(); }
+    private async Task ApplyFiltersAsync() { _currentPage = 1; await LoadAsync(); }
+    private async Task ClearFiltersAsync() { _minPrice = 0; _maxPrice = 100; _currentPage = 1; await LoadAsync(); }
+    private async Task ClearAllAsync() { _selectedCategory = null; ProductSvc.NotifySearch(""); }
+
+    // Disparado por el buscador del navbar (evento OnSearch del ProductService).
+    private void OnSearchChanged() { _currentPage = 1; _ = InvokeAsync(LoadAsync); }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.InitializeAsync();
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("carouselHelper.startCarousel", _dotNetRef, 5000);
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public void NextSlideAuto()
+    {
+        _carouselIndex = (_carouselIndex + 1) % _carouselTotal;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void NextSlide()      => _carouselIndex = (_carouselIndex + 1) % _carouselTotal;
+    private void PrevSlide()      => _carouselIndex = (_carouselIndex - 1 + _carouselTotal) % _carouselTotal;
+    private void GoToSlide(int i) => _carouselIndex = i;
+
+    private void Refresh()
+    {
+        _currentPage = 1;
+        InvokeAsync(StateHasChanged);
+    }
+
+    // Cambia de página pidiendo esa página al servidor (no recorta en memoria).
+    private async Task GoToPage(int page)
+    {
+        if (page >= 1 && page <= _page.TotalPages && page != _currentPage)
+        {
+            _currentPage = page;
+            await LoadAsync();
+            await JS.InvokeVoidAsync("window.scrollTo", 0, 0);
+        }
+    }
+
+    private HashSet<int> _addedIds = new();
+    // IDs de productos con promoción 2×1 vigente
+    private HashSet<int> _promo2x1Ids = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _categories = ProductSvc.GetCategories();
+        ProductSvc.OnSearch += OnSearchChanged;
+        await PromoSvc.EnsureLoadedAsync();
+        _promo2x1Ids = PromoSvc.GetVigentes()
+            .Where(p => p.Es2x1)
+            .SelectMany(p => p.ProductoIds)
+            .ToHashSet();
+        await LoadAsync();
+    }
+
+    private async Task AddToCart(Product p)
+    {
+        await Cart.AddToCartAsync(p);
+        _addedIds.Add(p.Id);
+        StateHasChanged();
+        await Task.Delay(1800);
+        _addedIds.Remove(p.Id);
+        StateHasChanged();
+    }
+
+    // Devuelve la promo vigente de un producto (null si no tiene)
+    private Promocion? GetPromo(int productId) =>
+        PromoSvc.GetVigentes().FirstOrDefault(p => p.ProductoIds.Contains(productId));
+
+    // Precio efectivo para mostrar en la tarjeta (1 unidad con promo aplicada)
+    private decimal PrecioEfectivo(Product p) =>
+        PromocionHelper.PrecioEfectivo(p.Price, 1, GetPromo(p.Id));
+
+    private string GetDiscountPct(Product p) =>
+        p.OriginalPrice.HasValue ? $"-{100 - (int)(p.Price / p.OriginalPrice.Value * 100)}%" : "";
+
+    // Como ahora la categoría tiene id numérico (no slug), el ícono se elige
+    // por el NOMBRE de la categoría que viene del back.
+    private string GetCategoryIcon(string categoryName)
+    {
+        var n = (categoryName ?? "").ToLowerInvariant();
+        if (n.Contains("abarrote")) return "fa-bag-shopping";
+        if (n.Contains("bebida")) return "fa-wine-glass";
+        if (n.Contains("lácteo") || n.Contains("lacteo")) return "fa-wine-bottle";
+        if (n.Contains("snack")) return "fa-cookie-bite";
+        if (n.Contains("limpieza")) return "fa-spray-can";
+        if (n.Contains("carne") || n.Contains("embutido")) return "fa-drumstick-bite";
+        if (n.Contains("fruta") || n.Contains("verdura")) return "fa-apple-whole";
+        if (n.Contains("dulce") || n.Contains("golosina")) return "fa-candy-cane";
+        if (n.Contains("congelado")) return "fa-snowflake";
+        if (n.Contains("bebé") || n.Contains("bebe")) return "fa-baby-carriage";
+        return "fa-box";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        ProductSvc.OnSearch -= OnSearchChanged;
+        try
+        {
+            await JS.InvokeVoidAsync("carouselHelper.stopCarousel");
+        }
+        catch { }
+        _dotNetRef?.Dispose();
+    }
+}

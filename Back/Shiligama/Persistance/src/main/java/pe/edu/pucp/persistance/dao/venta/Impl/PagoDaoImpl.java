@@ -73,7 +73,7 @@ public class PagoDaoImpl implements PagoDao {
 
     // SP: BUSCAR_PAGO_X_ID(IN _pago_id)
     @Override
-    public Pago buscarPorID(int id) {
+    public Pago buscarPorId(int id) {
         Pago pago = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

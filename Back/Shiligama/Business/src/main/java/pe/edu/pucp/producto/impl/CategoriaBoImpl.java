@@ -35,11 +35,11 @@ public class CategoriaBoImpl implements CategoriaBo {
     }
 
     @Override
-    public Categoria buscarPorID(int id) throws Exception {
+    public Categoria buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID de la categoria debe ser mayor que cero.");
         }
-        return daoCategoria.buscarPorID(id);
+        return daoCategoria.buscarPorId(id);
     }
 
     @Override

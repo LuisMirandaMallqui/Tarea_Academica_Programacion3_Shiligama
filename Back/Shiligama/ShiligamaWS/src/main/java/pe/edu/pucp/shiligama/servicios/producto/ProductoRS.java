@@ -9,14 +9,10 @@ import pe.edu.pucp.producto.impl.ProductoBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Productos.
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/productos
- */
 @Path("/productos")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class ProductoWS {
+public class ProductoRS {
 
     private final ProductoBo productoBo = new ProductoBoImpl();
 
@@ -35,7 +31,7 @@ public class ProductoWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Producto producto = productoBo.buscarPorID(id);
+            Producto producto = productoBo.buscarPorId(id);
             if (producto != null) {
                 return Response.ok(producto).build();
             } else {

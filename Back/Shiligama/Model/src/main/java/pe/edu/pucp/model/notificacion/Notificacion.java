@@ -3,14 +3,37 @@ package pe.edu.pucp.model.notificacion;
 import pe.edu.pucp.model.enums.TipoNotificacion;
 
 import java.time.LocalDateTime;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
+@XmlType(name = "Notificacion")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Notificacion {
+    @XmlElement(name = "idNotificacion")
+    @JsonbProperty("idNotificacion")
     private int idNotificacion;
+    @XmlElement(name = "titulo")
+    @JsonbProperty("titulo")
     private String titulo;
+    @XmlElement(name = "mensaje")
+    @JsonbProperty("mensaje")
     private String mensaje;
+    @XmlElement(name = "tipo")
+    @JsonbProperty("tipo")
     private TipoNotificacion tipo;
+    @XmlElement(name = "leida")
+    @JsonbProperty("leida")
     private boolean leida;
+    @XmlElement(name = "fechaCreacion")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaCreacion")
     private LocalDateTime fechaCreacion;
+    @XmlElement(name = "idDestinatario")
+    @JsonbProperty("idDestinatario")
     private Integer idDestinatario; // null = broadcast a todos los admins/trabajadores
 
     public Notificacion() {

@@ -9,14 +9,10 @@ import pe.edu.pucp.venta.impl.MetodoPagoBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Métodos de Pago (efectivo, yape, plin, tarjeta).
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/metodos-pago
- */
 @Path("/metodos-pago")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class MetodoPagoWS {
+public class MetodoPagoRS {
 
     private final MetodoPagoBo metodoPagoBo = new MetodoPagoBoImpl();
 
@@ -35,7 +31,7 @@ public class MetodoPagoWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            MetodoPago metodo = metodoPagoBo.buscarPorID(id);
+            MetodoPago metodo = metodoPagoBo.buscarPorId(id);
             if (metodo != null) {
                 return Response.ok(metodo).build();
             } else {

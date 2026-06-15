@@ -48,7 +48,7 @@ public class MetodoPagoDaoImpl implements MetodoPagoDao {
 
     // SP: BUSCAR_METODO_PAGO_X_ID(IN _metodo_pago_id)
     @Override
-    public MetodoPago buscarPorID(int id) {
+    public MetodoPago buscarPorId(int id) {
         MetodoPago metodoPago = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

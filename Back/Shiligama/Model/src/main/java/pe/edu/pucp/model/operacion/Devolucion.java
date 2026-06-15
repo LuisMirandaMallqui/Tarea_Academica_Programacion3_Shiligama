@@ -1,19 +1,44 @@
 package pe.edu.pucp.model.operacion;
 
 import java.time.LocalDateTime;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
 /**
  * Clase que representa una Devolución en el sistema.
  */
+@XmlType(name = "Devolucion")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Devolucion {
     // ================= ATRIBUTOS =================
+    @XmlElement(name = "idDevolucion")
+    @JsonbProperty("idDevolucion")
     private int idDevolucion;
+    @XmlElement(name = "idProducto")
+    @JsonbProperty("idProducto")
     private int idProducto;        // Solo el ID
+    @XmlElement(name = "idTrabajador")
+    @JsonbProperty("idTrabajador")
     private int idTrabajador;      // Solo el ID
+    @XmlElement(name = "estadoDevolucion")
+    @JsonbProperty("estadoDevolucion")
     private String estadoDevolucion; // "PENDIENTE", "APROBADO", "RECHAZADO"
+    @XmlElement(name = "cantidad")
+    @JsonbProperty("cantidad")
     private int cantidad;
+    @XmlElement(name = "motivo")
+    @JsonbProperty("motivo")
     private String motivo;
+    @XmlElement(name = "fechaHora")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaHora")
     private LocalDateTime fechaHora;
+    @XmlElement(name = "activo")
+    @JsonbProperty("activo")
     private boolean activo;
 
     // ================= CONSTRUCTORES =================

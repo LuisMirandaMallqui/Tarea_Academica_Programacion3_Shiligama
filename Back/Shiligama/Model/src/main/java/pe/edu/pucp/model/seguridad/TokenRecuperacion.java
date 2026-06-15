@@ -1,17 +1,36 @@
 package pe.edu.pucp.model.seguridad;
 
 import java.time.LocalDateTime;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
 /**
  * Token de un solo uso para el flujo de recuperación de contraseña.
  * Se genera al solicitar el restablecimiento, viaja por correo y se
  * invalida al usarse o al expirar.
  */
+@XmlType(name = "TokenRecuperacion")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class TokenRecuperacion {
+    @XmlElement(name = "idToken")
+    @JsonbProperty("idToken")
     private int idToken;
+    @XmlElement(name = "idUsuario")
+    @JsonbProperty("idUsuario")
     private int idUsuario;
+    @XmlElement(name = "token")
+    @JsonbProperty("token")
     private String token;
+    @XmlElement(name = "expiracion")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("expiracion")
     private LocalDateTime expiracion;
+    @XmlElement(name = "usado")
+    @JsonbProperty("usado")
     private boolean usado;
 
     public TokenRecuperacion() {

@@ -2,40 +2,6 @@
 @layout AdminLayout
 @inject ProductService ProductSvc
 
-@code {
-    private List<Product> _products = new();
-    private string _search = "";
-    private string _categoryFilter = "";
-    private bool _lowStockOnly = false;
-    private bool _agotadosOnly = false;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();
-        _products = ProductSvc.GetProducts();
-    }
-
-    private IEnumerable<Product> Filtered => _products.Where(p =>
-        (string.IsNullOrEmpty(_search) || p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_categoryFilter) || p.Category.Equals(_categoryFilter, StringComparison.OrdinalIgnoreCase)) &&
-        (!_lowStockOnly || (p.Stock > 0 && p.Stock < 10)) &&
-        (!_agotadosOnly || p.Stock == 0)
-    );
-
-    // AdjustStock persiste el cambio en el backend vía PUT /api/productos.
-    // Usa la misma instancia de Product que está en la caché de ProductSvc.
-    private async Task AdjustStock(Product p, int amount)
-    {
-        p.Stock = Math.Max(0, p.Stock + amount);
-        try
-        {
-            await ProductSvc.UpdateProductAsync(p);
-        }
-        catch { /* si el backend no está disponible el cambio queda en caché local */ }
-        StateHasChanged();
-    }
-}
-
 <PageTitle>Inventario – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -226,3 +192,37 @@
         </div>
     </div>
 </div>
+
+@code {
+    private List<Product> _products = new();
+    private string _search = "";
+    private string _categoryFilter = "";
+    private bool _lowStockOnly = false;
+    private bool _agotadosOnly = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _products = ProductSvc.GetProducts();
+    }
+
+    private IEnumerable<Product> Filtered => _products.Where(p =>
+        (string.IsNullOrEmpty(_search) || p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_categoryFilter) || p.Category.Equals(_categoryFilter, StringComparison.OrdinalIgnoreCase)) &&
+        (!_lowStockOnly || (p.Stock > 0 && p.Stock < 10)) &&
+        (!_agotadosOnly || p.Stock == 0)
+    );
+
+    // AdjustStock persiste el cambio en el backend vía PUT /api/productos.
+    // Usa la misma instancia de Product que está en la caché de ProductSvc.
+    private async Task AdjustStock(Product p, int amount)
+    {
+        p.Stock = Math.Max(0, p.Stock + amount);
+        try
+        {
+            await ProductSvc.UpdateProductAsync(p);
+        }
+        catch { /* si el backend no está disponible el cambio queda en caché local */ }
+        StateHasChanged();
+    }
+}

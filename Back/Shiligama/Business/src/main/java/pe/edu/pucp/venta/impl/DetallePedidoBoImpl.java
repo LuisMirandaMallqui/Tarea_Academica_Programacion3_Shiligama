@@ -34,11 +34,11 @@ public class DetallePedidoBoImpl implements DetallePedidoBo {
     }
 
     @Override
-    public DetallePedido buscarPorID(int id) throws Exception {
+    public DetallePedido buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del detalle de pedido debe ser mayor que cero.");
         }
-        return daoDetallePedido.buscarPorID(id);
+        return daoDetallePedido.buscarPorId(id);
     }
 
     @Override

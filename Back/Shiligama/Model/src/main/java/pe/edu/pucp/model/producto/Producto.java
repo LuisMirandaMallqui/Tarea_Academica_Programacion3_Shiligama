@@ -1,19 +1,52 @@
 package pe.edu.pucp.model.producto;
 
 import java.time.LocalDateTime;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
+@XmlType(name = "Producto")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Producto {
+    @XmlElement(name = "idProducto")
+    @JsonbProperty("idProducto")
     private int idProducto;
+    @XmlElement(name = "nombre")
+    @JsonbProperty("nombre")
     private String nombre;
+    @XmlElement(name = "descripcion")
+    @JsonbProperty("descripcion")
     private String descripcion;
+    @XmlElement(name = "precioUnitario")
+    @JsonbProperty("precioUnitario")
     private double precioUnitario;
+    @XmlElement(name = "stock")
+    @JsonbProperty("stock")
     private int stock;
+    @XmlElement(name = "stockMinimo")
+    @JsonbProperty("stockMinimo")
     private int stockMinimo;
+    @XmlElement(name = "unidadMedida")
+    @JsonbProperty("unidadMedida")
     private String unidadMedida;
+    @XmlElement(name = "codigoBarras")
+    @JsonbProperty("codigoBarras")
     private String codigoBarras;
+    @XmlElement(name = "imagenUrl")
+    @JsonbProperty("imagenUrl")
     private String imagenUrl;
+    @XmlElement(name = "estado")
+    @JsonbProperty("estado")
     private boolean estado;
+    @XmlElement(name = "fechaRegistro")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaRegistro")
     private LocalDateTime fechaRegistro;
+    @XmlElement(name = "categoria")
+    @JsonbProperty("categoria")
     private Categoria categoria;
 
     public Producto() {

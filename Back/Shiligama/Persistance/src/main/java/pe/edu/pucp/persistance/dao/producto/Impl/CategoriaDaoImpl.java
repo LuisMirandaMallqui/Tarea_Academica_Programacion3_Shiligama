@@ -56,7 +56,7 @@ public class CategoriaDaoImpl implements CategoriaDao {
 
     // SP: BUSCAR_CATEGORIA_X_ID(IN _categoria_id)
     @Override
-    public Categoria buscarPorID(int id) {
+    public Categoria buscarPorId(int id) {
         Categoria categoria = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

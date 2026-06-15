@@ -2,45 +2,6 @@
 @layout TrabajadorLayout
 @inject ProductService ProductSvc
 
-@code {
-    private List<Product> _products = new();
-    private string _search = "";
-    private string _categoryFilter = "";
-
-    // ── Paginación ────────────────────────────────────────────────────────────
-    private int _currentPage = 1;
-    private const int PAGE_SIZE = 20;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();   // productos + categorías del API
-        _products = ProductSvc.GetProducts();
-    }
-
-    private IEnumerable<Product> Filtered => _products.Where(p =>
-        (string.IsNullOrEmpty(_search) || p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_categoryFilter) || p.Category.Equals(_categoryFilter, StringComparison.OrdinalIgnoreCase))
-    );
-
-    private int TotalPages => (int)Math.Ceiling(Filtered.Count() / (double)PAGE_SIZE);
-
-    private IEnumerable<Product> PaginatedProducts
-    {
-        get
-        {
-            int max = TotalPages;
-            if (_currentPage > max && max > 0) _currentPage = max;
-            if (max == 0) _currentPage = 1;
-            return Filtered.Skip((_currentPage - 1) * PAGE_SIZE).Take(PAGE_SIZE);
-        }
-    }
-
-    private void SetPage(int p) => _currentPage = p;
-    private void PrevPage() { if (_currentPage > 1) _currentPage--; }
-    private void NextPage() { if (_currentPage < TotalPages) _currentPage++; }
-    private void ClearFilters() { _search = ""; _categoryFilter = ""; _currentPage = 1; }
-}
-
 <PageTitle>Consulta de Productos – Shiligama</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -214,3 +175,42 @@
         }
     </div>
 </div>
+
+@code {
+    private List<Product> _products = new();
+    private string _search = "";
+    private string _categoryFilter = "";
+
+    // ── Paginación ────────────────────────────────────────────────────────────
+    private int _currentPage = 1;
+    private const int PAGE_SIZE = 20;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();   // productos + categorías del API
+        _products = ProductSvc.GetProducts();
+    }
+
+    private IEnumerable<Product> Filtered => _products.Where(p =>
+        (string.IsNullOrEmpty(_search) || p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_categoryFilter) || p.Category.Equals(_categoryFilter, StringComparison.OrdinalIgnoreCase))
+    );
+
+    private int TotalPages => (int)Math.Ceiling(Filtered.Count() / (double)PAGE_SIZE);
+
+    private IEnumerable<Product> PaginatedProducts
+    {
+        get
+        {
+            int max = TotalPages;
+            if (_currentPage > max && max > 0) _currentPage = max;
+            if (max == 0) _currentPage = 1;
+            return Filtered.Skip((_currentPage - 1) * PAGE_SIZE).Take(PAGE_SIZE);
+        }
+    }
+
+    private void SetPage(int p) => _currentPage = p;
+    private void PrevPage() { if (_currentPage > 1) _currentPage--; }
+    private void NextPage() { if (_currentPage < TotalPages) _currentPage++; }
+    private void ClearFilters() { _search = ""; _categoryFilter = ""; _currentPage = 1; }
+}

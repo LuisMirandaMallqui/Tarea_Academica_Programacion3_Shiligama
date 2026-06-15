@@ -4,58 +4,6 @@
 @inject CartService Cart
 @inject NavigationManager Navigation
 
-@code {
-    [Parameter] public int Id { get; set; }
-
-    private Product? _product;
-    private List<Product> _related = new();
-    private int _quantity = 1;
-    private bool _added = false;
-
-    protected override async Task OnParametersSetAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();
-        _product = ProductSvc.GetProductById(Id);
-        if (_product == null) { Navigation.NavigateTo("/catalogo"); return; }
-        _related = ProductSvc.GetRelatedProducts(_product, 4);
-        _quantity = 1;
-        _added = false;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
-    }
-
-    private async Task HandleAddToCart()
-    {
-        if (_product == null) return;
-        for (int i = 0; i < _quantity; i++)
-            await Cart.AddToCartAsync(_product);
-        _added = true;
-        _quantity = 1;
-        StateHasChanged();
-        await Task.Delay(2000);
-        _added = false;
-        StateHasChanged();
-    }
-
-    private HashSet<int> _relatedAdded = new();
-
-    private async Task AddRelatedToCart(Product p)
-    {
-        await Cart.AddToCartAsync(p);
-        _relatedAdded.Add(p.Id);
-        StateHasChanged();
-        await Task.Delay(1800);
-        _relatedAdded.Remove(p.Id);
-        StateHasChanged();
-    }
-
-    private int DiscountPct => _product?.OriginalPrice.HasValue == true
-        ? 100 - (int)(_product.Price / _product.OriginalPrice!.Value * 100) : 0;
-}
-
 @if (_product == null)
 {
     <div class="d-flex align-items-center justify-content-center" style="min-height:60vh;">
@@ -287,4 +235,56 @@ else
         </div>
     }
 </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Product? _product;
+    private List<Product> _related = new();
+    private int _quantity = 1;
+    private bool _added = false;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _product = ProductSvc.GetProductById(Id);
+        if (_product == null) { Navigation.NavigateTo("/catalogo"); return; }
+        _related = ProductSvc.GetRelatedProducts(_product, 4);
+        _quantity = 1;
+        _added = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
+    }
+
+    private async Task HandleAddToCart()
+    {
+        if (_product == null) return;
+        for (int i = 0; i < _quantity; i++)
+            await Cart.AddToCartAsync(_product);
+        _added = true;
+        _quantity = 1;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _added = false;
+        StateHasChanged();
+    }
+
+    private HashSet<int> _relatedAdded = new();
+
+    private async Task AddRelatedToCart(Product p)
+    {
+        await Cart.AddToCartAsync(p);
+        _relatedAdded.Add(p.Id);
+        StateHasChanged();
+        await Task.Delay(1800);
+        _relatedAdded.Remove(p.Id);
+        StateHasChanged();
+    }
+
+    private int DiscountPct => _product?.OriginalPrice.HasValue == true
+        ? 100 - (int)(_product.Price / _product.OriginalPrice!.Value * 100) : 0;
 }

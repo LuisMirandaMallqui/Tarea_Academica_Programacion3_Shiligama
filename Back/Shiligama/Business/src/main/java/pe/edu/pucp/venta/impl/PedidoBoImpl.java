@@ -35,11 +35,11 @@ public class PedidoBoImpl implements PedidoBo {
     }
 
     @Override
-    public Pedido buscarPorID(int id) throws Exception {
+    public Pedido buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del pedido debe ser mayor que cero.");
         }
-        return daoPedido.buscarPorID(id);
+        return daoPedido.buscarPorId(id);
     }
 
     @Override

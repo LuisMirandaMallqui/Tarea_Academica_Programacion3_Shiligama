@@ -1,21 +1,6 @@
 @page "/"
 @layout EmptyLayout
 
-@code {
-    [SupplyParameterFromQuery(Name = "returnUrl")]
-    public string? ReturnUrl { get; set; }
-
-    [SupplyParameterFromQuery(Name = "register")]
-    public bool RegisterQuery { get; set; }
-
-    private bool _showRegister;
-
-    protected override void OnParametersSet()
-    {
-        _showRegister = RegisterQuery;
-    }
-}
-
 <PageTitle>Shiligama – Iniciar Sesión</PageTitle>
 
 <div class="d-flex min-vh-100 flex-column flex-lg-row">
@@ -44,3 +29,18 @@
         </a>
     </div>
 </div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
+    [SupplyParameterFromQuery(Name = "register")]
+    public bool RegisterQuery { get; set; }
+
+    private bool _showRegister;
+
+    protected override void OnParametersSet()
+    {
+        _showRegister = RegisterQuery;
+    }
+}

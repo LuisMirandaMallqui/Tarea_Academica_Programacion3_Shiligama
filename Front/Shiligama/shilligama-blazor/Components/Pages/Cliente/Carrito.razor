@@ -4,45 +4,6 @@
 @inject PromocionService PromoSvc
 @inject NavigationManager Navigation
 
-@code {
-    private enum DeliveryMethod { Delivery, Pickup }
-    private DeliveryMethod _deliveryMethod = DeliveryMethod.Delivery;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Cart.InitializeAsync();
-            await PromoSvc.EnsureLoadedAsync();
-            Cart.OnChange += StateHasChanged;
-            StateHasChanged();
-        }
-    }
-
-    public void Dispose() => Cart.OnChange -= StateHasChanged;
-
-    private async Task Remove(int id) => await Cart.RemoveFromCartAsync(id);
-    private async Task UpdateQty(int id, int qty) => await Cart.UpdateQuantityAsync(id, qty);
-    private async Task ClearAll() => await Cart.ClearCartAsync();
-
-    private void SetDeliveryMethod(DeliveryMethod method) => _deliveryMethod = method;
-
-    private Promocion? GetPromo(int productId) =>
-        PromoSvc.GetVigentes().FirstOrDefault(p => p.ProductoIds.Contains(productId));
-
-    // Precio efectivo por línea (con descuento de promo si aplica)
-    private decimal LineTotal(CartItem item)
-    {
-        var promo = GetPromo(item.Id);
-        return PromocionHelper.PrecioEfectivo(item.Price, item.Quantity, promo);
-    }
-
-    private decimal Subtotal => Cart.GetCartItems()
-                                    .Sum(i => LineTotal(i));
-    private decimal Envio => Cart.GetDeliveryFee(_deliveryMethod == DeliveryMethod.Delivery);
-    private decimal Total => Subtotal + Envio;
-}
-
 <PageTitle>Mi Carrito – Shiligama</PageTitle>
 
 <style>
@@ -261,3 +222,42 @@
 </div>
 
 @implements IDisposable
+
+@code {
+    private enum DeliveryMethod { Delivery, Pickup }
+    private DeliveryMethod _deliveryMethod = DeliveryMethod.Delivery;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.InitializeAsync();
+            await PromoSvc.EnsureLoadedAsync();
+            Cart.OnChange += StateHasChanged;
+            StateHasChanged();
+        }
+    }
+
+    public void Dispose() => Cart.OnChange -= StateHasChanged;
+
+    private async Task Remove(int id) => await Cart.RemoveFromCartAsync(id);
+    private async Task UpdateQty(int id, int qty) => await Cart.UpdateQuantityAsync(id, qty);
+    private async Task ClearAll() => await Cart.ClearCartAsync();
+
+    private void SetDeliveryMethod(DeliveryMethod method) => _deliveryMethod = method;
+
+    private Promocion? GetPromo(int productId) =>
+        PromoSvc.GetVigentes().FirstOrDefault(p => p.ProductoIds.Contains(productId));
+
+    // Precio efectivo por línea (con descuento de promo si aplica)
+    private decimal LineTotal(CartItem item)
+    {
+        var promo = GetPromo(item.Id);
+        return PromocionHelper.PrecioEfectivo(item.Price, item.Quantity, promo);
+    }
+
+    private decimal Subtotal => Cart.GetCartItems()
+                                    .Sum(i => LineTotal(i));
+    private decimal Envio => Cart.GetDeliveryFee(_deliveryMethod == DeliveryMethod.Delivery);
+    private decimal Total => Subtotal + Envio;
+}

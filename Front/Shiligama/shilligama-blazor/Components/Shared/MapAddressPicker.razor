@@ -1,52 +1,6 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
-@code {
-    /// <summary>Callback invocado cuando el usuario confirma una dirección del mapa.</summary>
-    [Parameter] public EventCallback<string> OnAddressSelected { get; set; }
-
-    private bool   _show           = false;
-    private string _pendingAddress = "";
-    private DotNetObjectReference<MapAddressPicker>? _dotnetRef;
-
-    /// <summary>Abre el modal e inicializa el mapa Leaflet.</summary>
-    public async Task OpenAsync()
-    {
-        _show           = true;
-        _pendingAddress = "";
-        StateHasChanged();
-        _dotnetRef?.Dispose();
-        _dotnetRef = DotNetObjectReference.Create(this);
-        await JS.InvokeVoidAsync("mapHelpers.initMap", _dotnetRef);
-    }
-
-    /// <summary>Cierra el modal y destruye la instancia del mapa.</summary>
-    public async Task CloseAsync()
-    {
-        _show           = false;
-        _pendingAddress = "";
-        await JS.InvokeVoidAsync("mapHelpers.destroyMap");
-        StateHasChanged();
-    }
-
-    private async Task ConfirmAsync()
-    {
-        if (!string.IsNullOrWhiteSpace(_pendingAddress))
-            await OnAddressSelected.InvokeAsync(_pendingAddress);
-        await CloseAsync();
-    }
-
-    /// <summary>Llamado desde JS (Leaflet geocodificación inversa) con la dirección seleccionada.</summary>
-    [JSInvokable]
-    public void OnMapAddressSelected(string address)
-    {
-        _pendingAddress = address;
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose() => _dotnetRef?.Dispose();
-}
-
 @if (_show)
 {
     <div style="position:fixed;inset:0;z-index:1050;background:rgba(0,0,0,0.5);
@@ -103,4 +57,50 @@
             </div>
         </div>
     </div>
+}
+
+@code {
+    /// <summary>Callback invocado cuando el usuario confirma una dirección del mapa.</summary>
+    [Parameter] public EventCallback<string> OnAddressSelected { get; set; }
+
+    private bool   _show           = false;
+    private string _pendingAddress = "";
+    private DotNetObjectReference<MapAddressPicker>? _dotnetRef;
+
+    /// <summary>Abre el modal e inicializa el mapa Leaflet.</summary>
+    public async Task OpenAsync()
+    {
+        _show           = true;
+        _pendingAddress = "";
+        StateHasChanged();
+        _dotnetRef?.Dispose();
+        _dotnetRef = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("mapHelpers.initMap", _dotnetRef);
+    }
+
+    /// <summary>Cierra el modal y destruye la instancia del mapa.</summary>
+    public async Task CloseAsync()
+    {
+        _show           = false;
+        _pendingAddress = "";
+        await JS.InvokeVoidAsync("mapHelpers.destroyMap");
+        StateHasChanged();
+    }
+
+    private async Task ConfirmAsync()
+    {
+        if (!string.IsNullOrWhiteSpace(_pendingAddress))
+            await OnAddressSelected.InvokeAsync(_pendingAddress);
+        await CloseAsync();
+    }
+
+    /// <summary>Llamado desde JS (Leaflet geocodificación inversa) con la dirección seleccionada.</summary>
+    [JSInvokable]
+    public void OnMapAddressSelected(string address)
+    {
+        _pendingAddress = address;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => _dotnetRef?.Dispose();
 }

@@ -36,11 +36,11 @@ public class DevolucionBoImpl implements DevolucionBO {
     }
 
     @Override
-    public Devolucion buscarPorID(int id) throws Exception {
+    public Devolucion buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID de la devolucion debe ser mayor que cero.");
         }
-        return daoDevolucion.buscarPorID(id);
+        return daoDevolucion.buscarPorId(id);
     }
 
     @Override

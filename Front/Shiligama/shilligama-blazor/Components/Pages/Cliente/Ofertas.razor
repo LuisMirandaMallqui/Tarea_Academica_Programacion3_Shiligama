@@ -4,44 +4,6 @@
 @inject PromocionService PromoSvc
 @inject CartService Cart
 
-@code {
-    // Lista de (Promocion, sus productos)
-    private List<(Promocion Promo, List<Product> Products)> _sections = new();
-    private bool _isLoading = true;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await Task.WhenAll(
-            ProductSvc.EnsureLoadedAsync(),
-            PromoSvc.EnsureLoadedAsync()
-        );
-
-        _sections.Clear();
-        var vigentes = PromoSvc.GetVigentes();
-
-        foreach (var promo in vigentes)
-        {
-            // Obtiene los IDs de productos asociados a esta promoción
-            var ids = await PromoSvc.GetProductosDePromocionAsync(promo.Id);
-            var products = ids
-                .Select(id => ProductSvc.GetProductById(id))
-                .Where(p => p != null)
-                .Cast<Product>()
-                .ToList();
-            _sections.Add((promo, products));
-        }
-
-        _isLoading = false;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
-    }
-
-    private async Task AddToCart(Product p) => await Cart.AddToCartAsync(p);
-}
-
 <PageTitle>Ofertas Especiales – Shiligama</PageTitle>
 
 <div class="bg-background">
@@ -168,3 +130,41 @@
         }
     </div>
 </div>
+
+@code {
+    // Lista de (Promocion, sus productos)
+    private List<(Promocion Promo, List<Product> Products)> _sections = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            ProductSvc.EnsureLoadedAsync(),
+            PromoSvc.EnsureLoadedAsync()
+        );
+
+        _sections.Clear();
+        var vigentes = PromoSvc.GetVigentes();
+
+        foreach (var promo in vigentes)
+        {
+            // Obtiene los IDs de productos asociados a esta promoción
+            var ids = await PromoSvc.GetProductosDePromocionAsync(promo.Id);
+            var products = ids
+                .Select(id => ProductSvc.GetProductById(id))
+                .Where(p => p != null)
+                .Cast<Product>()
+                .ToList();
+            _sections.Add((promo, products));
+        }
+
+        _isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
+    }
+
+    private async Task AddToCart(Product p) => await Cart.AddToCartAsync(p);
+}

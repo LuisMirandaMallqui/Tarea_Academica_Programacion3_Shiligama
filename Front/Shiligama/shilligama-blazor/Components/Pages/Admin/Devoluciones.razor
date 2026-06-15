@@ -4,75 +4,6 @@
 @inject ProductService ProductSvc
 @inject AuthService Auth
 
-@code {
-    private List<Return> _returns = new();
-    private string _search = "";
-
-    // New Return Form Modal state
-    private bool _showModal = false;
-    private Return _form = new();
-    private int _selectedProductId = 0;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await Task.WhenAll(
-            ProductSvc.EnsureLoadedAsync(),
-            ReturnsSvc.EnsureLoadedAsync()
-        );
-        _returns = ReturnsSvc.GetReturns();
-    }
-
-    private IEnumerable<Return> Filtered => _returns.Where(r =>
-        string.IsNullOrEmpty(_search) ||
-        r.Product.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
-        r.Id.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
-        r.RegisteredBy.Contains(_search, StringComparison.OrdinalIgnoreCase)
-    );
-
-    private decimal TotalRefunded => Filtered.Sum(r => r.Amount);
-
-    private void OpenCreate()
-    {
-        _form = new Return
-        {
-            Quantity = 1,
-            RegisteredBy = Auth.CurrentUser?.Name ?? "Admin"
-        };
-        _selectedProductId = 0;
-        _showModal = true;
-    }
-
-    private async Task Save()
-    {
-        var prod = _selectedProductId > 0
-            ? ProductSvc.GetProductById(_selectedProductId)
-            : null;
-
-        if (prod != null)
-        {
-            _form.Product     = prod.Name;
-            _form.ProductCode = $"PROD-{prod.Id:D3}";
-            _form.Amount      = prod.Price * _form.Quantity;
-        }
-        else
-        {
-            _form.ProductCode = "PROD-GEN";
-            _form.Amount      = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
-        }
-
-        int idAdmin = Auth.CurrentUser?.IdUsuario ?? 0;
-        await ReturnsSvc.AddReturnAsync(_form, _selectedProductId, idAdmin);
-        _showModal = false;
-        _returns = ReturnsSvc.GetReturns();
-    }
-
-    private void Delete(string id)
-    {
-        ReturnsSvc.DeleteReturn(id);
-        _returns = ReturnsSvc.GetReturns(); // refresh
-    }
-}
-
 <PageTitle>Devoluciones – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -248,4 +179,73 @@
             </div>
         </div>
     </div>
+}
+
+@code {
+    private List<Return> _returns = new();
+    private string _search = "";
+
+    // New Return Form Modal state
+    private bool _showModal = false;
+    private Return _form = new();
+    private int _selectedProductId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            ProductSvc.EnsureLoadedAsync(),
+            ReturnsSvc.EnsureLoadedAsync()
+        );
+        _returns = ReturnsSvc.GetReturns();
+    }
+
+    private IEnumerable<Return> Filtered => _returns.Where(r =>
+        string.IsNullOrEmpty(_search) ||
+        r.Product.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+        r.Id.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+        r.RegisteredBy.Contains(_search, StringComparison.OrdinalIgnoreCase)
+    );
+
+    private decimal TotalRefunded => Filtered.Sum(r => r.Amount);
+
+    private void OpenCreate()
+    {
+        _form = new Return
+        {
+            Quantity = 1,
+            RegisteredBy = Auth.CurrentUser?.Name ?? "Admin"
+        };
+        _selectedProductId = 0;
+        _showModal = true;
+    }
+
+    private async Task Save()
+    {
+        var prod = _selectedProductId > 0
+            ? ProductSvc.GetProductById(_selectedProductId)
+            : null;
+
+        if (prod != null)
+        {
+            _form.Product     = prod.Name;
+            _form.ProductCode = $"PROD-{prod.Id:D3}";
+            _form.Amount      = prod.Price * _form.Quantity;
+        }
+        else
+        {
+            _form.ProductCode = "PROD-GEN";
+            _form.Amount      = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
+        }
+
+        int idAdmin = Auth.CurrentUser?.IdUsuario ?? 0;
+        await ReturnsSvc.AddReturnAsync(_form, _selectedProductId, idAdmin);
+        _showModal = false;
+        _returns = ReturnsSvc.GetReturns();
+    }
+
+    private void Delete(string id)
+    {
+        ReturnsSvc.DeleteReturn(id);
+        _returns = ReturnsSvc.GetReturns(); // refresh
+    }
 }

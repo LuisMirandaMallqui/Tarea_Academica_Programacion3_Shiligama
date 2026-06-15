@@ -12,7 +12,7 @@ import java.util.List;
 @Path("/trabajadores")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class TrabajadorWS {
+public class TrabajadorRS {
     // Instanciamos el BOImpl directamente, igual que en el Principal.java
     private final TrabajadorBo trabajadorBo = new TrabajadorBoImpl();
     // 1. INSERTAR TRABAJADOR
@@ -52,9 +52,9 @@ public class TrabajadorWS {
     // 4. BUSCAR TRABAJADOR POR ID
     @GET
     @Path("/{id}")
-    public Response buscarPorID(@PathParam("id") int id) {
+    public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Trabajador t = trabajadorBo.buscarPorID(id);
+            Trabajador t = trabajadorBo.buscarPorId(id);
             if (t != null) {
                 return Response.ok(t).build();
             } else {

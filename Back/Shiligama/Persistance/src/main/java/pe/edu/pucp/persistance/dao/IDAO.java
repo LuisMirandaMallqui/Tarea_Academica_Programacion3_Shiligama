@@ -5,6 +5,6 @@ public interface IDAO<T> {
     int insertar(T obj);
     int modificar(T obj);
     int eliminar(int id);
-    T buscarPorID(int id);
+    T buscarPorId(int id);
     List<T> listarTodos();
 }

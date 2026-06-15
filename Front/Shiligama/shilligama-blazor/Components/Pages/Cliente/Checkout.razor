@@ -6,139 +6,6 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 
-@code {
-    [SupplyParameterFromQuery(Name = "delivery")]
-    public string? DeliveryParam { get; set; }
-
-    private string _deliveryMethod = "delivery";
-    private string _name    = "";   // se llena en OnAfterRenderAsync desde el usuario logueado
-    private string _address = "";   // ídem con DireccionEntrega
-    private string _payMethod = "tarjeta";
-
-    private decimal _cashAmount;
-    private decimal CashChange => _cashAmount >= Total ? _cashAmount - Total : 0;
-    private bool    CashEnough => _cashAmount >= Total;
-
-    private string _yapePhone     = "";
-    private string _yapeCode      = "";
-    private bool   _yapeConfirmed = false;
-
-    private bool   _isLoading = false;
-    private bool   _success   = false;
-    private string _orderId   = "";
-    private string? _payError;
-    private bool   _showLoginRequired = false;
-
-    // ── Mapa de dirección ────────────────────────────────────────────────────
-    private MapAddressPicker? _mapPicker;
-
-    private async Task OpenMapModal()
-    {
-        if (_mapPicker != null)
-            await _mapPicker.OpenAsync();
-    }
-
-    private void OnMapAddressSelected(string address)
-    {
-        _address = address;
-        StateHasChanged();
-    }
-
-    // El pedido para delivery requiere dirección.
-    private bool CanPlaceOrder =>
-        _deliveryMethod != "delivery" || !string.IsNullOrWhiteSpace(_address);
-
-    // Extrae el id numérico del pedido del código "PED-0012".
-    private int ParsePedidoId(string orderId)
-    {
-        if (!string.IsNullOrEmpty(orderId) && orderId.StartsWith("PED-")
-            && int.TryParse(orderId[4..], out var id))
-            return id;
-        return 0;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Cart.InitializeAsync();
-            await PromoSvc.EnsureLoadedAsync();
-
-            if (!string.IsNullOrEmpty(DeliveryParam))
-                _deliveryMethod = DeliveryParam;
-
-            // Pre-llenar con datos del usuario logueado
-            var u = Auth.CurrentUser;
-            if (u != null)
-            {
-                _name    = u.Name;                          // Nombres + Apellidos
-                _address = u.DireccionEntrega ?? "";
-            }
-
-            StateHasChanged();
-        }
-    }
-
-    // Subtotal aplicando promos vigentes del backend (lógica en PromocionHelper)
-    private decimal Subtotal    => PromocionHelper.TotalConPromos(
-                                       Cart.GetCartItems(),
-                                       PromoSvc.GetVigentes());
-    private decimal DeliveryFee => Cart.GetDeliveryFee(_deliveryMethod == "delivery");
-    private decimal Total       => Subtotal + DeliveryFee;
-
-    private void OnCashQuick(decimal amount) { _cashAmount = amount; }
-
-    private void ConfirmYape()
-    {
-        if (_yapeCode.Length >= 4) _yapeConfirmed = true;
-    }
-
-    private async Task PlaceOrder()
-    {
-        _payError = null;
-
-        // Exigir login de cliente antes de registrar el pedido.
-        // Sin idCliente el SP INSERTAR_PEDIDO rechaza por FK/NOT NULL.
-        if (!Auth.IsCliente())
-        {
-            _showLoginRequired = true;
-            return;
-        }
-
-        _isLoading = true;
-
-        // 1) Registrar el pedido en el backend (devuelve "PED-0012").
-        _orderId = await SalesSvc.PlaceOnlineOrderAsync(
-            _name,
-            Cart.GetCartItems().ToList(),
-            Subtotal, DeliveryFee, Total,
-            _payMethod, _deliveryMethod, _address,
-            Auth.CurrentUser?.Id ?? 0);
-
-        // 2) Pago con tarjeta → formulario embebido de Izipay (página /checkout/pago).
-        if (_payMethod == "tarjeta")
-        {
-            int idPedido = ParsePedidoId(_orderId);
-            if (idPedido > 0)
-            {
-                await Cart.ClearCartAsync();
-                // Pasamos el total para que el backend pueda usar el monto correcto
-                // (el SP INSERTAR_PEDIDO no guarda MONTO_TOTAL, queda en 0 en la BD)
-                Navigation.NavigateTo($"/checkout/pago?pedido={idPedido}&total={Total:F2}");
-                return;
-            }
-            _payError = "No se pudo registrar el pedido. Verifica tu conexión e intenta de nuevo.";
-            _isLoading = false;
-            return;
-        }
-
-        // 3) Yape / Efectivo → confirmación directa (pago manual / contra entrega).
-        await Cart.ClearCartAsync();
-        _success   = true;
-        _isLoading = false;
-    }
-}
-
 <PageTitle>Checkout – Shiligama</PageTitle>
 
 <LoginRequiredModal IsOpen="_showLoginRequired"
@@ -287,7 +154,9 @@ else
                             @if (_deliveryMethod == "delivery")
                             {
                                 <p class="text-muted-foreground mb-0" style="font-size:.72rem;">
-                                    Ingresa tu dirección abajo
+                                    @(string.IsNullOrWhiteSpace(_address)
+                                        ? "Ingresa tu dirección abajo"
+                                        : "Dirección de entrega confirmada")
                                 </p>
                             }
                         </div>
@@ -295,25 +164,36 @@ else
                     @if (_deliveryMethod == "delivery")
                     {
                         <div class="mt-2">
-                            @if (!string.IsNullOrWhiteSpace(_address))
+                            @if (!_editingAddress && !string.IsNullOrWhiteSpace(_address))
                             {
-                                <div class="d-flex align-items-start gap-2 p-2 mb-2"
+                                <!-- Dirección pre-llenada desde el perfil: mostrar confirmada -->
+                                <div class="d-flex align-items-start gap-2 p-2"
                                      style="background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:.82rem;">
-                                    <Icons Name="MapPin" Class="text-success flex-shrink-0" style="width:14px;height:14px;margin-top:2px;" />
-                                    <span>@_address</span>
+                                    <Icons Name="MapPin" Class="text-success flex-shrink-0" style="width:14px;height:14px;margin-top:3px;" />
+                                    <span class="flex-grow-1">@_address</span>
+                                    <button type="button"
+                                            class="btn btn-link p-0 flex-shrink-0"
+                                            style="font-size:.75rem;color:var(--primary);text-decoration:none;"
+                                            @onclick="() => _editingAddress = true">
+                                        Cambiar
+                                    </button>
                                 </div>
                             }
-                            <div class="d-flex gap-2">
-                                <input type="text" @bind="_address"
-                                       class="form-control form-control-sm checkout-input-solo flex-grow-1"
-                                       placeholder="Ingresa tu dirección" />
-                                <button type="button" @onclick="OpenMapModal"
-                                        class="btn btn-sm btn-outline-secondary flex-shrink-0 d-flex align-items-center gap-1"
-                                        title="Seleccionar en mapa">
-                                    <Icons Name="MapPin" style="width:13px;height:13px;" />
-                                    <span class="d-none d-sm-inline">Mapa</span>
-                                </button>
-                            </div>
+                            else
+                            {
+                                <!-- Sin dirección o en modo edición: input + mapa -->
+                                <div class="d-flex gap-2">
+                                    <input type="text" @bind="_address" @bind:event="oninput"
+                                           class="form-control form-control-sm checkout-input-solo flex-grow-1"
+                                           placeholder="Ingresa tu dirección" />
+                                    <button type="button" @onclick="OpenMapModal"
+                                            class="btn btn-sm btn-outline-secondary flex-shrink-0 d-flex align-items-center gap-1"
+                                            title="Seleccionar en mapa">
+                                        <Icons Name="MapPin" style="width:13px;height:13px;" />
+                                        <span class="d-none d-sm-inline">Mapa</span>
+                                    </button>
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -621,4 +501,143 @@ else
             </div>
         </div>
     </div>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "delivery")]
+    public string? DeliveryParam { get; set; }
+
+    private string _deliveryMethod = "delivery";
+    private string _name    = "";   // se llena en OnAfterRenderAsync desde el usuario logueado
+    private string _address = "";   // ídem con DireccionEntrega
+    // false = mostrar la dirección pre-llenada como confirmada; true = mostrar input editable
+    private bool   _editingAddress = false;
+    private string _payMethod = "tarjeta";
+
+    private decimal _cashAmount;
+    private decimal CashChange => _cashAmount >= Total ? _cashAmount - Total : 0;
+    private bool    CashEnough => _cashAmount >= Total;
+
+    private string _yapePhone     = "";
+    private string _yapeCode      = "";
+    private bool   _yapeConfirmed = false;
+
+    private bool   _isLoading = false;
+    private bool   _success   = false;
+    private string _orderId   = "";
+    private string? _payError;
+    private bool   _showLoginRequired = false;
+
+    // ── Mapa de dirección ────────────────────────────────────────────────────
+    private MapAddressPicker? _mapPicker;
+
+    private async Task OpenMapModal()
+    {
+        if (_mapPicker != null)
+            await _mapPicker.OpenAsync();
+    }
+
+    private void OnMapAddressSelected(string address)
+    {
+        _address = address;
+        _editingAddress = false;  // volver a modo "confirmado" tras elegir en mapa
+        StateHasChanged();
+    }
+
+    // El pedido para delivery requiere dirección.
+    private bool CanPlaceOrder =>
+        _deliveryMethod != "delivery" || !string.IsNullOrWhiteSpace(_address);
+
+    // Extrae el id numérico del pedido del código "PED-0012".
+    private int ParsePedidoId(string orderId)
+    {
+        if (!string.IsNullOrEmpty(orderId) && orderId.StartsWith("PED-")
+            && int.TryParse(orderId[4..], out var id))
+            return id;
+        return 0;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.InitializeAsync();
+            await PromoSvc.EnsureLoadedAsync();
+
+            if (!string.IsNullOrEmpty(DeliveryParam))
+                _deliveryMethod = DeliveryParam;
+
+            // Pre-llenar con datos del usuario logueado
+            var u = Auth.CurrentUser;
+            if (u != null)
+            {
+                _name    = u.Name;
+                _address = u.DireccionEntrega ?? "";
+            }
+            // Si hay dirección guardada → mostrar confirmada sin pedir nada
+            // Si está vacía → abrir directamente el input para que el usuario la ingrese
+            _editingAddress = string.IsNullOrWhiteSpace(_address);
+
+            StateHasChanged();
+        }
+    }
+
+    // Subtotal aplicando promos vigentes del backend (lógica en PromocionHelper)
+    private decimal Subtotal    => PromocionHelper.TotalConPromos(
+                                       Cart.GetCartItems(),
+                                       PromoSvc.GetVigentes());
+    private decimal DeliveryFee => Cart.GetDeliveryFee(_deliveryMethod == "delivery");
+    private decimal Total       => Subtotal + DeliveryFee;
+
+    private void OnCashQuick(decimal amount) { _cashAmount = amount; }
+
+    private void ConfirmYape()
+    {
+        if (_yapeCode.Length >= 4) _yapeConfirmed = true;
+    }
+
+    private async Task PlaceOrder()
+    {
+        _payError = null;
+
+        // Exigir login de cliente antes de registrar el pedido.
+        // Sin idCliente el SP INSERTAR_PEDIDO rechaza por FK/NOT NULL.
+        if (!Auth.IsCliente())
+        {
+            _showLoginRequired = true;
+            return;
+        }
+
+        _isLoading = true;
+
+        // 1) Registrar el pedido en el backend (devuelve "PED-0012").
+        _orderId = await SalesSvc.PlaceOnlineOrderAsync(
+            _name,
+            Cart.GetCartItems().ToList(),
+            Subtotal, DeliveryFee, Total,
+            _payMethod, _deliveryMethod, _address,
+            Auth.CurrentUser?.Id ?? 0);
+
+        // 2) Pago con tarjeta → formulario embebido de Izipay (página /checkout/pago).
+        if (_payMethod == "tarjeta")
+        {
+            int idPedido = ParsePedidoId(_orderId);
+            if (idPedido > 0)
+            {
+                await Cart.ClearCartAsync();
+                // Pasamos el total para que el backend pueda usar el monto correcto
+                // (el SP INSERTAR_PEDIDO no guarda MONTO_TOTAL, queda en 0 en la BD)
+                Navigation.NavigateTo($"/checkout/pago?pedido={idPedido}&total={Total:F2}");
+                return;
+            }
+            _payError = "No se pudo registrar el pedido. Verifica tu conexión e intenta de nuevo.";
+            _isLoading = false;
+            return;
+        }
+
+        // 3) Yape / Efectivo → confirmación directa (pago manual / contra entrega).
+        await Cart.ClearCartAsync();
+        _success   = true;
+        _isLoading = false;
+    }
 }

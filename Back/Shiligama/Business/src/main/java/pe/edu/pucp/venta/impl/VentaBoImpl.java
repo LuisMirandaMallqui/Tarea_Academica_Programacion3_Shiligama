@@ -37,11 +37,11 @@ public class VentaBoImpl implements VentaBo {
     }
 
     @Override
-    public Venta buscarPorID(int id) throws Exception {
+    public Venta buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID de la venta debe ser mayor que cero.");
         }
-        return daoVenta.buscarPorID(id);
+        return daoVenta.buscarPorId(id);
     }
 
     @Override

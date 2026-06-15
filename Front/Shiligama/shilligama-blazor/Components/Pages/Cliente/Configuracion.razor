@@ -4,130 +4,6 @@
 @inject NavigationManager Navigation
 @inject HttpClient Http
 
-@code {
-    private string _nombres   = "";
-    private string _apellidos = "";
-    private string _dni       = "";
-    private string _phone     = "";
-    private string _address   = "";
-    private bool   _success   = false;
-    private bool   _saving    = false;
-    private string _error     = "";
-    private bool   _showConfirm = false;
-
-    // Permite solo dígitos en el DNI (máx. 8), bloqueando letras.
-    private void OnDniInput(ChangeEventArgs e)
-    {
-        var soloDigitos = new string((e.Value?.ToString() ?? "")
-            .Where(char.IsDigit).Take(8).ToArray());
-        _dni = soloDigitos;
-    }
-
-    // Valida y pide confirmación antes de guardar.
-    private void PedirConfirmacion()
-    {
-        _error = "";
-        if (string.IsNullOrWhiteSpace(_nombres) || string.IsNullOrWhiteSpace(_apellidos))
-        {
-            _error = "Nombres y apellidos son obligatorios.";
-            return;
-        }
-        if (_dni.Length != 8)
-        {
-            _error = "El DNI debe tener exactamente 8 dígitos.";
-            return;
-        }
-        _showConfirm = true;
-    }
-
-    // ── Mapa Leaflet ──────────────────────────────────────────────────────────
-    private MapAddressPicker? _mapPicker;
-
-    protected override void OnInitialized()
-    {
-        if (!Auth.IsLoggedIn())
-        {
-            Navigation.NavigateTo("/");
-            return;
-        }
-
-        var u = Auth.CurrentUser!;
-        _nombres   = u.Nombres;
-        _apellidos = u.Apellidos;
-        _dni       = u.Dni ?? "";
-        _phone     = u.Telefono ?? "";
-        _address   = u.DireccionEntrega ?? "";
-    }
-
-    private async Task SaveChanges()
-    {
-        _showConfirm = false;
-        _saving  = true;
-        _error   = "";
-        _success = false;
-
-        var u = Auth.CurrentUser!;
-        var dto = new
-        {
-            idUsuario        = u.Id,
-            correo           = u.Correo,
-            contrasena       = "*",          // SP MODIFICAR_USUARIO no lo toca
-            nombres          = _nombres.Trim(),
-            apellidos        = _apellidos.Trim(),
-            dni              = _dni.Trim(),
-            telefono         = _phone.Trim(),
-            direccionEntrega = _address.Trim()
-        };
-
-        try
-        {
-            var resp = await Http.PutAsJsonAsync("clientes", dto);
-            if (resp.IsSuccessStatusCode)
-            {
-                u.Nombres          = _nombres.Trim();
-                u.Apellidos        = _apellidos.Trim();
-                u.Dni              = _dni.Trim();
-                u.Telefono         = _phone.Trim();
-                u.DireccionEntrega = _address.Trim();
-                _success = true;
-            }
-            else
-            {
-                var msg = await resp.Content.ReadAsStringAsync();
-                _error = $"No se pudo guardar: {msg}";
-            }
-        }
-        catch (Exception ex)
-        {
-            _error = $"Error de conexión: {ex.Message}";
-        }
-        finally
-        {
-            _saving = false;
-            if (_success)
-            {
-                await Task.Delay(3000);
-                _success = false;
-                StateHasChanged();
-            }
-        }
-    }
-
-    // ── Mapa ──────────────────────────────────────────────────────────────────
-
-    private async Task OpenMapModal()
-    {
-        if (_mapPicker != null)
-            await _mapPicker.OpenAsync();
-    }
-
-    private void OnMapAddressSelected(string address)
-    {
-        _address = address;
-        StateHasChanged();
-    }
-}
-
 <PageTitle>Configuración – Shiligama</PageTitle>
 
 <div class="container-xl px-3 px-sm-4 py-4" style="max-width: 680px;">
@@ -327,4 +203,131 @@
             </div>
         </div>
     </div>
+}
+
+@code {
+    private string _nombres   = "";
+    private string _apellidos = "";
+    private string _dni       = "";
+    private string _phone     = "";
+    private string _address   = "";
+    private bool   _success   = false;
+    private bool   _saving    = false;
+    private string _error     = "";
+    private bool   _showConfirm = false;
+
+    // Permite solo dígitos en el DNI (máx. 8), bloqueando letras.
+    private void OnDniInput(ChangeEventArgs e)
+    {
+        var soloDigitos = new string((e.Value?.ToString() ?? "")
+            .Where(char.IsDigit).Take(8).ToArray());
+        _dni = soloDigitos;
+    }
+
+    // Valida y pide confirmación antes de guardar.
+    private void PedirConfirmacion()
+    {
+        _error = "";
+        if (string.IsNullOrWhiteSpace(_nombres) || string.IsNullOrWhiteSpace(_apellidos))
+        {
+            _error = "Nombres y apellidos son obligatorios.";
+            return;
+        }
+        if (_dni.Length != 8)
+        {
+            _error = "El DNI debe tener exactamente 8 dígitos.";
+            return;
+        }
+        _showConfirm = true;
+    }
+
+    // ── Mapa Leaflet ──────────────────────────────────────────────────────────
+    private MapAddressPicker? _mapPicker;
+
+    protected override void OnInitialized()
+    {
+        if (!Auth.IsLoggedIn())
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        var u = Auth.CurrentUser!;
+        _nombres   = u.Nombres;
+        _apellidos = u.Apellidos;
+        _dni       = u.Dni ?? "";
+        _phone     = u.Telefono ?? "";
+        _address   = u.DireccionEntrega ?? "";
+    }
+
+    private async Task SaveChanges()
+    {
+        _showConfirm = false;
+        _saving  = true;
+        _error   = "";
+        _success = false;
+
+        var u = Auth.CurrentUser!;
+        var dto = new
+        {
+            idUsuario        = u.Id,
+            correo           = u.Correo,
+            contrasena       = "*",          // SP MODIFICAR_USUARIO no lo toca
+            nombres          = _nombres.Trim(),
+            apellidos        = _apellidos.Trim(),
+            dni              = _dni.Trim(),
+            telefono         = _phone.Trim(),
+            direccionEntrega = _address.Trim()
+        };
+
+        try
+        {
+            var resp = await Http.PutAsJsonAsync("clientes", dto);
+            if (resp.IsSuccessStatusCode)
+            {
+                u.Nombres          = _nombres.Trim();
+                u.Apellidos        = _apellidos.Trim();
+                u.Dni              = _dni.Trim();
+                u.Telefono         = _phone.Trim();
+                u.DireccionEntrega = _address.Trim();
+                // Persistir en localStorage para que Checkout (y cualquier otra página)
+                // encuentre la dirección actualizada aunque el usuario haga refresh.
+                await Auth.SyncSessionAsync();
+                _success = true;
+            }
+            else
+            {
+                var msg = await resp.Content.ReadAsStringAsync();
+                _error = $"No se pudo guardar: {msg}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = $"Error de conexión: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+            if (_success)
+            {
+                await Task.Delay(3000);
+                _success = false;
+                StateHasChanged();
+            }
+        }
+    }
+
+    // ── Mapa ──────────────────────────────────────────────────────────────────
+
+    private async Task OpenMapModal()
+    {
+        if (_mapPicker != null)
+            await _mapPicker.OpenAsync();
+    }
+
+    private void OnMapAddressSelected(string address)
+    {
+        _address = address;
+        StateHasChanged();
+    }
 }

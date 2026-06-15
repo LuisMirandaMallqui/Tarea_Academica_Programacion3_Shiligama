@@ -23,7 +23,7 @@ import java.util.List;
 @Path("/recuperacion")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class RecuperacionWS {
+public class RecuperacionRS {
 
     private final RecuperacionBo recuperacionBo = new RecuperacionBoImpl();
 

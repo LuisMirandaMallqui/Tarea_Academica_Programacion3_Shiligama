@@ -34,11 +34,11 @@ public class MetodoPagoBoImpl implements MetodoPagoBo {
     }
 
     @Override
-    public MetodoPago buscarPorID(int id) throws Exception {
+    public MetodoPago buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del metodo de pago debe ser mayor que cero.");
         }
-        return daoMetodoPago.buscarPorID(id);
+        return daoMetodoPago.buscarPorId(id);
     }
 
     @Override

@@ -5,48 +5,6 @@
 @inject ReporteService ReporteSvc
 @inject IJSRuntime JS
 
-@code {
-    private DateTime _fechaDesde = DateTime.Today.AddDays(-30);
-    private DateTime _fechaHasta = DateTime.Today;
-
-    private List<Sale> FilteredSales => SalesSvc.GetSales()
-        .Where(s => s.Fecha.Date >= _fechaDesde.Date && s.Fecha.Date <= _fechaHasta.Date)
-        .ToList();
-
-    // Top productos — cargados desde el API, no hardcodeados
-    private List<TopProductoItem> _topProductos = new();
-
-    private void SetRangeHoy()    { _fechaDesde = DateTime.Today;             _fechaHasta = DateTime.Today; }
-    private void SetRange7Days()  { _fechaDesde = DateTime.Today.AddDays(-7); _fechaHasta = DateTime.Today; }
-    private void SetRange30Days() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        await Task.WhenAll(
-            ProductSvc.EnsureLoadedAsync(),
-            SalesSvc.EnsureLoadedAsync()
-        );
-        _topProductos = await ReporteSvc.GetTopProductosAsync();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender) return;
-        StateHasChanged();
-        await RenderCharts();
-    }
-
-    private async Task RenderCharts()
-    {
-        var labels         = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
-        var presencialData = new[] { 12, 19, 3,  5,  2,  3, 10 };
-        var onlineData     = new[] {  5, 12, 10, 8, 15, 20, 25 };
-
-        await JS.InvokeVoidAsync("chartHelper.renderOrdersComparisonChart",
-            "channelsComparisonChart", labels, presencialData, onlineData);
-    }
-}
-
 <PageTitle>Reportes & Estadísticas – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -251,3 +209,45 @@
         </div>
     </div>
 </div>
+
+@code {
+    private DateTime _fechaDesde = DateTime.Today.AddDays(-30);
+    private DateTime _fechaHasta = DateTime.Today;
+
+    private List<Sale> FilteredSales => SalesSvc.GetSales()
+        .Where(s => s.Fecha.Date >= _fechaDesde.Date && s.Fecha.Date <= _fechaHasta.Date)
+        .ToList();
+
+    // Top productos — cargados desde el API, no hardcodeados
+    private List<TopProductoItem> _topProductos = new();
+
+    private void SetRangeHoy()    { _fechaDesde = DateTime.Today;             _fechaHasta = DateTime.Today; }
+    private void SetRange7Days()  { _fechaDesde = DateTime.Today.AddDays(-7); _fechaHasta = DateTime.Today; }
+    private void SetRange30Days() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            ProductSvc.EnsureLoadedAsync(),
+            SalesSvc.EnsureLoadedAsync()
+        );
+        _topProductos = await ReporteSvc.GetTopProductosAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        StateHasChanged();
+        await RenderCharts();
+    }
+
+    private async Task RenderCharts()
+    {
+        var labels         = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
+        var presencialData = new[] { 12, 19, 3,  5,  2,  3, 10 };
+        var onlineData     = new[] {  5, 12, 10, 8, 15, 20, 25 };
+
+        await JS.InvokeVoidAsync("chartHelper.renderOrdersComparisonChart",
+            "channelsComparisonChart", labels, presencialData, onlineData);
+    }
+}

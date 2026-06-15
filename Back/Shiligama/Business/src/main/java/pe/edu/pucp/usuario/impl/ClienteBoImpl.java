@@ -113,11 +113,11 @@ public class ClienteBoImpl implements ClienteBo {
     }
 
     @Override
-    public Cliente buscarPorID(int id) throws Exception {
+    public Cliente buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del cliente debe ser mayor que cero.");
         }
-        return daoCliente.buscarPorID(id);
+        return daoCliente.buscarPorId(id);
     }
 
     @Override

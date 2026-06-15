@@ -32,7 +32,7 @@ import java.util.List;
 @Path("/pagos")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class PagoWS {
+public class PagoRS {
 
     private final PagoBo pagoBo = new PagoBoImpl();
     private final PedidoBo pedidoBo = new PedidoBoImpl();
@@ -49,7 +49,7 @@ public class PagoWS {
                                 "El id del pedido es obligatorio.", null, null, null, null, 0)).build();
             }
 
-            Pedido pedido = pedidoBo.buscarPorID(dto.getIdPedido());
+            Pedido pedido = pedidoBo.buscarPorId(dto.getIdPedido());
             if (pedido == null) {
                 return Response.status(Response.Status.NOT_FOUND)
                         .entity(new RespuestaIniciarPago(false,
@@ -128,7 +128,7 @@ public class PagoWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Pago pago = pagoBo.buscarPorID(id);
+            Pago pago = pagoBo.buscarPorId(id);
             if (pago != null) {
                 return Response.ok(pago).build();
             }

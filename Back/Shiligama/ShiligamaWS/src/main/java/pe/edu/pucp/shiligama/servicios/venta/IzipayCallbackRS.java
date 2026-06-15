@@ -24,7 +24,7 @@ import pe.edu.pucp.venta.pasarela.PasarelaPagoService.ResultadoPasarela;
  *  en local usa ngrok, en producción tu instancia EC2).
  */
 @Path("/pagos/izipay")
-public class IzipayCallbackWS {
+public class IzipayCallbackRS {
 
     private final PagoBo pagoBo = new PagoBoImpl();
     private final PasarelaPagoService pasarela = new PasarelaPagoService();

@@ -10,14 +10,10 @@ import pe.edu.pucp.venta.impl.VentaBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Ventas.
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/ventas
- */
 @Path("/ventas")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class VentaWS {
+public class VentaRS {
 
     private final VentaBo ventaBo = new VentaBoImpl();
 
@@ -36,7 +32,7 @@ public class VentaWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Venta venta = ventaBo.buscarPorID(id);
+            Venta venta = ventaBo.buscarPorId(id);
             if (venta != null) {
                 return Response.ok(venta).build();
             } else {

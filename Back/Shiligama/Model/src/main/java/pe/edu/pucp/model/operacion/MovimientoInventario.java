@@ -1,20 +1,47 @@
 package pe.edu.pucp.model.operacion;
 
 import java.time.LocalDateTime;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
 /**
  * Clase que representa un movimiento en el inventario como log inmutable.
  */
+@XmlType(name = "MovimientoInventario")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class MovimientoInventario {
     // ================= ATRIBUTOS =================
+    @XmlElement(name = "idMovimiento")
+    @JsonbProperty("idMovimiento")
     private int idMovimiento;
+    @XmlElement(name = "idProducto")
+    @JsonbProperty("idProducto")
     private int idProducto;        // Solo el ID
+    @XmlElement(name = "idTrabajador")
+    @JsonbProperty("idTrabajador")
     private int idTrabajador;      // Solo el ID (puede ser 0 si es NULL)
+    @XmlElement(name = "tipoMovimiento")
+    @JsonbProperty("tipoMovimiento")
     private String tipoMovimiento; // "ENTRADA", "SALIDA", "AJUSTE", "DEVOLUCION"
+    @XmlElement(name = "cantidad")
+    @JsonbProperty("cantidad")
     private int cantidad;
+    @XmlElement(name = "stockAnterior")
+    @JsonbProperty("stockAnterior")
     private int stockAnterior;
+    @XmlElement(name = "stockResultante")
+    @JsonbProperty("stockResultante")
     private int stockResultante;
+    @XmlElement(name = "motivo")
+    @JsonbProperty("motivo")
     private String motivo;
+    @XmlElement(name = "fechaHora")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaHora")
     private LocalDateTime fechaHora;
 
     // ================= CONSTRUCTORES =================

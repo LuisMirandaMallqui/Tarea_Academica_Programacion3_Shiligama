@@ -2,28 +2,6 @@
 @layout AdminLayout
 @inject AuthService Auth
 
-@code {
-    private string _name = "";
-    private string _email = "";
-    private string _phone = "951 236 487";
-    private string _password = "";
-    private bool _success = false;
-
-    protected override void OnInitialized()
-    {
-        _name = Auth.CurrentUser?.Name ?? "Admin Shiligama";
-        _email = Auth.CurrentUser?.Email ?? "test1234@admin.com";
-    }
-
-    private async Task SaveProfile()
-    {
-        _success = true;
-        await Task.Delay(2000);
-        _success = false;
-        StateHasChanged();
-    }
-}
-
 <PageTitle>Mi Perfil – Shiligama Admin</PageTitle>
 
 <div class="container-fluid p-0 mx-auto" style="max-width: 900px;">
@@ -99,3 +77,25 @@
         </div>
     </div>
 </div>
+
+@code {
+    private string _name = "";
+    private string _email = "";
+    private string _phone = "951 236 487";
+    private string _password = "";
+    private bool _success = false;
+
+    protected override void OnInitialized()
+    {
+        _name = Auth.CurrentUser?.Name ?? "Admin Shiligama";
+        _email = Auth.CurrentUser?.Email ?? "test1234@admin.com";
+    }
+
+    private async Task SaveProfile()
+    {
+        _success = true;
+        await Task.Delay(2000);
+        _success = false;
+        StateHasChanged();
+    }
+}

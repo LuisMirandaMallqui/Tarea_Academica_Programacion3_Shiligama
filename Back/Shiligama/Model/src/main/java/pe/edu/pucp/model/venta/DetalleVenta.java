@@ -1,14 +1,36 @@
 package pe.edu.pucp.model.venta;
 
 import pe.edu.pucp.model.producto.Producto;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
+@XmlType(name = "DetalleVenta")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class DetalleVenta {
+    @XmlElement(name = "idDetalleVenta")
+    @JsonbProperty("idDetalleVenta")
     private int idDetalleVenta;
+    @XmlElement(name = "idPadreVenta")
+    @JsonbProperty("idPadreVenta")
     private int idPadreVenta; //En lugar de guardar el objeto completo guardamos el ID
+    @XmlElement(name = "producto")
+    @JsonbProperty("producto")
     private Producto producto;
+    @XmlElement(name = "descripcion")
+    @JsonbProperty("descripcion")
     private String descripcion;
+    @XmlElement(name = "cantidad")
+    @JsonbProperty("cantidad")
     private int cantidad;
+    @XmlElement(name = "precioUnitario")
+    @JsonbProperty("precioUnitario")
     private double precioUnitario;
+    @XmlElement(name = "subtotal")
+    @JsonbProperty("subtotal")
     private double subtotal;
 
     public DetalleVenta() {

@@ -9,14 +9,10 @@ import pe.edu.pucp.producto.impl.CategoriaBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Categorías de productos.
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/categorias
- */
 @Path("/categorias")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class CategoriaWS {
+public class CategoriaRS {
 
     private final CategoriaBo categoriaBo = new CategoriaBoImpl();
 
@@ -35,7 +31,7 @@ public class CategoriaWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Categoria categoria = categoriaBo.buscarPorID(id);
+            Categoria categoria = categoriaBo.buscarPorId(id);
             if (categoria != null) {
                 return Response.ok(categoria).build();
             } else {

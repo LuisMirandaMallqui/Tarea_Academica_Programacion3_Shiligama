@@ -56,7 +56,7 @@ public class PedidoDaoImpl implements PedidoDao {
 
     // SP: BUSCAR_PEDIDO_X_ID(IN _pedido_id)
     @Override
-    public Pedido buscarPorID(int id) {
+    public Pedido buscarPorId(int id) {
         Pedido pedido = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

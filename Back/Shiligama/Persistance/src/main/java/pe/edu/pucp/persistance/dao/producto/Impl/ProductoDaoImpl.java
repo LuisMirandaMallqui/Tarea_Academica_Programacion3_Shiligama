@@ -70,7 +70,7 @@ public class ProductoDaoImpl implements ProductoDao {
 
     // SP: BUSCAR_PRODUCTO_X_ID(IN _producto_id)
     @Override
-    public Producto buscarPorID(int id) {
+    public Producto buscarPorId(int id) {
         Producto producto = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

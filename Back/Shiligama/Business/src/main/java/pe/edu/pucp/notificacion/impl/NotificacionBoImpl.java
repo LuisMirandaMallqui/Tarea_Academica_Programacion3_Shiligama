@@ -35,11 +35,11 @@ public class NotificacionBoImpl implements NotificacionBo {
     }
 
     @Override
-    public Notificacion buscarPorID(int id) throws Exception {
+    public Notificacion buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID de la notificación debe ser mayor que cero.");
         }
-        return notifDao.buscarPorID(id);
+        return notifDao.buscarPorId(id);
     }
 
     @Override

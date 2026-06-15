@@ -8,8 +8,18 @@ import pe.edu.pucp.model.usuario.Trabajador;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
+@XmlType(name = "Venta")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Venta {
+    @XmlElement(name = "idVenta")
+    @JsonbProperty("idVenta")
     private int idVenta;
 
     public int getIdPedido() {
@@ -20,16 +30,39 @@ public class Venta {
         this.idPedido = idPedido;
     }
 
+    @XmlElement(name = "idPedido")
+    @JsonbProperty("idPedido")
     private int idPedido;
+    @XmlElement(name = "fechaHora")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaHora")
     private LocalDateTime fechaHora;
+    @XmlElement(name = "montoTotal")
+    @JsonbProperty("montoTotal")
     private double montoTotal;
+    @XmlElement(name = "montoDescuento")
+    @JsonbProperty("montoDescuento")
     private double montoDescuento;
+    @XmlElement(name = "canalVenta")
+    @JsonbProperty("canalVenta")
     private CanalVenta canalVenta;
+    @XmlElement(name = "estadoVenta")
+    @JsonbProperty("estadoVenta")
     private EstadoVenta estadoVenta;
+    @XmlElement(name = "observaciones")
+    @JsonbProperty("observaciones")
     private String observaciones;
+    @XmlElement(name = "cliente")
+    @JsonbProperty("cliente")
     private Cliente cliente;
+    @XmlElement(name = "trabajador")
+    @JsonbProperty("trabajador")
     private Trabajador trabajador;
+    @XmlElement(name = "metodoPago")
+    @JsonbProperty("metodoPago")
     private MetodoPago metodoPago;
+    @XmlElement(name = "detalles")
+    @JsonbProperty("detalles")
     private List<DetalleVenta> detalles = new ArrayList<>(); // nunca null — Yasson/JSON-B requiere lista vacía, no null
 
 

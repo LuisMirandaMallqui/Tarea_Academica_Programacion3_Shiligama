@@ -10,14 +10,10 @@ import pe.edu.pucp.venta.impl.PedidoBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Pedidos.
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/pedidos
- */
 @Path("/pedidos")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class PedidoWS {
+public class PedidoRS {
 
     private final PedidoBo pedidoBo = new PedidoBoImpl();
 
@@ -36,7 +32,7 @@ public class PedidoWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Pedido pedido = pedidoBo.buscarPorID(id);
+            Pedido pedido = pedidoBo.buscarPorId(id);
             if (pedido != null) {
                 return Response.ok(pedido).build();
             } else {

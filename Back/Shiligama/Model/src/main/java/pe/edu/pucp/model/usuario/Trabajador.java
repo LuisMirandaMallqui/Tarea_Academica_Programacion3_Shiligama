@@ -1,9 +1,22 @@
 package pe.edu.pucp.model.usuario;
 
 import java.time.LocalDate;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
+@XmlType(name = "Trabajador")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Trabajador extends Usuario {
+    @XmlElement(name = "cargo")
+    @JsonbProperty("cargo")
     private String cargo;
+    @XmlElement(name = "fechaIngreso")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaIngreso")
     private LocalDate fechaIngreso;
 
     public Trabajador() {

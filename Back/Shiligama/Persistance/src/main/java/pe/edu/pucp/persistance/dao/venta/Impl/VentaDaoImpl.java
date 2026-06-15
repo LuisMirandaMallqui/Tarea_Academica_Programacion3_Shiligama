@@ -94,7 +94,7 @@ public class VentaDaoImpl implements VentaDao {
 
     // SP: BUSCAR_VENTA_X_ID(IN _venta_id)
     @Override
-    public Venta buscarPorID(int id) {
+    public Venta buscarPorId(int id) {
         Venta venta = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

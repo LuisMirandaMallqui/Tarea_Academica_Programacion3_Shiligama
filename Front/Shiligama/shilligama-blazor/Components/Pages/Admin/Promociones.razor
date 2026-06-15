@@ -5,214 +5,6 @@
 @inject ProductService ProductSvc
 @inject PromocionService PromoSvc
 
-@code {
-    // ── Estado ──────────────────────────────────────────────────────
-    // Diseño portado del front del equipo, conectado a PromocionService
-    // (carga real desde /api/promociones y persistencia de CRUD + vínculos).
-    private List<Promocion> _promos = new();
-    private List<Product> _allProducts = new();
-
-    private string _search = "";
-    private string _tipoFilter = "";
-    private string _estadoFilter = "";
-    private int _pageSize = 5;
-    private int _currentPage = 1;
-
-    // Modal
-    private bool _showModal = false;
-    private bool _isEditing = false;
-    private Promocion _form = new();
-    private string? _dateError;
-    private string? _valorError;
-    private List<string> _invalidProducts = new();
-
-    // Confirmaciones / toasts
-    private bool _showSaveConfirm   = false;
-    private bool _showDeleteConfirm = false;
-    private bool _showToggleConfirm = false;
-    private bool _showSavedToast    = false;
-    private bool _showToggledToast  = false;
-    private bool _showDeletedToast  = false;
-    private int  _pendingDeleteId;
-    private int  _pendingToggleId;
-    private System.Threading.CancellationTokenSource? _undoCts;
-    private bool _undoAvailable = false;
-    private Promocion? _deletedBackup;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();
-        _allProducts = ProductSvc.GetProducts();
-
-        await PromoSvc.EnsureLoadedAsync();
-        _promos = new List<Promocion>(PromoSvc.GetPromociones());
-
-        // Cargar los productos vinculados de cada promoción (promocion_producto).
-        foreach (var promo in _promos)
-        {
-            promo.ProductoIds = await PromoSvc.GetProductosDePromocionAsync(promo.Id);
-        }
-        SyncProductBadges();
-    }
-
-    private IEnumerable<Promocion> Filtered => _promos.Where(p =>
-        (string.IsNullOrEmpty(_search)
-            || p.Nombre.Contains(_search, StringComparison.OrdinalIgnoreCase)
-            || (p.Descripcion ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_tipoFilter) || p.TipoDescuento == _tipoFilter) &&
-        (_estadoFilter switch { "activo" => p.Activo, "inactivo" => !p.Activo, _ => true })
-    );
-
-    private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
-    private IEnumerable<Promocion> Paged => Filtered.Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
-    private void OnFilterChange() { _currentPage = 1; }
-    private void GoToPage(int p)  { if (p >= 1 && p <= TotalPages) _currentPage = p; }
-
-    private string GetProductNames(List<int> ids) =>
-        ids.Count == 0 ? "Ninguno asignado"
-        : string.Join(", ", ids.Select(id => _allProducts.FirstOrDefault(p => p.Id == id)?.Name ?? $"ID {id}").Take(3)) + (ids.Count > 3 ? $" +{ids.Count - 3}" : "");
-
-    private bool IsActive(Promocion p) => p.Activo && p.FechaFin >= DateTime.Today;
-
-    private void SyncProductBadges()
-    {
-        foreach (var prod in _allProducts)
-            prod.IsPromo = _promos.Any(pr => pr.Activo && pr.ProductoIds.Contains(prod.Id));
-    }
-
-    private void ToggleProduct(int id)
-    {
-        if (_form.ProductoIds.Contains(id)) _form.ProductoIds.Remove(id);
-        else _form.ProductoIds.Add(id);
-    }
-
-    private void OpenCreate()
-    {
-        _form = new Promocion { FechaInicio = DateTime.Today, FechaFin = DateTime.Today.AddDays(7) };
-        _isEditing = false; _dateError = null; _valorError = null; _invalidProducts.Clear(); _showModal = true;
-    }
-    private void OpenEdit(Promocion p)
-    {
-        _form = new Promocion
-        {
-            Id = p.Id, Nombre = p.Nombre, Descripcion = p.Descripcion, TipoDescuento = p.TipoDescuento,
-            ValorDescuento = p.ValorDescuento, FechaInicio = p.FechaInicio, FechaFin = p.FechaFin,
-            Condiciones = p.Condiciones, Activo = p.Activo, ProductoIds = new(p.ProductoIds)
-        };
-        _isEditing = true; _dateError = null; _valorError = null; _invalidProducts.Clear(); _showModal = true;
-    }
-
-    private void TrySubmit()
-    {
-        _dateError = null; _valorError = null; _invalidProducts.Clear();
-
-        if (string.IsNullOrWhiteSpace(_form.Nombre))
-            _valorError = "El nombre es obligatorio.";
-
-        if (_form.FechaFin < _form.FechaInicio)
-            _dateError = "La fecha de fin no puede ser anterior a la fecha de inicio.";
-
-        if (_form.ValorDescuento <= 0)
-            _valorError = "El valor de descuento debe ser mayor a 0.";
-        else if (_form.TipoDescuento == "PORCENTAJE" && _form.ValorDescuento > 100)
-            _valorError = "El porcentaje no puede superar 100%.";
-        else if (_form.TipoDescuento == "MONTO_FIJO" && _form.ProductoIds.Count > 0)
-        {
-            foreach (var id in _form.ProductoIds)
-            {
-                var prod = _allProducts.FirstOrDefault(p => p.Id == id);
-                if (prod != null && _form.ValorDescuento >= (double)prod.Price)
-                    _invalidProducts.Add($"{prod.Name} (S/. {prod.Price:0.00})");
-            }
-            if (_invalidProducts.Count > 0)
-                _valorError = $"El monto S/. {_form.ValorDescuento:0.00} es mayor o igual al precio de {_invalidProducts.Count} producto(s). Todos deben ser válidos para guardar.";
-        }
-
-        if (_dateError != null || _valorError != null) return;
-        _showSaveConfirm = true;
-    }
-
-    private async Task ConfirmSave()
-    {
-        if (_isEditing)
-        {
-            var idx = _promos.FindIndex(p => p.Id == _form.Id);
-            var idsAntiguos = idx >= 0 ? new List<int>(_promos[idx].ProductoIds) : new List<int>();
-
-            await PromoSvc.UpdatePromocionAsync(_form);
-            await SincronizarProductosAsync(_form.Id, idsAntiguos, _form.ProductoIds);
-
-            if (idx >= 0) _promos[idx] = _form;
-        }
-        else
-        {
-            await PromoSvc.AddPromocionAsync(_form); // asigna _form.Id desde el backend
-            await SincronizarProductosAsync(_form.Id, new List<int>(), _form.ProductoIds);
-            _promos.Insert(0, _form);
-        }
-        SyncProductBadges();
-        _showModal = false; _showSaveConfirm = false;
-        _showSavedToast = true; StateHasChanged();
-        await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
-    }
-    private void CancelSave() => _showSaveConfirm = false;
-
-    // Asocia/desasocia los productos vinculados según la diferencia.
-    private async Task SincronizarProductosAsync(int idPromo, List<int> antiguos, List<int> nuevos)
-    {
-        foreach (var pid in nuevos.Where(x => !antiguos.Contains(x)))
-            await PromoSvc.AsociarProductoAsync(idPromo, pid);
-        foreach (var pid in antiguos.Where(x => !nuevos.Contains(x)))
-            await PromoSvc.DesasociarProductoAsync(idPromo, pid);
-    }
-
-    // Toggle activo
-    private void AskToggle(int id) { _pendingToggleId = id; _showToggleConfirm = true; }
-    private void CancelToggle()    { _showToggleConfirm = false; }
-    private async Task ConfirmToggle()
-    {
-        var p = _promos.FirstOrDefault(x => x.Id == _pendingToggleId);
-        if (p != null)
-        {
-            p.Activo = !p.Activo;
-            await PromoSvc.UpdatePromocionAsync(p);
-            SyncProductBadges();
-        }
-        _showToggleConfirm = false;
-        _showToggledToast = true; StateHasChanged();
-        await Task.Delay(3000); _showToggledToast = false; StateHasChanged();
-    }
-
-    // Eliminar
-    private void AskDelete(int id) { _pendingDeleteId = id; _showDeleteConfirm = true; }
-    private void CancelDelete()    { _showDeleteConfirm = false; }
-    private async Task ConfirmDelete()
-    {
-        _deletedBackup = _promos.FirstOrDefault(p => p.Id == _pendingDeleteId);
-        await PromoSvc.DeletePromocionAsync(_pendingDeleteId);
-        _promos.RemoveAll(p => p.Id == _pendingDeleteId);
-        SyncProductBadges();
-        _showDeleteConfirm = false;
-        _showDeletedToast = true; _undoAvailable = true; StateHasChanged();
-        _undoCts?.Cancel(); _undoCts = new();
-        try { await Task.Delay(5000, _undoCts.Token); _showDeletedToast = false; _undoAvailable = false; StateHasChanged(); }
-        catch (TaskCanceledException) { }
-    }
-    private async Task UndoDelete()
-    {
-        if (_deletedBackup != null)
-        {
-            var backup = _deletedBackup;
-            await PromoSvc.AddPromocionAsync(backup); // se re-crea en el backend
-            await SincronizarProductosAsync(backup.Id, new List<int>(), backup.ProductoIds);
-            _promos.Insert(0, backup);
-            _deletedBackup = null;
-            SyncProductBadges();
-        }
-        _undoCts?.Cancel(); _showDeletedToast = false; _undoAvailable = false; StateHasChanged();
-    }
-}
-
 <PageTitle>Promociones – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -550,3 +342,211 @@
     .pag-btn:disabled { opacity:.4; }
     .pag-active { background:#1A6B3C !important; color:#fff !important; border-color:#1A6B3C !important; }
 </style>
+
+@code {
+    // ── Estado ──────────────────────────────────────────────────────
+    // Diseño portado del front del equipo, conectado a PromocionService
+    // (carga real desde /api/promociones y persistencia de CRUD + vínculos).
+    private List<Promocion> _promos = new();
+    private List<Product> _allProducts = new();
+
+    private string _search = "";
+    private string _tipoFilter = "";
+    private string _estadoFilter = "";
+    private int _pageSize = 5;
+    private int _currentPage = 1;
+
+    // Modal
+    private bool _showModal = false;
+    private bool _isEditing = false;
+    private Promocion _form = new();
+    private string? _dateError;
+    private string? _valorError;
+    private List<string> _invalidProducts = new();
+
+    // Confirmaciones / toasts
+    private bool _showSaveConfirm   = false;
+    private bool _showDeleteConfirm = false;
+    private bool _showToggleConfirm = false;
+    private bool _showSavedToast    = false;
+    private bool _showToggledToast  = false;
+    private bool _showDeletedToast  = false;
+    private int  _pendingDeleteId;
+    private int  _pendingToggleId;
+    private System.Threading.CancellationTokenSource? _undoCts;
+    private bool _undoAvailable = false;
+    private Promocion? _deletedBackup;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _allProducts = ProductSvc.GetProducts();
+
+        await PromoSvc.EnsureLoadedAsync();
+        _promos = new List<Promocion>(PromoSvc.GetPromociones());
+
+        // Cargar los productos vinculados de cada promoción (promocion_producto).
+        foreach (var promo in _promos)
+        {
+            promo.ProductoIds = await PromoSvc.GetProductosDePromocionAsync(promo.Id);
+        }
+        SyncProductBadges();
+    }
+
+    private IEnumerable<Promocion> Filtered => _promos.Where(p =>
+        (string.IsNullOrEmpty(_search)
+            || p.Nombre.Contains(_search, StringComparison.OrdinalIgnoreCase)
+            || (p.Descripcion ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_tipoFilter) || p.TipoDescuento == _tipoFilter) &&
+        (_estadoFilter switch { "activo" => p.Activo, "inactivo" => !p.Activo, _ => true })
+    );
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
+    private IEnumerable<Promocion> Paged => Filtered.Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+    private void OnFilterChange() { _currentPage = 1; }
+    private void GoToPage(int p)  { if (p >= 1 && p <= TotalPages) _currentPage = p; }
+
+    private string GetProductNames(List<int> ids) =>
+        ids.Count == 0 ? "Ninguno asignado"
+        : string.Join(", ", ids.Select(id => _allProducts.FirstOrDefault(p => p.Id == id)?.Name ?? $"ID {id}").Take(3)) + (ids.Count > 3 ? $" +{ids.Count - 3}" : "");
+
+    private bool IsActive(Promocion p) => p.Activo && p.FechaFin >= DateTime.Today;
+
+    private void SyncProductBadges()
+    {
+        foreach (var prod in _allProducts)
+            prod.IsPromo = _promos.Any(pr => pr.Activo && pr.ProductoIds.Contains(prod.Id));
+    }
+
+    private void ToggleProduct(int id)
+    {
+        if (_form.ProductoIds.Contains(id)) _form.ProductoIds.Remove(id);
+        else _form.ProductoIds.Add(id);
+    }
+
+    private void OpenCreate()
+    {
+        _form = new Promocion { FechaInicio = DateTime.Today, FechaFin = DateTime.Today.AddDays(7) };
+        _isEditing = false; _dateError = null; _valorError = null; _invalidProducts.Clear(); _showModal = true;
+    }
+    private void OpenEdit(Promocion p)
+    {
+        _form = new Promocion
+        {
+            Id = p.Id, Nombre = p.Nombre, Descripcion = p.Descripcion, TipoDescuento = p.TipoDescuento,
+            ValorDescuento = p.ValorDescuento, FechaInicio = p.FechaInicio, FechaFin = p.FechaFin,
+            Condiciones = p.Condiciones, Activo = p.Activo, ProductoIds = new(p.ProductoIds)
+        };
+        _isEditing = true; _dateError = null; _valorError = null; _invalidProducts.Clear(); _showModal = true;
+    }
+
+    private void TrySubmit()
+    {
+        _dateError = null; _valorError = null; _invalidProducts.Clear();
+
+        if (string.IsNullOrWhiteSpace(_form.Nombre))
+            _valorError = "El nombre es obligatorio.";
+
+        if (_form.FechaFin < _form.FechaInicio)
+            _dateError = "La fecha de fin no puede ser anterior a la fecha de inicio.";
+
+        if (_form.ValorDescuento <= 0)
+            _valorError = "El valor de descuento debe ser mayor a 0.";
+        else if (_form.TipoDescuento == "PORCENTAJE" && _form.ValorDescuento > 100)
+            _valorError = "El porcentaje no puede superar 100%.";
+        else if (_form.TipoDescuento == "MONTO_FIJO" && _form.ProductoIds.Count > 0)
+        {
+            foreach (var id in _form.ProductoIds)
+            {
+                var prod = _allProducts.FirstOrDefault(p => p.Id == id);
+                if (prod != null && _form.ValorDescuento >= (double)prod.Price)
+                    _invalidProducts.Add($"{prod.Name} (S/. {prod.Price:0.00})");
+            }
+            if (_invalidProducts.Count > 0)
+                _valorError = $"El monto S/. {_form.ValorDescuento:0.00} es mayor o igual al precio de {_invalidProducts.Count} producto(s). Todos deben ser válidos para guardar.";
+        }
+
+        if (_dateError != null || _valorError != null) return;
+        _showSaveConfirm = true;
+    }
+
+    private async Task ConfirmSave()
+    {
+        if (_isEditing)
+        {
+            var idx = _promos.FindIndex(p => p.Id == _form.Id);
+            var idsAntiguos = idx >= 0 ? new List<int>(_promos[idx].ProductoIds) : new List<int>();
+
+            await PromoSvc.UpdatePromocionAsync(_form);
+            await SincronizarProductosAsync(_form.Id, idsAntiguos, _form.ProductoIds);
+
+            if (idx >= 0) _promos[idx] = _form;
+        }
+        else
+        {
+            await PromoSvc.AddPromocionAsync(_form); // asigna _form.Id desde el backend
+            await SincronizarProductosAsync(_form.Id, new List<int>(), _form.ProductoIds);
+            _promos.Insert(0, _form);
+        }
+        SyncProductBadges();
+        _showModal = false; _showSaveConfirm = false;
+        _showSavedToast = true; StateHasChanged();
+        await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
+    }
+    private void CancelSave() => _showSaveConfirm = false;
+
+    // Asocia/desasocia los productos vinculados según la diferencia.
+    private async Task SincronizarProductosAsync(int idPromo, List<int> antiguos, List<int> nuevos)
+    {
+        foreach (var pid in nuevos.Where(x => !antiguos.Contains(x)))
+            await PromoSvc.AsociarProductoAsync(idPromo, pid);
+        foreach (var pid in antiguos.Where(x => !nuevos.Contains(x)))
+            await PromoSvc.DesasociarProductoAsync(idPromo, pid);
+    }
+
+    // Toggle activo
+    private void AskToggle(int id) { _pendingToggleId = id; _showToggleConfirm = true; }
+    private void CancelToggle()    { _showToggleConfirm = false; }
+    private async Task ConfirmToggle()
+    {
+        var p = _promos.FirstOrDefault(x => x.Id == _pendingToggleId);
+        if (p != null)
+        {
+            p.Activo = !p.Activo;
+            await PromoSvc.UpdatePromocionAsync(p);
+            SyncProductBadges();
+        }
+        _showToggleConfirm = false;
+        _showToggledToast = true; StateHasChanged();
+        await Task.Delay(3000); _showToggledToast = false; StateHasChanged();
+    }
+
+    // Eliminar
+    private void AskDelete(int id) { _pendingDeleteId = id; _showDeleteConfirm = true; }
+    private void CancelDelete()    { _showDeleteConfirm = false; }
+    private async Task ConfirmDelete()
+    {
+        _deletedBackup = _promos.FirstOrDefault(p => p.Id == _pendingDeleteId);
+        await PromoSvc.DeletePromocionAsync(_pendingDeleteId);
+        _promos.RemoveAll(p => p.Id == _pendingDeleteId);
+        SyncProductBadges();
+        _showDeleteConfirm = false;
+        _showDeletedToast = true; _undoAvailable = true; StateHasChanged();
+        _undoCts?.Cancel(); _undoCts = new();
+        try { await Task.Delay(5000, _undoCts.Token); _showDeletedToast = false; _undoAvailable = false; StateHasChanged(); }
+        catch (TaskCanceledException) { }
+    }
+    private async Task UndoDelete()
+    {
+        if (_deletedBackup != null)
+        {
+            var backup = _deletedBackup;
+            await PromoSvc.AddPromocionAsync(backup); // se re-crea en el backend
+            await SincronizarProductosAsync(backup.Id, new List<int>(), backup.ProductoIds);
+            _promos.Insert(0, backup);
+            _deletedBackup = null;
+            SyncProductBadges();
+        }
+        _undoCts?.Cancel(); _showDeletedToast = false; _undoAvailable = false; StateHasChanged();
+    }
+}

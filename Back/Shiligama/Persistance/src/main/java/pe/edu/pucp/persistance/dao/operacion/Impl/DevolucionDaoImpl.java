@@ -66,7 +66,7 @@ public class DevolucionDaoImpl implements DevolucionDao {
 
     // SP: BUSCAR_DEVOLUCION_POR_ID(IN _devolucion_id)
     @Override
-    public Devolucion buscarPorID(int id) {
+    public Devolucion buscarPorId(int id) {
         Devolucion d = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

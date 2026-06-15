@@ -35,11 +35,11 @@ public class PromocionBoImpl implements PromocionBO {
     }
 
     @Override
-    public Promocion buscarPorID(int id) throws Exception {
+    public Promocion buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID de la promocion debe ser mayor que cero.");
         }
-        return daoPromocion.buscarPorID(id);
+        return daoPromocion.buscarPorId(id);
     }
 
     @Override

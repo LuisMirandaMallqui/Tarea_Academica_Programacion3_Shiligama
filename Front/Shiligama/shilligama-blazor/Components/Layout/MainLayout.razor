@@ -5,73 +5,6 @@
 @inject ProductService Product
 @inject NavigationManager Navigation
 
-@code {
-    private string SearchQuery
-    {
-        get => Product.SearchQuery;
-        set => Product.NotifySearch(value);
-    }
-
-    private bool _isMobileMenuOpen = false;
-    private bool _isMobileSearchOpen = false;
-    private bool _isUserDropdownOpen = false;
-
-    private void ToggleUserDropdown()
-    {
-        _isUserDropdownOpen = !_isUserDropdownOpen;
-    }
-
-    private void CloseUserDropdown()
-    {
-        _isUserDropdownOpen = false;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await Cart.InitializeAsync();
-            Cart.OnChange += StateHasChanged;
-            Auth.OnChange += StateHasChanged;
-            StateHasChanged();
-        }
-    }
-
-    private void ToggleMobileMenu()
-    {
-        _isMobileMenuOpen = !_isMobileMenuOpen;
-    }
-
-    private void ToggleMobileSearch()
-    {
-        _isMobileSearchOpen = !_isMobileSearchOpen;
-    }
-
-    private void HandleSearchKeyPress(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            if (!Navigation.Uri.Contains("/catalogo", StringComparison.OrdinalIgnoreCase))
-            {
-                Navigation.NavigateTo("/catalogo");
-            }
-            _isMobileSearchOpen = false;
-        }
-    }
-
-    private void HandleLogout()
-    {
-        Auth.Logout();
-        Navigation.NavigateTo("/");
-    }
-
-    public void Dispose()
-    {
-        Cart.OnChange -= StateHasChanged;
-        Auth.OnChange -= StateHasChanged;
-    }
-}
-
 <style>
     .dropdown-menu {
         background-color: var(--card) !important;
@@ -288,3 +221,70 @@
         </div>
     </footer>
 </div>
+
+@code {
+    private string SearchQuery
+    {
+        get => Product.SearchQuery;
+        set => Product.NotifySearch(value);
+    }
+
+    private bool _isMobileMenuOpen = false;
+    private bool _isMobileSearchOpen = false;
+    private bool _isUserDropdownOpen = false;
+
+    private void ToggleUserDropdown()
+    {
+        _isUserDropdownOpen = !_isUserDropdownOpen;
+    }
+
+    private void CloseUserDropdown()
+    {
+        _isUserDropdownOpen = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Cart.InitializeAsync();
+            Cart.OnChange += StateHasChanged;
+            Auth.OnChange += StateHasChanged;
+            StateHasChanged();
+        }
+    }
+
+    private void ToggleMobileMenu()
+    {
+        _isMobileMenuOpen = !_isMobileMenuOpen;
+    }
+
+    private void ToggleMobileSearch()
+    {
+        _isMobileSearchOpen = !_isMobileSearchOpen;
+    }
+
+    private void HandleSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            if (!Navigation.Uri.Contains("/catalogo", StringComparison.OrdinalIgnoreCase))
+            {
+                Navigation.NavigateTo("/catalogo");
+            }
+            _isMobileSearchOpen = false;
+        }
+    }
+
+    private void HandleLogout()
+    {
+        Auth.Logout();
+        Navigation.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        Cart.OnChange -= StateHasChanged;
+        Auth.OnChange -= StateHasChanged;
+    }
+}

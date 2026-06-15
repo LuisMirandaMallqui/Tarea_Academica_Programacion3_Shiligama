@@ -34,11 +34,11 @@ public class MovimientoInventarioBoImpl implements MovimientoInventarioBO {
     }
 
     @Override
-    public MovimientoInventario buscarPorID(int id) throws Exception {
+    public MovimientoInventario buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del movimiento debe ser mayor que cero.");
         }
-        return daoMovimiento.buscarPorID(id);
+        return daoMovimiento.buscarPorId(id);
     }
 
     @Override

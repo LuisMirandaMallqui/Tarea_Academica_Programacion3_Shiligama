@@ -21,7 +21,7 @@ import pe.edu.pucp.usuario.impl.AuthBoImpl;
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class LoginWS {
+public class LoginRS {
 
     private final AuthBo authBo = new AuthBoImpl();
 
@@ -39,7 +39,6 @@ public class LoginWS {
                     credenciales.getContrasena());
 
             if (usuario != null) {
-                // System.out.println(credenciales.getCorreo() + " " + credenciales.getContrasena());
                 return Response.ok(usuario).build();
             } else {
                 return Response.status(Response.Status.UNAUTHORIZED)

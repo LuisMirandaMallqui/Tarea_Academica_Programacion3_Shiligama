@@ -55,7 +55,7 @@ public class NotificacionDaoImpl implements NotificacionDao {
 
     // SP: BUSCAR_NOTIFICACION_X_ID(IN _notif_id)
     @Override
-    public Notificacion buscarPorID(int id) {
+    public Notificacion buscarPorId(int id) {
         Notificacion notif = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

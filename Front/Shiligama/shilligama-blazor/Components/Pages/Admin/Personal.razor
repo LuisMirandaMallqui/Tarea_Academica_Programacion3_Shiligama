@@ -3,100 +3,6 @@
 @inject StaffService StaffSvc
 @inject AuthService Auth
 
-@code {
-    private List<Staff> _staff = new();
-    private string _search = "";
-    private string _roleFilter = "";
-
-    // Form Modal state
-    private bool _showModal = false;
-    private bool _isEditing = false;
-    private Staff _form = new();
-    private bool _isEditingSelf = false;   // true cuando el admin edita su propio registro
-
-    // Permite solo dígitos en el DNI (máx. 8), bloqueando letras.
-    private void OnDniInput(ChangeEventArgs e)
-        => _form.Dni = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(8).ToArray());
-
-    // Confirmación de eliminación
-    private bool _showConfirmDelete = false;
-    private string _deleteId = "";
-    private string _deleteName = "";
-
-    protected override async Task OnInitializedAsync()
-    {
-        await StaffSvc.EnsureLoadedAsync();
-        _staff = StaffSvc.GetStaff();
-    }
-
-    private IEnumerable<Staff> Filtered => _staff.Where(s =>
-        (string.IsNullOrEmpty(_search) || s.Nombre.Contains(_search, StringComparison.OrdinalIgnoreCase) || s.Dni.Contains(_search) || s.Correo.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_roleFilter) || s.Rol.Equals(_roleFilter, StringComparison.OrdinalIgnoreCase))
-    );
-
-    private void OpenCreate()
-    {
-        _form = new Staff();
-        _isEditing = false;
-        _showModal = true;
-    }
-
-    private void OpenEdit(Staff s)
-    {
-        _form = new Staff
-        {
-            Id          = s.Id,
-            Nombre      = s.Nombre,
-            Dni         = s.Dni,
-            Rol         = s.Rol,
-            Telefono    = s.Telefono,
-            Correo      = s.Correo,
-            Avatar      = s.Avatar,
-            FechaIngreso= s.FechaIngreso,
-            Estado      = s.Estado,
-            Turno       = s.Turno
-        };
-        // Detectar si el admin está editando su propio registro (para bloquear cambio de rol)
-        _isEditingSelf = Auth.CurrentUser?.Id.ToString() == s.Id;
-        _isEditing = true;
-        _showModal = true;
-    }
-
-    private void Save()
-    {
-        if (_isEditing)
-        {
-            StaffSvc.UpdateStaff(_form);
-        }
-        else
-        {
-            StaffSvc.AddStaff(_form);
-        }
-        _showModal = false;
-        _staff = StaffSvc.GetStaff(); // refresh
-    }
-
-    private void AskDelete(Staff s)
-    {
-        _deleteId   = s.Id;
-        _deleteName = s.Nombre;
-        _showConfirmDelete = true;
-    }
-
-    private void ConfirmDelete()
-    {
-        _showConfirmDelete = false;
-        StaffSvc.DeleteStaff(_deleteId);
-        _staff = StaffSvc.GetStaff();
-    }
-
-    private void ToggleStatus(string id)
-    {
-        StaffSvc.ToggleStatus(id);
-        StateHasChanged();
-    }
-}
-
 <PageTitle>Personal – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -384,4 +290,98 @@
             </div>
         </div>
     </div>
+}
+
+@code {
+    private List<Staff> _staff = new();
+    private string _search = "";
+    private string _roleFilter = "";
+
+    // Form Modal state
+    private bool _showModal = false;
+    private bool _isEditing = false;
+    private Staff _form = new();
+    private bool _isEditingSelf = false;   // true cuando el admin edita su propio registro
+
+    // Permite solo dígitos en el DNI (máx. 8), bloqueando letras.
+    private void OnDniInput(ChangeEventArgs e)
+        => _form.Dni = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(8).ToArray());
+
+    // Confirmación de eliminación
+    private bool _showConfirmDelete = false;
+    private string _deleteId = "";
+    private string _deleteName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StaffSvc.EnsureLoadedAsync();
+        _staff = StaffSvc.GetStaff();
+    }
+
+    private IEnumerable<Staff> Filtered => _staff.Where(s =>
+        (string.IsNullOrEmpty(_search) || s.Nombre.Contains(_search, StringComparison.OrdinalIgnoreCase) || s.Dni.Contains(_search) || s.Correo.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_roleFilter) || s.Rol.Equals(_roleFilter, StringComparison.OrdinalIgnoreCase))
+    );
+
+    private void OpenCreate()
+    {
+        _form = new Staff();
+        _isEditing = false;
+        _showModal = true;
+    }
+
+    private void OpenEdit(Staff s)
+    {
+        _form = new Staff
+        {
+            Id          = s.Id,
+            Nombre      = s.Nombre,
+            Dni         = s.Dni,
+            Rol         = s.Rol,
+            Telefono    = s.Telefono,
+            Correo      = s.Correo,
+            Avatar      = s.Avatar,
+            FechaIngreso= s.FechaIngreso,
+            Estado      = s.Estado,
+            Turno       = s.Turno
+        };
+        // Detectar si el admin está editando su propio registro (para bloquear cambio de rol)
+        _isEditingSelf = Auth.CurrentUser?.Id.ToString() == s.Id;
+        _isEditing = true;
+        _showModal = true;
+    }
+
+    private void Save()
+    {
+        if (_isEditing)
+        {
+            StaffSvc.UpdateStaff(_form);
+        }
+        else
+        {
+            StaffSvc.AddStaff(_form);
+        }
+        _showModal = false;
+        _staff = StaffSvc.GetStaff(); // refresh
+    }
+
+    private void AskDelete(Staff s)
+    {
+        _deleteId   = s.Id;
+        _deleteName = s.Nombre;
+        _showConfirmDelete = true;
+    }
+
+    private void ConfirmDelete()
+    {
+        _showConfirmDelete = false;
+        StaffSvc.DeleteStaff(_deleteId);
+        _staff = StaffSvc.GetStaff();
+    }
+
+    private void ToggleStatus(string id)
+    {
+        StaffSvc.ToggleStatus(id);
+        StateHasChanged();
+    }
 }

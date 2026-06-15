@@ -1,47 +1,6 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 
-@code {
-    [Parameter] public bool IsOpen { get; set; }
-    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
-    [Parameter] public string? ReturnUrl { get; set; }
-
-    private string SafeReturnUrl
-    {
-        get
-        {
-            if (string.IsNullOrWhiteSpace(ReturnUrl)) return "/carrito";
-            if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//")) return "/carrito";
-            return ReturnUrl;
-        }
-    }
-
-    private string LoginUrl    => BuildAuthUrl(register: false);
-    private string RegisterUrl => BuildAuthUrl(register: true);
-
-    private string BuildAuthUrl(bool register)
-    {
-        var encoded = Uri.EscapeDataString(SafeReturnUrl);
-        return register
-            ? $"/?register=true&returnUrl={encoded}"
-            : $"/?returnUrl={encoded}";
-    }
-
-    private async Task CloseAsync()
-    {
-        IsOpen = false;
-        await IsOpenChanged.InvokeAsync(false);
-    }
-
-    private async Task ContinueAsGuestAsync()
-    {
-        Auth.LoginAsGuest();
-        IsOpen = false;
-        await IsOpenChanged.InvokeAsync(false);
-        Navigation.NavigateTo(SafeReturnUrl);
-    }
-}
-
 @if (IsOpen)
 {
     <style>
@@ -140,4 +99,45 @@
             </div>
         </div>
     </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
+
+    private string SafeReturnUrl
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(ReturnUrl)) return "/carrito";
+            if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//")) return "/carrito";
+            return ReturnUrl;
+        }
+    }
+
+    private string LoginUrl    => BuildAuthUrl(register: false);
+    private string RegisterUrl => BuildAuthUrl(register: true);
+
+    private string BuildAuthUrl(bool register)
+    {
+        var encoded = Uri.EscapeDataString(SafeReturnUrl);
+        return register
+            ? $"/?register=true&returnUrl={encoded}"
+            : $"/?returnUrl={encoded}";
+    }
+
+    private async Task CloseAsync()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task ContinueAsGuestAsync()
+    {
+        Auth.LoginAsGuest();
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+        Navigation.NavigateTo(SafeReturnUrl);
+    }
 }

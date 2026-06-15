@@ -2,31 +2,6 @@
 @layout MainLayout
 @inject PagoService PagoSvc
 
-@code {
-    // Izipay redirige aquí al terminar. Si conocemos el id de pedido
-    // (?pedido=12) consultamos el estado real del pago; si no, mostramos
-    // un mensaje genérico (la confirmación definitiva la hace el callback IPN).
-    [SupplyParameterFromQuery(Name = "pedido")]
-    public int Pedido { get; set; }
-
-    private bool _cargando = true;
-    private string? _estado;   // AUTORIZADO | RECHAZADO | PENDIENTE | null
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            if (Pedido > 0)
-            {
-                var info = await PagoSvc.ConsultarPorPedidoAsync(Pedido);
-                _estado = info?.Estado;
-            }
-            _cargando = false;
-            StateHasChanged();
-        }
-    }
-}
-
 <PageTitle>Resultado del pago – Shiligama</PageTitle>
 
 <div class="container py-5 text-center" style="max-width:480px;">
@@ -76,3 +51,43 @@
         </div>
     }
 </div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "pedido")]
+    public int Pedido { get; set; }
+
+    // orderStatus de Izipay (o "PAID" del demo) pasado por URL.
+    // Permite mostrar el resultado inmediatamente, antes de que el IPN actualice la BD.
+    [SupplyParameterFromQuery(Name = "status")]
+    public string? StatusParam { get; set; }
+
+    private bool _cargando = true;
+    private string? _estado;   // AUTORIZADO | RECHAZADO | CANCELADO | null
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // 1) Si viene el status desde Izipay/demo, mapearlo al estado interno.
+        if (!string.IsNullOrEmpty(StatusParam))
+        {
+            _estado = StatusParam.ToUpperInvariant() switch
+            {
+                "PAID"                    => "AUTORIZADO",
+                "UNPAID" or "REFUSED"     => "RECHAZADO",
+                "CANCELLED" or "CANCELED" => "CANCELADO",
+                _                         => null
+            };
+        }
+
+        // 2) Si no hay status en la URL (o fue desconocido), consultar la BD.
+        if (_estado == null && Pedido > 0)
+        {
+            var info = await PagoSvc.ConsultarPorPedidoAsync(Pedido);
+            _estado = info?.Estado;
+        }
+
+        _cargando = false;
+        StateHasChanged();
+    }
+}

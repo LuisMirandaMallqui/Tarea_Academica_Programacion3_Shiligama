@@ -2,158 +2,6 @@
 @layout AdminLayout
 @inject SalesService SalesSvc
 
-@code {
-    private List<Order> _orders = new();
-    private string _search = "";
-    private string _statusFilter = "";
-
-    // Paginación
-    private int _pageSize = 8;
-    private int _currentPage = 1;
-
-    // Modales confirmación
-    private bool _showDeleteConfirm = false;
-    private bool _showDeletedToast  = false;
-    private bool _showEditConfirm   = false;
-    private bool _showEditedToast   = false;
-    private string? _pendingDeleteId;
-    private string? _pendingEditId;
-    private string? _pendingEditStatus;
-    private System.Threading.CancellationTokenSource? _undoCts;
-    private bool _undoAvailable = false;
-    private Order? _deletedOrderBackup;
-
-    protected override async Task OnInitializedAsync()
-    {
-        // recargar: true asegura datos frescos del API en cada visita (conexión backend)
-        await SalesSvc.EnsureLoadedAsync(recargar: true);
-        _orders = SalesSvc.GetRecentOrders();
-    }
-
-    // Orden lógico de estados (1:1 con EstadoPedido del backend)
-    private static readonly Dictionary<string,int> StatusOrder = new(StringComparer.OrdinalIgnoreCase)
-    {
-        {"recibido",0}, {"en_proceso",1}, {"atendido",2}, {"rechazado",3}, {"cancelado",4}
-    };
-
-    private IEnumerable<Order> Filtered => _orders
-        .Where(o =>
-            (string.IsNullOrEmpty(_search) ||
-             o.Customer.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
-             o.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-            (string.IsNullOrEmpty(_statusFilter) ||
-             o.Status.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
-        )
-        .OrderBy(o => StatusOrder.TryGetValue(o.Status, out var r) ? r : 99)
-        .ThenByDescending(o => o.Date);
-
-    private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
-
-    private IEnumerable<Order> PagedOrders => Filtered
-        .Skip((_currentPage - 1) * _pageSize)
-        .Take(_pageSize);
-
-    private void OnSearchChanged(string v) { _search = v; _currentPage = 1; }
-    private void OnStatusChanged(string v) { _statusFilter = v; _currentPage = 1; }
-    private void GoToPage(int page)
-    {
-        if (page >= 1 && page <= TotalPages) _currentPage = page;
-    }
-
-    // ── Eliminar con confirmación + toast + undo ──
-    private void AskDelete(string id)
-    {
-        _pendingDeleteId = id;
-        _showDeleteConfirm = true;
-    }
-    private void CancelDelete() { _showDeleteConfirm = false; _pendingDeleteId = null; }
-    private async Task ConfirmDelete()
-    {
-        if (_pendingDeleteId == null) return;
-        _deletedOrderBackup = _orders.FirstOrDefault(o => o.Id == _pendingDeleteId);
-        SalesSvc.DeleteOrder(_pendingDeleteId);
-        _showDeleteConfirm = false;
-        _pendingDeleteId = null;
-        _showDeletedToast = true;
-        _undoAvailable = true;
-        StateHasChanged();
-        _undoCts?.Cancel();
-        _undoCts = new System.Threading.CancellationTokenSource();
-        try
-        {
-            await Task.Delay(5000, _undoCts.Token);
-            _showDeletedToast = false;
-            _undoAvailable = false;
-            StateHasChanged();
-        }
-        catch (TaskCanceledException) { }
-    }
-    private void UndoDelete()
-    {
-        if (_deletedOrderBackup != null)
-        {
-            _orders.Insert(0, _deletedOrderBackup);
-            _deletedOrderBackup = null;
-        }
-        _undoCts?.Cancel();
-        _showDeletedToast = false;
-        _undoAvailable = false;
-        StateHasChanged();
-    }
-
-    // ── Cambio de estado con confirmación + toast ──
-    private void AskStatusChange(string id, string newStatus)
-    {
-        _pendingEditId = id;
-        _pendingEditStatus = newStatus;
-        _showEditConfirm = true;
-    }
-    private void CancelEdit() { _showEditConfirm = false; _pendingEditId = null; _pendingEditStatus = null; }
-    private async Task ConfirmEdit()
-    {
-        if (_pendingEditId == null || _pendingEditStatus == null) return;
-        await SalesSvc.UpdateOrderStatusAsync(_pendingEditId, _pendingEditStatus);
-        _showEditConfirm = false;
-        _pendingEditId = null;
-        _pendingEditStatus = null;
-        _showEditedToast = true;
-        StateHasChanged();
-        await Task.Delay(3000);
-        _showEditedToast = false;
-        StateHasChanged();
-    }
-
-    private string GetStatusClass(string status) => status.ToLower() switch
-    {
-        "atendido"   => "bg-success-subtle text-success",
-        "en_proceso" => "bg-warning-subtle text-warning",
-        "recibido"   => "bg-secondary text-muted-foreground",
-        "rechazado"  => "bg-danger-subtle text-danger",
-        "cancelado"  => "bg-danger-subtle text-danger",
-        _ => "bg-light text-dark"
-    };
-
-    private string GetStatusLabel(string status) => status.ToLower() switch
-    {
-        "recibido"   => "Recibido",
-        "en_proceso" => "En proceso",
-        "atendido"   => "Atendido",
-        "rechazado"  => "Rechazado",
-        "cancelado"  => "Cancelado",
-        _ => status
-    };
-
-    private string GetPendingStatusLabel(string? s) => s?.ToLower() switch
-    {
-        "recibido"   => "Recibido",
-        "en_proceso" => "En proceso",
-        "atendido"   => "Atendido",
-        "rechazado"  => "Rechazado",
-        "cancelado"  => "Cancelado",
-        _ => s ?? ""
-    };
-}
-
 <PageTitle>Pedidos – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -400,3 +248,155 @@
         border-color: #1A6B3C !important;
     }
 </style>
+
+@code {
+    private List<Order> _orders = new();
+    private string _search = "";
+    private string _statusFilter = "";
+
+    // Paginación
+    private int _pageSize = 8;
+    private int _currentPage = 1;
+
+    // Modales confirmación
+    private bool _showDeleteConfirm = false;
+    private bool _showDeletedToast  = false;
+    private bool _showEditConfirm   = false;
+    private bool _showEditedToast   = false;
+    private string? _pendingDeleteId;
+    private string? _pendingEditId;
+    private string? _pendingEditStatus;
+    private System.Threading.CancellationTokenSource? _undoCts;
+    private bool _undoAvailable = false;
+    private Order? _deletedOrderBackup;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // recargar: true asegura datos frescos del API en cada visita (conexión backend)
+        await SalesSvc.EnsureLoadedAsync(recargar: true);
+        _orders = SalesSvc.GetRecentOrders();
+    }
+
+    // Orden lógico de estados (1:1 con EstadoPedido del backend)
+    private static readonly Dictionary<string,int> StatusOrder = new(StringComparer.OrdinalIgnoreCase)
+    {
+        {"recibido",0}, {"en_proceso",1}, {"atendido",2}, {"rechazado",3}, {"cancelado",4}
+    };
+
+    private IEnumerable<Order> Filtered => _orders
+        .Where(o =>
+            (string.IsNullOrEmpty(_search) ||
+             o.Customer.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+             o.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(_statusFilter) ||
+             o.Status.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
+        )
+        .OrderBy(o => StatusOrder.TryGetValue(o.Status, out var r) ? r : 99)
+        .ThenByDescending(o => o.Date);
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
+
+    private IEnumerable<Order> PagedOrders => Filtered
+        .Skip((_currentPage - 1) * _pageSize)
+        .Take(_pageSize);
+
+    private void OnSearchChanged(string v) { _search = v; _currentPage = 1; }
+    private void OnStatusChanged(string v) { _statusFilter = v; _currentPage = 1; }
+    private void GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages) _currentPage = page;
+    }
+
+    // ── Eliminar con confirmación + toast + undo ──
+    private void AskDelete(string id)
+    {
+        _pendingDeleteId = id;
+        _showDeleteConfirm = true;
+    }
+    private void CancelDelete() { _showDeleteConfirm = false; _pendingDeleteId = null; }
+    private async Task ConfirmDelete()
+    {
+        if (_pendingDeleteId == null) return;
+        _deletedOrderBackup = _orders.FirstOrDefault(o => o.Id == _pendingDeleteId);
+        SalesSvc.DeleteOrder(_pendingDeleteId);
+        _showDeleteConfirm = false;
+        _pendingDeleteId = null;
+        _showDeletedToast = true;
+        _undoAvailable = true;
+        StateHasChanged();
+        _undoCts?.Cancel();
+        _undoCts = new System.Threading.CancellationTokenSource();
+        try
+        {
+            await Task.Delay(5000, _undoCts.Token);
+            _showDeletedToast = false;
+            _undoAvailable = false;
+            StateHasChanged();
+        }
+        catch (TaskCanceledException) { }
+    }
+    private void UndoDelete()
+    {
+        if (_deletedOrderBackup != null)
+        {
+            _orders.Insert(0, _deletedOrderBackup);
+            _deletedOrderBackup = null;
+        }
+        _undoCts?.Cancel();
+        _showDeletedToast = false;
+        _undoAvailable = false;
+        StateHasChanged();
+    }
+
+    // ── Cambio de estado con confirmación + toast ──
+    private void AskStatusChange(string id, string newStatus)
+    {
+        _pendingEditId = id;
+        _pendingEditStatus = newStatus;
+        _showEditConfirm = true;
+    }
+    private void CancelEdit() { _showEditConfirm = false; _pendingEditId = null; _pendingEditStatus = null; }
+    private async Task ConfirmEdit()
+    {
+        if (_pendingEditId == null || _pendingEditStatus == null) return;
+        await SalesSvc.UpdateOrderStatusAsync(_pendingEditId, _pendingEditStatus);
+        _showEditConfirm = false;
+        _pendingEditId = null;
+        _pendingEditStatus = null;
+        _showEditedToast = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        _showEditedToast = false;
+        StateHasChanged();
+    }
+
+    private string GetStatusClass(string status) => status.ToLower() switch
+    {
+        "atendido"   => "bg-success-subtle text-success",
+        "en_proceso" => "bg-warning-subtle text-warning",
+        "recibido"   => "bg-secondary text-muted-foreground",
+        "rechazado"  => "bg-danger-subtle text-danger",
+        "cancelado"  => "bg-danger-subtle text-danger",
+        _ => "bg-light text-dark"
+    };
+
+    private string GetStatusLabel(string status) => status.ToLower() switch
+    {
+        "recibido"   => "Recibido",
+        "en_proceso" => "En proceso",
+        "atendido"   => "Atendido",
+        "rechazado"  => "Rechazado",
+        "cancelado"  => "Cancelado",
+        _ => status
+    };
+
+    private string GetPendingStatusLabel(string? s) => s?.ToLower() switch
+    {
+        "recibido"   => "Recibido",
+        "en_proceso" => "En proceso",
+        "atendido"   => "Atendido",
+        "rechazado"  => "Rechazado",
+        "cancelado"  => "Cancelado",
+        _ => s ?? ""
+    };
+}

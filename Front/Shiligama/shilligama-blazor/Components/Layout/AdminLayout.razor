@@ -3,48 +3,6 @@
 @inject NavigationManager Navigation
 @inject NotificacionService NotificacionSvc
 
-@code {
-    private bool _isMobileSidebarOpen = false;
-    private int _unreadCount = 0;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            _unreadCount = await NotificacionSvc.ContarNoLeidasAsync(Auth.CurrentUser?.Id ?? 0);
-        }
-        catch
-        {
-            _unreadCount = 0;
-        }
-    }
-
-
-    private void ToggleMobileSidebar()
-    {
-        _isMobileSidebarOpen = !_isMobileSidebarOpen;
-    }
-
-    private void HandleLogout()
-    {
-        Auth.Logout();
-        Navigation.NavigateTo("/");
-    }
-
-    private bool IsActive(string href)
-    {
-        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
-        var target = href.TrimStart('/');
-        
-        if (string.IsNullOrEmpty(target))
-        {
-            return string.IsNullOrEmpty(relative) || relative.Equals("admin", StringComparison.OrdinalIgnoreCase);
-        }
-        
-        return relative.StartsWith(target, StringComparison.OrdinalIgnoreCase);
-    }
-}
-
 <RoleGate RequiredRole="administrador">
 <div class="d-flex flex-column min-vh-100 bg-background text-foreground">
 
@@ -284,3 +242,45 @@
     </div>
 </div>
 </RoleGate>
+
+@code {
+    private bool _isMobileSidebarOpen = false;
+    private int _unreadCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _unreadCount = await NotificacionSvc.ContarNoLeidasAsync(Auth.CurrentUser?.Id ?? 0);
+        }
+        catch
+        {
+            _unreadCount = 0;
+        }
+    }
+
+
+    private void ToggleMobileSidebar()
+    {
+        _isMobileSidebarOpen = !_isMobileSidebarOpen;
+    }
+
+    private void HandleLogout()
+    {
+        Auth.Logout();
+        Navigation.NavigateTo("/");
+    }
+
+    private bool IsActive(string href)
+    {
+        var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var target = href.TrimStart('/');
+        
+        if (string.IsNullOrEmpty(target))
+        {
+            return string.IsNullOrEmpty(relative) || relative.Equals("admin", StringComparison.OrdinalIgnoreCase);
+        }
+        
+        return relative.StartsWith(target, StringComparison.OrdinalIgnoreCase);
+    }
+}

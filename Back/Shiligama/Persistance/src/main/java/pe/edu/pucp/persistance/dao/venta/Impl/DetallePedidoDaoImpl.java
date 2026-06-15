@@ -51,7 +51,7 @@ public class DetallePedidoDaoImpl implements DetallePedidoDao {
 
     // SP: BUSCAR_DETALLE_PEDIDO_X_ID(IN _detalle_pedido_id)
     @Override
-    public DetallePedido buscarPorID(int id) {
+    public DetallePedido buscarPorId(int id) {
         DetallePedido detalle = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

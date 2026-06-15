@@ -1,68 +1,6 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 
-@code {
-    [Parameter] public EventCallback OnBackToLogin { get; set; }
-    [Parameter] public string? ReturnUrl { get; set; }
-
-    private string _nombres          = "";
-    private string _apellidos        = "";
-    private string _dni              = "";
-    private string _email            = "";
-
-    // Filtra el DNI: solo dígitos, máx. 8 caracteres.
-    // onkeydown en el HTML bloquea las letras antes de que lleguen al input.
-    // Este método limpia el valor por si pegan texto con letras.
-    private void OnDniInput(ChangeEventArgs e)
-    {
-        _dni = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(8).ToArray());
-        // Fuerza a Blazor a actualizar el DOM con el valor filtrado
-        StateHasChanged();
-    }
-
-    private string _password         = "";
-    private string _confirmPassword  = "";
-    private bool   _showPassword     = false;
-    private bool   _showConfirm      = false;
-    private string _error            = "";
-    private bool   _isLoading        = false;
-
-    private async Task HandleSubmit()
-    {
-        _error = "";
-
-        if (string.IsNullOrWhiteSpace(_nombres))
-            { _error = "El nombre es obligatorio"; return; }
-        if (string.IsNullOrWhiteSpace(_apellidos))
-            { _error = "Los apellidos son obligatorios"; return; }
-        if (!System.Text.RegularExpressions.Regex.IsMatch(_dni.Trim(), @"^\d{8}$"))
-            { _error = "El DNI debe tener exactamente 8 dígitos"; return; }
-        if (_password.Length < 6)
-            { _error = "La contraseña debe tener al menos 6 caracteres"; return; }
-        if (_password != _confirmPassword)
-            { _error = "Las contraseñas no coinciden"; return; }
-
-        _isLoading = true;
-        bool ok = await Auth.RegisterAsync(
-            _nombres.Trim(), _apellidos.Trim(), _dni.Trim(), _email.Trim(), _password);
-
-        if (ok)
-            Navigation.NavigateTo(GetSafeReturnUrl() ?? "/catalogo");
-        else
-        {
-            _error = "No se pudo crear la cuenta. Verifica los datos o intenta con otro correo/DNI.";
-            _isLoading = false;
-        }
-    }
-
-    private string? GetSafeReturnUrl()
-    {
-        if (string.IsNullOrWhiteSpace(ReturnUrl)) return null;
-        if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//")) return null;
-        return ReturnUrl;
-    }
-}
-
 <div class="d-flex flex-column gap-4">
 
     <!-- Logo móvil -->
@@ -206,3 +144,65 @@
         </button>
     </p>
 </div>
+
+@code {
+    [Parameter] public EventCallback OnBackToLogin { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
+
+    private string _nombres          = "";
+    private string _apellidos        = "";
+    private string _dni              = "";
+    private string _email            = "";
+
+    // Filtra el DNI: solo dígitos, máx. 8 caracteres.
+    // onkeydown en el HTML bloquea las letras antes de que lleguen al input.
+    // Este método limpia el valor por si pegan texto con letras.
+    private void OnDniInput(ChangeEventArgs e)
+    {
+        _dni = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(8).ToArray());
+        // Fuerza a Blazor a actualizar el DOM con el valor filtrado
+        StateHasChanged();
+    }
+
+    private string _password         = "";
+    private string _confirmPassword  = "";
+    private bool   _showPassword     = false;
+    private bool   _showConfirm      = false;
+    private string _error            = "";
+    private bool   _isLoading        = false;
+
+    private async Task HandleSubmit()
+    {
+        _error = "";
+
+        if (string.IsNullOrWhiteSpace(_nombres))
+            { _error = "El nombre es obligatorio"; return; }
+        if (string.IsNullOrWhiteSpace(_apellidos))
+            { _error = "Los apellidos son obligatorios"; return; }
+        if (!System.Text.RegularExpressions.Regex.IsMatch(_dni.Trim(), @"^\d{8}$"))
+            { _error = "El DNI debe tener exactamente 8 dígitos"; return; }
+        if (_password.Length < 6)
+            { _error = "La contraseña debe tener al menos 6 caracteres"; return; }
+        if (_password != _confirmPassword)
+            { _error = "Las contraseñas no coinciden"; return; }
+
+        _isLoading = true;
+        bool ok = await Auth.RegisterAsync(
+            _nombres.Trim(), _apellidos.Trim(), _dni.Trim(), _email.Trim(), _password);
+
+        if (ok)
+            Navigation.NavigateTo(GetSafeReturnUrl() ?? "/catalogo");
+        else
+        {
+            _error = "No se pudo crear la cuenta. Verifica los datos o intenta con otro correo/DNI.";
+            _isLoading = false;
+        }
+    }
+
+    private string? GetSafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl)) return null;
+        if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//")) return null;
+        return ReturnUrl;
+    }
+}

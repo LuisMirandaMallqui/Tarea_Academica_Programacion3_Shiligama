@@ -9,14 +9,10 @@ import pe.edu.pucp.venta.impl.DetallePedidoBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Detalles de Pedido (líneas de cada pedido).
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/detalles-pedido
- */
 @Path("/detalles-pedido")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class DetallePedidoWS {
+public class DetallePedidoRS {
 
     private final DetallePedidoBo detallePedidoBo = new DetallePedidoBoImpl();
 
@@ -48,7 +44,7 @@ public class DetallePedidoWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            DetallePedido detalle = detallePedidoBo.buscarPorID(id);
+            DetallePedido detalle = detallePedidoBo.buscarPorId(id);
             if (detalle != null) {
                 return Response.ok(detalle).build();
             } else {

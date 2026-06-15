@@ -114,7 +114,7 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
 
     // SP: BUSCAR_TRABAJADOR_X_ID(IN _usuario_id)
     @Override
-    public Trabajador buscarPorID(int id) {
+    public Trabajador buscarPorId(int id) {
         Trabajador trabajador = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

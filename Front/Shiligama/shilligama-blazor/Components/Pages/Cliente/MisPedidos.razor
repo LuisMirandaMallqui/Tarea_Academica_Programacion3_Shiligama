@@ -6,216 +6,6 @@
 @inject CartService Cart
 @inject ProductService ProductSvc
 
-@code {
-    private List<Order> _allOrders = new();
-    private List<Order> _filtered = new();
-
-    private string _statusFilter = "todos";
-    private DateTime? _dateFrom;
-    private DateTime? _dateTo;
-
-    private Order? _selectedOrder;
-    private bool _showModal;
-
-    // Alertas de stock al repetir pedido
-    private List<string> _stockAlerts = new();
-    private bool _showStockAlerts => _stockAlerts.Any();
-
-    // Cancelación de pedido
-    private Order? _orderToCancel;
-    private bool _showCancelConfirm = false;
-    private bool _cancelling = false;
-
-    // Cancelable mientras no haya sido atendido, rechazado ni cancelado ya
-    private bool CanCancel(Order o) =>
-        o.Status == "recibido" || o.Status == "en_proceso";
-
-    private void AskCancel(Order o)
-    {
-        _orderToCancel = o;
-        _showCancelConfirm = true;
-    }
-
-    private async Task ConfirmCancel()
-    {
-        if (_orderToCancel == null) return;
-        _cancelling = true;
-
-        // Extraer ID numérico de "PED-0012"
-        int idPedido = 0;
-        if (_orderToCancel.Id.StartsWith("PED-"))
-            int.TryParse(_orderToCancel.Id[4..], out idPedido);
-
-        await SalesSvc.CancelOrderAsync(idPedido);
-
-        // Refrescar lista
-        _orderToCancel.Status = "cancelado";
-        _showCancelConfirm = false;
-        _orderToCancel = null;
-        _cancelling = false;
-        ApplyFilters();
-    }
-
-    protected override async Task OnInitializedAsync()
-    {
-        if (!Auth.IsLoggedIn()) { Navigation.NavigateTo("/"); return; }
-        var idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
-        _allOrders = await SalesSvc.GetClientOrdersAsync(idCliente);
-        ApplyFilters();
-    }
-
-    private void ApplyFilters()
-    {
-        _filtered = _allOrders.Where(o =>
-        {
-            if (_statusFilter != "todos" && o.Status != _statusFilter) return false;
-            if (_dateFrom.HasValue && o.Date.Date < _dateFrom.Value.Date) return false;
-            if (_dateTo.HasValue && o.Date.Date > _dateTo.Value.Date) return false;
-            return true;
-        }).ToList();
-    }
-
-    private void OnStatusChanged(ChangeEventArgs e)
-    { _statusFilter = e.Value?.ToString() ?? "todos"; ApplyFilters(); }
-
-    private void OnDateFromChanged(ChangeEventArgs e)
-    {
-        _dateFrom = string.IsNullOrEmpty(e.Value?.ToString())
-            ? null : DateTime.Parse(e.Value.ToString()!);
-        ApplyFilters();
-    }
-
-    private void OnDateToChanged(ChangeEventArgs e)
-    {
-        _dateTo = string.IsNullOrEmpty(e.Value?.ToString())
-            ? null : DateTime.Parse(e.Value.ToString()!);
-        ApplyFilters();
-    }
-
-    private void ClearFilters()
-    { _statusFilter = "todos"; _dateFrom = null; _dateTo = null; ApplyFilters(); }
-
-    private void OpenDetail(Order o) { _selectedOrder = o; _showModal = true; }
-    private void CloseModal() { _showModal = false; _selectedOrder = null; }
-
-    private async Task RepeatOrder(Order o)
-    {
-        _stockAlerts.Clear();
-        await ProductSvc.EnsureLoadedAsync();
-
-        bool anyAdded = false;
-        foreach (var item in o.Products)
-        {
-            int quantityToAdd = item.Quantity;
-            var currentProduct = ProductSvc.GetProductById(item.Id);
-
-            if (currentProduct != null)
-            {
-                if (currentProduct.Stock == 0)
-                {
-                    _stockAlerts.Add($"'{item.Name}' ya no está disponible (sin stock).");
-                    continue;
-                }
-                if (currentProduct.Stock < quantityToAdd)
-                {
-                    _stockAlerts.Add(
-                        $"Pediste {quantityToAdd} de '{item.Name}', " +
-                        $"pero solo hay {currentProduct.Stock} disponible(s). " +
-                        $"Se agregó la cantidad disponible.");
-                    quantityToAdd = currentProduct.Stock;
-                }
-            }
-
-            var p = new Product
-            {
-                Id    = item.Id,
-                Name  = item.Name,
-                Price = item.Price,
-                Image = item.Image
-            };
-            for (int i = 0; i < quantityToAdd; i++)
-                await Cart.AddToCartAsync(p);
-
-            anyAdded = true;
-        }
-
-        if (!_showStockAlerts)
-        {
-            Navigation.NavigateTo("/carrito");
-        }
-        else
-        {
-            // Si hay alertas se muestra el resumen; el usuario decide si ir al carrito
-            StateHasChanged();
-        }
-    }
-
-    private string StatusBadgeClass(string s) => s.ToLower() switch
-    {
-        "atendido"   => "badge-entregado",
-        "en_proceso" => "badge-preparando",
-        "recibido"   => "badge-pendiente",
-        "rechazado"  => "badge-cancelado",
-        "cancelado"  => "badge-cancelado",
-        _ => "badge-pendiente"
-    };
-    private string StatusLabel(string s) => s.ToLower() switch
-    {
-        "atendido"   => "Atendido",
-        "en_proceso" => "En proceso",
-        "recibido"   => "Recibido",
-        "rechazado"  => "Rechazado",
-        "cancelado"  => "Cancelado",
-        _ => s
-    };
-    private string PaymentLabel(string p) => p.ToLower() switch
-    {
-        "yape"     => "Yape",
-        "plin"     => "Plin",
-        "tarjeta"  => "Tarjeta",
-        "efectivo" => "Efectivo",
-        ""         => "Por confirmar",
-        _ => p
-    };
-    private string PaymentIconName(string p) => p.ToLower() switch
-    {
-        "yape" or "plin" => "Smartphone",
-        "tarjeta"        => "CreditCard",
-        _                => "Banknote"
-    };
-    private string DeliveryLabel(string d) =>
-        d == "delivery" ? "Delivery" : "Recojo en tienda";
-
-    private List<(string Label, DateTime? Time, bool Done, bool Cancelled)> GetTimeline(Order o)
-    {
-        var steps = new List<(string, DateTime?, bool, bool)>();
-        bool cancelled = o.Status == "cancelado";
-
-        steps.Add(("Pedido recibido", o.TimelinePedidoRecibido, true, false));
-
-        if (cancelled)
-        {
-            steps.Add(("Cancelado", o.TimelineCancelado, true, true));
-            return steps;
-        }
-
-        steps.Add(("En preparación", o.TimelineEnPreparacion,
-            o.TimelineEnPreparacion.HasValue, false));
-        steps.Add(("Listo para envío", o.TimelineListo,
-            o.TimelineListo.HasValue, false));
-
-        if (o.DeliveryMethod == "delivery")
-            steps.Add(("En camino", o.TimelineEnCamino,
-                o.TimelineEnCamino.HasValue, false));
-
-        string lastLabel = o.DeliveryMethod == "delivery" ? "Entregado" : "Recogido";
-        steps.Add((lastLabel, o.TimelineEntregado,
-            o.TimelineEntregado.HasValue, false));
-
-        return steps;
-    }
-}
-
 <PageTitle>Mis Pedidos – Shiligama</PageTitle>
 
 <div class="container-xl px-3 px-sm-4 py-4" style="max-width:960px;">
@@ -683,4 +473,214 @@
             </div>
         </div>
     </div>
+}
+
+@code {
+    private List<Order> _allOrders = new();
+    private List<Order> _filtered = new();
+
+    private string _statusFilter = "todos";
+    private DateTime? _dateFrom;
+    private DateTime? _dateTo;
+
+    private Order? _selectedOrder;
+    private bool _showModal;
+
+    // Alertas de stock al repetir pedido
+    private List<string> _stockAlerts = new();
+    private bool _showStockAlerts => _stockAlerts.Any();
+
+    // Cancelación de pedido
+    private Order? _orderToCancel;
+    private bool _showCancelConfirm = false;
+    private bool _cancelling = false;
+
+    // Cancelable mientras no haya sido atendido, rechazado ni cancelado ya
+    private bool CanCancel(Order o) =>
+        o.Status == "recibido" || o.Status == "en_proceso";
+
+    private void AskCancel(Order o)
+    {
+        _orderToCancel = o;
+        _showCancelConfirm = true;
+    }
+
+    private async Task ConfirmCancel()
+    {
+        if (_orderToCancel == null) return;
+        _cancelling = true;
+
+        // Extraer ID numérico de "PED-0012"
+        int idPedido = 0;
+        if (_orderToCancel.Id.StartsWith("PED-"))
+            int.TryParse(_orderToCancel.Id[4..], out idPedido);
+
+        await SalesSvc.CancelOrderAsync(idPedido);
+
+        // Refrescar lista
+        _orderToCancel.Status = "cancelado";
+        _showCancelConfirm = false;
+        _orderToCancel = null;
+        _cancelling = false;
+        ApplyFilters();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsLoggedIn()) { Navigation.NavigateTo("/"); return; }
+        var idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
+        _allOrders = await SalesSvc.GetClientOrdersAsync(idCliente);
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        _filtered = _allOrders.Where(o =>
+        {
+            if (_statusFilter != "todos" && o.Status != _statusFilter) return false;
+            if (_dateFrom.HasValue && o.Date.Date < _dateFrom.Value.Date) return false;
+            if (_dateTo.HasValue && o.Date.Date > _dateTo.Value.Date) return false;
+            return true;
+        }).ToList();
+    }
+
+    private void OnStatusChanged(ChangeEventArgs e)
+    { _statusFilter = e.Value?.ToString() ?? "todos"; ApplyFilters(); }
+
+    private void OnDateFromChanged(ChangeEventArgs e)
+    {
+        _dateFrom = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null : DateTime.Parse(e.Value.ToString()!);
+        ApplyFilters();
+    }
+
+    private void OnDateToChanged(ChangeEventArgs e)
+    {
+        _dateTo = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null : DateTime.Parse(e.Value.ToString()!);
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    { _statusFilter = "todos"; _dateFrom = null; _dateTo = null; ApplyFilters(); }
+
+    private void OpenDetail(Order o) { _selectedOrder = o; _showModal = true; }
+    private void CloseModal() { _showModal = false; _selectedOrder = null; }
+
+    private async Task RepeatOrder(Order o)
+    {
+        _stockAlerts.Clear();
+        await ProductSvc.EnsureLoadedAsync();
+
+        bool anyAdded = false;
+        foreach (var item in o.Products)
+        {
+            int quantityToAdd = item.Quantity;
+            var currentProduct = ProductSvc.GetProductById(item.Id);
+
+            if (currentProduct != null)
+            {
+                if (currentProduct.Stock == 0)
+                {
+                    _stockAlerts.Add($"'{item.Name}' ya no está disponible (sin stock).");
+                    continue;
+                }
+                if (currentProduct.Stock < quantityToAdd)
+                {
+                    _stockAlerts.Add(
+                        $"Pediste {quantityToAdd} de '{item.Name}', " +
+                        $"pero solo hay {currentProduct.Stock} disponible(s). " +
+                        $"Se agregó la cantidad disponible.");
+                    quantityToAdd = currentProduct.Stock;
+                }
+            }
+
+            var p = new Product
+            {
+                Id    = item.Id,
+                Name  = item.Name,
+                Price = item.Price,
+                Image = item.Image
+            };
+            for (int i = 0; i < quantityToAdd; i++)
+                await Cart.AddToCartAsync(p);
+
+            anyAdded = true;
+        }
+
+        if (!_showStockAlerts)
+        {
+            Navigation.NavigateTo("/carrito");
+        }
+        else
+        {
+            // Si hay alertas se muestra el resumen; el usuario decide si ir al carrito
+            StateHasChanged();
+        }
+    }
+
+    private string StatusBadgeClass(string s) => s.ToLower() switch
+    {
+        "atendido"   => "badge-entregado",
+        "en_proceso" => "badge-preparando",
+        "recibido"   => "badge-pendiente",
+        "rechazado"  => "badge-cancelado",
+        "cancelado"  => "badge-cancelado",
+        _ => "badge-pendiente"
+    };
+    private string StatusLabel(string s) => s.ToLower() switch
+    {
+        "atendido"   => "Atendido",
+        "en_proceso" => "En proceso",
+        "recibido"   => "Recibido",
+        "rechazado"  => "Rechazado",
+        "cancelado"  => "Cancelado",
+        _ => s
+    };
+    private string PaymentLabel(string p) => p.ToLower() switch
+    {
+        "yape"     => "Yape",
+        "plin"     => "Plin",
+        "tarjeta"  => "Tarjeta",
+        "efectivo" => "Efectivo",
+        ""         => "Por confirmar",
+        _ => p
+    };
+    private string PaymentIconName(string p) => p.ToLower() switch
+    {
+        "yape" or "plin" => "Smartphone",
+        "tarjeta"        => "CreditCard",
+        _                => "Banknote"
+    };
+    private string DeliveryLabel(string d) =>
+        d == "delivery" ? "Delivery" : "Recojo en tienda";
+
+    private List<(string Label, DateTime? Time, bool Done, bool Cancelled)> GetTimeline(Order o)
+    {
+        var steps = new List<(string, DateTime?, bool, bool)>();
+        bool cancelled = o.Status == "cancelado";
+
+        steps.Add(("Pedido recibido", o.TimelinePedidoRecibido, true, false));
+
+        if (cancelled)
+        {
+            steps.Add(("Cancelado", o.TimelineCancelado, true, true));
+            return steps;
+        }
+
+        steps.Add(("En preparación", o.TimelineEnPreparacion,
+            o.TimelineEnPreparacion.HasValue, false));
+        steps.Add(("Listo para envío", o.TimelineListo,
+            o.TimelineListo.HasValue, false));
+
+        if (o.DeliveryMethod == "delivery")
+            steps.Add(("En camino", o.TimelineEnCamino,
+                o.TimelineEnCamino.HasValue, false));
+
+        string lastLabel = o.DeliveryMethod == "delivery" ? "Entregado" : "Recogido";
+        steps.Add((lastLabel, o.TimelineEntregado,
+            o.TimelineEntregado.HasValue, false));
+
+        return steps;
+    }
 }

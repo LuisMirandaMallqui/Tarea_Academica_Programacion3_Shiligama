@@ -109,7 +109,7 @@ public class MainTest {
             System.out.println("Modificar promoción: " + (resMod == 1 ? "Exito" : "Error"));
 
             // 3. Buscar
-            Promocion pBuscada = boPromo.buscarPorID(p.getIdPromocion());
+            Promocion pBuscada = boPromo.buscarPorId(p.getIdPromocion());
             System.out.println("Buscar promoción: " + (pBuscada != null ? pBuscada.getNombre() : "No encontrada"));
 
             // 4. Asociar producto (idProducto = 1 asumido)
@@ -163,7 +163,7 @@ public class MainTest {
             System.out.println("Modificar devolución: " + (resMod == 1 ? "Exito" : "Error"));
 
             // 3. Buscar
-            Devolucion dBuscada = boDevolucion.buscarPorID(d.getIdDevolucion());
+            Devolucion dBuscada = boDevolucion.buscarPorId(d.getIdDevolucion());
             System.out.println("Buscar devolución: " + (dBuscada != null ? "Encontrada, Estado: " + dBuscada.getEstadoDevolucion() : "No encontrada"));
 
             // 4. Listar todas
@@ -218,7 +218,7 @@ public class MainTest {
             }
 
             // 4. Buscar
-            MovimientoInventario mBuscado = boMovInvent.buscarPorID(mov.getIdMovimiento());
+            MovimientoInventario mBuscado = boMovInvent.buscarPorId(mov.getIdMovimiento());
             System.out.println("Buscar movimiento: " + (mBuscado != null ? "Encontrado, Tipo: " + mBuscado.getTipoMovimiento() : "No encontrado"));
 
             // 5. Listar todos
@@ -268,7 +268,7 @@ public class MainTest {
                 System.out.println("Modificar categoría: " + (resMod == 1 ? "Éxito" : "Error"));
 
                 // 4. Buscar por ID
-                Categoria cBuscada = boCategoria.buscarPorID(categoriaHija.getIdCategoria());
+                Categoria cBuscada = boCategoria.buscarPorId(categoriaHija.getIdCategoria());
                 System.out.println("Buscar categoría: " + (cBuscada != null ?
                         "Encontrada: " + cBuscada.getNombre() + " - " + cBuscada.getDescripcion() :
                         "No encontrada"));
@@ -288,7 +288,7 @@ public class MainTest {
                 System.out.println("Eliminar categoría hija: " + (resElimHija == 1 ? "Éxito (marcada como inactiva)" : "Error"));
 
                 // 7. Verificar que fue eliminada (búsqueda debe retornar null o inactiva)
-                Categoria cEliminada = boCategoria.buscarPorID(categoriaHija.getIdCategoria());
+                Categoria cEliminada = boCategoria.buscarPorId(categoriaHija.getIdCategoria());
                 System.out.println("Verificar eliminación: " +
                         (cEliminada == null || !cEliminada.isEstado() ?
                                 "Categoría inactiva/no encontrada correctamente" :
@@ -342,7 +342,7 @@ public class MainTest {
                 System.out.println("Modificar producto: " + (resMod == 1 ? "Éxito" : "Error"));
 
                 // 3. Buscar por ID
-                Producto pBuscado = boProducto.buscarPorID(producto.getIdProducto());
+                Producto pBuscado = boProducto.buscarPorId(producto.getIdProducto());
                 System.out.println("Buscar producto: " + (pBuscado != null ?
                         "Encontrado: " + pBuscado.getNombre() +
                         " | Precio: S/ " + pBuscado.getPrecioUnitario() +
@@ -370,7 +370,7 @@ public class MainTest {
                 System.out.println("Eliminar producto: " + (resElim == 1 ? "Éxito (marcado como inactivo)" : "Error"));
 
                 // 7. Verificar que fue eliminado
-                Producto pEliminado = boProducto.buscarPorID(producto.getIdProducto());
+                Producto pEliminado = boProducto.buscarPorId(producto.getIdProducto());
                 System.out.println("Verificar eliminación: " +
                         (pEliminado == null || !pEliminado.isEstado() ?
                                 "Producto inactivo/no encontrado correctamente" :
@@ -396,7 +396,7 @@ public class MainTest {
         System.out.println("Insertar método de pago: " + (resIns > 0 ? "Éxito ID: " + mp.getIdMetodoPago() : "Error"));
 
         if (resIns > 0) {
-            MetodoPago mpBuscado = bo.buscarPorID(mp.getIdMetodoPago());
+            MetodoPago mpBuscado = bo.buscarPorId(mp.getIdMetodoPago());
             System.out.println("Buscar método de pago: " + (mpBuscado != null ? mpBuscado.getNombre() : "No encontrado"));
 
             mp.setNombre("Yape Modificado");
@@ -439,7 +439,7 @@ public class MainTest {
         System.out.println("Insertar venta: " + (resIns > 0 ? "Éxito ID: " + venta.getIdVenta() : "Error"));
 
         if (resIns > 0) {
-            Venta ventaBuscada = bo.buscarPorID(venta.getIdVenta());
+            Venta ventaBuscada = bo.buscarPorId(venta.getIdVenta());
             System.out.println("Buscar venta: " + (ventaBuscada != null
                     ? "Encontrada, Canal: " + ventaBuscada.getCanalVenta() : "No encontrada"));
 
@@ -473,7 +473,7 @@ public class MainTest {
         System.out.println("Insertar detalle venta: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetalleVenta() : "Error"));
 
         if (resIns > 0) {
-            DetalleVenta detalleBuscado = bo.buscarPorID(detalle.getIdDetalleVenta());
+            DetalleVenta detalleBuscado = bo.buscarPorId(detalle.getIdDetalleVenta());
             System.out.println("Buscar detalle venta: " + (detalleBuscado != null
                     ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() : "No encontrado"));
 
@@ -510,7 +510,7 @@ public class MainTest {
         System.out.println("Insertar pedido: " + (resIns > 0 ? "Éxito ID: " + pedido.getIdPedido() : "Error"));
 
         if (resIns > 0) {
-            Pedido pedidoBuscado = bo.buscarPorID(pedido.getIdPedido());
+            Pedido pedidoBuscado = bo.buscarPorId(pedido.getIdPedido());
             System.out.println("Buscar pedido: " + (pedidoBuscado != null
                     ? "Encontrado, Estado: " + pedidoBuscado.getEstadoPedido() : "No encontrado"));
 
@@ -544,7 +544,7 @@ public class MainTest {
         System.out.println("Insertar detalle pedido: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetallePedido() : "Error"));
 
         if (resIns > 0) {
-            DetallePedido detalleBuscado = bo.buscarPorID(detalle.getIdDetallePedido());
+            DetallePedido detalleBuscado = bo.buscarPorId(detalle.getIdDetallePedido());
             System.out.println("Buscar detalle pedido: " + (detalleBuscado != null
                     ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() : "No encontrado"));
 

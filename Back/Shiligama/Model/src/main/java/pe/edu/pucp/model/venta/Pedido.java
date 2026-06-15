@@ -6,21 +6,50 @@ import java.util.List;
 import pe.edu.pucp.model.enums.EstadoPedido;
 import pe.edu.pucp.model.enums.ModalidadVenta;
 import pe.edu.pucp.model.usuario.Cliente;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlType;
+import jakarta.json.bind.annotation.JsonbProperty;
+import jakarta.json.bind.annotation.JsonbDateFormat;
 
+@XmlType(name = "Pedido")
+@XmlAccessorType(XmlAccessType.FIELD)
 public class Pedido {
+    @XmlElement(name = "idPedido")
+    @JsonbProperty("idPedido")
     private int idPedido;
+    @XmlElement(name = "fechaHora")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaHora")
     private LocalDateTime fechaHora;
+    @XmlElement(name = "montoTotal")
+    @JsonbProperty("montoTotal")
     private double montoTotal;
     //private double montoDescuento;
+    @XmlElement(name = "estadoPedido")
+    @JsonbProperty("estadoPedido")
     private EstadoPedido estadoPedido;
+    @XmlElement(name = "direccionEntrega")
+    @JsonbProperty("direccionEntrega")
     private String direccionEntrega; //En caso sea presencial queda vacío o como presencial
+    @XmlElement(name = "modalidadVenta")
+    @JsonbProperty("modalidadVenta")
     private ModalidadVenta modalidadVenta;
+    @XmlElement(name = "observaciones")
+    @JsonbProperty("observaciones")
     private String observaciones;
     //private String payloadJson;
+    @XmlElement(name = "cliente")
+    @JsonbProperty("cliente")
     private Cliente cliente;
     // VentaDto para trazabilidad:
     // el admin/trabajador puede buscar desde el pedido la venta y asi la boleta asociada
+    @XmlElement(name = "venta")
+    @JsonbProperty("venta")
     private Venta venta; //Este se crea después que se recibe el pedido, así que lo haremos con el setter
+    @XmlElement(name = "detalles")
+    @JsonbProperty("detalles")
     private List<DetallePedido> detalles = new ArrayList<>(); // nunca null — Yasson/JSON-B requiere lista vacía, no null
 
     public Pedido() {

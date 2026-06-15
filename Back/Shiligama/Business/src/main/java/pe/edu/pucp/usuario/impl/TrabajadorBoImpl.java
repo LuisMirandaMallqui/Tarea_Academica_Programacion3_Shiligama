@@ -34,11 +34,11 @@ public class TrabajadorBoImpl implements TrabajadorBo {
     }
 
     @Override
-    public Trabajador buscarPorID(int id) throws Exception {
+    public Trabajador buscarPorId(int id) throws Exception {
         if (id <= 0) {
             throw new Exception("El ID del trabajador debe ser mayor que cero.");
         }
-        return daoTrabajador.buscarPorID(id);
+        return daoTrabajador.buscarPorId(id);
     }
 
     @Override

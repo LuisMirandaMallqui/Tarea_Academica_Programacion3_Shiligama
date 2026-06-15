@@ -5,150 +5,6 @@
 @inject AuthService Auth
 @inject IJSRuntime JS
 
-@code {
-    private List<Product> _products = new();
-    private List<CartItem> _posCart = new();
-
-    // Modal state
-    private bool _isModalOpen = false;
-    private string _modalSearch = "";
-    private Product? _selectedProduct = null;
-    private int _selectedQuantity = 1;
-
-    // POS state
-    private string _customerName = "";
-    private string _payMethod = "efectivo";
-    private string _invoiceType = "boleta";
-    private bool _success = false;
-    private bool _isProcessing = false;
-    private string _receiptId = "";
-    private string _errorMsg  = "";
-
-    // Financial calculations
-    private decimal Subtotal       => _posCart.Sum(i => i.Price * i.Quantity);
-    private decimal SubtotalSinIgv => Subtotal / 1.18m;
-    private decimal Igv            => Subtotal - SubtotalSinIgv;
-    private decimal Total          => Subtotal;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();
-        _products = ProductSvc.GetProducts();
-    }
-
-    private IEnumerable<Product> ModalProducts => _products.Where(p =>
-        string.IsNullOrEmpty(_modalSearch) ||
-        p.Name.Contains(_modalSearch, StringComparison.OrdinalIgnoreCase) ||
-        p.Category.Contains(_modalSearch, StringComparison.OrdinalIgnoreCase)
-    );
-
-    private void OpenModal()
-    {
-        _isModalOpen = true;
-        _modalSearch = "";
-        _selectedProduct = null;
-        _selectedQuantity = 1;
-    }
-
-    private void CloseModal() => _isModalOpen = false;
-
-    private void SelectProduct(Product p)
-    {
-        _selectedProduct = p;
-        _selectedQuantity = 1;
-    }
-
-    private void AddSelectedToCart()
-    {
-        if (_selectedProduct == null || _selectedQuantity <= 0) return;
-
-        var existing = _posCart.FirstOrDefault(i => i.Id == _selectedProduct.Id);
-        if (existing != null)
-        {
-            existing.Quantity = Math.Min(existing.Quantity + _selectedQuantity, _selectedProduct.Stock);
-        }
-        else
-        {
-            _posCart.Add(new CartItem
-            {
-                Id       = _selectedProduct.Id,
-                Name     = _selectedProduct.Name,
-                Price    = _selectedProduct.Price,
-                Quantity = _selectedQuantity,
-                Image    = _selectedProduct.Image
-            });
-        }
-        CloseModal();
-    }
-
-    private void RemoveFromCart(int productId)
-    {
-        var item = _posCart.FirstOrDefault(i => i.Id == productId);
-        if (item != null) _posCart.Remove(item);
-    }
-
-    // ProcessSale recibe el tipo ("boleta" o "ticket") desde los botones del footer
-    private async Task ProcessSale(string type)
-    {
-        if (!_posCart.Any() || _isProcessing) return;
-        _isProcessing = true;
-        _invoiceType = type;
-        _errorMsg = "";
-
-        int idTrabajador = Auth.CurrentUser?.Id ?? 0;
-
-        int idGenerado = await SalesSvc.AddPresencialSaleAsync(
-            _customerName, _posCart, Total, _payMethod, _invoiceType, idTrabajador);
-
-        _receiptId = $"VTA-{idGenerado:D4}";
-
-        // Actualiza stock local para feedback inmediato
-        foreach (var item in _posCart)
-        {
-            var p = _products.FirstOrDefault(pr => pr.Id == item.Id);
-            if (p != null) p.Stock = Math.Max(0, p.Stock - item.Quantity);
-        }
-
-        // Si es boleta, imprime usando el helper JS del equipo
-        if (type == "boleta")
-        {
-            var boletaData = new
-            {
-                receiptId      = _receiptId,
-                customerName   = string.IsNullOrWhiteSpace(_customerName) ? "Público General" : _customerName,
-                payMethod      = _payMethod,
-                invoiceType    = _invoiceType,
-                items          = _posCart.Select(i => new
-                {
-                    name     = i.Name,
-                    quantity = i.Quantity,
-                    price    = (double)i.Price,
-                    subtotal = (double)(i.Price * i.Quantity)
-                }).ToList(),
-                subtotalSinIgv = (double)SubtotalSinIgv,
-                igv            = (double)Igv,
-                total          = (double)Total,
-                date           = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
-            };
-            await JS.InvokeVoidAsync("boletaHelpers.generateAndPrintBoleta", boletaData);
-        }
-
-        _success = true;
-        _isProcessing = false;
-    }
-
-    private void ResetPOS()
-    {
-        _posCart.Clear();
-        _customerName = "";
-        _payMethod    = "efectivo";
-        _invoiceType  = "boleta";
-        _success      = false;
-        _receiptId    = "";
-        _errorMsg     = "";
-    }
-}
-
 <PageTitle>Registrar Venta – Shiligama</PageTitle>
 
 @if (_success)
@@ -471,3 +327,147 @@ else
         color: #064420;
     }
 </style>
+
+@code {
+    private List<Product> _products = new();
+    private List<CartItem> _posCart = new();
+
+    // Modal state
+    private bool _isModalOpen = false;
+    private string _modalSearch = "";
+    private Product? _selectedProduct = null;
+    private int _selectedQuantity = 1;
+
+    // POS state
+    private string _customerName = "";
+    private string _payMethod = "efectivo";
+    private string _invoiceType = "boleta";
+    private bool _success = false;
+    private bool _isProcessing = false;
+    private string _receiptId = "";
+    private string _errorMsg  = "";
+
+    // Financial calculations
+    private decimal Subtotal       => _posCart.Sum(i => i.Price * i.Quantity);
+    private decimal SubtotalSinIgv => Subtotal / 1.18m;
+    private decimal Igv            => Subtotal - SubtotalSinIgv;
+    private decimal Total          => Subtotal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _products = ProductSvc.GetProducts();
+    }
+
+    private IEnumerable<Product> ModalProducts => _products.Where(p =>
+        string.IsNullOrEmpty(_modalSearch) ||
+        p.Name.Contains(_modalSearch, StringComparison.OrdinalIgnoreCase) ||
+        p.Category.Contains(_modalSearch, StringComparison.OrdinalIgnoreCase)
+    );
+
+    private void OpenModal()
+    {
+        _isModalOpen = true;
+        _modalSearch = "";
+        _selectedProduct = null;
+        _selectedQuantity = 1;
+    }
+
+    private void CloseModal() => _isModalOpen = false;
+
+    private void SelectProduct(Product p)
+    {
+        _selectedProduct = p;
+        _selectedQuantity = 1;
+    }
+
+    private void AddSelectedToCart()
+    {
+        if (_selectedProduct == null || _selectedQuantity <= 0) return;
+
+        var existing = _posCart.FirstOrDefault(i => i.Id == _selectedProduct.Id);
+        if (existing != null)
+        {
+            existing.Quantity = Math.Min(existing.Quantity + _selectedQuantity, _selectedProduct.Stock);
+        }
+        else
+        {
+            _posCart.Add(new CartItem
+            {
+                Id       = _selectedProduct.Id,
+                Name     = _selectedProduct.Name,
+                Price    = _selectedProduct.Price,
+                Quantity = _selectedQuantity,
+                Image    = _selectedProduct.Image
+            });
+        }
+        CloseModal();
+    }
+
+    private void RemoveFromCart(int productId)
+    {
+        var item = _posCart.FirstOrDefault(i => i.Id == productId);
+        if (item != null) _posCart.Remove(item);
+    }
+
+    // ProcessSale recibe el tipo ("boleta" o "ticket") desde los botones del footer
+    private async Task ProcessSale(string type)
+    {
+        if (!_posCart.Any() || _isProcessing) return;
+        _isProcessing = true;
+        _invoiceType = type;
+        _errorMsg = "";
+
+        int idTrabajador = Auth.CurrentUser?.Id ?? 0;
+
+        int idGenerado = await SalesSvc.AddPresencialSaleAsync(
+            _customerName, _posCart, Total, _payMethod, _invoiceType, idTrabajador);
+
+        _receiptId = $"VTA-{idGenerado:D4}";
+
+        // Actualiza stock local para feedback inmediato
+        foreach (var item in _posCart)
+        {
+            var p = _products.FirstOrDefault(pr => pr.Id == item.Id);
+            if (p != null) p.Stock = Math.Max(0, p.Stock - item.Quantity);
+        }
+
+        // Si es boleta, imprime usando el helper JS del equipo
+        if (type == "boleta")
+        {
+            var boletaData = new
+            {
+                receiptId      = _receiptId,
+                customerName   = string.IsNullOrWhiteSpace(_customerName) ? "Público General" : _customerName,
+                payMethod      = _payMethod,
+                invoiceType    = _invoiceType,
+                items          = _posCart.Select(i => new
+                {
+                    name     = i.Name,
+                    quantity = i.Quantity,
+                    price    = (double)i.Price,
+                    subtotal = (double)(i.Price * i.Quantity)
+                }).ToList(),
+                subtotalSinIgv = (double)SubtotalSinIgv,
+                igv            = (double)Igv,
+                total          = (double)Total,
+                date           = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
+            };
+            await JS.InvokeVoidAsync("boletaHelpers.generateAndPrintBoleta", boletaData);
+        }
+
+        _success = true;
+        _isProcessing = false;
+    }
+
+    private void ResetPOS()
+    {
+        _posCart.Clear();
+        _customerName = "";
+        _payMethod    = "efectivo";
+        _invoiceType  = "boleta";
+        _success      = false;
+        _receiptId    = "";
+        _errorMsg     = "";
+    }
+}

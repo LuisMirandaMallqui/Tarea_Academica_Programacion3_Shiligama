@@ -11,14 +11,10 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-/**
- * Web Service REST para Devoluciones.
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/devoluciones
- */
 @Path("/devoluciones")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class DevolucionWS {
+public class DevolucionRS {
 
     private final DevolucionBO devolucionBo = new DevolucionBoImpl();
 
@@ -37,7 +33,7 @@ public class DevolucionWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Devolucion devolucion = devolucionBo.buscarPorID(id);
+            Devolucion devolucion = devolucionBo.buscarPorId(id);
             if (devolucion != null) {
                 return Response.ok(devolucion).build();
             } else {

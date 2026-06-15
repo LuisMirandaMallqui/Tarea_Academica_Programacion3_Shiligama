@@ -6,72 +6,6 @@
 @inject StaffService StaffSvc
 @inject IJSRuntime JS
 
-@code {
-    private List<KpiItem> _kpis = new();
-    private List<Sale> _recentSales = new();
-
-    private record KpiItem(string Title, string Value, string Subtitle, string FaIcon, string Color, string Trend, bool TrendUp);
-
-    protected override async Task OnInitializedAsync()
-    {
-        await Task.WhenAll(
-            ProductSvc.EnsureLoadedAsync(),
-            SalesSvc.EnsureLoadedAsync()
-        );
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender) return;
-
-        var sales    = SalesSvc.GetSales();
-        var products = ProductSvc.GetProducts();
-        var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
-
-        _kpis = new()
-        {
-            new("Ventas hoy",
-                $"S/. {todaySales:0.00}",
-                "8 transacciones hoy",
-                "fa-wallet", "#1A6B3C", "+12.5%", true),
-            new("Pedidos pendientes",
-                $"{SalesSvc.GetRecentOrders().Count(o => o.Status == "pendiente")}",
-                "+3 nuevos hoy",
-                "fa-clock", "#e67e22", "+3", true),
-            new("Productos con bajo stock",
-                $"{products.Count(p => p.Stock < 10)}",
-                "-5 requieren atención",
-                "fa-box-open", "#c62828", "-5", false),
-            new("Ingresos del mes",
-                $"S/. {sales.Sum(s => s.Total):0.00}",
-                "vs. mes anterior",
-                "fa-chart-line", "#2563EB", "+8.2%", true),
-        };
-
-        _recentSales = sales.OrderByDescending(s => s.Fecha).Take(6).ToList();
-
-        StateHasChanged();
-        await RenderCharts();
-    }
-
-    private async Task RenderCharts()
-    {
-        // Sales chart
-        var labels = Enumerable.Range(-6, 7).Select(d => DateTime.Today.AddDays(d).ToString("dd/MM")).ToArray();
-        var data   = Enumerable.Range(-6, 7).Select(d =>
-            SalesSvc.GetSales().Where(s => s.Fecha.Date == DateTime.Today.AddDays(d)).Sum(s => s.Total)
-        ).ToArray();
-        await JS.InvokeVoidAsync("chartHelper.renderSalesChart", "salesChart", labels, data);
-
-        // Channels chart
-        var presencialData = new[] { 8, 10, 9, 12, 15, 18, 14 };
-        var onlineData     = new[] { 5, 7,  6,  8, 10, 12, 9  };
-        await JS.InvokeVoidAsync("chartHelper.renderChannelsChart", "channelsChart",
-            Enumerable.Range(-6, 7).Select(d => DateTime.Today.AddDays(d).ToString("ddd")).ToArray(),
-            presencialData, onlineData);
-    }
-}
-
 <PageTitle>Dashboard – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -209,3 +143,69 @@
 
     </div>
 </div>
+
+@code {
+    private List<KpiItem> _kpis = new();
+    private List<Sale> _recentSales = new();
+
+    private record KpiItem(string Title, string Value, string Subtitle, string FaIcon, string Color, string Trend, bool TrendUp);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.WhenAll(
+            ProductSvc.EnsureLoadedAsync(),
+            SalesSvc.EnsureLoadedAsync()
+        );
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var sales    = SalesSvc.GetSales();
+        var products = ProductSvc.GetProducts();
+        var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
+
+        _kpis = new()
+        {
+            new("Ventas hoy",
+                $"S/. {todaySales:0.00}",
+                "8 transacciones hoy",
+                "fa-wallet", "#1A6B3C", "+12.5%", true),
+            new("Pedidos pendientes",
+                $"{SalesSvc.GetRecentOrders().Count(o => o.Status == "pendiente")}",
+                "+3 nuevos hoy",
+                "fa-clock", "#e67e22", "+3", true),
+            new("Productos con bajo stock",
+                $"{products.Count(p => p.Stock < 10)}",
+                "-5 requieren atención",
+                "fa-box-open", "#c62828", "-5", false),
+            new("Ingresos del mes",
+                $"S/. {sales.Sum(s => s.Total):0.00}",
+                "vs. mes anterior",
+                "fa-chart-line", "#2563EB", "+8.2%", true),
+        };
+
+        _recentSales = sales.OrderByDescending(s => s.Fecha).Take(6).ToList();
+
+        StateHasChanged();
+        await RenderCharts();
+    }
+
+    private async Task RenderCharts()
+    {
+        // Sales chart
+        var labels = Enumerable.Range(-6, 7).Select(d => DateTime.Today.AddDays(d).ToString("dd/MM")).ToArray();
+        var data   = Enumerable.Range(-6, 7).Select(d =>
+            SalesSvc.GetSales().Where(s => s.Fecha.Date == DateTime.Today.AddDays(d)).Sum(s => s.Total)
+        ).ToArray();
+        await JS.InvokeVoidAsync("chartHelper.renderSalesChart", "salesChart", labels, data);
+
+        // Channels chart
+        var presencialData = new[] { 8, 10, 9, 12, 15, 18, 14 };
+        var onlineData     = new[] { 5, 7,  6,  8, 10, 12, 9  };
+        await JS.InvokeVoidAsync("chartHelper.renderChannelsChart", "channelsChart",
+            Enumerable.Range(-6, 7).Select(d => DateTime.Today.AddDays(d).ToString("ddd")).ToArray(),
+            presencialData, onlineData);
+    }
+}

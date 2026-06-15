@@ -3,28 +3,6 @@
 @inject ProductService ProductSvc
 @inject CartService Cart
 
-@code {
-    private List<Product> _snacksProducts = new();
-    private bool _isLoading = true;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();
-        // La categoría ahora tiene id numérico, así que filtramos por NOMBRE.
-        _snacksProducts = ProductSvc.GetProducts()
-            .Where(p => ProductSvc.GetCategoryName(p.Category).ToLower().Contains("snack"))
-            .ToList();
-        _isLoading = false;
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
-    }
-
-    private async Task AddToCart(Product p) => await Cart.AddToCartAsync(p);
-}
-
 <PageTitle>2x1 en Snacks – Shiligama</PageTitle>
 
 <div class="bg-background">
@@ -171,3 +149,25 @@
         }
     </div>
 </div>
+
+@code {
+    private List<Product> _snacksProducts = new();
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        // La categoría ahora tiene id numérico, así que filtramos por NOMBRE.
+        _snacksProducts = ProductSvc.GetProducts()
+            .Where(p => ProductSvc.GetCategoryName(p.Category).ToLower().Contains("snack"))
+            .ToList();
+        _isLoading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
+    }
+
+    private async Task AddToCart(Product p) => await Cart.AddToCartAsync(p);
+}

@@ -8,14 +8,10 @@ import pe.edu.pucp.dashboard.impl.DashboardBoImpl;
 import pe.edu.pucp.model.dashboard.KpiAdminDto;
 import pe.edu.pucp.model.dashboard.KpiTrabajadorDto;
 
-/**
- * Web Service de KPIs para los paneles principales (admin y trabajador).
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/dashboard
- */
 @Path("/dashboard")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class DashboardWS {
+public class DashboardRS {
 
     private final DashboardBo dashboardBo = new DashboardBoImpl();
 

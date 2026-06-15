@@ -12,7 +12,7 @@ import java.util.List;
 @Path("/clientes")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class ClienteWS {
+public class ClienteRS {
 
     // Instanciamos el BOImpl directamente, igual que en el Principal.java
     private final ClienteBo clienteBo = new ClienteBoImpl();
@@ -38,7 +38,7 @@ public class ClienteWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Cliente cliente = clienteBo.buscarPorID(id);
+            Cliente cliente = clienteBo.buscarPorId(id);
             if (cliente != null) {
                 return Response.ok(cliente).build();
             } else {

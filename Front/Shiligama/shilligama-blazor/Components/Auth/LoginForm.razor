@@ -1,59 +1,6 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 
-@code {
-    [Parameter] public EventCallback OnRegisterClick { get; set; }
-    [Parameter] public string? ReturnUrl { get; set; }
-
-    private bool _showPassword = false;
-    private string _email = "";
-    private string _password = "";
-    private bool _rememberMe = false;
-    private string _error = "";
-    private bool _isLoading = false;
-
-    private async Task HandleSubmit()
-    {
-        _error = "";
-        _isLoading = true;
-
-        // Login real contra el API REST del back (POST /api/auth/login).
-        bool ok = await Auth.LoginAsync(_email, _password);
-        if (ok)
-        {
-            var safeReturn = GetSafeReturnUrl();
-            if (safeReturn is not null && Auth.IsCliente())
-            {
-                Navigation.NavigateTo(safeReturn);
-            }
-            else
-            {
-                var redirect = Auth.CurrentUser?.Role switch
-                {
-                    "administrador" => "/admin",
-                    "trabajador"    => "/trabajador",
-                    _               => "/catalogo"
-                };
-                Navigation.NavigateTo(redirect);
-            }
-        }
-        else
-        {
-            _error = string.IsNullOrEmpty(Auth.LastError)
-                     ? "Correo electrónico o contraseña incorrectos"
-                     : Auth.LastError;
-            _isLoading = false;
-        }
-    }
-
-    private string? GetSafeReturnUrl()
-    {
-        if (string.IsNullOrWhiteSpace(ReturnUrl)) return null;
-        if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//")) return null;
-        return ReturnUrl;
-    }
-}
-
 <div class="d-flex flex-column gap-4">
     <!-- Mobile Logo -->
     <div class="d-flex d-lg-none align-items-center gap-3">
@@ -160,3 +107,56 @@
         </div>
     </div>
 </div>
+
+@code {
+    [Parameter] public EventCallback OnRegisterClick { get; set; }
+    [Parameter] public string? ReturnUrl { get; set; }
+
+    private bool _showPassword = false;
+    private string _email = "";
+    private string _password = "";
+    private bool _rememberMe = false;
+    private string _error = "";
+    private bool _isLoading = false;
+
+    private async Task HandleSubmit()
+    {
+        _error = "";
+        _isLoading = true;
+
+        // Login real contra el API REST del back (POST /api/auth/login).
+        bool ok = await Auth.LoginAsync(_email, _password);
+        if (ok)
+        {
+            var safeReturn = GetSafeReturnUrl();
+            if (safeReturn is not null && Auth.IsCliente())
+            {
+                Navigation.NavigateTo(safeReturn);
+            }
+            else
+            {
+                var redirect = Auth.CurrentUser?.Role switch
+                {
+                    "administrador" => "/admin",
+                    "trabajador"    => "/trabajador",
+                    _               => "/catalogo"
+                };
+                Navigation.NavigateTo(redirect);
+            }
+        }
+        else
+        {
+            _error = string.IsNullOrEmpty(Auth.LastError)
+                     ? "Correo electrónico o contraseña incorrectos"
+                     : Auth.LastError;
+            _isLoading = false;
+        }
+    }
+
+    private string? GetSafeReturnUrl()
+    {
+        if (string.IsNullOrWhiteSpace(ReturnUrl)) return null;
+        if (!ReturnUrl.StartsWith('/') || ReturnUrl.StartsWith("//")) return null;
+        return ReturnUrl;
+    }
+}

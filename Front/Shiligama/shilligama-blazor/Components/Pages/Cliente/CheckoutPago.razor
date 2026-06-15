@@ -6,81 +6,6 @@
 @inject IJSRuntime JS
 @implements IDisposable
 
-@code {
-    [SupplyParameterFromQuery(Name = "pedido")]
-    public int Pedido { get; set; }
-
-    // Total del carrito: el SP INSERTAR_PEDIDO no guarda MONTO_TOTAL en la BD,
-    // así que lo pasamos por URL para que Izipay reciba el monto correcto.
-    [SupplyParameterFromQuery(Name = "total")]
-    public decimal Total { get; set; }
-
-    private bool _loading = true;
-    private string? _error;
-    private bool _iniciado = false;
-
-    private IJSObjectReference? _module;
-    private DotNetObjectReference<CheckoutPago>? _dotNetRef;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (!firstRender || _iniciado) return;
-        _iniciado = true;
-
-        if (Pedido <= 0)
-        {
-            _error = "Pedido inválido.";
-            _loading = false;
-            StateHasChanged();
-            return;
-        }
-
-        await Auth.InitializeAsync();
-
-        // 1) Pedir el formToken al backend (CreatePayment).
-        // Se pasa el total explícitamente porque INSERTAR_PEDIDO no persiste MONTO_TOTAL.
-        var resp = await PagoSvc.IniciarPagoAsync(Pedido, Auth.CurrentUser?.Email ?? "", Total);
-        if (resp == null || !resp.Exito || string.IsNullOrEmpty(resp.FormToken))
-        {
-            _error = resp?.Mensaje ?? "No se pudo iniciar el pago con Izipay. Tu pedido quedó registrado; "
-                     + "puedes reintentar desde 'Mis pedidos'.";
-            _loading = false;
-            StateHasChanged();
-            return;
-        }
-
-        // 2) Renderizar el formulario embebido con el SDK Krypton.
-        try
-        {
-            _dotNetRef = DotNetObjectReference.Create(this);
-            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/izipay.js");
-            bool ok = await _module.InvokeAsync<bool>("render",
-                resp.JsBase, resp.PublicKey, resp.FormToken, _dotNetRef);
-            if (!ok) _error = "No se pudo cargar el formulario de pago de Izipay.";
-        }
-        catch (Exception ex)
-        {
-            _error = "Error al cargar el formulario de pago: " + ex.Message;
-        }
-
-        _loading = false;
-        StateHasChanged();
-    }
-
-    // Llamado desde izipay.js al terminar el pago.
-    [JSInvokable]
-    public Task OnIzipayResult(string orderStatus)
-    {
-        Navigation.NavigateTo($"/checkout/resultado?pedido={Pedido}", forceLoad: false);
-        return Task.CompletedTask;
-    }
-
-    public void Dispose()
-    {
-        _dotNetRef?.Dispose();
-    }
-}
-
 <PageTitle>Pago con tarjeta – Shiligama</PageTitle>
 
 <div class="container py-4" style="max-width:560px;">
@@ -117,3 +42,108 @@
         </p>
     </div>
 </div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "pedido")]
+    public int Pedido { get; set; }
+
+    // Total del carrito: el SP INSERTAR_PEDIDO no guarda MONTO_TOTAL en la BD,
+    // así que lo pasamos por URL para que Izipay reciba el monto correcto.
+    [SupplyParameterFromQuery(Name = "total")]
+    public decimal Total { get; set; }
+
+    private bool _loading = true;
+    private string? _error;
+    private bool _iniciado = false;
+
+    // Datos del pago guardados entre renders — necesarios para el patrón two-render.
+    private string? _jsBase;
+    private string? _publicKey;
+    private string? _formToken;
+    // true mientras esperamos el segundo render para inyectar el JS en el contenedor ya visible.
+    private bool _inyectarJs = false;
+
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<CheckoutPago>? _dotNetRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // ── Segundo render: contenedor ya visible → inyectar JS ──────────────
+        // Blazor limpiaría #izipay-form si el JS corriera ANTES del StateHasChanged;
+        // por eso esperamos al render en que el contenedor ya no tiene d-none.
+        if (_inyectarJs)
+        {
+            _inyectarJs = false;
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/izipay.js");
+                bool ok = await _module.InvokeAsync<bool>("render",
+                    _jsBase, _publicKey, _formToken, _dotNetRef);
+                if (!ok)
+                {
+                    _error = "No se pudo cargar el formulario de pago de Izipay.";
+                    StateHasChanged();
+                }
+            }
+            catch (Exception ex)
+            {
+                _error = "Error al cargar el formulario de pago: " + ex.Message;
+                StateHasChanged();
+            }
+            return;
+        }
+
+        if (!firstRender || _iniciado) return;
+        _iniciado = true;
+
+        if (Pedido <= 0)
+        {
+            _error = "Pedido inválido.";
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        await Auth.InitializeAsync();
+
+        // 1) Pedir el formToken al backend (CreatePayment).
+        // Se pasa el total explícitamente porque INSERTAR_PEDIDO no persiste MONTO_TOTAL.
+        var resp = await PagoSvc.IniciarPagoAsync(Pedido, Auth.CurrentUser?.Email ?? "", Total);
+        if (resp == null || !resp.Exito || string.IsNullOrEmpty(resp.FormToken))
+        {
+            _error = resp?.Mensaje ?? "No se pudo iniciar el pago con Izipay. Tu pedido quedó registrado; "
+                     + "puedes reintentar desde 'Mis pedidos'.";
+            _loading = false;
+            StateHasChanged();
+            return;
+        }
+
+        // 2) Guardar datos y disparar segundo render con el contenedor visible.
+        // El JS se inyecta en la segunda vuelta de OnAfterRenderAsync (_inyectarJs = true),
+        // cuando Blazor ya terminó de renderizar el contenedor sin d-none.
+        _jsBase     = resp.JsBase;
+        _publicKey  = resp.PublicKey;
+        _formToken  = resp.FormToken;
+        _loading    = false;
+        _inyectarJs = true;
+        StateHasChanged();
+    }
+
+    // Llamado desde izipay.js al terminar el pago.
+    // Se pasa orderStatus en la URL para que la página de resultado pueda mostrarlo
+    // sin depender de que la BD ya esté actualizada (el IPN llega con cierto delay).
+    [JSInvokable]
+    public Task OnIzipayResult(string orderStatus)
+    {
+        Navigation.NavigateTo(
+            $"/checkout/resultado?pedido={Pedido}&status={orderStatus}",
+            forceLoad: false);
+        return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _dotNetRef?.Dispose();
+    }
+}

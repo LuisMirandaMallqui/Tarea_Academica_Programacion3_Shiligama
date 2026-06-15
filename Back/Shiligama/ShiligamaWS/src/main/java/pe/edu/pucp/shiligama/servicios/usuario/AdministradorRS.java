@@ -9,17 +9,10 @@ import pe.edu.pucp.usuario.impl.AdministradorBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Administradores.
- * Sigue el mismo patrón que ClienteWS y TrabajadorWS.
- *
- * NOTA: el método /login específico por rol queda deprecado por LoginWS unificado.
- * Se mantiene aquí solo para retro-compatibilidad si algún cliente lo invoca.
- */
 @Path("/administradores")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class AdministradorWS {
+public class AdministradorRS {
 
     private final AdministradorBo administradorBo = new AdministradorBoImpl();
 
@@ -42,7 +35,7 @@ public class AdministradorWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Administrador admin = administradorBo.buscarPorID(id);
+            Administrador admin = administradorBo.buscarPorId(id);
             if (admin != null) {
                 return Response.ok(admin).build();
             } else {

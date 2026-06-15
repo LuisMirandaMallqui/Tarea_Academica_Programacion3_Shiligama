@@ -9,14 +9,10 @@ import pe.edu.pucp.operacion.impl.PromocionBoImpl;
 
 import java.util.List;
 
-/**
- * Web Service REST para Promociones.
- * URL base: http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/promociones
- */
 @Path("/promociones")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class PromocionWS {
+public class PromocionRS {
 
     private final PromocionBO promocionBo = new PromocionBoImpl();
 
@@ -35,7 +31,7 @@ public class PromocionWS {
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
         try {
-            Promocion promocion = promocionBo.buscarPorID(id);
+            Promocion promocion = promocionBo.buscarPorId(id);
             if (promocion != null) {
                 return Response.ok(promocion).build();
             } else {

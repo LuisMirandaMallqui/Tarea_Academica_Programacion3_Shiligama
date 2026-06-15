@@ -65,7 +65,7 @@ public class PromocionDaoImpl implements PromocionDao {
 
     // SP: BUSCAR_PROMOCION_POR_ID(IN _promocion_id)
     @Override
-    public Promocion buscarPorID(int id) {
+    public Promocion buscarPorId(int id) {
         Promocion p = null;
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, id);

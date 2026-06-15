@@ -2,23 +2,6 @@
 @layout AdminLayout
 @inject AuthService Auth
 
-@code {
-    private string _shopName = "Shiligama Minimarket";
-    private string _currency = "PEN (S/.)";
-    private decimal _igvRate = 18.00m;
-    private bool _autoApproveOrders = true;
-    private bool _enableMockups = true;
-    private bool _success = false;
-
-    private async Task SaveSettings()
-    {
-        _success = true;
-        await Task.Delay(2000);
-        _success = false;
-        StateHasChanged();
-    }
-}
-
 <PageTitle>Configuración del Sistema – Shiligama Admin</PageTitle>
 
 <div class="container-fluid p-0 mx-auto" style="max-width: 900px;">
@@ -115,3 +98,20 @@
         </div>
     </div>
 </div>
+
+@code {
+    private string _shopName = "Shiligama Minimarket";
+    private string _currency = "PEN (S/.)";
+    private decimal _igvRate = 18.00m;
+    private bool _autoApproveOrders = true;
+    private bool _enableMockups = true;
+    private bool _success = false;
+
+    private async Task SaveSettings()
+    {
+        _success = true;
+        await Task.Delay(2000);
+        _success = false;
+        StateHasChanged();
+    }
+}
