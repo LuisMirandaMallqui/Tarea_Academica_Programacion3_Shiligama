@@ -643,14 +643,15 @@
         "plin"     => "Plin",
         "tarjeta"  => "Tarjeta",
         "efectivo" => "Efectivo",
+        "izipay"   => "Izipay",
         ""         => "Por confirmar",
-        _ => p
+        _          => p
     };
     private string PaymentIconName(string p) => p.ToLower() switch
     {
-        "yape" or "plin" => "Smartphone",
-        "tarjeta"        => "CreditCard",
-        _                => "Banknote"
+        "yape" or "plin"      => "Smartphone",
+        "tarjeta" or "izipay" => "CreditCard",
+        _                     => "Banknote"
     };
     private string DeliveryLabel(string d) =>
         d == "delivery" ? "Delivery" : "Recojo en tienda";

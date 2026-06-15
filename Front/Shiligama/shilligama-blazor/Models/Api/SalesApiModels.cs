@@ -138,3 +138,11 @@ internal class ProductoRef
     public string Nombre { get; set; } = string.Empty;
     public double PrecioUnitario { get; set; }
 }
+
+// DTO mínimo para consultar el estado del pago de un pedido
+internal class PagoEstadoApi
+{
+    public int     IdPago   { get; set; }
+    public int     IdPedido { get; set; }
+    public string? Estado   { get; set; } // PENDIENTE | AUTORIZADO | RECHAZADO | CANCELADO
+}
