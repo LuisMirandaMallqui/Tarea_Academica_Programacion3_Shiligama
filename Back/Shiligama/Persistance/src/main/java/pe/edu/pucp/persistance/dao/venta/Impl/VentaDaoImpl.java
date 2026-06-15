@@ -170,9 +170,14 @@ public class VentaDaoImpl implements VentaDao {
         v.setEstadoVenta(EstadoVenta.valueOf(rs.getString("ESTADO_VENTA")));
         v.setObservaciones(rs.getString("OBSERVACIONES"));
 
-        Cliente cliente = new Cliente();
-        cliente.setIdUsuario(rs.getInt("CLIENTE_ID"));
-        v.setCliente(cliente);
+        int clienteId = rs.getInt("CLIENTE_ID");
+        if (clienteId > 0) {
+            Cliente cliente = new Cliente();
+            cliente.setIdUsuario(clienteId);
+            cliente.setNombres(rs.getString("CLIENTE_NOMBRES"));
+            cliente.setApellidos(rs.getString("CLIENTE_APELLIDOS"));
+            v.setCliente(cliente);
+        }
 
         Trabajador trabajador = new Trabajador();
         trabajador.setIdUsuario(rs.getInt("TRABAJADOR_ID"));

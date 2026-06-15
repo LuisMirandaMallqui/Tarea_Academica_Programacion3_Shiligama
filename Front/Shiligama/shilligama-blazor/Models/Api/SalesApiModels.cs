@@ -25,9 +25,9 @@ internal class VentaApi
     {
         Id         = $"VTA-{IdVenta:D3}",
         Fecha      = FechaHora ?? DateTime.Now,
-        Cliente    = Cliente != null
-                     ? $"{Cliente.Nombres} {Cliente.Apellidos}".Trim()
-                     : "Público General",
+        Cliente    = string.IsNullOrWhiteSpace($"{Cliente?.Nombres} {Cliente?.Apellidos}".Trim())
+                     ? "Público General"
+                     : $"{Cliente!.Nombres} {Cliente!.Apellidos}".Trim(),
         Canal      = CanalVenta.ToLower() switch
         {
             "presencial" => "presencial",

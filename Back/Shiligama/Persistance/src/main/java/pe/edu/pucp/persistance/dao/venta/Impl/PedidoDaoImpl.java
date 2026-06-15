@@ -148,6 +148,8 @@ public class PedidoDaoImpl implements PedidoDao {
 
         Cliente cliente = new Cliente();
         cliente.setIdUsuario(rs.getInt("CLIENTE_ID"));
+        cliente.setNombres(rs.getString("CLIENTE_NOMBRES"));
+        cliente.setApellidos(rs.getString("CLIENTE_APELLIDOS"));
         p.setCliente(cliente);
 
         return p;

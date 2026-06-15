@@ -28,7 +28,7 @@
 
         <!-- Sidebar Navigation -->
         <nav class="flex-grow-1 p-3 overflow-y-auto d-flex flex-column gap-1">
-            <a href="/admin" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin") && !IsActive("/admin/pedidos") && !IsActive("/admin/productos") && !IsActive("/admin/inventario") && !IsActive("/admin/ventas") && !IsActive("/admin/proveedores") && !IsActive("/admin/personal") && !IsActive("/admin/reportes") && !IsActive("/admin/devoluciones") && !IsActive("/admin/notificaciones") ? "active" : "")">
+            <a href="/admin" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin") && !IsActive("/admin/pedidos") && !IsActive("/admin/productos") && !IsActive("/admin/ventas") && !IsActive("/admin/proveedores") && !IsActive("/admin/personal") && !IsActive("/admin/reportes") && !IsActive("/admin/devoluciones") && !IsActive("/admin/notificaciones") ? "active" : "")">
                 <Icons Name="Store" Class="w-5 h-5" />
                 Dashboard
             </a>
@@ -44,10 +44,6 @@
             <a href="/admin/promociones" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/promociones") ? "active" : "")" style="color: #EAF7EE;">
                 <i class="fas fa-tags" style="width:1.25rem;text-align:center;"></i>
                 Promociones
-            </a>
-            <a href="/admin/inventario" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/inventario") ? "active" : "")" style="color: #EAF7EE;">
-                <Icons Name="Building2" Class="w-5 h-5" />
-                Inventario
             </a>
             <a href="/admin/ventas" class="admin-sidebar-link d-flex align-items-center gap-3 px-3 py-3 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/ventas") ? "active" : "")" style="color: #EAF7EE;">
                 <Icons Name="TrendingUp" Class="w-5 h-5" />
@@ -106,7 +102,7 @@
 
                 <!-- Navigation List Mobile -->
                 <nav class="p-3 d-flex flex-column gap-1 overflow-y-auto" style="max-height: calc(100vh - 160px);">
-                    <a href="/admin" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin") && !IsActive("/admin/pedidos") && !IsActive("/admin/productos") && !IsActive("/admin/inventario") && !IsActive("/admin/ventas") && !IsActive("/admin/proveedores") && !IsActive("/admin/personal") && !IsActive("/admin/reportes") && !IsActive("/admin/devoluciones") && !IsActive("/admin/notificaciones") ? "active" : "")">
+                    <a href="/admin" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin") && !IsActive("/admin/pedidos") && !IsActive("/admin/productos") && !IsActive("/admin/ventas") && !IsActive("/admin/proveedores") && !IsActive("/admin/personal") && !IsActive("/admin/reportes") && !IsActive("/admin/devoluciones") && !IsActive("/admin/notificaciones") ? "active" : "")">
                         <Icons Name="Store" Class="w-5 h-5" />
                         Dashboard
                     </a>
@@ -117,10 +113,6 @@
                     <a href="/admin/productos" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/productos") ? "active" : "")">
                         <Icons Name="Package" Class="w-5 h-5" />
                         Productos
-                    </a>
-                    <a href="/admin/inventario" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/inventario") ? "active" : "")">
-                        <Icons Name="Building2" Class="w-5 h-5" />
-                        Inventario
                     </a>
                     <a href="/admin/ventas" @onclick="ToggleMobileSidebar" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-white-75 hover-bg-white-10 @(IsActive("/admin/ventas") ? "active" : "")">
                         <Icons Name="TrendingUp" Class="w-5 h-5" />

@@ -57,14 +57,39 @@ public class SalesService
 
         try
         {
-            // Primero probar si el endpoint responde (para ver el texto crudo en caso de error)
             var response = await _http.GetAsync("pedidos");
             if (response.IsSuccessStatusCode)
             {
                 var pedidos = await response.Content.ReadFromJsonAsync<List<PedidoApi>>(_json);
                 _orders.Clear();
                 if (pedidos != null)
-                    _orders.AddRange(pedidos.Select(p => p.ToOrder()));
+                {
+                    // Fetch detalles en paralelo para que Items > 0 en la vista
+                    var tareas = pedidos.Select(async p =>
+                    {
+                        var order = p.ToOrder();
+                        try
+                        {
+                            var detalles = await _http.GetFromJsonAsync<List<DetallePedidoApi>>(
+                                $"detalles-pedido/por-pedido/{p.IdPedido}", _json);
+                            if (detalles != null && detalles.Count > 0)
+                            {
+                                order.Items    = detalles.Count;
+                                order.Products = detalles.Select(d => new CartItem
+                                {
+                                    Id       = d.Producto?.IdProducto ?? 0,
+                                    Name     = d.Producto?.Nombre ?? "Producto",
+                                    Price    = (decimal)d.PrecioUnitario,
+                                    Quantity = d.Cantidad,
+                                    Image    = ""
+                                }).ToList();
+                            }
+                        }
+                        catch { /* si falla el detalle, el pedido igual aparece con Items=0 */ }
+                        return order;
+                    });
+                    _orders.AddRange(await Task.WhenAll(tareas));
+                }
                 UltimoErrorPedidos = null;
             }
             else

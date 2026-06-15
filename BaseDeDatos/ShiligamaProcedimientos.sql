@@ -678,6 +678,8 @@ CREATE PROCEDURE LISTAR_VENTAS()
 BEGIN
     SELECT v.VENTA_ID,
            v.CLIENTE_ID,
+           u.NOMBRES        AS CLIENTE_NOMBRES,
+           u.APELLIDOS      AS CLIENTE_APELLIDOS,
            v.TRABAJADOR_ID,
            v.METODO_PAGO_ID,
            mp.NOMBRE        AS METODO_PAGO_NOMBRE,
@@ -693,6 +695,7 @@ BEGIN
            v.MENSAJE_BOLETA
     FROM venta v
     INNER JOIN metodo_pago mp ON v.METODO_PAGO_ID = mp.METODO_PAGO_ID
+    LEFT  JOIN usuario      u  ON v.CLIENTE_ID     = u.USUARIO_ID
     WHERE v.ACTIVO = 1
     ORDER BY v.FECHA_HORA DESC;
 END$$
@@ -910,6 +913,8 @@ CREATE PROCEDURE LISTAR_PEDIDOS()
 BEGIN
     SELECT p.PEDIDO_ID,
            p.CLIENTE_ID,
+           u.NOMBRES    AS CLIENTE_NOMBRES,
+           u.APELLIDOS  AS CLIENTE_APELLIDOS,
            p.FECHA_HORA,
            p.MONTO_TOTAL,
            p.ESTADO_PEDIDO,
@@ -917,8 +922,9 @@ BEGIN
            p.MODALIDAD_ENTREGA,
            p.OBSERVACIONES
     FROM pedido p
+    LEFT JOIN usuario u ON p.CLIENTE_ID = u.USUARIO_ID
     WHERE p.ACTIVO = 1
-    ORDER BY p.FECHA_HORA ASC;
+    ORDER BY p.FECHA_HORA DESC;
 END$$
 
 

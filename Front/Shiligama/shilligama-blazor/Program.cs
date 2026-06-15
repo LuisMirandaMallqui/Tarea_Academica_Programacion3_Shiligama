@@ -32,7 +32,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CartService>();
 
 // Los demás son Singleton: comparten caché en memoria entre peticiones
-// (correcto para un sistema single-tenant de minimarket).
+// (correcto para un sistema single-tenant de minimarket). Si fueran Scoped, cada usuario tendría su propia instancia sin compartir datos cacheados (ej. lista de productos)
 builder.Services.AddSingleton<ProductService>();
 builder.Services.AddSingleton<SalesService>();
 builder.Services.AddSingleton<ReturnsService>();
@@ -44,7 +44,7 @@ builder.Services.AddSingleton<ImagenService>();
 builder.Services.AddSingleton<PagoService>();
 builder.Services.AddScoped<RecuperacionService>();
 
-// SupplierService no tiene endpoint en el backend → sigue siendo local.
+// SupplierService no tiene endpoint en el backend por lo tanto sigue siendo local.
 builder.Services.AddSingleton<SupplierService>();
 
 // ── Pipeline HTTP ────────────────────────────────────────────────────────────
