@@ -4,6 +4,7 @@ import pe.edu.pucp.model.enums.TipoDescuento;
 import pe.edu.pucp.model.producto.Producto;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
@@ -39,11 +40,11 @@ public class Promocion {
     @XmlElement(name = "fechaInicio")
     @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
     @JsonbProperty("fechaInicio")
-    private LocalDate fechaInicio;
+    private LocalDateTime fechaInicio;
     @XmlElement(name = "fechaFin")
     @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
     @JsonbProperty("fechaFin")
-    private LocalDate fechaFin;
+    private LocalDateTime  fechaFin;
     @XmlElement(name = "condiciones")
     @JsonbProperty("condiciones")
     private String condiciones;
@@ -60,7 +61,7 @@ public class Promocion {
 
     public Promocion(int idPromocion, String nombre, String descripcion,
                      TipoDescuento tipoDescuento, double valorDescuento,
-                     LocalDate fechaInicio, LocalDate fechaFin,
+                     LocalDateTime  fechaInicio, LocalDateTime  fechaFin,
                      String condiciones, boolean activo) {
         this.idPromocion = idPromocion;
         this.nombre = nombre;
@@ -84,10 +85,10 @@ public class Promocion {
     public void setTipoDescuento(TipoDescuento tipoDescuento) { this.tipoDescuento = tipoDescuento; }
     public double getValorDescuento() { return valorDescuento; }
     public void setValorDescuento(double valorDescuento) { this.valorDescuento = valorDescuento; }
-    public LocalDate getFechaInicio() { return fechaInicio; }
-    public void setFechaInicio(LocalDate fechaInicio) { this.fechaInicio = fechaInicio; }
-    public LocalDate getFechaFin() { return fechaFin; }
-    public void setFechaFin(LocalDate fechaFin) { this.fechaFin = fechaFin; }
+    public LocalDateTime  getFechaInicio() { return fechaInicio; }
+    public void setFechaInicio(LocalDateTime  fechaInicio) { this.fechaInicio = fechaInicio; }
+    public LocalDateTime  getFechaFin() { return fechaFin; }
+    public void setFechaFin(LocalDateTime  fechaFin) { this.fechaFin = fechaFin; }
     public String getCondiciones() { return condiciones; }
     public void setCondiciones(String condiciones) { this.condiciones = condiciones; }
     public boolean isActivo() { return activo; }

@@ -25,8 +25,8 @@ public class PromocionDaoImpl implements PromocionDao {
         parametrosEntrada.put(3, promocion.getDescripcion());
         parametrosEntrada.put(4, promocion.getTipoDescuento().toString());
         parametrosEntrada.put(5, promocion.getValorDescuento());
-        parametrosEntrada.put(6, Date.valueOf(promocion.getFechaInicio()));
-        parametrosEntrada.put(7, Date.valueOf(promocion.getFechaFin()));
+        parametrosEntrada.put(6, Timestamp.valueOf(promocion.getFechaInicio()));
+        parametrosEntrada.put(7, Timestamp.valueOf(promocion.getFechaFin()));
         parametrosEntrada.put(8, promocion.getCondiciones());
 
         DBManager.getInstance().ejecutarProcedimiento(
@@ -46,8 +46,8 @@ public class PromocionDaoImpl implements PromocionDao {
         parametrosEntrada.put(3, promocion.getDescripcion());
         parametrosEntrada.put(4, promocion.getTipoDescuento().toString());
         parametrosEntrada.put(5, promocion.getValorDescuento());
-        parametrosEntrada.put(6, Date.valueOf(promocion.getFechaInicio()));
-        parametrosEntrada.put(7, Date.valueOf(promocion.getFechaFin()));
+        parametrosEntrada.put(6, Timestamp.valueOf(promocion.getFechaInicio()));
+        parametrosEntrada.put(7, Timestamp.valueOf(promocion.getFechaFin()));
         parametrosEntrada.put(8, promocion.getCondiciones());
 
         return DBManager.getInstance().ejecutarProcedimiento(
@@ -170,8 +170,13 @@ public class PromocionDaoImpl implements PromocionDao {
         p.setDescripcion(rs.getString("descripcion"));
         p.setTipoDescuento(TipoDescuento.valueOf(rs.getString("tipo_descuento")));
         p.setValorDescuento(rs.getDouble("valor_descuento"));
-        p.setFechaInicio(rs.getDate("fecha_inicio").toLocalDate());
-        p.setFechaFin(rs.getDate("fecha_fin").toLocalDate());
+        p.setFechaInicio(
+                rs.getTimestamp("fecha_inicio").toLocalDateTime()
+        );
+
+        p.setFechaFin(
+                rs.getTimestamp("fecha_fin").toLocalDateTime()
+        );
         p.setCondiciones(rs.getString("condiciones"));
         p.setActivo(rs.getBoolean("activo"));
         return p;
