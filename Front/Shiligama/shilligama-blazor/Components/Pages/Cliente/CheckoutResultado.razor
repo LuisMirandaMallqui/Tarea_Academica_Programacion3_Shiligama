@@ -78,6 +78,10 @@
                 "CANCELLED" or "CANCELED" => "CANCELADO",
                 _                         => null
             };
+
+            // En modo demo el IPN nunca llega — confirmamos manualmente.
+            if (_estado == "AUTORIZADO" && Pedido > 0)
+                await PagoSvc.ConfirmarDemoAsync(Pedido);
         }
 
         // 2) Si no hay status en la URL (o fue desconocido), consultar la BD.

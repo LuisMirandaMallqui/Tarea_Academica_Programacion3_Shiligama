@@ -151,6 +151,32 @@ public class PagoRS {
         }
     }
 
+    // ── Confirmación demo ──────────────────────────────────────────────────────
+    // Solo activo cuando izipay.demo=true. Simula el IPN: marca el pago como
+    // AUTORIZADO y avanza el pedido a EN_PROCESO, igual que el callback real.
+    @POST
+    @Path("/confirmar-demo/{idPedido}")
+    public Response confirmarDemo(@PathParam("idPedido") int idPedido) {
+        if (!"true".equalsIgnoreCase(
+                pe.edu.pucp.config.Config.get("izipay.demo", "false"))) {
+            return Response.status(Response.Status.FORBIDDEN)
+                    .entity("Solo disponible en modo demo.").build();
+        }
+        try {
+            Pago pago = pagoBo.buscarPorPedido(idPedido);
+            if (pago == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("No hay pago registrado para el pedido " + idPedido).build();
+            }
+            pagoBo.procesarResultadoPasarela(
+                    pago.getOrderId(), true, "DEMO-" + idPedido);
+            return Response.ok("OK").build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error al confirmar demo: " + ex.getMessage()).build();
+        }
+    }
+
     private int obtenerIdMetodoIzipay() throws Exception {
         for (MetodoPago mp : metodoPagoBo.listarTodos()) {
             if (mp.getNombre() != null && mp.getNombre().equalsIgnoreCase("IZIPAY")) {

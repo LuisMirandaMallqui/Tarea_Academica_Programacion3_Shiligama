@@ -50,6 +50,18 @@ public class PagoService
         return null;
     }
 
+    // Demo: confirma el pago en el backend (simula el IPN de Izipay).
+    // Solo funciona cuando izipay.demo=true en el backend.
+    public async Task<bool> ConfirmarDemoAsync(int idPedido)
+    {
+        try
+        {
+            var resp = await _http.PostAsync($"pagos/confirmar-demo/{idPedido}", null);
+            return resp.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
     // Estado del pago de un pedido (para la pantalla de resultado).
     public async Task<RespuestaPagoEstado?> ConsultarPorPedidoAsync(int idPedido)
     {

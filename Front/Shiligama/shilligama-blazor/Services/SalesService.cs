@@ -151,6 +151,16 @@ public class SalesService
                 }
                 catch { /* si falla, Products queda vacío */ }
 
+                // Enriquecer con el estado del pago (Izipay)
+                try
+                {
+                    var pago = await _http.GetFromJsonAsync<PagoEstadoApi>(
+                        $"pagos/pedido/{p.IdPedido}", _json);
+                    if (pago?.Estado?.Equals("AUTORIZADO", StringComparison.OrdinalIgnoreCase) == true)
+                        order.PaymentMethod = "izipay";
+                }
+                catch { /* sin pago registrado → MetodoPago queda "" → "Por confirmar" */ }
+
                 orders.Add(order);
             }
         }
