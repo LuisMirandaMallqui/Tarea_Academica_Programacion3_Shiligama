@@ -106,7 +106,7 @@
                             <button @onclick="@(() => ToggleStatus(sup.Id))" class="btn btn-ghost btn-sm @(sup.Estado == "activo" ? "text-warning" : "text-success")" style="border-radius: var(--radius);" title="@(sup.Estado == "activo" ? "Desactivar" : "Activar")">
                                 <Icons Name="EyeOff" Class="w-4 h-4" />
                             </button>
-                            <button @onclick="@(() => Delete(sup.Id))" class="btn btn-ghost btn-sm text-danger" style="border-radius: var(--radius);" title="Eliminar">
+                            <button @onclick="@(() => AskDelete(sup.Id))" class="btn btn-ghost btn-sm text-danger" style="border-radius: var(--radius);" title="Eliminar">
                                 <Icons Name="Trash2" Class="w-4 h-4" />
                             </button>
                         </div>
@@ -123,6 +123,46 @@
     </div>
 </div>
 
+<!-- Modal Confirmar Guardar -->
+@if (_showSaveConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">💾</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿@(_isEditing ? "Actualizar" : "Registrar") proveedor?</h5>
+                    <p class="text-muted-foreground small mb-4">Se @(_isEditing ? "actualizarán los datos de" : "registrará a") <strong>@_form.RazonSocial</strong>.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showSaveConfirm = false)">Cancelar</button>
+                        <button class="btn btn-primary" style="border-radius:var(--radius);" @onclick="ConfirmSave">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Confirmar Eliminar -->
+@if (_showDeleteConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <i class="fa-solid fa-triangle-exclamation text-danger mb-3" style="font-size:2rem;"></i>
+                    <h5 class="fw-bold text-foreground mb-1">¿Eliminar proveedor?</h5>
+                    <p class="text-muted-foreground small mb-4">El proveedor será eliminado de forma permanente.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showDeleteConfirm = false)">Cancelar</button>
+                        <button class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ConfirmDelete">Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <!-- Supplier Modal -->
 @if (_showModal)
 {
@@ -134,7 +174,7 @@
                     <button type="button" class="btn-close" @onclick="@(() => _showModal = false)"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <EditForm Model="_form" OnValidSubmit="Save" class="d-flex flex-column gap-3">
+                    <EditForm Model="_form" OnValidSubmit="AskSave" class="d-flex flex-column gap-3">
                         <div>
                             <label class="form-label small fw-medium text-foreground">Razón Social</label>
                             <input type="text" @bind="_form.RazonSocial" required class="form-control text-foreground" placeholder="Gloria S.A." />
@@ -150,7 +190,7 @@
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="form-label small fw-medium text-foreground">Teléfono</label>
-                                <input type="tel" @bind="_form.Telefono" required class="form-control text-foreground" placeholder="999888777" />
+                                <input type="tel" value="@_form.Telefono" @oninput="OnTelefonoInput" required maxlength="9" inputmode="numeric" class="form-control text-foreground" placeholder="999888777" />
                             </div>
                             <div class="col-6">
                                 <label class="form-label small fw-medium text-foreground">Correo</label>
@@ -195,6 +235,21 @@
     private bool _isEditing = false;
     private Supplier _form = new();
     private string _formCategoriesRaw = "";
+
+    // Confirmaciones
+    private bool _showSaveConfirm   = false;
+    private bool _showDeleteConfirm = false;
+    private int  _pendingDeleteId;
+
+    // Solo dígitos, máx. 9 (formato peruano)
+    private void OnTelefonoInput(ChangeEventArgs e)
+        => _form.Telefono = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(9).ToArray());
+
+    private void AskSave() => _showSaveConfirm = true;
+    private void ConfirmSave() { _showSaveConfirm = false; Save(); }
+
+    private void AskDelete(int id) { _pendingDeleteId = id; _showDeleteConfirm = true; }
+    private void ConfirmDelete()   { _showDeleteConfirm = false; Delete(_pendingDeleteId); }
 
     protected override void OnInitialized()
     {

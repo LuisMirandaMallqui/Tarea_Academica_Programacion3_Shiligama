@@ -177,12 +177,12 @@ else
             {
                 <div class="d-flex justify-content-end gap-3 mt-3 pb-4">
                     <button class="btn btn-white text-foreground fw-semibold d-flex align-items-center gap-2 border shadow-sm px-4"
-                            @onclick='@(() => ProcessSale("boleta"))' disabled="@_isProcessing"
+                            @onclick='@(() => AskSale("boleta"))' disabled="@_isProcessing"
                             style="border-radius:0.5rem;height:44px;border-color:#dee2e6;">
                         <i class="fas fa-receipt text-muted-foreground"></i> Generar Boleta
                     </button>
                     <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm"
-                            @onclick='@(() => ProcessSale("ticket"))' disabled="@_isProcessing"
+                            @onclick='@(() => AskSale("ticket"))' disabled="@_isProcessing"
                             style="border-radius:0.5rem;height:44px;background-color:#6C8B74;border:none;">
                         @if (_isProcessing)
                         {
@@ -198,6 +198,30 @@ else
                 </div>
             }
 
+        </div>
+    </div>
+}
+
+<!-- Modal Confirmar Venta -->
+@if (_showSaleConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content" style="border-radius:1rem;">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">🧾</div>
+                    <h5 class="fw-bold mb-1" style="color:#111827;">¿Confirmar venta?</h5>
+                    <p class="text-muted-foreground small mb-2">
+                        @(_pendingInvoiceType == "boleta" ? "Se emitirá una boleta" : "Se registrará como ticket")
+                        por un total de <strong style="color:#064420;">S/ @Total.ToString("0.00")</strong>.
+                    </p>
+                    <p class="text-muted-foreground small mb-4">Método de pago: <strong>@_payMethod</strong></p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-outline-secondary px-3" style="border-radius:0.5rem;" @onclick="@(() => _showSaleConfirm = false)">Cancelar</button>
+                        <button class="btn text-white px-3 fw-semibold" style="background-color:#064420;border-radius:0.5rem;border:none;" @onclick="ConfirmSale">Confirmar</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 }
@@ -346,6 +370,23 @@ else
     private bool _isProcessing = false;
     private string _receiptId = "";
     private string _errorMsg  = "";
+
+    // Confirmación de venta
+    private bool   _showSaleConfirm   = false;
+    private string _pendingInvoiceType = "";
+
+    private void AskSale(string type)
+    {
+        if (!_posCart.Any() || _isProcessing) return;
+        _pendingInvoiceType = type;
+        _showSaleConfirm = true;
+    }
+
+    private async Task ConfirmSale()
+    {
+        _showSaleConfirm = false;
+        await ProcessSale(_pendingInvoiceType);
+    }
 
     // Financial calculations
     private decimal Subtotal       => _posCart.Sum(i => i.Price * i.Quantity);

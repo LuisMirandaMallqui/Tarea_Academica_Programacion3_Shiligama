@@ -93,7 +93,7 @@
                 <div class="position-relative">
                     <i class="fa-solid fa-phone text-muted-foreground position-absolute"
                        style="left:14px;top:50%;transform:translateY(-50%);"></i>
-                    <input type="tel" @bind="_phone" class="form-control text-foreground"
+                    <input type="tel" value="@_phone" @oninput="OnPhoneInput" maxlength="9" inputmode="numeric" class="form-control text-foreground"
                            style="height:44px;padding-left:42px;border-radius:8px;" placeholder="987654321" />
                 </div>
                 <div class="form-text text-muted-foreground mt-1" style="font-size:0.75rem;">
@@ -223,6 +223,10 @@
             .Where(char.IsDigit).Take(8).ToArray());
         _dni = soloDigitos;
     }
+
+    // Permite solo dígitos en el Teléfono (máx. 9 dígitos peruanos).
+    private void OnPhoneInput(ChangeEventArgs e)
+        => _phone = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(9).ToArray());
 
     // Valida y pide confirmación antes de guardar.
     private void PedirConfirmacion()
