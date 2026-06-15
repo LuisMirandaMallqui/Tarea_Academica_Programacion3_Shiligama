@@ -2,94 +2,74 @@
 @layout AdminLayout
 @inject StaffService StaffSvc
 @inject AuthService Auth
+@inject ImagenService ImagenSvc
 
 <PageTitle>Personal – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
-    <!-- Header -->
+
+    <!-- ── Encabezado ── -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
-            <h1 class="fs-4 fw-bold text-foreground mb-0">
-                <i class="fas fa-users me-2 text-primary"></i>Gestión de Personal
-            </h1>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Personal</h1>
             <p class="text-muted-foreground small mt-1 mb-0">Administra los accesos y roles del staff de trabajadores</p>
         </div>
-        <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-semibold" style="border-radius: var(--radius);">
+        <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-semibold" style="border-radius:var(--radius);">
             <i class="fas fa-plus"></i> Registrar Trabajador
         </button>
     </div>
 
-    <!-- KPI Cards -->
+    <!-- ── KPI ── -->
     <div class="row g-3">
         <div class="col-md-4">
             <div class="metric-card-kpi">
-                <div>
-                    <div class="metric-kpi-value text-foreground">@_staff.Count</div>
-                    <div class="metric-kpi-label">Total Personal</div>
-                </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary);">
-                    <i class="fas fa-users"></i>
-                </div>
+                <div><div class="metric-kpi-value text-foreground">@_staff.Count</div><div class="metric-kpi-label">Total Personal</div></div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary);"><i class="fas fa-users"></i></div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="metric-card-kpi">
-                <div>
-                    <div class="metric-kpi-value" style="color:#2e7d32;">@_staff.Count(s => s.Estado == "activo")</div>
-                    <div class="metric-kpi-label">Miembros Activos</div>
-                </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#2e7d32 15%,transparent);color:#2e7d32;">
-                    <i class="fas fa-user-check"></i>
-                </div>
+                <div><div class="metric-kpi-value" style="color:#2e7d32;">@_staff.Count(s => s.Estado == "activo")</div><div class="metric-kpi-label">Activos</div></div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#2e7d32 15%,transparent);color:#2e7d32;"><i class="fas fa-user-check"></i></div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="metric-card-kpi">
-                <div>
-                    <div class="metric-kpi-value text-foreground">@_staff.Select(s => s.Rol).Distinct().Count()</div>
-                    <div class="metric-kpi-label">Roles Configurados</div>
-                </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#7C3AED 15%,transparent);color:#7C3AED;">
-                    <i class="fas fa-id-badge"></i>
-                </div>
+                <div><div class="metric-kpi-value text-foreground">@_staff.Select(s => s.Rol).Distinct().Count()</div><div class="metric-kpi-label">Roles</div></div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#7C3AED 15%,transparent);color:#7C3AED;"><i class="fas fa-id-badge"></i></div>
             </div>
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card p-4" style="border-radius: 12px;">
+    <!-- ── Filtros ── -->
+    <div class="card p-4" style="border-radius:12px;">
         <div class="row g-2 align-items-center">
-
-            <!-- Buscar usuario -->
-            <div class="col-md-8">
+            <div class="col-md-5">
                 <div class="position-relative">
-                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted"
-                       style="left: 16px; font-size: 14px;"></i>
-
-                    <input type="search"
-                           @bind="_search"
-                           @bind:event="oninput"
-                           class="form-control text-foreground"
-                           placeholder="Buscar por nombre, DNI o correo..."
-                           style="height: 56px; border-radius: 10px; padding-left: 42px;" />
+                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:16px;font-size:14px;"></i>
+                    <input type="search" @bind="_search" @bind:event="oninput"
+                           class="form-control text-foreground" placeholder="Buscar por nombre, DNI o correo..."
+                           style="height:56px;border-radius:10px;padding-left:42px;" />
                 </div>
             </div>
-
-            <!-- Filtro de roles -->
             <div class="col-md-4">
-                <select @bind="_roleFilter"
-                        class="form-select text-foreground"
-                        style="height: 56px; border-radius: 10px;">
+                <select @bind="_roleFilter" class="form-select text-foreground" style="height:56px;border-radius:10px;">
                     <option value="">Todos los roles</option>
                     <option value="administrador">Administradores</option>
                     <option value="trabajador">Trabajadores</option>
                 </select>
             </div>
-
+            <div class="col-md-3">
+                <select @bind="_estadoFilter" class="form-select text-foreground" style="height:56px;border-radius:10px;">
+                    <option value="">Todos los estados</option>
+                    <option value="activo">Activos</option>
+                    <option value="inactivo">Inactivos</option>
+                </select>
+            </div>
         </div>
     </div>
 
-    <!-- Table -->
+    <!-- ── Tabla ── -->
     <div class="card overflow-hidden">
         <div class="table-responsive">
             <table class="table table-borderless mb-0 align-middle">
@@ -106,100 +86,70 @@
                 <tbody>
                     @foreach (var s in Filtered)
                     {
+                        var esMiPerfil = Auth.CurrentUser?.Id.ToString() == s.Id;
                         <tr class="border-bottom border-color-default">
                             <td class="px-4 py-3 d-flex align-items-center gap-3">
-                                <img src="@s.Avatar"
-                                     alt="@s.Nombre"
+                                <img src="@s.Avatar" alt="@s.Nombre"
                                      class="rounded-circle flex-shrink-0 object-fit-cover"
                                      style="width:40px;height:40px;"
                                      onerror="this.src='https://placehold.co/40/e0e0e0/555?text=U'" />
-
                                 <div>
-                                    <span class="fw-semibold text-foreground d-block small">@s.Nombre</span>
+                                    <span class="fw-semibold text-foreground d-block small">
+                                        @s.Nombre
+                                        @if (esMiPerfil) { <span class="badge bg-primary ms-1" style="font-size:.6rem;">Tú</span> }
+                                    </span>
                                     <span class="text-xs text-muted-foreground">@s.Correo</span>
                                 </div>
                             </td>
-
-                            <td class="px-4 py-3 text-capitalize small">
-                                <span class="badge @(s.Rol == "administrador" ? "bg-primary-subtle text-primary" : "bg-secondary text-muted-foreground")" style="border-radius: var(--radius);">
+                            <td class="px-4 py-3 small">
+                                <span class="badge @(s.Rol == "administrador" ? "bg-primary-subtle text-primary" : "bg-secondary text-muted-foreground")" style="border-radius:var(--radius);">
                                     @s.Rol
                                 </span>
                             </td>
-
-                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">
-                                @s.Dni
-                            </td>
-
-                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">
-                                @s.FechaIngreso.ToString("dd MMM yyyy")
-                            </td>
-
+                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">@s.Dni</td>
+                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">@s.FechaIngreso.ToString("dd MMM yyyy")</td>
                             <td class="px-4 py-3">
-                                <span class="badge @(s.Estado == "activo" ? "bg-success" : "bg-danger") px-2 py-1" style="border-radius: var(--radius);">
+                                <span class="badge @(s.Estado == "activo" ? "bg-success" : "bg-danger") px-2 py-1" style="border-radius:var(--radius);">
                                     @s.Estado
                                 </span>
                             </td>
-
                             <td class="px-4 py-3 text-end">
                                 <div class="d-flex align-items-center justify-content-end gap-2">
-
-                                    <button @onclick="@(() => OpenEdit(s))"
-                                            class="btn btn-sm btn-light text-muted"
-                                            style="border-radius: var(--radius);"
-                                            title="Editar">
+                                    <button @onclick="@(() => OpenEdit(s))" class="btn btn-sm btn-light text-muted" style="border-radius:var(--radius);" title="Editar">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-
-                                    <button @onclick="@(() => ToggleStatus(s.Id))"
+                                    <button @onclick="@(() => AskToggleEstado(s))"
                                             class="btn btn-sm btn-light @(s.Estado == "activo" ? "text-warning" : "text-success")"
-                                            style="border-radius: var(--radius);"
-                                            title="@(s.Estado == "activo" ? "Suspender" : "Activar")">
+                                            style="border-radius:var(--radius);" title="@(s.Estado == "activo" ? "Suspender" : "Activar")">
                                         <i class="fa-solid @(s.Estado == "activo" ? "fa-eye-slash" : "fa-eye")"></i>
                                     </button>
-
-                                    @if (s.Id != Auth.CurrentUser?.Id.ToString())
-                                    {
-                                        <button @onclick="@(() => AskDelete(s))"
-                                                class="btn btn-sm btn-light text-danger"
-                                                style="border-radius: var(--radius);"
-                                                title="Eliminar">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
-                                    }
-
                                 </div>
                             </td>
                         </tr>
                     }
                     @if (!Filtered.Any())
-                    {
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted-foreground">
-                                No se encontraron miembros del personal
-                            </td>
-                        </tr>
-                    }
+                    { <tr><td colspan="6" class="text-center py-5 text-muted-foreground">No se encontraron miembros del personal</td></tr> }
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<!-- Modal Confirmar Eliminación Trabajador -->
-@if (_showConfirmDelete)
+<!-- ── Modal: Confirmar toggle estado ── -->
+@if (_showToggleConfirm)
 {
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
             <div class="modal-content bg-card border-border">
                 <div class="modal-body p-4 text-center">
-                    <i class="fa-solid fa-triangle-exclamation text-danger mb-3" style="font-size:2rem;"></i>
-                    <h5 class="fw-bold text-foreground mb-1">¿Eliminar trabajador?</h5>
-                    <p class="text-muted-foreground small mb-3">
-                        <strong>@_deleteName</strong> será eliminado del sistema de forma permanente.
+                    <div class="mb-3" style="font-size:2.5rem;">@(_toggleStaff?.Estado == "activo" ? "🔒" : "🔓")</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿@(_toggleStaff?.Estado == "activo" ? "Suspender" : "Activar") miembro?</h5>
+                    <p class="text-muted-foreground small mb-4">
+                        <strong>@_toggleStaff?.Nombre</strong> quedará @(_toggleStaff?.Estado == "activo" ? "suspendido sin acceso al sistema" : "activo con acceso al sistema").
                     </p>
-                    <div class="d-flex justify-content-center gap-2">
-                        <button class="btn btn-secondary" @onclick="@(() => _showConfirmDelete = false)">Cancelar</button>
-                        <button class="btn btn-danger fw-medium" @onclick="ConfirmDelete">Sí, eliminar</button>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showToggleConfirm = false)">Cancelar</button>
+                        <button class="btn @(_toggleStaff?.Estado == "activo" ? "btn-warning" : "btn-success")" style="border-radius:var(--radius);" @onclick="ConfirmToggleEstado">Confirmar</button>
                     </div>
                 </div>
             </div>
@@ -207,7 +157,7 @@
     </div>
 }
 
-<!-- Modal Confirmar Guardar -->
+<!-- ── Modal: Confirmar guardar ── -->
 @if (_showSaveConfirm)
 {
     <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);z-index:1060;">
@@ -227,118 +177,206 @@
     </div>
 }
 
-<!-- Staff Modal -->
-@if (_showModal)
+<!-- ── Modal: Salir sin guardar ── -->
+@if (_showUnsavedConfirm)
 {
-    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="@(() => _showModal = false)">
-        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation>
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
             <div class="modal-content bg-card border-border">
-                <div class="modal-header border-border">
-                    <h5 class="modal-title text-foreground fw-bold">@(_isEditing ? "Editar Miembro de Staff" : "Registrar Miembro")</h5>
-                    <button type="button" class="btn-close" @onclick="@(() => _showModal = false)"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <EditForm Model="_form" OnValidSubmit="AskSave" class="d-flex flex-column gap-3">
-                        <div>
-                            <label class="form-label small fw-medium text-foreground">Nombre Completo</label>
-                            <input type="text" @bind="_form.Nombre" required class="form-control text-foreground" placeholder="Marcos Díaz" />
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">DNI</label>
-                                <input type="text" value="@_form.Dni" @oninput="OnDniInput" required maxlength="8" inputmode="numeric" class="form-control text-foreground" placeholder="45632178" />
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Teléfono</label>
-                                <input type="tel" value="@_form.Telefono" @oninput="OnTelefonoInput" required maxlength="9" inputmode="numeric" class="form-control text-foreground" placeholder="963852741" />
-                            </div>
-                        </div>
-                        <div>
-                            <label class="form-label small fw-medium text-foreground">Correo electrónico</label>
-                            <input type="email" @bind="_form.Correo" required class="form-control text-foreground" placeholder="marcos@shiligama.com" />
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Rol</label>
-                                @if (_isEditingSelf)
-                                {
-                                    <input type="text" value="@_form.Rol" disabled
-                                           class="form-control text-muted-foreground" />
-                                    <div class="form-text text-muted-foreground small">
-                                        <i class="fas fa-lock me-1"></i>No puedes cambiar tu propio rol.
-                                    </div>
-                                }
-                                else
-                                {
-                                    <select @bind="_form.Rol" class="form-select text-foreground">
-                                        <option value="trabajador">Trabajador</option>
-                                        <option value="administrador">Administrador</option>
-                                    </select>
-                                }
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Turno</label>
-                                <select @bind="_form.Turno" class="form-select text-foreground">
-                                    <option value="tiempo-completo">Tiempo completo</option>
-                                    <option value="mañana">Mañana (6am – 2pm)</option>
-                                    <option value="tarde">Tarde (2pm – 10pm)</option>
-                                    <option value="noche">Noche (10pm – 6am)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Estado</label>
-                                <select @bind="_form.Estado" class="form-select text-foreground">
-                                    <option value="activo">Activo</option>
-                                    <option value="inactivo">Inactivo</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Avatar URL (opcional)</label>
-                                <input type="url" @bind="_form.Avatar" class="form-control text-foreground" placeholder="https://..." />
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-end gap-2 mt-3">
-                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius: var(--radius);">Cancelar</button>
-                            <button type="submit" class="btn btn-primary fw-semibold" style="border-radius: var(--radius);">
-                                @(_isEditing ? "Guardar cambios" : "Registrar")
-                            </button>
-                        </div>
-                    </EditForm>
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">⚠️</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Salir sin guardar?</h5>
+                    <p class="text-muted-foreground small mb-4">Los cambios se perderán.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showUnsavedConfirm = false)">Seguir editando</button>
+                        <button class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ForceCloseModal">Salir sin guardar</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 }
 
+<!-- ── Modal: Crear / Editar miembro ── -->
+@if (_showModal)
+{
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="TryCloseModal">
+        <div class="modal-dialog modal-dialog-centered modal-lg" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border">
+                <div class="modal-header border-border">
+                    <h5 class="modal-title text-foreground fw-bold">@(_isEditing ? "Editar Miembro del Staff" : "Registrar Miembro")</h5>
+                    <button type="button" class="btn-close" @onclick="TryCloseModal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    @if (!string.IsNullOrEmpty(_formError))
+                    { <div class="alert alert-danger py-2 small mb-3">@_formError</div> }
+                    <div class="row g-3">
+
+                        <!-- Nombre: solo letras -->
+                        <div class="col-12">
+                            <label class="form-label small fw-medium text-foreground">Nombre Completo * <span class="text-muted-foreground fw-normal">(solo letras)</span></label>
+                            <input type="text"
+                                   value="@_form.Nombre"
+                                   @oninput="OnNombreInput"
+                                   class="form-control text-foreground @(_submitted && string.IsNullOrWhiteSpace(_form.Nombre) ? "is-invalid" : "")"
+                                   placeholder="Marcos Díaz" />
+                            @if (_submitted && string.IsNullOrWhiteSpace(_form.Nombre))
+                            { <div class="invalid-feedback">El nombre es obligatorio y solo debe contener letras.</div> }
+                        </div>
+
+                        <!-- DNI: solo dígitos, 8 -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-foreground">DNI * <span class="text-muted-foreground fw-normal">(8 dígitos)</span></label>
+                            <input type="text"
+                                   value="@_form.Dni"
+                                   @oninput="OnDniInput"
+                                   inputmode="numeric"
+                                   maxlength="8"
+                                   class="form-control text-foreground @(_submitted && _form.Dni.Length != 8 ? "is-invalid" : "")"
+                                   placeholder="45632178" />
+                            @if (_submitted && _form.Dni.Length != 8)
+                            { <div class="invalid-feedback">El DNI debe tener exactamente 8 dígitos numéricos.</div> }
+                        </div>
+
+                        <!-- Teléfono: solo dígitos, 9 -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-foreground">Teléfono * <span class="text-muted-foreground fw-normal">(9 dígitos)</span></label>
+                            <input type="text"
+                                   value="@_form.Telefono"
+                                   @oninput="OnTelefonoInput"
+                                   inputmode="numeric"
+                                   maxlength="9"
+                                   class="form-control text-foreground @(_submitted && _form.Telefono.Length != 9 ? "is-invalid" : "")"
+                                   placeholder="963852741" />
+                            @if (_submitted && _form.Telefono.Length != 9)
+                            { <div class="invalid-feedback">Debe tener exactamente 9 dígitos.</div> }
+                        </div>
+
+                        <!-- Correo -->
+                        <div class="col-12">
+                            <label class="form-label small fw-medium text-foreground">Correo electrónico *</label>
+                            <input type="email"
+                                   value="@_form.Correo"
+                                   @oninput="@(e => { _form.Correo = e.Value?.ToString() ?? ""; _formDirty = true; })"
+                                   class="form-control text-foreground @(_submitted && !EsCorreoValido(_form.Correo) ? "is-invalid" : "")"
+                                   placeholder="marcos@shiligama.com" />
+                            @if (_submitted && !EsCorreoValido(_form.Correo))
+                            { <div class="invalid-feedback">Ingresa un correo válido (debe contener @@ y un dominio).</div> }
+                        </div>
+
+                        <!-- Rol y Turno -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-foreground">Rol</label>
+                            @if (_isEditingSelf)
+                            {
+                                <input type="text" value="@_form.Rol" disabled class="form-control text-muted-foreground" />
+                                <div class="form-text text-muted-foreground small"><i class="fas fa-lock me-1"></i>No puedes cambiar tu propio rol.</div>
+                            }
+                            else
+                            {
+                                <select value="@_form.Rol"
+                                        @onchange="@(e => { _form.Rol = e.Value?.ToString() ?? "trabajador"; _formDirty = true; })"
+                                        class="form-select text-foreground">
+                                    <option value="trabajador">Trabajador</option>
+                                    <option value="administrador">Administrador</option>
+                                </select>
+                            }
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-foreground">Turno</label>
+                            <select value="@_form.Turno"
+                                    @onchange="@(e => { _form.Turno = e.Value?.ToString() ?? "tiempo-completo"; _formDirty = true; })"
+                                    class="form-select text-foreground">
+                                <option value="tiempo-completo">Tiempo completo</option>
+                                <option value="mañana">Mañana (6am – 2pm)</option>
+                                <option value="tarde">Tarde (2pm – 10pm)</option>
+                                <option value="noche">Noche (10pm – 6am)</option>
+                            </select>
+                        </div>
+
+                        <!-- Estado -->
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-foreground">Estado</label>
+                            <select value="@_form.Estado"
+                                    @onchange="@(e => { _form.Estado = e.Value?.ToString() ?? "activo"; _formDirty = true; })"
+                                    class="form-select text-foreground">
+                                <option value="activo">Activo</option>
+                                <option value="inactivo">Inactivo</option>
+                            </select>
+                        </div>
+
+                        <!-- Avatar -->
+                        <div class="col-12">
+                            <label class="form-label small fw-medium text-foreground">Avatar</label>
+                            @if (!string.IsNullOrEmpty(_form.Avatar))
+                            {
+                                <div class="mb-2">
+                                    <img src="@_form.Avatar" alt="Avatar" class="rounded-circle object-fit-cover border" style="width:60px;height:60px;"
+                                         onerror="this.style.display='none'" />
+                                </div>
+                            }
+                            <div class="mb-2">
+                                <label class="form-label small text-muted-foreground mb-1">Subir imagen (JPG / PNG / WebP, máx. 5 MB)</label>
+                                <InputFile OnChange="HandleAvatarSelected" accept="image/jpeg,image/png,image/gif,image/webp"
+                                           class="form-control text-foreground" disabled="@_uploadingAvatar" />
+                                @if (_uploadingAvatar) { <div class="small text-muted-foreground mt-1"><span class="spinner-border spinner-border-sm me-1"></span>Subiendo…</div> }
+                                @if (!string.IsNullOrEmpty(_uploadError)) { <div class="small text-danger mt-1">@_uploadError</div> }
+                            </div>
+                            <div>
+                                <label class="form-label small text-muted-foreground mb-1">O ingresar URL directamente (opcional)</label>
+                                <input type="url"
+                                       value="@_form.Avatar"
+                                       @oninput="@(e => { _form.Avatar = e.Value?.ToString() ?? ""; _formDirty = true; })"
+                                       class="form-control text-foreground" placeholder="https://..." />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <button type="button" @onclick="TryCloseModal" class="btn btn-secondary" style="border-radius:var(--radius);">Cancelar</button>
+                        <button type="button" @onclick="AskSave" class="btn btn-primary fw-semibold" style="border-radius:var(--radius);">
+                            @(_isEditing ? "Guardar cambios" : "Registrar")
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Toast éxito ── -->
+@if (_showSavedToast)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+        <div class="toast show text-white border-0 px-3 py-2" style="background:#1A6B3C;border-radius:var(--radius);min-width:260px;">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span class="small">Miembro @(_isEditing ? "actualizado" : "registrado") correctamente</span>
+        </div>
+    </div>
+}
+
 @code {
     private List<Staff> _staff = new();
-    private string _search = "";
-    private string _roleFilter = "";
+    private string _search       = "";
+    private string _roleFilter   = "";
+    private string _estadoFilter = "";
 
-    // Form Modal state
-    private bool _showModal = false;
-    private bool _isEditing = false;
-    private Staff _form = new();
-    private bool _isEditingSelf = false;   // true cuando el admin edita su propio registro
+    private bool  _showModal          = false;
+    private bool  _isEditing          = false;
+    private bool  _isEditingSelf      = false;
+    private bool  _formDirty          = false;
+    private bool  _submitted          = false;
+    private Staff _form               = new();
+    private string _formError         = "";
 
-    // Permite solo dígitos en el DNI (máx. 8), bloqueando letras.
-    private void OnDniInput(ChangeEventArgs e)
-        => _form.Dni = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(8).ToArray());
+    private bool   _showSaveConfirm    = false;
+    private bool   _showUnsavedConfirm = false;
+    private bool   _showToggleConfirm  = false;
+    private bool   _showSavedToast     = false;
+    private Staff? _toggleStaff        = null;
 
-    // Permite solo dígitos en el Teléfono (máx. 9 dígitos peruanos).
-    private void OnTelefonoInput(ChangeEventArgs e)
-        => _form.Telefono = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(9).ToArray());
-
-    // Confirmación guardar
-    private bool _showSaveConfirm = false;
-    private void AskSave() => _showSaveConfirm = true;
-
-    // Confirmación de eliminación
-    private bool _showConfirmDelete = false;
-    private string _deleteId = "";
-    private string _deleteName = "";
+    private bool   _uploadingAvatar = false;
+    private string _uploadError     = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -347,14 +385,56 @@
     }
 
     private IEnumerable<Staff> Filtered => _staff.Where(s =>
-        (string.IsNullOrEmpty(_search) || s.Nombre.Contains(_search, StringComparison.OrdinalIgnoreCase) || s.Dni.Contains(_search) || s.Correo.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_roleFilter) || s.Rol.Equals(_roleFilter, StringComparison.OrdinalIgnoreCase))
+        (string.IsNullOrEmpty(_search) ||
+         s.Nombre.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+         s.Dni.Contains(_search) ||
+         s.Correo.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_roleFilter)   || s.Rol.Equals(_roleFilter, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_estadoFilter) || s.Estado.Equals(_estadoFilter, StringComparison.OrdinalIgnoreCase))
     );
+
+    // ── Validaciones de input ─────────────────────────────────────────────────
+    // Solo letras y espacios (incluye tildes y ñ)
+    private void OnNombreInput(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        _form.Nombre = new string(raw.Where(c => char.IsLetter(c) || c == ' ').ToArray());
+        _formDirty = true;
+    }
+
+    // Solo dígitos, máx 8
+    private void OnDniInput(ChangeEventArgs e)
+    {
+        _form.Dni  = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(8).ToArray());
+        _formDirty = true;
+    }
+
+    // Solo dígitos, máx 9
+    private void OnTelefonoInput(ChangeEventArgs e)
+    {
+        _form.Telefono = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(9).ToArray());
+        _formDirty = true;
+    }
+
+    private bool EsCorreoValido(string c) =>
+        !string.IsNullOrWhiteSpace(c) && c.Contains('@') && c.LastIndexOf('.') > c.IndexOf('@');
+
+    private bool FormValido() =>
+        !string.IsNullOrWhiteSpace(_form.Nombre) &&
+        _form.Dni.Length == 8 &&
+        _form.Telefono.Length == 9 &&
+        EsCorreoValido(_form.Correo);
+
+    private bool EsDuplicado() => _staff.Any(s =>
+        s.Id != _form.Id &&
+        (s.Dni == _form.Dni ||
+         s.Correo.Equals(_form.Correo, StringComparison.OrdinalIgnoreCase) ||
+         s.Telefono == _form.Telefono));
 
     private void OpenCreate()
     {
         _form = new Staff();
-        _isEditing = false;
+        _isEditing = false; _isEditingSelf = false; _formDirty = false; _submitted = false; _formError = "";
         _showModal = true;
     }
 
@@ -362,49 +442,51 @@
     {
         _form = new Staff
         {
-            Id          = s.Id,
-            Nombre      = s.Nombre,
-            Dni         = s.Dni,
-            Rol         = s.Rol,
-            Telefono    = s.Telefono,
-            Correo      = s.Correo,
-            Avatar      = s.Avatar,
-            FechaIngreso= s.FechaIngreso,
-            Estado      = s.Estado,
-            Turno       = s.Turno
+            Id = s.Id, Nombre = s.Nombre, Dni = s.Dni, Rol = s.Rol,
+            Telefono = s.Telefono, Correo = s.Correo, Avatar = s.Avatar,
+            FechaIngreso = s.FechaIngreso, Estado = s.Estado, Turno = s.Turno
         };
-        // Detectar si el admin está editando su propio registro (para bloquear cambio de rol)
         _isEditingSelf = Auth.CurrentUser?.Id.ToString() == s.Id;
-        _isEditing = true;
+        _isEditing = true; _formDirty = false; _submitted = false; _formError = "";
         _showModal = true;
     }
 
-    private void Save()
+    private void TryCloseModal()  { if (_formDirty) _showUnsavedConfirm = true; else ForceCloseModal(); }
+    private void ForceCloseModal(){ _showUnsavedConfirm = false; _showModal = false; }
+
+    private void AskSave()
+    {
+        _submitted = true; _formError = "";
+        if (!FormValido()) return;
+        if (EsDuplicado()) { _formError = "Ya existe un miembro con el mismo DNI, correo o teléfono."; return; }
+        _showSaveConfirm = true;
+    }
+
+    private async Task Save()
     {
         _showSaveConfirm = false;
-        if (_isEditing) StaffSvc.UpdateStaff(_form);
+        if (_isEditing) await StaffSvc.UpdateStaffAsync(_form);
         else            StaffSvc.AddStaff(_form);
-        _showModal = false;
+        _showModal = false; _formDirty = false;
         _staff = StaffSvc.GetStaff();
+        _showSavedToast = true; StateHasChanged();
+        await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
     }
 
-    private void AskDelete(Staff s)
+    private void AskToggleEstado(Staff s) { _toggleStaff = s; _showToggleConfirm = true; }
+    private void ConfirmToggleEstado()
     {
-        _deleteId   = s.Id;
-        _deleteName = s.Nombre;
-        _showConfirmDelete = true;
-    }
-
-    private void ConfirmDelete()
-    {
-        _showConfirmDelete = false;
-        StaffSvc.DeleteStaff(_deleteId);
+        if (_toggleStaff != null) StaffSvc.ToggleStatus(_toggleStaff.Id);
+        _showToggleConfirm = false;
         _staff = StaffSvc.GetStaff();
-    }
-
-    private void ToggleStatus(string id)
-    {
-        StaffSvc.ToggleStatus(id);
         StateHasChanged();
+    }
+
+    private async Task HandleAvatarSelected(InputFileChangeEventArgs e)
+    {
+        _uploadError = ""; _uploadingAvatar = true;
+        try { _form.Avatar = await ImagenSvc.UploadAsync(e.File); _formDirty = true; }
+        catch (Exception ex) { _uploadError = ex.Message; }
+        finally { _uploadingAvatar = false; }
     }
 }

@@ -1,45 +1,33 @@
-@* DevolucionesPanel.razor — componente compartido para Admin y Trabajador *@
+@* DevolucionesPanel.razor
+   Componente COMPARTIDO — va en Components/Shared/ (NO en Pages/)
+   Lo usan: Admin/Devoluciones.razor  y  Trabajador/Devoluciones.razor
+*@
 @using shilligama_blazor.Models
 @using shilligama_blazor.Services
 @inject ReturnsService ReturnsSvc
 @inject ProductService ProductSvc
 @inject AuthService Auth
 
-@* ─── KPIs ──────────────────────────────────────────────────────────────────── *@
+@* ─── KPIs ─────────────────────────────────────────────────────── *@
 @if (Rol == "trabajador")
 {
     <div class="row g-3 mb-4">
         <div class="col-md-4">
             <div class="metric-card-kpi">
-                <div>
-                    <div class="metric-kpi-value text-foreground">@_returns.Count</div>
-                    <div class="metric-kpi-label">Devoluciones este mes</div>
-                </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary);">
-                    <i class="fas fa-sync-alt"></i>
-                </div>
+                <div><div class="metric-kpi-value text-foreground">@_returns.Count</div><div class="metric-kpi-label">Devoluciones este mes</div></div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary);"><i class="fas fa-sync-alt"></i></div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="metric-card-kpi">
-                <div>
-                    <div class="metric-kpi-value" style="color:#c62828;font-size:1.4rem;">S/. @_returns.Sum(r => r.Amount).ToString("0.00")</div>
-                    <div class="metric-kpi-label">Pérdida acumulada</div>
-                </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#c62828 15%,transparent);color:#c62828;">
-                    <i class="fas fa-arrow-down"></i>
-                </div>
+                <div><div class="metric-kpi-value" style="color:#c62828;font-size:1.4rem;">S/. @_returns.Sum(r => r.Amount).ToString("0.00")</div><div class="metric-kpi-label">Pérdida acumulada</div></div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#c62828 15%,transparent);color:#c62828;"><i class="fas fa-arrow-down"></i></div>
             </div>
         </div>
         <div class="col-md-4">
             <div class="metric-card-kpi">
-                <div>
-                    <div class="metric-kpi-value text-foreground" style="font-size:1.1rem;">@(_returns.OrderByDescending(r => r.Quantity).FirstOrDefault()?.Product ?? "N/A")</div>
-                    <div class="metric-kpi-label">Producto más devuelto</div>
-                </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#f59e0b 15%,transparent);color:#f59e0b;">
-                    <i class="fas fa-box"></i>
-                </div>
+                <div><div class="metric-kpi-value text-foreground" style="font-size:1.1rem;">@(_returns.OrderByDescending(r => r.Quantity).FirstOrDefault()?.Product ?? "N/A")</div><div class="metric-kpi-label">Más devuelto</div></div>
+                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#f59e0b 15%,transparent);color:#f59e0b;"><i class="fas fa-box"></i></div>
             </div>
         </div>
     </div>
@@ -62,177 +50,336 @@ else
     </div>
 }
 
-@* ─── Filtros ────────────────────────────────────────────────────────────────── *@
-<div class="row g-2 mb-4">
-    <div class="@(Rol == "trabajador" ? "col-md-8" : "col-12")">
-        <div class="card p-4" style="border-radius:12px;">
+@* ─── Filtros ────────────────────────────────────────────────────── *@
+<div class="card p-4 mb-4" style="border-radius:12px;">
+    <div class="row g-2 align-items-center">
+        <div class="col-md-6">
             <div class="position-relative">
                 <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:16px;font-size:14px;"></i>
-                <input type="search" @bind="_search" @bind:event="oninput" class="form-control text-foreground"
+                <input type="search" @bind="_search" @bind:event="oninput" @bind:after="ResetPage"
+                       class="form-control text-foreground"
                        placeholder="Buscar por código, producto o responsable..."
-                       style="height:56px;border-radius:10px;padding-left:42px;" />
+                       style="height:44px;border-radius:10px;padding-left:42px;" />
             </div>
         </div>
+        <div class="col-md-3">
+            <select @bind="_motivoFilter" @bind:after="ResetPage" class="form-select text-foreground" style="height:44px;border-radius:10px;">
+                <option value="">Todos los motivos</option>
+                <option value="Vencido">Vencido</option>
+                <option value="Dañado">Dañado / Roto</option>
+                <option value="Error de pedido">Error de pedido</option>
+                <option value="Merma">Merma</option>
+            </select>
+        </div>
     </div>
-    @if (Rol == "trabajador")
+</div>
+
+@* ─── Cards de devoluciones ──────────────────────────────────────── *@
+<div class="d-flex flex-column gap-3">
+    @foreach (var dev in Paged)
     {
-        <div class="col-md-4">
-            <div class="card p-4" style="border-radius:12px;">
-                <select @bind="_motivoFilter" class="form-select text-foreground" style="height:40px;">
-                    <option value="">Todos los motivos</option>
-                    <option value="Vencido">Vencido</option>
-                    <option value="Dañado">Dañado / Roto</option>
-                    <option value="Error de pedido">Error de pedido</option>
-                </select>
+        <div class="card p-0 overflow-hidden" style="border-radius:12px;">
+            <!-- Cabecera -->
+            <div class="d-flex align-items-center justify-content-between px-4 py-3 border-bottom border-color-default"
+                 style="background:var(--secondary);">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                         style="width:36px;height:36px;background:color-mix(in srgb,#c62828 12%,transparent);">
+                        <i class="fas fa-undo text-danger" style="font-size:.85rem;"></i>
+                    </div>
+                    <div>
+                        <span class="fw-bold text-primary small">@dev.Id</span>
+                        <span class="text-muted-foreground small ms-2">· @dev.Date.ToString("dd MMM yyyy, HH:mm")</span>
+                    </div>
+                </div>
+                <span class="badge bg-warning-subtle text-warning" style="border-radius:8px;font-size:.78rem;">@dev.Reason</span>
             </div>
+
+            <!-- Cuerpo -->
+            <div class="px-4 py-3">
+                <div class="row g-3 align-items-center">
+                    <!-- Producto -->
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="fas fa-box text-muted-foreground mt-1" style="font-size:.85rem;"></i>
+                            <div>
+                                <p class="fw-semibold text-foreground mb-0 small">@dev.Product</p>
+                                <p class="text-xs text-muted-foreground mb-0">@dev.ProductCode</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Cantidad e importe -->
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="text-center">
+                                <p class="fw-bold text-foreground mb-0">@dev.Quantity</p>
+                                <p class="text-xs text-muted-foreground mb-0">unidades</p>
+                            </div>
+                            <div class="vr opacity-25"></div>
+                            <div class="text-center">
+                                <p class="fw-bold text-danger mb-0">S/. @dev.Amount.ToString("0.00")</p>
+                                <p class="text-xs text-muted-foreground mb-0">importe</p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Responsable (solo admin) -->
+                    @if (Rol == "admin")
+                    {
+                        <div class="col-md-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-user text-muted-foreground" style="font-size:.85rem;"></i>
+                                <div>
+                                    <p class="fw-medium text-foreground mb-0 small">@dev.RegisteredBy</p>
+                                    <p class="text-xs text-muted-foreground mb-0">Responsable</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <button @onclick="@(() => AskDelete(dev.Id))"
+                                    class="btn btn-ghost btn-sm text-danger"
+                                    style="border-radius:var(--radius);" title="Eliminar">
+                                <i class="fa-solid fa-trash me-1"></i><span class="small">Eliminar</span>
+                            </button>
+                        </div>
+                    }
+                </div>
+
+                <!-- Observación destacada -->
+                @if (!string.IsNullOrEmpty(dev.Observations))
+                {
+                    <div class="mt-3 pt-3 border-top border-color-default">
+                        <div class="d-flex align-items-start gap-2 rounded-3 px-3 py-2"
+                             style="background:color-mix(in srgb,#f59e0b 8%,transparent);border-left:3px solid #f59e0b;">
+                            <i class="fas fa-comment-alt text-warning mt-1 flex-shrink-0" style="font-size:.8rem;"></i>
+                            <div>
+                                <p class="small fw-semibold text-foreground mb-0" style="font-size:.8rem;">Observación</p>
+                                <p class="small text-muted-foreground mb-0" style="font-size:.82rem;">@dev.Observations</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    @if (!Paged.Any())
+    {
+        <div class="card p-5 text-center text-muted-foreground">
+            <i class="fas fa-box-open mb-3" style="font-size:2rem;opacity:.3;display:block;"></i>
+            <p class="mb-0">No se encontraron registros de devoluciones</p>
         </div>
     }
 </div>
 
-@* ─── Tabla ──────────────────────────────────────────────────────────────────── *@
-<div class="card overflow-hidden">
-    <div class="table-responsive">
-        <table class="table table-borderless mb-0 align-middle">
-            <thead class="border-bottom border-color-default">
-                <tr>
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Código</th>
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Fecha</th>
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Producto</th>
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Cantidad</th>
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Motivo</th>
-                    @if (Rol == "admin")
-                    {
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Responsable</th>
-                    }
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Importe</th>
-                    @if (Rol == "admin")
-                    {
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acción</th>
-                    }
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var dev in Filtered)
-                {
-                    <tr class="border-bottom border-color-default">
-                        <td class="px-4 py-3 fw-bold text-primary small">@dev.Id</td>
-                        <td class="px-4 py-3 text-muted-foreground small">@dev.Date.ToString("dd/MM/yyyy")</td>
-                        <td class="px-4 py-3 small">
-                            <span class="fw-medium text-foreground d-block">@dev.Product</span>
-                            <span class="text-xs text-muted-foreground">@dev.ProductCode</span>
-                        </td>
-                        <td class="px-4 py-3 text-foreground small">@dev.Quantity ud.</td>
-                        <td class="px-4 py-3 small">
-                            <span class="badge bg-warning-subtle text-warning" style="border-radius:var(--radius);">@dev.Reason</span>
-                        </td>
-                        @if (Rol == "admin")
-                        {
-                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">@dev.RegisteredBy</td>
-                        }
-                        <td class="px-4 py-3 fw-semibold text-danger small">S/. @dev.Amount.ToString("0.00")</td>
-                        @if (Rol == "admin")
-                        {
-                            <td class="px-4 py-3 text-end">
-                                <button @onclick="@(() => Delete(dev.Id))" class="btn btn-ghost btn-sm text-danger" style="border-radius:var(--radius);" title="Eliminar">
-                                    <Icons Name="Trash2" Class="w-4 h-4" />
-                                </button>
-                            </td>
-                        }
-                    </tr>
-                    @if (!string.IsNullOrEmpty(dev.Observations))
-                    {
-                        <tr class="border-bottom border-color-default bg-muted bg-opacity-30">
-                            <td colspan="@(Rol == "admin" ? 8 : 6)" class="px-5 py-2.5 small text-muted-foreground italic" style="font-size:0.8rem;">
-                                <strong>Observación:</strong> @dev.Observations
-                            </td>
-                        </tr>
-                    }
-                }
-                @if (!Filtered.Any())
-                {
-                    <tr>
-                        <td colspan="@(Rol == "admin" ? 8 : 6)" class="text-center py-5 text-muted-foreground">
-                            No se encontraron registros de devoluciones
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-@* ─── Modal Registrar Devolución ─────────────────────────────────────────────── *@
-@if (_showModal)
+@* ─── Paginación ─────────────────────────────────────────────────── *@
+@if (TotalPages > 1)
 {
-    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="@(() => _showModal = false)">
-        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation>
+    <div class="d-flex justify-content-center align-items-center gap-2 py-3">
+        <button class="btn btn-sm rounded-circle pag-btn"
+                @onclick="@(() => GoToPage(_currentPage - 1))"
+                disabled="@(_currentPage == 1)"
+                style="width:36px;height:36px;">
+            <i class="fa-solid fa-chevron-left" style="font-size:.75rem;"></i>
+        </button>
+        @for (int p = 1; p <= TotalPages; p++)
+        {
+            var pg = p;
+            <button class="btn btn-sm rounded-circle pag-btn @(pg == _currentPage ? "pag-active" : "")"
+                    @onclick="@(() => GoToPage(pg))"
+                    style="width:36px;height:36px;font-size:.85rem;font-weight:600;">@pg</button>
+        }
+        <button class="btn btn-sm rounded-circle pag-btn"
+                @onclick="@(() => GoToPage(_currentPage + 1))"
+                disabled="@(_currentPage == TotalPages)"
+                style="width:36px;height:36px;">
+            <i class="fa-solid fa-chevron-right" style="font-size:.75rem;"></i>
+        </button>
+    </div>
+}
+
+@* ─── Modal: Confirmar eliminar ─────────────────────────────────── *@
+@if (_showDeleteConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
             <div class="modal-content bg-card border-border">
-                <div class="modal-header border-border">
-                    <h5 class="modal-title text-foreground fw-bold">Registrar Devolución</h5>
-                    <button type="button" class="btn-close" @onclick="@(() => _showModal = false)"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <EditForm Model="_form" OnValidSubmit="Save" class="d-flex flex-column gap-3">
-                        <div>
-                            <label class="form-label small fw-medium text-foreground">Producto</label>
-                            <select @bind="_selectedProductId" class="form-select text-foreground" required>
-                                <option value="0">— Seleccionar producto —</option>
-                                @foreach (var p in ProductSvc.GetProducts().OrderBy(p => p.Name))
-                                {
-                                    <option value="@p.Id">@p.Name</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Cantidad</label>
-                                <input type="number" @bind="_form.Quantity" required class="form-control text-foreground" min="1" />
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Motivo</label>
-                                <select @bind="_form.Reason" class="form-select text-foreground" required>
-                                    <option value="">— Seleccionar —</option>
-                                    <option value="Vencido">Vencido</option>
-                                    <option value="Dañado">Dañado / Roto</option>
-                                    <option value="Error de pedido">Error de pedido</option>
-                                    <option value="Merma">Merma / Pérdida</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="form-label small fw-medium text-foreground">Observación</label>
-                            <textarea @bind="_form.Observations" class="form-control text-foreground" rows="2" placeholder="Detalle adicional..."></textarea>
-                        </div>
-                        <div class="d-flex justify-content-end gap-2 mt-2">
-                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius:var(--radius);">Cancelar</button>
-                            <button type="submit" class="btn btn-primary fw-semibold" style="border-radius:var(--radius);"
-                                    disabled="@(_selectedProductId == 0 || string.IsNullOrEmpty(_form.Reason))">
-                                Registrar
-                            </button>
-                        </div>
-                    </EditForm>
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">🗑️</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Eliminar devolución?</h5>
+                    <p class="text-muted-foreground small mb-4">El registro <strong>@_pendingDeleteId</strong> será eliminado.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showDeleteConfirm = false)">Cancelar</button>
+                        <button class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ConfirmDelete">Eliminar</button>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 }
 
+@* ─── Modal: Confirmar registrar ────────────────────────────────── *@
+@if (_showRegisterConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">📋</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Registrar devolución?</h5>
+                    <p class="text-muted-foreground small mb-4">
+                        Se registrará la devolución de <strong>@_cantidadConfirm ud(s).</strong> del producto seleccionado.
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showRegisterConfirm = false)">Cancelar</button>
+                        <button class="btn btn-primary" style="border-radius:var(--radius);" @onclick="ConfirmRegister">Registrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ─── Modal: Salir sin guardar ──────────────────────────────────── *@
+@if (_showUnsavedConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">⚠️</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Salir sin guardar?</h5>
+                    <p class="text-muted-foreground small mb-4">Se perderá la devolución que estabas registrando.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showUnsavedConfirm = false)">Continuar</button>
+                        <button class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ForceCloseRegister">Salir</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ─── Modal: Registrar devolución ───────────────────────────────── *@
+@if (_showModal)
+{
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="TryCloseRegister">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border">
+                <div class="modal-header border-border">
+                    <h5 class="modal-title text-foreground fw-bold">Registrar Devolución</h5>
+                    <button type="button" class="btn-close" @onclick="TryCloseRegister"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex flex-column gap-3">
+
+                        <!-- Producto -->
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Producto *</label>
+                            <select @bind="_selectedProductId" class="form-select text-foreground @(_submittedReg && _selectedProductId == 0 ? "is-invalid" : "")">
+                                <option value="0">— Seleccionar producto —</option>
+                                @foreach (var p in ProductSvc.GetProducts().OrderBy(p => p.Name))
+                                {
+                                    <option value="@p.Id">@p.Name</option>
+                                }
+                            </select>
+                            @if (_submittedReg && _selectedProductId == 0)
+                            {
+                                <div class="invalid-feedback d-block">Selecciona un producto.</div>
+                            }
+                        </div>
+
+                        <div class="row g-2">
+                            <!-- Cantidad -->
+                            <div class="col-6">
+                                <label class="form-label small fw-medium text-foreground">Cantidad *</label>
+                                <input type="number" min="1" @bind="_cantidad"
+                                       class="form-control text-foreground @(_submittedReg && _cantidad < 1 ? "is-invalid" : "")" />
+                                @if (_submittedReg && _cantidad < 1)
+                                {
+                                    <div class="invalid-feedback d-block">Mínimo 1 unidad.</div>
+                                }
+                            </div>
+                            <!-- Motivo -->
+                            <div class="col-6">
+                                <label class="form-label small fw-medium text-foreground">Motivo *</label>
+                                <select @bind="_motivo" class="form-select text-foreground @(_submittedReg && string.IsNullOrEmpty(_motivo) ? "is-invalid" : "")">
+                                    <option value="">— Seleccionar —</option>
+                                    <option value="Vencido">Vencido</option>
+                                    <option value="Dañado">Dañado / Roto</option>
+                                    <option value="Error de pedido">Error de pedido</option>
+                                    <option value="Merma">Merma / Pérdida</option>
+                                </select>
+                                @if (_submittedReg && string.IsNullOrEmpty(_motivo))
+                                {
+                                    <div class="invalid-feedback d-block">Selecciona un motivo.</div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Observación: usar @bind en textarea, NO value= -->
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Observación</label>
+                            <textarea @bind="_observacion" class="form-control text-foreground" rows="2" placeholder="Detalle adicional..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <button type="button" @onclick="TryCloseRegister" class="btn btn-secondary" style="border-radius:var(--radius);">Cancelar</button>
+                            <button type="button" @onclick="AskRegister" class="btn btn-primary fw-semibold" style="border-radius:var(--radius);">Registrar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ─── Toast éxito ────────────────────────────────────────────────── *@
+@if (_showSavedToast)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+        <div class="toast show text-white border-0 px-3 py-2" style="background:#1A6B3C;border-radius:var(--radius);min-width:260px;">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span class="small">Devolución registrada correctamente</span>
+        </div>
+    </div>
+}
+
+<style>
+    .pag-btn { background:var(--card); border:1px solid var(--border); color:var(--foreground); transition:all .15s; }
+    .pag-btn:hover:not(:disabled) { background:var(--secondary); }
+    .pag-btn:disabled { opacity:.4; }
+    .pag-active { background:#1A6B3C !important; color:#fff !important; border-color:#1A6B3C !important; }
+</style>
+
 @code {
-    [Parameter] public string Rol { get; set; } = "admin"; // "admin" | "trabajador"
+    [Parameter] public string Rol { get; set; } = "admin";
 
     private List<Return> _returns = new();
-    private string _search = "";
+    private string _search       = "";
     private string _motivoFilter = "";
-    private bool _showModal = false;
-    private Return _form = new();
-    private int _selectedProductId = 0;
+    private int    _pageSize     = 6;
+    private int    _currentPage  = 1;
+
+    // Variables separadas para el formulario (evita usar _form.X en binding de textarea/select)
+    private bool   _showModal           = false;
+    private bool   _showDeleteConfirm   = false;
+    private bool   _showRegisterConfirm = false;
+    private bool   _showUnsavedConfirm  = false;
+    private bool   _showSavedToast      = false;
+    private bool   _formDirty           = false;
+    private bool   _submittedReg        = false;
+    private string _pendingDeleteId     = "";
+
+    // Campos del formulario como variables independientes (más estable en Blazor)
+    private int    _selectedProductId = 0;
+    private int    _cantidad          = 1;
+    private string _motivo            = "";
+    private string _observacion       = "";
+    private int    _cantidadConfirm   = 1;  // para mostrar en modal de confirmación
 
     protected override async Task OnInitializedAsync()
     {
-        await Task.WhenAll(
-            ProductSvc.EnsureLoadedAsync(),
-            ReturnsSvc.EnsureLoadedAsync()
-        );
+        await Task.WhenAll(ProductSvc.EnsureLoadedAsync(), ReturnsSvc.EnsureLoadedAsync());
         _returns = ReturnsSvc.GetReturns();
     }
 
@@ -242,48 +389,87 @@ else
          r.Id.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
          r.RegisteredBy.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
         (string.IsNullOrEmpty(_motivoFilter) || r.Reason.Equals(_motivoFilter, StringComparison.OrdinalIgnoreCase))
-    );
+    ).OrderByDescending(r => r.Date);
 
     private decimal TotalRefunded => Filtered.Sum(r => r.Amount);
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
+    private IEnumerable<Return> Paged => Filtered.Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+    private void ResetPage() => _currentPage = 1;
+    private void GoToPage(int p) { if (p >= 1 && p <= TotalPages) _currentPage = p; }
 
+    // ── Abrir modal desde la página padre ────────────────────────────────────
     public void OpenCreate()
     {
-        _form = new Return
-        {
-            Quantity     = 1,
-            RegisteredBy = Auth.CurrentUser?.Name ?? (Rol == "admin" ? "Admin" : "Trabajador")
-        };
         _selectedProductId = 0;
-        _showModal = true;
+        _cantidad          = 1;
+        _motivo            = "";
+        _observacion       = "";
+        _formDirty         = false;
+        _submittedReg      = false;
+        _showModal         = true;
     }
 
-    private async Task Save()
+    private void TryCloseRegister()
     {
-        var prod = _selectedProductId > 0
-            ? ProductSvc.GetProductById(_selectedProductId)
-            : null;
+        // Solo mostrar aviso si el usuario ya tocó algo
+        if (_formDirty) _showUnsavedConfirm = true;
+        else            ForceCloseRegister();
+    }
 
-        if (prod != null)
+    private void ForceCloseRegister()
+    {
+        _showUnsavedConfirm = false;
+        _showModal          = false;
+    }
+
+    private void AskRegister()
+    {
+        _submittedReg = true;
+        if (_selectedProductId == 0 || string.IsNullOrEmpty(_motivo) || _cantidad < 1) return;
+        _cantidadConfirm     = _cantidad;
+        _showRegisterConfirm = true;
+    }
+
+    private async Task ConfirmRegister()
+    {
+        _showRegisterConfirm = false;
+
+        var prod = _selectedProductId > 0 ? ProductSvc.GetProductById(_selectedProductId) : null;
+
+        var returnItem = new Return
         {
-            _form.Product     = prod.Name;
-            _form.ProductCode = $"PROD-{prod.Id:D3}";
-            _form.Amount      = prod.Price * _form.Quantity;
-        }
-        else
-        {
-            _form.ProductCode = "PROD-GEN";
-            _form.Amount      = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
-        }
+            Quantity     = _cantidad,
+            Reason       = _motivo,
+            Observations = _observacion,
+            RegisteredBy = Auth.CurrentUser?.Name ?? (Rol == "admin" ? "Admin" : "Trabajador"),
+            Product      = prod?.Name ?? "Producto desconocido",
+            ProductCode  = prod != null ? $"PROD-{prod.Id:D3}" : "PROD-GEN",
+            Amount       = prod != null ? prod.Price * _cantidad : 0
+        };
 
         int idUsuario = Auth.CurrentUser?.IdUsuario ?? 0;
-        await ReturnsSvc.AddReturnAsync(_form, _selectedProductId, idUsuario);
-        _showModal = false;
-        _returns = ReturnsSvc.GetReturns();
+        await ReturnsSvc.AddReturnAsync(returnItem, _selectedProductId, idUsuario);
+
+        _showModal  = false;
+        _formDirty  = false;
+        _returns    = ReturnsSvc.GetReturns();
+        _showSavedToast = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        _showSavedToast = false;
+        StateHasChanged();
     }
 
-    private void Delete(string id)
+    private void AskDelete(string id)
     {
-        ReturnsSvc.DeleteReturn(id);
+        _pendingDeleteId   = id;
+        _showDeleteConfirm = true;
+    }
+
+    private void ConfirmDelete()
+    {
+        _showDeleteConfirm = false;
+        ReturnsSvc.DeleteReturn(_pendingDeleteId);
         _returns = ReturnsSvc.GetReturns();
     }
 }
