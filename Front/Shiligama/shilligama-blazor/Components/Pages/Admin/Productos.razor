@@ -313,13 +313,13 @@
                             <div class="input-group">
                                 <span class="input-group-text text-foreground">S/.</span>
                                 <input type="number"
-                                        step=".01"
-                                        min="0"
-                                       inputmode="decimal"
-                                       value="@_precioRaw"
-                                       @oninput="OnPrecioInput"
-                                       class="form-control text-foreground @(_precioError != null ? "is-invalid" : "")"
-                                       placeholder="0.00" />
+                                   step=".01"
+                                   min="0"
+                                   inputmode="decimal"
+                                   value="@_precioRaw"
+                                   @oninput="OnPrecioInput"
+                                   class="form-control text-foreground @(_precioError != null ? "is-invalid" : "")"
+                                   placeholder="0.00" />
                             </div>
                             @if (_precioError != null)
                             { <div class="text-danger small mt-1">@_precioError</div> }
