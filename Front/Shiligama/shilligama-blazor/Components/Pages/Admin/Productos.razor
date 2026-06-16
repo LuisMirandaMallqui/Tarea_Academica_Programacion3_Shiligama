@@ -3,7 +3,7 @@
 @inject ProductService ProductSvc
 @inject PromocionService PromoSvc
 @inject ImagenService ImagenSvc
-
+@using System.Security.Cryptography;
 <PageTitle>Productos – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
@@ -530,10 +530,18 @@
 
     private void OpenCreate()
     {
-        _form      = new Product();
+        _form = new Product
+        {
+            CodigoBarras = GenerarEAN13()   // 👈 AQUÍ se auto-genera
+        };
+
         _precioRaw = "";
-        _isEditing = false; _formDirty = false; _submitted = false;
-        _saveError = ""; _precioError = null; _codigoError = null;
+        _isEditing = false;
+        _formDirty = false;
+        _submitted = false;
+        _saveError = "";
+        _precioError = null;
+        _codigoError = null;
         _showModal = true;
     }
 
@@ -612,5 +620,45 @@
         try { _form.Image = await ImagenSvc.UploadAsync(e.File); _formDirty = true; }
         catch (Exception ex) { _uploadError = ex.Message; }
         finally { _uploadingImage = false; }
+    }
+    private int CalcularChecksumEAN13(string code12)
+    {
+        int sum = 0;
+
+        for (int i = 0; i < 12; i++)
+        {
+            int digit = code12[i] - '0';
+            sum += (i % 2 == 0) ? digit : digit * 3;
+        }
+
+        int mod = sum % 10;
+        return (mod == 0) ? 0 : 10 - mod;
+    }
+    private string GenerarEAN13()
+    {
+        string base12;
+        string codigoCompleto;
+
+        do
+        {
+            base12 = "775" + Generar9DigitosSeguros();
+            int checksum = CalcularChecksumEAN13(base12);
+            codigoCompleto = base12 + checksum;
+
+        } while (EsDuplicadoEnMemoria(codigoCompleto));
+
+        return codigoCompleto;
+    }
+
+    private string Generar9DigitosSeguros()
+    {
+        // 9 dígitos reales seguros
+        int number = RandomNumberGenerator.GetInt32(100_000_000, 999_999_999);
+        return number.ToString();
+    }
+
+    private bool EsDuplicadoEnMemoria(string codigo)
+    {
+        return _products.Any(p => p.CodigoBarras == codigo);
     }
 }
