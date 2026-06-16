@@ -16,4 +16,8 @@ public interface VentaDao extends IDAO<Venta> {
     List<Venta> listarPorTrabajador(int idTrabajador);
 
     List<TopProductoDto> topProductosVendidos();
+
+    int confirmarVenta(int idVenta);
+
+    int actualizarEstadoVenta(int idVenta, String estado);
 }

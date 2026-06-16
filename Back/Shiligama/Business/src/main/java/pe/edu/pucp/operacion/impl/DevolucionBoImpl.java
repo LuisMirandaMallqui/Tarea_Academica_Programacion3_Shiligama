@@ -66,14 +66,26 @@ public class DevolucionBoImpl implements DevolucionBO {
         if (esModificacion && devolucion.getIdDevolucion() <= 0) {
             throw new Exception("El ID de la devolucion es obligatorio para la modificacion.");
         }
-        if (devolucion.getIdProducto() <= 0) {
-            throw new Exception("El ID del producto es obligatorio.");
+        // Si hay detalles, validar cada detalle en vez de la cabecera
+        if (devolucion.getDetalles() != null && !devolucion.getDetalles().isEmpty()) {
+            for (var det : devolucion.getDetalles()) {
+                if (det.getIdProducto() <= 0) {
+                    throw new Exception("Cada detalle debe tener un ID de producto válido.");
+                }
+                if (det.getCantidad() <= 0) {
+                    throw new Exception("Cada detalle debe tener una cantidad mayor que cero.");
+                }
+            }
+        } else {
+            if (devolucion.getIdProducto() <= 0) {
+                throw new Exception("El ID del producto es obligatorio.");
+            }
+            if (devolucion.getCantidad() <= 0) {
+                throw new Exception("La cantidad debe ser mayor que cero.");
+            }
         }
         if (devolucion.getIdTrabajador() <= 0) {
             throw new Exception("El ID del trabajador es obligatorio.");
-        }
-        if (devolucion.getCantidad() <= 0) {
-            throw new Exception("La cantidad debe ser mayor que cero.");
         }
         if (devolucion.getMotivo() == null || devolucion.getMotivo().trim().isEmpty()) {
             throw new Exception("El motivo de la devolucion es obligatorio.");

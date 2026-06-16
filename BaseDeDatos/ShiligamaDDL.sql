@@ -232,43 +232,8 @@ CREATE TABLE IF NOT EXISTS `movimiento_inventario` (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Auditoría de movimientos de inventario: entradas, salidas, ajustes y devoluciones de productos';
 
-
--- -----------------------------------------------------
--- Tabla Devolucion
--- -----------------------------------------------------
-DROP TABLE IF EXISTS `shiligama`.`devolucion` ;
-CREATE TABLE IF NOT EXISTS `devolucion` (
-    -- Primary Key
-    `DEVOLUCION_ID`          INT            NOT NULL AUTO_INCREMENT,
-    -- Atributos
-    `PRODUCTO_ID`            INT            NOT NULL,
-    `TRABAJADOR_ID`          INT            NULL DEFAULT NULL,
-    `ESTADO_DEVOLUCION`      ENUM('PENDIENTE','APROBADO','RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
-    `CANTIDAD`               INT            NOT NULL,
-    `MOTIVO`                 VARCHAR(500)   NULL DEFAULT NULL,
-    `FECHA_HORA`             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
-	PRIMARY KEY (`DEVOLUCION_ID`),
-    -- Auditoría Automática
-    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
-    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
-    -- Auditoría de Usuario
-    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
-    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó',
-    INDEX `fk_devolucion_producto_idx` (`PRODUCTO_ID`),
-    INDEX `fk_devolucion_trabajador_idx` (`TRABAJADOR_ID`),
-    CONSTRAINT `fk_devolucion_producto`
-        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
-        ON UPDATE CASCADE,
-    CONSTRAINT `fk_devolucion_trabajador`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`USUARIO_ID`)
-        ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
-COMMENT = 'Tabla de Devolucion, baja de stock';
-
-
 -- =============================================================
--- MODULO 3: GESTION DE VENTAS Y PEDIDOS
+-- MODULO 2: GESTION DE VENTAS Y PEDIDOS
 -- =============================================================
 -- -----------------------------------------------------
 -- Tabla Metodo_Pago
@@ -305,7 +270,7 @@ CREATE TABLE IF NOT EXISTS `venta` (
     `MONTO_TOTAL`            DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
     `MONTO_DESCUENTO`        DECIMAL(10,2)  NOT NULL DEFAULT 0.00,
     `CANAL_VENTA`            ENUM('PRESENCIAL','WEB') NOT NULL DEFAULT 'PRESENCIAL',
-    `ESTADO_VENTA`           ENUM('REGISTRADA','COMPLETADA','ANULADA') NOT NULL DEFAULT 'REGISTRADA',
+    `ESTADO_VENTA`           VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
     `OBSERVACIONES`          VARCHAR(500)   NULL DEFAULT NULL,
     `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1, -- CONSIDERAR PARA BORRADO LOGICO, lo añado en DTO?    
     -- Campos específicos de boleta
@@ -413,6 +378,67 @@ CREATE TABLE IF NOT EXISTS `detalle_pedido` (
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4;
 
 -- -----------------------------------------------------
+-- Tabla Devolucion
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`devolucion` ;
+CREATE TABLE IF NOT EXISTS `devolucion` (
+    -- Primary Key
+    `DEVOLUCION_ID`          INT            NOT NULL AUTO_INCREMENT,
+    -- Atributos
+    `PRODUCTO_ID`            INT            NULL DEFAULT NULL,
+    `PEDIDO_ID`              INT            NULL DEFAULT NULL,
+    `TRABAJADOR_ID`          INT            NULL DEFAULT NULL,
+    `ESTADO_DEVOLUCION`      ENUM('PENDIENTE','APROBADO','RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
+    `CANTIDAD`               INT            NULL DEFAULT 0,
+    `MOTIVO`                 VARCHAR(500)   NULL DEFAULT NULL,
+    `FECHA_HORA`             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
+	PRIMARY KEY (`DEVOLUCION_ID`),
+    -- Auditoría Automática
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    -- Auditoría de Usuario
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó',
+    INDEX `fk_devolucion_producto_idx` (`PRODUCTO_ID`),
+    INDEX `fk_devolucion_pedido_idx` (`PEDIDO_ID`),
+    INDEX `fk_devolucion_trabajador_idx` (`TRABAJADOR_ID`),
+    CONSTRAINT `fk_devolucion_producto`
+        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
+        ON UPDATE CASCADE,
+    CONSTRAINT `fk_devolucion_pedido`
+        FOREIGN KEY (`PEDIDO_ID`) REFERENCES `pedido` (`PEDIDO_ID`)
+        ON UPDATE CASCADE,
+    CONSTRAINT `fk_devolucion_trabajador`
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`USUARIO_ID`)
+        ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Tabla de Devolucion, baja de stock';
+
+
+-- -----------------------------------------------------
+-- Tabla Detalle_Devolucion
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`detalle_devolucion` ;
+CREATE TABLE IF NOT EXISTS `detalle_devolucion` (
+    `DEVOLUCION_ID`          INT            NOT NULL,
+    `PRODUCTO_ID`            INT            NOT NULL,
+    `CANTIDAD`               INT            NOT NULL,
+    PRIMARY KEY (`DEVOLUCION_ID`, `PRODUCTO_ID`),
+    INDEX `fk_dd_devolucion_idx` (`DEVOLUCION_ID`),
+    INDEX `fk_dd_producto_idx` (`PRODUCTO_ID`),
+    CONSTRAINT `fk_dd_devolucion`
+        FOREIGN KEY (`DEVOLUCION_ID`) REFERENCES `devolucion` (`DEVOLUCION_ID`)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT `fk_dd_producto`
+        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
+        ON UPDATE CASCADE,
+        
+	INDEX idx_detalle_devolucion (devolucion_id),
+    INDEX idx_detalle_producto (producto_id)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
+
+-- -----------------------------------------------------
 -- Tabla Notificacion
 -- ID_DESTINATARIO NULL = broadcast (la ve cualquier admin/trabajador).
 -- LEIDA es un soft-flag para que el front pueda mostrar el badge de no-leidas.
@@ -504,3 +530,85 @@ CREATE TABLE IF NOT EXISTS `token_recuperacion` (
         ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Tokens de un solo uso para recuperación de contraseña.';
+
+-- =============================================
+-- TABLA PRINCIPAL: boleta (VERSIÓN SIMPLIFICADA)
+-- =============================================
+DROP TABLE IF EXISTS `shiligama`.`boleta` ;
+CREATE TABLE boleta (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    venta_id INT NOT NULL,
+    
+    -- DATOS OBLIGATORIOS DE SUNAT
+    serie VARCHAR(4) NOT NULL COMMENT 'B001, B002, etc.',
+    numero INT NOT NULL COMMENT 'Correlativo',
+    fecha_emision DATE NOT NULL,
+    
+    -- Cliente (mínimo para boleta)
+    cliente_tipo_documento VARCHAR(2) NOT NULL COMMENT '1=DNI, 6=RUC',
+    cliente_numero_documento VARCHAR(15) NOT NULL,
+    cliente_denominacion VARCHAR(100) NOT NULL,
+    cliente_direccion VARCHAR(100) NULL,
+    cliente_email VARCHAR(250) NULL,
+    
+    -- Montos (SOLO lo que usas)
+    moneda INT DEFAULT 1 COMMENT '1=Soles',
+    porcentaje_igv DECIMAL(5,2) DEFAULT 18.00,
+    total_gravada DECIMAL(12,2) DEFAULT 0,
+    total_igv DECIMAL(12,2) DEFAULT 0,
+    total DECIMAL(12,2) NOT NULL,
+    
+    -- RESPUESTA DE NUBEFACT 
+    nubefact_enlace VARCHAR(500) NULL,
+    nubefact_enlace_pdf VARCHAR(500) NULL,
+    nubefact_enlace_xml VARCHAR(500) NULL,
+    nubefact_enlace_cdr VARCHAR(500) NULL,
+    nubefact_cadena_qr TEXT NULL,
+    nubefact_codigo_hash VARCHAR(100) NULL,
+    
+    -- ESTADO SUNAT (solo lo básico)
+    aceptada_por_sunat BOOLEAN DEFAULT FALSE,
+    sunat_response_code VARCHAR(10) NULL COMMENT '0=aceptada',
+    sunat_description TEXT NULL,
+    
+    -- ANULACIÓN (si la necesitas)
+    anulado BOOLEAN DEFAULT FALSE,
+    anulacion_motivo VARCHAR(100) NULL,
+    
+    -- Auditoría
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    usuario_registro VARCHAR(50) NULL,
+    
+    -- Índices and constraints
+    CONSTRAINT fk_boleta_venta FOREIGN KEY (venta_id) REFERENCES venta(VENTA_ID) ON UPDATE CASCADE,
+    UNIQUE KEY uk_serie_numero (serie, numero),
+    INDEX idx_cliente (cliente_numero_documento),
+    INDEX idx_fecha (fecha_emision)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='Boletas electrónicas (versión simple)';
+
+
+-- =============================================
+-- TABLA DETALLE (mínimo indispensable)
+-- =============================================
+DROP TABLE IF EXISTS `shiligama`.`boleta_detalle`;
+
+CREATE TABLE boleta_detalle (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT,
+    id_boleta BIGINT NOT NULL,
+    id_producto BIGINT NULL,
+    
+    -- Datos del producto
+    unidad_medida VARCHAR(5) NOT NULL DEFAULT 'NIU',
+    descripcion TEXT NOT NULL,
+    cantidad DECIMAL(12,2) NOT NULL,
+    valor_unitario DECIMAL(12,2) NOT NULL COMMENT 'Sin IGV',
+    precio_unitario DECIMAL(12,2) NOT NULL COMMENT 'Con IGV',
+    
+    -- Totales del ítem
+    subtotal DECIMAL(12,2) NOT NULL,
+    igv DECIMAL(12,2) NOT NULL,
+    total DECIMAL(12,2) NOT NULL,
+    
+    FOREIGN KEY (id_boleta) REFERENCES boleta(id) ON DELETE CASCADE,
+    INDEX idx_boleta (id_boleta)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

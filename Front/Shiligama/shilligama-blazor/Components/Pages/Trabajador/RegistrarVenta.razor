@@ -176,25 +176,44 @@ else
             @if (_posCart.Any())
             {
                 <div class="d-flex justify-content-end gap-3 mt-3 pb-4">
-                    <button class="btn btn-white text-foreground fw-semibold d-flex align-items-center gap-2 border shadow-sm px-4"
-                            @onclick='@(() => AskSale("boleta"))' disabled="@_isProcessing"
-                            style="border-radius:0.5rem;height:44px;border-color:#dee2e6;">
-                        <i class="fas fa-receipt text-muted-foreground"></i> Generar Boleta
-                    </button>
-                    <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm"
-                            @onclick='@(() => AskSale("ticket"))' disabled="@_isProcessing"
-                            style="border-radius:0.5rem;height:44px;background-color:#6C8B74;border:none;">
-                        @if (_isProcessing)
-                        {
-                            <span class="spinner-border spinner-border-sm"></span>
-                            <span>Procesando...</span>
-                        }
-                        else
-                        {
-                            <i class="fas fa-check-circle"></i>
-                            <span>Confirmar Venta</span>
-                        }
-                    </button>
+                    @if (!_ventaConfirmada)
+                    {
+                        <button class="btn btn-white text-foreground fw-semibold d-flex align-items-center gap-2 border shadow-sm px-4"
+                                disabled style="border-radius:0.5rem;height:44px;border-color:#dee2e6;opacity:0.6;">
+                            <i class="fas fa-receipt text-muted-foreground"></i> Generar Boleta
+                        </button>
+                        <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm"
+                                @onclick="ConfirmarVentaPOS" disabled="@_isProcessing"
+                                style="border-radius:0.5rem;height:44px;background-color:#064420;border:none;">
+                            @if (_isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                                <span>Procesando...</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-check-circle"></i>
+                                <span>Confirmar Venta</span>
+                            }
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm"
+                                @onclick="GenerarBoletaPOS" disabled="@_isProcessing"
+                                style="border-radius:0.5rem;height:44px;border:none;background-color:#198754;">
+                            @if (_isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm"></span>
+                                <span>Generando Boleta...</span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-receipt"></i>
+                                <span>Generar Boleta Electrónica</span>
+                            }
+                        </button>
+                    }
                 </div>
             }
 
@@ -202,24 +221,69 @@ else
     </div>
 }
 
-<!-- Modal Confirmar Venta -->
-@if (_showSaleConfirm)
+<!-- Modal de Éxito Nubefact (SUNAT) -->
+@if (_showBoletaModal && _boletaResponse != null)
 {
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060;">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
-            <div class="modal-content" style="border-radius:1rem;">
-                <div class="modal-body p-4 text-center">
-                    <div class="mb-3" style="font-size:2.5rem;">🧾</div>
-                    <h5 class="fw-bold mb-1" style="color:#111827;">¿Confirmar venta?</h5>
-                    <p class="text-muted-foreground small mb-2">
-                        @(_pendingInvoiceType == "boleta" ? "Se emitirá una boleta" : "Se registrará como ticket")
-                        por un total de <strong style="color:#064420;">S/ @Total.ToString("0.00")</strong>.
-                    </p>
-                    <p class="text-muted-foreground small mb-4">Método de pago: <strong>@_payMethod</strong></p>
-                    <div class="d-flex gap-2 justify-content-center">
-                        <button class="btn btn-outline-secondary px-3" style="border-radius:0.5rem;" @onclick="@(() => _showSaleConfirm = false)">Cancelar</button>
-                        <button class="btn text-white px-3 fw-semibold" style="background-color:#064420;border-radius:0.5rem;border:none;" @onclick="ConfirmSale">Confirmar</button>
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.6);z-index:1070;backdrop-filter:blur(4px);">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:520px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius:1.2rem;overflow:hidden;">
+                
+                <!-- Header with premium green gradient -->
+                <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #064420 0%, #157347 100%);">
+                    <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mb-3 shadow-sm" style="width:60px;height:60px;color:#064420;">
+                        <Icons Name="Check" style="width:30px;height:30px;" />
                     </div>
+                    <h4 class="fw-bold mb-1" style="font-family:'Outfit',sans-serif;">¡Comprobante Generado!</h4>
+                    <p class="mb-0 opacity-75 small">La boleta electrónica ha sido aceptada por SUNAT</p>
+                </div>
+                
+                <div class="modal-body p-4 bg-light">
+                    <!-- General Details Card -->
+                    <div class="card p-3 border-0 shadow-sm mb-4" style="border-radius:0.8rem;background-color:#ffffff;">
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom" style="border-color:#f1f3f5!important;">
+                            <span class="text-muted small">Nro Comprobante:</span>
+                            <span class="fw-bold text-primary">@_boletaResponse.Serie - @_boletaResponse.Numero.ToString("D8")</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom" style="border-color:#f1f3f5!important;">
+                            <span class="text-muted small">Cliente:</span>
+                            <span class="fw-medium text-dark text-truncate" style="max-width:250px;">@_boletaResponse.ClienteDenominacion</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2 border-bottom" style="border-color:#f1f3f5!important;">
+                            <span class="text-muted small">Monto Total:</span>
+                            <span class="fw-bold text-success">S/ @_boletaResponse.Total.ToString("0.00")</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">SUNAT Estado:</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2.5 py-1" style="font-size:0.75rem;">
+                                <i class="fas fa-check-circle me-1"></i> ACEPTADA
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- PDF / XML Links -->
+                    <div class="d-flex flex-column gap-2 mb-4">
+                        <a href="@_boletaResponse.NubefactEnlacePdf" target="_blank" class="btn btn-primary d-flex align-items-center justify-content-center gap-2 py-2.5" style="border-radius:0.6rem;font-weight:600;background-color:#064420;border:none;">
+                            <i class="far fa-file-pdf fs-5"></i> Descargar PDF de Boleta
+                        </a>
+                        <a href="@_boletaResponse.NubefactEnlaceXml" target="_blank" class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 py-2.5" style="border-radius:0.6rem;font-weight:600;">
+                            <i class="far fa-file-code fs-5"></i> Descargar XML (FacturaE)
+                        </a>
+                    </div>
+
+                    <!-- Hash details -->
+                    @if (!string.IsNullOrEmpty(_boletaResponse.NubefactCodigoHash))
+                    {
+                        <div class="text-center p-3 rounded" style="background-color:#f8f9fa;border:1px dashed #dee2e6;">
+                            <span class="text-muted small d-block mb-1">Código Hash SUNAT:</span>
+                            <code class="small text-break text-muted">@_boletaResponse.NubefactCodigoHash</code>
+                        </div>
+                    }
+                </div>
+
+                <div class="modal-footer border-0 p-4 bg-light justify-content-center">
+                    <button class="btn btn-dark w-100 py-2.5 fw-bold" style="border-radius:0.6rem;" @onclick="ResetPOS">
+                        Registrar Nueva Venta
+                    </button>
                 </div>
             </div>
         </div>
@@ -371,21 +435,95 @@ else
     private string _receiptId = "";
     private string _errorMsg  = "";
 
-    // Confirmación de venta
-    private bool   _showSaleConfirm   = false;
-    private string _pendingInvoiceType = "";
+    // POS Nubefact state
+    private int _idVentaGenerada = 0;
+    private bool _ventaConfirmada = false;
+    private BoletaResponse? _boletaResponse = null;
+    private bool _showBoletaModal = false;
 
-    private void AskSale(string type)
+    private async Task ConfirmarVentaPOS()
     {
         if (!_posCart.Any() || _isProcessing) return;
-        _pendingInvoiceType = type;
-        _showSaleConfirm = true;
+        _isProcessing = true;
+        _errorMsg = "";
+
+        int idTrabajador = Auth.CurrentUser?.Id ?? 0;
+        if (idTrabajador <= 0)
+        {
+            _errorMsg = "Debe iniciar sesión como trabajador para registrar ventas.";
+            _isProcessing = false;
+            return;
+        }
+
+        try
+        {
+            int idGenerado = await SalesSvc.AddPresencialSaleAsync(
+                _customerName, _posCart, Total, _payMethod, "boleta", idTrabajador);
+
+            if (idGenerado > 0)
+            {
+                _idVentaGenerada = idGenerado;
+
+                bool confirmado = await SalesSvc.ConfirmPresencialSaleAsync(idGenerado);
+                if (confirmado)
+                {
+                    _ventaConfirmada = true;
+                    // Update stock locally for immediate feedback
+                    foreach (var item in _posCart)
+                    {
+                        var p = _products.FirstOrDefault(pr => pr.Id == item.Id);
+                        if (p != null) p.Stock = Math.Max(0, p.Stock - item.Quantity);
+                    }
+                }
+                else
+                {
+                    _errorMsg = "La venta fue registrada, pero no pudo ser confirmada en el servidor.";
+                }
+            }
+            else
+            {
+                _errorMsg = "Error al registrar la venta.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMsg = "Ocurrió un error inesperado: " + ex.Message;
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
     }
 
-    private async Task ConfirmSale()
+    private async Task GenerarBoletaPOS()
     {
-        _showSaleConfirm = false;
-        await ProcessSale(_pendingInvoiceType);
+        if (_idVentaGenerada <= 0 || _isProcessing) return;
+        _isProcessing = true;
+        _errorMsg = "";
+
+        try
+        {
+            var boleta = await SalesSvc.GenerateBoletaAsync(_idVentaGenerada);
+            if (boleta != null)
+            {
+                _boletaResponse = boleta;
+                _showBoletaModal = true;
+            }
+            else
+            {
+                _errorMsg = string.IsNullOrWhiteSpace(SalesSvc.UltimoErrorBoleta)
+                    ? "Error al emitir boleta con Nubefact."
+                    : SalesSvc.UltimoErrorBoleta;
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMsg = "Excepción al emitir boleta: " + ex.Message;
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
     }
 
     // Financial calculations
@@ -451,56 +589,6 @@ else
         if (item != null) _posCart.Remove(item);
     }
 
-    // ProcessSale recibe el tipo ("boleta" o "ticket") desde los botones del footer
-    private async Task ProcessSale(string type)
-    {
-        if (!_posCart.Any() || _isProcessing) return;
-        _isProcessing = true;
-        _invoiceType = type;
-        _errorMsg = "";
-
-        int idTrabajador = Auth.CurrentUser?.Id ?? 0;
-
-        int idGenerado = await SalesSvc.AddPresencialSaleAsync(
-            _customerName, _posCart, Total, _payMethod, _invoiceType, idTrabajador);
-
-        _receiptId = $"VTA-{idGenerado:D4}";
-
-        // Actualiza stock local para feedback inmediato
-        foreach (var item in _posCart)
-        {
-            var p = _products.FirstOrDefault(pr => pr.Id == item.Id);
-            if (p != null) p.Stock = Math.Max(0, p.Stock - item.Quantity);
-        }
-
-        // Si es boleta, imprime usando el helper JS del equipo
-        if (type == "boleta")
-        {
-            var boletaData = new
-            {
-                receiptId      = _receiptId,
-                customerName   = string.IsNullOrWhiteSpace(_customerName) ? "Público General" : _customerName,
-                payMethod      = _payMethod,
-                invoiceType    = _invoiceType,
-                items          = _posCart.Select(i => new
-                {
-                    name     = i.Name,
-                    quantity = i.Quantity,
-                    price    = (double)i.Price,
-                    subtotal = (double)(i.Price * i.Quantity)
-                }).ToList(),
-                subtotalSinIgv = (double)SubtotalSinIgv,
-                igv            = (double)Igv,
-                total          = (double)Total,
-                date           = DateTime.Now.ToString("dd/MM/yyyy HH:mm")
-            };
-            await JS.InvokeVoidAsync("boletaHelpers.generateAndPrintBoleta", boletaData);
-        }
-
-        _success = true;
-        _isProcessing = false;
-    }
-
     private void ResetPOS()
     {
         _posCart.Clear();
@@ -510,5 +598,9 @@ else
         _success      = false;
         _receiptId    = "";
         _errorMsg     = "";
+        _idVentaGenerada = 0;
+        _ventaConfirmada = false;
+        _boletaResponse = null;
+        _showBoletaModal = false;
     }
 }

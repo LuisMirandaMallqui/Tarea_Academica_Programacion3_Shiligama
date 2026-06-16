@@ -79,6 +79,12 @@ VALUES('shiligama123', 'Jorge', 'Villanueva Ríos', '89012345', '987654328', 'jv
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA) 
 VALUES(8, 'Jr. Cusco 310');
 
+-- Cliente genérico para ventas POS sin identificación (Público General / consumidor final)
+INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES('publico123', 'Publico', 'General', '00000000', '000000000', 'publico@shiligama.local');
+INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
+VALUES(9, 'Sin direccion');
+
 -- Productos de ejemplo (con IMAGEN_URL incluida)
 INSERT INTO producto(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO, STOCK, STOCK_MINIMO, UNIDAD_MEDIDA, CODIGO_BARRAS, IMAGEN_URL) VALUES
 (7,  'Arroz Costeño 5kg',              'Arroz extra graneado',            22.50,  50, 10, 'Bolsa',   '7750001000001', 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=300&h=300&fit=crop'),
@@ -265,3 +271,53 @@ INSERT INTO notificacion(TITULO, MENSAJE, TIPO, LEIDA, ID_DESTINATARIO) VALUES
 ('Pedido cancelado',
  'El pedido PED-0005 de Jorge Villanueva fue cancelado. Motivo: Cliente no recogió en plazo.',
  'SISTEMA', 0, NULL);
+
+
+-- ================================================================
+-- INSERTS DE PRUEBA - DEVOLUCIONES
+-- ================================================================
+
+-- Devolución 1: Vencido - Arroz (2)
+CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 2, 'PENDIENTE', 2, 'Vencido', NOW());
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev1, 1, 2);
+
+-- Devolución 2: Dañado - Aceite (1)
+CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 'PENDIENTE', 1, 'Dañado', NOW());
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev2, 3, 1);
+
+-- Devolución 3: Otro - Coca-Cola (3)
+CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 2, 'PENDIENTE', 3, 'Otro', NOW());
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev3, 5, 3);
+
+-- Devolución 4: Dañado - Ariel (1)
+CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 2, 'RECHAZADO', 1, 'Dañado', NOW());
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev4, 8, 1);
+
+-- Devolución 5: Vencido - Leche (4)
+CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 2, 'APROBADO', 4, 'Vencido', NOW());
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev5, 11, 4);
+
+-- Devolución 6: Dañado - Múltiples (Arroz 1, Coca-Cola 2, Agua 1)
+CALL INSERTAR_DEVOLUCION(@dev6, 1, 4, 2, 'PENDIENTE', 4, 'Dañado', NOW());
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 1, 1);
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 5, 2);
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 7, 1);
+
+-- Devolución 7: Otro - Múltiples (Lentejas 1, Fideos 2)
+CALL INSERTAR_DEVOLUCION(@dev7, 2, 4, 3, 'PENDIENTE', 3, 'Otro', NOW());
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev7, 2, 1);
+CALL INSERTAR_DETALLE_DEVOLUCION(@dev7, 4, 2);
+
+-- ================================================================
+-- INSERTS DE DE USUARIO GENERAL PARA LA BOLETA
+-- ================================================================
+
+INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+SELECT 'publico123', 'Publico', 'General', '00000000', '000000000', 'publico@shiligama.local'
+WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE DNI = '00000000');
+
+INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
+SELECT u.USUARIO_ID, 'Sin direccion'
+FROM usuario u
+WHERE u.DNI = '00000000'
+  AND NOT EXISTS (SELECT 1 FROM cliente c WHERE c.USUARIO_ID = u.USUARIO_ID);

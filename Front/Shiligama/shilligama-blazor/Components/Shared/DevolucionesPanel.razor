@@ -4,40 +4,41 @@
 @inject ReturnsService ReturnsSvc
 @inject ProductService ProductSvc
 @inject AuthService Auth
+@inject SalesService SalesSvc
 
 @* ─── KPIs ──────────────────────────────────────────────────────────────────── *@
 @if (Rol == "trabajador")
 {
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="metric-card-kpi">
+            <div class="worker-kpi-card kpi-green-custom">
                 <div>
-                    <div class="metric-kpi-value text-foreground">@_returns.Count</div>
-                    <div class="metric-kpi-label">Devoluciones este mes</div>
+                    <div class="metric-kpi-value text-foreground" style="font-size:1.6rem;font-weight:700;">@_returns.Count</div>
+                    <div class="metric-kpi-label" style="font-size:0.8rem;color:var(--muted-foreground);">Devoluciones este mes</div>
                 </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary);">
+                <div class="metric-kpi-icon-custom" style="background:#e8f5e9;color:#198754;">
                     <i class="fas fa-sync-alt"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card-kpi">
+            <div class="worker-kpi-card kpi-red-custom">
                 <div>
-                    <div class="metric-kpi-value" style="color:#c62828;font-size:1.4rem;">S/. @_returns.Sum(r => r.Amount).ToString("0.00")</div>
-                    <div class="metric-kpi-label">Pérdida acumulada</div>
+                    <div class="metric-kpi-value text-foreground" style="font-size:1.6rem;font-weight:700;">S/. @_returns.Sum(r => r.Amount).ToString("0.00")</div>
+                    <div class="metric-kpi-label" style="font-size:0.8rem;color:var(--muted-foreground);">Total Mermas (pérdida)</div>
                 </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#c62828 15%,transparent);color:#c62828;">
+                <div class="metric-kpi-icon-custom" style="background:#ffebee;color:#dc3545;">
                     <i class="fas fa-arrow-down"></i>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="metric-card-kpi">
+            <div class="worker-kpi-card kpi-yellow-custom">
                 <div>
-                    <div class="metric-kpi-value text-foreground" style="font-size:1.1rem;">@(_returns.OrderByDescending(r => r.Quantity).FirstOrDefault()?.Product ?? "N/A")</div>
-                    <div class="metric-kpi-label">Producto más devuelto</div>
+                    <div class="metric-kpi-value text-foreground" style="font-size:1.1rem;font-weight:700;">@GetTopReturnedOrderText()</div>
+                    <div class="metric-kpi-label" style="font-size:0.8rem;color:var(--muted-foreground);">Pedido con más devoluciones</div>
                 </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#f59e0b 15%,transparent);color:#f59e0b;">
+                <div class="metric-kpi-icon-custom" style="background:#fff8e1;color:#ffc107;">
                     <i class="fas fa-box"></i>
                 </div>
             </div>
@@ -65,20 +66,20 @@ else
 @* ─── Filtros ────────────────────────────────────────────────────────────────── *@
 <div class="row g-2 mb-4">
     <div class="@(Rol == "trabajador" ? "col-md-8" : "col-12")">
-        <div class="card p-4" style="border-radius:12px;">
-            <div class="position-relative">
-                <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:16px;font-size:14px;"></i>
+        <div class="card p-4" style="border-radius:12px; height: 72px; display:flex; justify-content:center; padding: 0 1.5rem !important;">
+            <div class="position-relative d-flex align-items-center w-100">
+                <i class="fas fa-search position-absolute text-muted-foreground" style="left:16px;font-size:14px;pointer-events:none;"></i>
                 <input type="search" @bind="_search" @bind:event="oninput" class="form-control text-foreground"
-                       placeholder="Buscar por código, producto o responsable..."
-                       style="height:56px;border-radius:10px;padding-left:42px;" />
+                       placeholder="Buscar por ID pedido, cliente o responsable..."
+                       style="height:44px;border-radius:8px;padding-left:44px;width:100%;" />
             </div>
         </div>
     </div>
     @if (Rol == "trabajador")
     {
         <div class="col-md-4">
-            <div class="card p-4" style="border-radius:12px;">
-                <select @bind="_motivoFilter" class="form-select text-foreground" style="height:40px;">
+            <div class="card p-4" style="border-radius:12px; height: 72px; display:flex; justify-content:center; padding: 0 1.5rem !important;">
+                <select @bind="_motivoFilter" class="form-select text-foreground" style="height:44px;border-radius:8px;">
                     <option value="">Todos los motivos</option>
                     <option value="Vencido">Vencido</option>
                     <option value="Dañado">Dañado / Roto</option>
@@ -95,54 +96,66 @@ else
         <table class="table table-borderless mb-0 align-middle">
             <thead class="border-bottom border-color-default">
                 <tr>
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Código</th>
                     <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Fecha</th>
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Producto</th>
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Cantidad</th>
+                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">ID Pedido</th>
                     <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Motivo</th>
-                    @if (Rol == "admin")
-                    {
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Responsable</th>
-                    }
-                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Importe</th>
-                    @if (Rol == "admin")
-                    {
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acción</th>
-                    }
+                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Registrado Por</th>
+                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Monto Total</th>
+                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var dev in Filtered)
                 {
                     <tr class="border-bottom border-color-default">
-                        <td class="px-4 py-3 fw-bold text-primary small">@dev.Id</td>
-                        <td class="px-4 py-3 text-muted-foreground small">@dev.Date.ToString("dd/MM/yyyy")</td>
+                        <td class="px-4 py-3 text-muted-foreground small">@dev.Date.ToString("dd MMM yyyy")</td>
                         <td class="px-4 py-3 small">
-                            <span class="fw-medium text-foreground d-block">@dev.Product</span>
-                            <span class="text-xs text-muted-foreground">@dev.ProductCode</span>
+                            <span class="fw-bold text-success d-block">@(dev.IdPedido.HasValue && dev.IdPedido.Value > 0 ? $"SHI-2024-{dev.IdPedido.Value:D4}" : "SHI-2024-GEN")</span>
+                            <span class="text-xs text-muted-foreground">@GetCustomerNameForReturn(dev)</span>
                         </td>
-                        <td class="px-4 py-3 text-foreground small">@dev.Quantity ud.</td>
                         <td class="px-4 py-3 small">
-                            <span class="badge bg-warning-subtle text-warning" style="border-radius:var(--radius);">@dev.Reason</span>
+                            @switch (dev.Reason?.ToLower())
+                            {
+                                case "vencido":
+                                    <span class="badge text-white" style="background:#dc3545;font-size:0.75rem;padding:4px 11px;font-weight:600;border-radius:8px;"><i class="fas fa-hourglass-end me-1"></i>Vencido</span>
+                                    break;
+                                case "dañado":
+                                case "dañado / roto":
+                                    <span class="badge text-white" style="background:#fd7e14;font-size:0.75rem;padding:4px 11px;font-weight:600;border-radius:8px;"><i class="fas fa-exclamation-triangle me-1"></i>Dañado</span>
+                                    break;
+                                default:
+                                    <span class="badge text-white" style="background:#198754;font-size:0.75rem;padding:4px 11px;font-weight:600;border-radius:8px;"><i class="fas fa-check-circle me-1"></i>@dev.Reason</span>
+                                    break;
+                            }
                         </td>
-                        @if (Rol == "admin")
-                        {
-                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">@dev.RegisteredBy</td>
-                        }
-                        <td class="px-4 py-3 fw-semibold text-danger small">S/. @dev.Amount.ToString("0.00")</td>
-                        @if (Rol == "admin")
-                        {
-                            <td class="px-4 py-3 text-end">
-                                <button @onclick="@(() => Delete(dev.Id))" class="btn btn-ghost btn-sm text-danger" style="border-radius:var(--radius);" title="Eliminar">
-                                    <Icons Name="Trash2" Class="w-4 h-4" />
+                        <td class="px-4 py-3 text-muted-foreground small">@dev.RegisteredBy</td>
+                        <td class="px-4 py-3 fw-bold text-danger small">-S/. @dev.Amount.ToString("0.00")</td>
+                        <td class="px-4 py-3 text-end">
+                            <div class="dropdown d-inline-block position-relative">
+                                <button class="btn btn-ghost btn-sm rounded-circle p-0" @onclick="@(() => ToggleActionsDropdown(dev.Id))" style="width:32px;height:32px;" title="Acciones">
+                                    <i class="fas fa-ellipsis-v text-muted" style="font-size: 0.82rem;"></i>
                                 </button>
-                            </td>
-                        }
+                                @if (_openDropdownId == dev.Id)
+                                {
+                                    <div class="dropdown-menu-custom shadow-lg border rounded-3 position-absolute bg-card" style="z-index: 1050; min-width: 120px; right: 0; top: 100%; margin-top: 4px;">
+                                        <button class="dropdown-item py-2 px-3 small d-flex align-items-center gap-2 text-foreground" @onclick="@(() => VerDetalle(dev))">
+                                            <i class="fas fa-eye text-success" style="width:14px;"></i> Ver
+                                        </button>
+                                        <button class="dropdown-item py-2 px-3 small d-flex align-items-center gap-2 text-foreground" @onclick="@(() => OpenEdit(dev))">
+                                            <i class="fas fa-edit text-warning" style="width:14px;"></i> Editar
+                                        </button>
+                                        <button class="dropdown-item py-2 px-3 small text-danger d-flex align-items-center gap-2" @onclick="@(() => Delete(dev.Id))">
+                                            <i class="fas fa-trash-alt" style="width:14px;"></i> Eliminar
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </td>
                     </tr>
                     @if (!string.IsNullOrEmpty(dev.Observations))
                     {
                         <tr class="border-bottom border-color-default bg-muted bg-opacity-30">
-                            <td colspan="@(Rol == "admin" ? 8 : 6)" class="px-5 py-2.5 small text-muted-foreground italic" style="font-size:0.8rem;">
+                            <td colspan="6" class="px-5 py-2.5 small text-muted-foreground italic" style="font-size:0.8rem;">
                                 <strong>Observación:</strong> @dev.Observations
                             </td>
                         </tr>
@@ -151,7 +164,7 @@ else
                 @if (!Filtered.Any())
                 {
                     <tr>
-                        <td colspan="@(Rol == "admin" ? 8 : 6)" class="text-center py-5 text-muted-foreground">
+                        <td colspan="6" class="text-center py-5 text-muted-foreground">
                             No se encontraron registros de devoluciones
                         </td>
                     </tr>
@@ -161,53 +174,119 @@ else
     </div>
 </div>
 
-@* ─── Modal Registrar Devolución ─────────────────────────────────────────────── *@
+@* ─── Modal Registrar / Editar Devolución ─────────────────────────────────────────────── *@
 @if (_showModal)
 {
-    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="@(() => _showModal = false)">
-        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation>
-            <div class="modal-content bg-card border-border">
-                <div class="modal-header border-border">
-                    <h5 class="modal-title text-foreground fw-bold">Registrar Devolución</h5>
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.55); backdrop-filter:blur(3px);" @onclick="@(() => _showModal = false)">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:540px;" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border" style="border-radius: 1.25rem; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.2);">
+                <div class="modal-header border-border bg-muted bg-opacity-10 px-4 py-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="modal-title text-foreground fw-bold" style="font-family:'Outfit',sans-serif;">@(_isEditing ? "Modificar Devolución" : "Registrar Devolución")</h5>
+                        <p class="text-muted-foreground text-xs m-0">Selecciona el pedido y los productos a devolver</p>
+                    </div>
                     <button type="button" class="btn-close" @onclick="@(() => _showModal = false)"></button>
                 </div>
-                <div class="modal-body p-4">
+                <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
                     <EditForm Model="_form" OnValidSubmit="Save" class="d-flex flex-column gap-3">
+                        
+                        <!-- Buscar Pedido -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Producto</label>
-                            <select @bind="_selectedProductId" class="form-select text-foreground" required>
-                                <option value="0">— Seleccionar producto —</option>
-                                @foreach (var p in ProductSvc.GetProducts().OrderBy(p => p.Name))
-                                {
-                                    <option value="@p.Id">@p.Name</option>
-                                }
+                            <label class="form-label small fw-bold text-foreground">Pedido entregado <span class="text-danger">*</span></label>
+                            <div class="position-relative w-100">
+                                <i class="fas fa-search position-absolute text-muted-foreground top-50 translate-middle-y" style="left:14px;pointer-events:none;"></i>
+                                <input type="text" class="form-control text-foreground" 
+                                       placeholder="Buscar por # pedido o cliente..." 
+                                       @bind="_orderSearchTerm" @oninput="OnSearchOrderInput"
+                                       style="height: 46px; padding-left: 40px; border-radius: 8px;" required />
+                            </div>
+                            
+                            @if (_orderMatches.Any())
+                            {
+                                <div class="list-group shadow-lg border rounded-3 mt-1 position-absolute w-100 bg-card" style="z-index: 1100; max-height: 180px; overflow-y: auto; right: 0; left: 0; padding: 0 1.5rem;">
+                                    @foreach (var order in _orderMatches)
+                                    {
+                                        <button type="button" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-2 px-3 border-color-default"
+                                                @onclick="@(() => SelectOrder(order))">
+                                            <div>
+                                                <span class="fw-bold text-success">@order.Id.Replace("PED-", "SHI-2024-")</span>
+                                                <span class="text-muted-foreground ms-2 small">@order.Customer</span>
+                                            </div>
+                                            <span class="badge bg-light text-muted-foreground border small">@order.Date.ToString("dd/MM/yy")</span>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Lista de productos del pedido seleccionado -->
+                        @if (_selectedOrder != null)
+                        {
+                            <div class="mt-2">
+                                <label class="form-label small fw-bold text-foreground"><i class="fas fa-shopping-basket me-1 text-success"></i> Productos del pedido (@_selectedOrder.Id.Replace("PED-", "SHI-2024-"))</label>
+                                <div class="d-flex flex-column gap-2" style="max-height: 220px; overflow-y: auto; padding-right: 4px;">
+                                    @foreach (var item in _selectedOrder.Products)
+                                    {
+                                        <div class="d-flex align-items-center justify-content-between border rounded-3 p-3 bg-muted bg-opacity-10 border-color-default" style="border-radius: 8px;">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <input type="checkbox" class="form-check-input" 
+                                                       checked="@GetProductChecked(item.Id)" 
+                                                       @onchange="@((e) => OnProductCheckedChange(item.Id, (bool)e.Value))"
+                                                       style="width: 18px; height: 18px; border-radius: 4px;" />
+                                                <div>
+                                                    <span class="fw-semibold text-foreground small d-block">@item.Name</span>
+                                                    <span class="text-muted-foreground text-xs">Comprado: @item.Quantity uds. · S/. @item.Price.ToString("0.00")</span>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1">
+                                                <span class="text-muted-foreground text-xs me-1">Cant.:</span>
+                                                <input type="number" class="form-control text-center text-foreground font-semibold" 
+                                                       value="@GetProductReturnQty(item.Id)"
+                                                       @onchange="@((e) => OnProductReturnQtyChange(item.Id, int.Parse(e.Value.ToString())))"
+                                                       min="1" max="@item.Quantity" 
+                                                       disabled="@(!GetProductChecked(item.Id))"
+                                                       style="width: 60px; height: 36px; padding: 4px; border-radius:6px;" />
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Motivo -->
+                        <div>
+                            <label class="form-label small fw-bold text-foreground">Motivo <span class="text-danger">*</span></label>
+                            <select @bind="_selectedMotivo" class="form-select text-foreground" style="height: 46px; border-radius: 8px;" required>
+                                <option value="Vencido">Vencido</option>
+                                <option value="Dañado">Dañado</option>
+                                <option value="Otro">Otro</option>
                             </select>
                         </div>
-                        <div class="row g-2">
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Cantidad</label>
-                                <input type="number" @bind="_form.Quantity" required class="form-control text-foreground" min="1" />
+
+                        @if (_selectedMotivo == "Otro")
+                        {
+                            <div>
+                                <label class="form-label small fw-bold text-foreground">Especificar Motivo <span class="text-danger">*</span></label>
+                                <input type="text" @bind="_customMotivo" class="form-control text-foreground" 
+                                       placeholder="Especifica el motivo personalizado..." 
+                                       style="height: 46px; border-radius: 8px;" required />
                             </div>
-                            <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Motivo</label>
-                                <select @bind="_form.Reason" class="form-select text-foreground" required>
-                                    <option value="">— Seleccionar —</option>
-                                    <option value="Vencido">Vencido</option>
-                                    <option value="Dañado">Dañado / Roto</option>
-                                    <option value="Error de pedido">Error de pedido</option>
-                                    <option value="Merma">Merma / Pérdida</option>
-                                </select>
-                            </div>
-                        </div>
+                        }
+
+                        <!-- Observaciones -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Observación</label>
-                            <textarea @bind="_form.Observations" class="form-control text-foreground" rows="2" placeholder="Detalle adicional..."></textarea>
+                            <label class="form-label small fw-bold text-foreground">Observaciones</label>
+                            <textarea @bind="_form.Observations" class="form-control text-foreground" rows="3" 
+                                      placeholder="El empaque presentaba fecha vencida de hace 2 días, etc..." 
+                                      style="border-radius: 8px; font-size:0.85rem;"></textarea>
                         </div>
-                        <div class="d-flex justify-content-end gap-2 mt-2">
-                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius:var(--radius);">Cancelar</button>
-                            <button type="submit" class="btn btn-primary fw-semibold" style="border-radius:var(--radius);"
-                                    disabled="@(_selectedProductId == 0 || string.IsNullOrEmpty(_form.Reason))">
-                                Registrar
+
+                        <div class="d-flex justify-content-end gap-2 mt-3 pt-3 border-top border-color-default">
+                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-outline-secondary fw-semibold" style="border-radius:8px; height:44px; min-width:90px;">Cancelar</button>
+                            <button type="submit" class="btn btn-success fw-semibold" 
+                                    disabled="@(_selectedOrder == null || !_productSelected.Values.Any(v => v) || (_selectedMotivo == "Otro" ? string.IsNullOrWhiteSpace(_customMotivo) : string.IsNullOrEmpty(_selectedMotivo)))"
+                                    style="border-radius:8px; height:44px; min-width:140px; background:#196c3e; border-color:#196c3e;">
+                                @(_isEditing ? "Guardar Cambios" : "Registrar Devolución")
                             </button>
                         </div>
                     </EditForm>
@@ -217,6 +296,159 @@ else
     </div>
 }
 
+@* ─── Modal Ver Detalle Devolución ─────────────────────────────────────────────── *@
+@if (_showDetailModal && _selectedDetailReturn != null)
+{
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.55); backdrop-filter:blur(3px);" @onclick="@(() => _showDetailModal = false)">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:500px;" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border" style="border-radius: 1.25rem; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.2);">
+                <div class="modal-header border-bottom border-color-default px-4 py-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="modal-title text-foreground fw-bold" style="font-family:'Outfit',sans-serif;">Detalle de Devolución</h5>
+                        <span class="text-success fw-bold text-sm">@_selectedDetailReturn.Id</span>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="@(() => _showDetailModal = false)"></button>
+                </div>
+                <div class="modal-body p-4 d-flex flex-column gap-3">
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted-foreground small">Fecha:</span>
+                        <span class="text-foreground small fw-medium">@_selectedDetailReturn.Date.ToString("dd MMM yyyy - HH:mm")</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted-foreground small">Pedido de origen:</span>
+                        <span class="text-success small fw-bold">@(_selectedDetailReturn.IdPedido.HasValue ? $"SHI-2024-{_selectedDetailReturn.IdPedido.Value:D4}" : "N/A")</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted-foreground small">Registrado por:</span>
+                        <span class="text-foreground small fw-medium">@_selectedDetailReturn.RegisteredBy</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted-foreground small">Motivo:</span>
+                        <span class="text-foreground small fw-semibold">@_selectedDetailReturn.Reason</span>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom border-color-default pb-2">
+                        <span class="text-muted-foreground small">Estado:</span>
+                        <span class="badge bg-success-subtle text-success">@_selectedDetailReturn.Observations</span>
+                    </div>
+
+                    <div>
+                        <span class="text-muted-foreground small fw-bold d-block mb-2"><i class="fas fa-undo-alt me-1 text-danger"></i> Productos Devueltos</span>
+                        <div class="d-flex flex-column gap-2" style="max-height: 180px; overflow-y: auto;">
+                            @if (_selectedDetailReturn.Detalles != null && _selectedDetailReturn.Detalles.Any())
+                            {
+                                @foreach (var det in _selectedDetailReturn.Detalles)
+                                {
+                                    <div class="d-flex justify-content-between align-items-center p-2 rounded-2 bg-muted bg-opacity-10 border-color-default" style="border: 1px solid #f0f0f0;">
+                                        <div class="small">
+                                            <span class="fw-semibold text-foreground d-block">@det.NombreProducto</span>
+                                            <span class="text-muted-foreground text-xs">Código: @($"PROD-{det.IdProducto:D3}") · S/. @det.PrecioUnitario.ToString("0.00")</span>
+                                        </div>
+                                        <span class="badge bg-danger text-white">x@(det.Cantidad) uds.</span>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="d-flex justify-content-between align-items-center p-2 rounded-2 bg-muted bg-opacity-10" style="border: 1px solid #f0f0f0;">
+                                    <div class="small">
+                                        <span class="fw-semibold text-foreground d-block">@_selectedDetailReturn.Product</span>
+                                        <span class="text-muted-foreground text-xs">Código: @_selectedDetailReturn.ProductCode</span>
+                                    </div>
+                                    <span class="badge bg-danger text-white">x@(_selectedDetailReturn.Quantity) uds.</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between border-top border-color-default pt-3 mt-1">
+                        <span class="text-foreground fw-bold">Importe Ajuste Pérdida:</span>
+                        <span class="text-danger fw-bold fs-5">-S/. @_selectedDetailReturn.Amount.ToString("0.00")</span>
+                    </div>
+                </div>
+                <div class="modal-footer bg-muted bg-opacity-10 border-color-default p-3 justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary fw-semibold" @onclick="@(() => _showDetailModal = false)" style="border-radius:8px;">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .worker-kpi-card {
+        background: var(--card);
+        border-radius: var(--radius);
+        padding: 1.5rem 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+        height: 105px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+    }
+    .worker-kpi-card:hover {
+        transform: translateY(-6px) scale(1.02);
+        z-index: 10;
+    }
+    
+    .kpi-green-custom {
+        border: 2px solid #198754;
+        box-shadow: 0 4px 12px rgba(25, 135, 84, 0.08);
+    }
+    .kpi-green-custom:hover {
+        border-color: #157347;
+        box-shadow: 0 12px 24px rgba(25, 135, 84, 0.2);
+    }
+
+    .kpi-red-custom {
+        border: 2px solid #dc3545;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.08);
+    }
+    .kpi-red-custom:hover {
+        border-color: #bb2d3b;
+        box-shadow: 0 12px 24px rgba(220, 53, 69, 0.2);
+    }
+
+    .kpi-yellow-custom {
+        border: 2px solid #ffc107;
+        box-shadow: 0 4px 12px rgba(255, 193, 7, 0.08);
+    }
+    .kpi-yellow-custom:hover {
+        border-color: #ffca2c;
+        box-shadow: 0 12px 24px rgba(255, 193, 7, 0.2);
+    }
+
+    .worker-kpi-card .metric-kpi-icon-custom {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .dropdown-menu-custom {
+        display: block;
+        border: 1px solid var(--border);
+        background-color: var(--card);
+        padding: 0.5rem 0;
+        box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+    }
+    .dropdown-item {
+        background: transparent;
+        border: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.15s ease;
+    }
+    .dropdown-item:hover {
+        background-color: var(--secondary);
+    }
+</style>
+
 @code {
     [Parameter] public string Rol { get; set; } = "admin"; // "admin" | "trabajador"
 
@@ -225,13 +457,32 @@ else
     private string _motivoFilter = "";
     private bool _showModal = false;
     private Return _form = new();
-    private int _selectedProductId = 0;
+    private bool _isEditing = false;
+
+    // Search de Pedidos
+    private string _orderSearchTerm = "";
+    private List<Order> _orderMatches = new();
+    private Order? _selectedOrder = null;
+    private Dictionary<int, bool> _productSelected = new();
+    private Dictionary<int, int> _productReturnQty = new();
+
+    // Dropdowns de Acciones por fila
+    private string? _openDropdownId = null;
+
+    // Detalle de Devolución
+    private bool _showDetailModal = false;
+    private Return? _selectedDetailReturn = null;
+
+    // Motivo select values
+    private string _selectedMotivo = "Vencido";
+    private string _customMotivo = "";
 
     protected override async Task OnInitializedAsync()
     {
         await Task.WhenAll(
             ProductSvc.EnsureLoadedAsync(),
-            ReturnsSvc.EnsureLoadedAsync()
+            ReturnsSvc.EnsureLoadedAsync(),
+            SalesSvc.EnsureLoadedAsync()
         );
         _returns = ReturnsSvc.GetReturns();
     }
@@ -240,43 +491,205 @@ else
         (string.IsNullOrEmpty(_search) ||
          r.Product.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
          r.Id.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
-         r.RegisteredBy.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+         r.RegisteredBy.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+         (r.IdPedido.HasValue && r.IdPedido.Value.ToString().Contains(_search))) &&
         (string.IsNullOrEmpty(_motivoFilter) || r.Reason.Equals(_motivoFilter, StringComparison.OrdinalIgnoreCase))
     );
 
     private decimal TotalRefunded => Filtered.Sum(r => r.Amount);
 
+    private string GetTopReturnedOrderText()
+    {
+        var topOrderGroup = _returns.Where(r => r.IdPedido.HasValue && r.IdPedido.Value > 0)
+                                    .GroupBy(r => r.IdPedido.Value)
+                                    .OrderByDescending(g => g.Count())
+                                    .FirstOrDefault();
+        return topOrderGroup != null 
+            ? $"SHI-2024-{topOrderGroup.Key:D4}"
+            : "N/A";
+    }
+
+    private string GetCustomerNameForReturn(Return r)
+    {
+        if (r.IdPedido.HasValue)
+        {
+            var order = SalesSvc.GetRecentOrders().FirstOrDefault(o => o.Id == $"PED-{r.IdPedido.Value:D4}");
+            if (order != null) return order.Customer;
+        }
+        return "Público General";
+    }
+
+    private void ToggleActionsDropdown(string id)
+    {
+        _openDropdownId = _openDropdownId == id ? null : id;
+    }
+
+    private void VerDetalle(Return dev)
+    {
+        _selectedDetailReturn = dev;
+        _showDetailModal = true;
+        _openDropdownId = null;
+    }
+
     public void OpenCreate()
     {
+        _isEditing = false;
         _form = new Return
         {
             Quantity     = 1,
             RegisteredBy = Auth.CurrentUser?.Name ?? (Rol == "admin" ? "Admin" : "Trabajador")
         };
-        _selectedProductId = 0;
+        _orderSearchTerm = "";
+        _orderMatches.Clear();
+        _selectedOrder = null;
+        _productSelected.Clear();
+        _productReturnQty.Clear();
+        _selectedMotivo = "Vencido";
+        _customMotivo = "";
         _showModal = true;
+        _openDropdownId = null;
+        StateHasChanged();
     }
 
-    private async Task Save()
+    private void OpenEdit(Return dev)
     {
-        var prod = _selectedProductId > 0
-            ? ProductSvc.GetProductById(_selectedProductId)
-            : null;
-
-        if (prod != null)
+        _isEditing = true;
+        _form = new Return
         {
-            _form.Product     = prod.Name;
-            _form.ProductCode = $"PROD-{prod.Id:D3}";
-            _form.Amount      = prod.Price * _form.Quantity;
+            Id = dev.Id,
+            IdPedido = dev.IdPedido,
+            Reason = dev.Reason,
+            Observations = dev.Observations,
+            Quantity = dev.Quantity,
+            Amount = dev.Amount,
+            RegisteredBy = dev.RegisteredBy,
+            Detalles = dev.Detalles != null ? dev.Detalles.Select(d => new DetalleDevolucionApi
+            {
+                IdProducto = d.IdProducto,
+                NombreProducto = d.NombreProducto,
+                PrecioUnitario = d.PrecioUnitario,
+                Cantidad = d.Cantidad
+            }).ToList() : new List<DetalleDevolucionApi>()
+        };
+
+        if (dev.Reason == "Vencido" || dev.Reason == "Dañado")
+        {
+            _selectedMotivo = dev.Reason;
+            _customMotivo = "";
         }
         else
         {
-            _form.ProductCode = "PROD-GEN";
-            _form.Amount      = _form.Amount == 0 ? 10.00m * _form.Quantity : _form.Amount;
+            _selectedMotivo = "Otro";
+            _customMotivo = dev.Reason ?? "";
         }
 
+        if (dev.IdPedido.HasValue)
+        {
+            _selectedOrder = SalesSvc.GetRecentOrders().FirstOrDefault(o => o.Id == $"PED-{dev.IdPedido.Value:D4}");
+            if (_selectedOrder != null)
+            {
+                _orderSearchTerm = _selectedOrder.Id.Replace("PED-", "SHI-2024-") + " - " + _selectedOrder.Customer;
+                _productSelected.Clear();
+                _productReturnQty.Clear();
+                foreach (var item in _selectedOrder.Products)
+                {
+                    var existingDetail = _form.Detalles.FirstOrDefault(d => d.IdProducto == item.Id);
+                    _productSelected[item.Id] = existingDetail != null;
+                    _productReturnQty[item.Id] = existingDetail != null ? existingDetail.Cantidad : 1;
+                }
+            }
+        }
+        else
+        {
+            _orderSearchTerm = "";
+            _selectedOrder = null;
+        }
+
+        _showModal = true;
+        _openDropdownId = null;
+        StateHasChanged();
+    }
+
+    private void OnSearchOrderInput(ChangeEventArgs e)
+    {
+        _orderSearchTerm = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(_orderSearchTerm))
+        {
+            _orderMatches.Clear();
+        }
+        else
+        {
+            _orderMatches = SalesSvc.GetRecentOrders()
+                .Where(o => o.Id.Replace("PED-", "SHI-2024-").Contains(_orderSearchTerm, StringComparison.OrdinalIgnoreCase) ||
+                            o.Customer.Contains(_orderSearchTerm, StringComparison.OrdinalIgnoreCase))
+                .Take(6)
+                .ToList();
+        }
+    }
+
+    private void SelectOrder(Order order)
+    {
+        _selectedOrder = order;
+        _form.IdPedido = int.TryParse(order.Id.Replace("PED-", ""), out var numId) ? numId : 0;
+        _productSelected.Clear();
+        _productReturnQty.Clear();
+        _orderMatches.Clear();
+        _orderSearchTerm = order.Id.Replace("PED-", "SHI-2024-") + " - " + order.Customer;
+        
+        foreach (var item in order.Products)
+        {
+            _productSelected[item.Id] = false;
+            _productReturnQty[item.Id] = 1;
+        }
+    }
+
+    private bool GetProductChecked(int productId) => _productSelected.ContainsKey(productId) && _productSelected[productId];
+    private void OnProductCheckedChange(int productId, bool val) => _productSelected[productId] = val;
+
+    private int GetProductReturnQty(int productId) => _productReturnQty.ContainsKey(productId) ? _productReturnQty[productId] : 1;
+    private void OnProductReturnQtyChange(int productId, int val) => _productReturnQty[productId] = val;
+
+    private async Task Save()
+    {
+        _form.Reason = _selectedMotivo == "Otro" ? _customMotivo : _selectedMotivo;
+        _form.Detalles.Clear();
+        if (_selectedOrder != null)
+        {
+            foreach (var item in _selectedOrder.Products)
+            {
+                if (GetProductChecked(item.Id))
+                {
+                    _form.Detalles.Add(new DetalleDevolucionApi
+                    {
+                        IdProducto = item.Id,
+                        NombreProducto = item.Name,
+                        PrecioUnitario = (double)item.Price,
+                        Cantidad = GetProductReturnQty(item.Id)
+                    });
+                }
+            }
+        }
+
+        if (!_form.Detalles.Any()) return;
+
+        // Auto map header products based on first detail for compatibility
+        var firstDetail = _form.Detalles.First();
+        _form.Product = string.Join(", ", _form.Detalles.Select(d => d.NombreProducto));
+        _form.ProductCode = string.Join(", ", _form.Detalles.Select(d => $"PROD-{d.IdProducto:D3}"));
+        _form.Quantity = _form.Detalles.Sum(d => d.Cantidad);
+        _form.Amount = (decimal)_form.Detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
+
         int idUsuario = Auth.CurrentUser?.IdUsuario ?? 0;
-        await ReturnsSvc.AddReturnAsync(_form, _selectedProductId, idUsuario);
+        
+        if (_isEditing)
+        {
+            await ReturnsSvc.UpdateReturnAsync(_form, idUsuario);
+        }
+        else
+        {
+            await ReturnsSvc.AddReturnAsync(_form, 0, idUsuario);
+        }
+
         _showModal = false;
         _returns = ReturnsSvc.GetReturns();
     }
@@ -285,5 +698,6 @@ else
     {
         ReturnsSvc.DeleteReturn(id);
         _returns = ReturnsSvc.GetReturns();
+        _openDropdownId = null;
     }
 }

@@ -2,13 +2,14 @@ package pe.edu.pucp.persistance.dao.venta.Impl;
 
 import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.enums.CanalVenta;
-import pe.edu.pucp.model.enums.EstadoVenta;
 import pe.edu.pucp.model.usuario.Cliente;
 import pe.edu.pucp.model.usuario.Trabajador;
+import pe.edu.pucp.model.producto.Producto;
 import pe.edu.pucp.model.venta.Boleta;
 import pe.edu.pucp.model.venta.DetalleVenta;
 import pe.edu.pucp.model.venta.MetodoPago;
 import pe.edu.pucp.model.venta.Venta;
+import pe.edu.pucp.persistance.dao.usuario.impl.ClienteDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
 import pe.edu.pucp.model.venta.TopProductoDto;
 import pe.edu.pucp.model.venta.VentaReporteDto;
@@ -21,10 +22,6 @@ import java.util.Map;
 
 public class VentaDaoImpl implements VentaDao {
 
-    // -------------------------------------------------------------------------
-    // INSERT con transaccion — SP: INSERTAR_VENTA + INSERTAR_DETALLE_VENTA
-    // Usa transacciones del DBManager para insertar cabecera + detalles
-    // -------------------------------------------------------------------------
     @Override
     public int insertar(Venta venta) {
         int resultado = 0;
@@ -37,7 +34,11 @@ public class VentaDaoImpl implements VentaDao {
             Map<Integer, Object> paramsSalida = new HashMap<>();
 
             paramsSalida.put(1, Types.INTEGER);
-            paramsEntrada.put(2, venta.getCliente().getIdUsuario());
+            if (venta.getCliente() != null && venta.getCliente().getIdUsuario() > 0) {
+                paramsEntrada.put(2, venta.getCliente().getIdUsuario());
+            } else {
+                paramsEntrada.put(2, null);
+            }
             paramsEntrada.put(3, venta.getTrabajador().getIdUsuario());
             paramsEntrada.put(4, venta.getMetodoPago().getIdMetodoPago());
             paramsEntrada.put(5, venta.getCanalVenta().name());
@@ -46,7 +47,6 @@ public class VentaDaoImpl implements VentaDao {
             dbManager.ejecutarProcedimientoTransaccion(
                     "INSERTAR_VENTA", paramsEntrada, paramsSalida);
             venta.setIdVenta((int) paramsSalida.get(1));
-
 
             // Insertar detalles
             if (venta.getDetalles() != null) {
@@ -74,7 +74,6 @@ public class VentaDaoImpl implements VentaDao {
         return resultado;
     }
 
-    // SP: COMPLETAR_VENTA(IN _venta_id)
     @Override
     public int modificar(Venta venta) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -83,7 +82,6 @@ public class VentaDaoImpl implements VentaDao {
                 "COMPLETAR_VENTA", parametrosEntrada, null);
     }
 
-    // SP: ANULAR_VENTA(IN _venta_id)
     @Override
     public int eliminar(int id) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -92,7 +90,6 @@ public class VentaDaoImpl implements VentaDao {
                 "ANULAR_VENTA", parametrosEntrada, null);
     }
 
-    // SP: BUSCAR_VENTA_X_ID(IN _venta_id)
     @Override
     public Venta buscarPorId(int id) {
         Venta venta = null;
@@ -104,12 +101,10 @@ public class VentaDaoImpl implements VentaDao {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
                 if (rs.next()) {
-                    String numeroBoleta = rs.getString("NUMERO_BOLETA");
-                    if (numeroBoleta != null && !numeroBoleta.isEmpty()) {
-                        venta = mapearBoleta(rs, numeroBoleta);
-                    } else {
-                        venta = mapearVenta(rs);
-                    }
+                    venta = mapearVenta(rs);
+                    venta.setDetalles(listarDetallesPorVenta(venta.getIdVenta()));
+                    BoletaDaoImpl boletaDao = new BoletaDaoImpl();
+                    venta.setBoleta(boletaDao.buscarPorVentaId(venta.getIdVenta()));
                 }
             }
         } catch (SQLException ex) {
@@ -118,7 +113,6 @@ public class VentaDaoImpl implements VentaDao {
         return venta;
     }
 
-    // SP: LISTAR_VENTAS()
     @Override
     public List<Venta> listarTodos() {
         List<Venta> lista = new ArrayList<>();
@@ -127,13 +121,11 @@ public class VentaDaoImpl implements VentaDao {
                 .ejecutarProcedimientoLectura("LISTAR_VENTAS", null)) {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
+                BoletaDaoImpl boletaDao = new BoletaDaoImpl();
                 while (rs.next()) {
-                    String numeroBoleta = rs.getString("NUMERO_BOLETA");
-                    if (numeroBoleta != null && !numeroBoleta.isEmpty()) {
-                        lista.add(mapearBoleta(rs, numeroBoleta));
-                    } else {
-                        lista.add(mapearVenta(rs));
-                    }
+                    Venta v = mapearVenta(rs);
+                    v.setBoleta(boletaDao.buscarPorVentaId(v.getIdVenta()));
+                    lista.add(v);
                 }
             }
         } catch (SQLException ex) {
@@ -142,23 +134,10 @@ public class VentaDaoImpl implements VentaDao {
         return lista;
     }
 
-    // -------------------------------------------------------------------------
-    // Mapeo del ResultSet
-    // -------------------------------------------------------------------------
     private Venta mapearVenta(ResultSet rs) throws SQLException {
         Venta v = new Venta();
         completarCamposVenta(rs, v);
         return v;
-    }
-
-    private Boleta mapearBoleta(ResultSet rs, String numeroBoleta) throws SQLException {
-        Boleta boleta = new Boleta();
-        completarCamposVenta(rs, boleta);
-        boleta.setNumeroBoleta(numeroBoleta);
-        boleta.setRuc(rs.getString("RUC_EMPRESA"));
-        boleta.setContactoCliente(rs.getString("CONTACTO_CLIENTE"));
-        boleta.setMensajeBoleta(rs.getString("MENSAJE_BOLETA"));
-        return boleta;
     }
 
     private void completarCamposVenta(ResultSet rs, Venta v) throws SQLException {
@@ -167,16 +146,20 @@ public class VentaDaoImpl implements VentaDao {
         v.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
         v.setMontoDescuento(rs.getDouble("MONTO_DESCUENTO"));
         v.setCanalVenta(CanalVenta.valueOf(rs.getString("CANAL_VENTA")));
-        v.setEstadoVenta(EstadoVenta.valueOf(rs.getString("ESTADO_VENTA")));
+        v.setEstado(rs.getString("ESTADO_VENTA"));
         v.setObservaciones(rs.getString("OBSERVACIONES"));
 
         int clienteId = rs.getInt("CLIENTE_ID");
         if (clienteId > 0) {
-            Cliente cliente = new Cliente();
-            cliente.setIdUsuario(clienteId);
-            cliente.setNombres(rs.getString("CLIENTE_NOMBRES"));
-            cliente.setApellidos(rs.getString("CLIENTE_APELLIDOS"));
-            v.setCliente(cliente);
+            ClienteDaoImpl clienteDao = new ClienteDaoImpl();
+            Cliente cliente = clienteDao.buscarPorId(clienteId);
+            if (cliente != null) {
+                v.setCliente(cliente);
+            } else {
+                Cliente clienteMinimo = new Cliente();
+                clienteMinimo.setIdUsuario(clienteId);
+                v.setCliente(clienteMinimo);
+            }
         }
 
         Trabajador trabajador = new Trabajador();
@@ -189,7 +172,6 @@ public class VentaDaoImpl implements VentaDao {
         v.setMetodoPago(metodoPago);
     }
 
-    // SP: LISTAR_VENTAS_X_FECHAS(IN _fecha_inicio DATETIME, IN _fecha_fin DATETIME)
     @Override
     public List<Venta> listarPorFechas(java.time.LocalDateTime fechaInicio, java.time.LocalDateTime fechaFin) {
         List<Venta> lista = new ArrayList<>();
@@ -201,13 +183,11 @@ public class VentaDaoImpl implements VentaDao {
                 .ejecutarProcedimientoLectura("LISTAR_VENTAS_X_FECHAS", parametrosEntrada)) {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
+                BoletaDaoImpl boletaDao = new BoletaDaoImpl();
                 while (rs.next()) {
-                    String numeroBoleta = rs.getString("NUMERO_BOLETA");
-                    if (numeroBoleta != null && !numeroBoleta.isEmpty()) {
-                        lista.add(mapearBoleta(rs, numeroBoleta));
-                    } else {
-                        lista.add(mapearVenta(rs));
-                    }
+                    Venta v = mapearVenta(rs);
+                    v.setBoleta(boletaDao.buscarPorVentaId(v.getIdVenta()));
+                    lista.add(v);
                 }
             }
         } catch (SQLException ex) {
@@ -216,7 +196,6 @@ public class VentaDaoImpl implements VentaDao {
         return lista;
     }
 
-    // SP: LISTAR_VENTAS_X_TRABAJADOR(IN _trabajador_id INT)
     @Override
     public List<Venta> listarPorTrabajador(int idTrabajador) {
         List<Venta> lista = new ArrayList<>();
@@ -227,13 +206,11 @@ public class VentaDaoImpl implements VentaDao {
                 .ejecutarProcedimientoLectura("LISTAR_VENTAS_X_TRABAJADOR", parametrosEntrada)) {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
+                BoletaDaoImpl boletaDao = new BoletaDaoImpl();
                 while (rs.next()) {
-                    String numeroBoleta = rs.getString("NUMERO_BOLETA");
-                    if (numeroBoleta != null && !numeroBoleta.isEmpty()) {
-                        lista.add(mapearBoleta(rs, numeroBoleta));
-                    } else {
-                        lista.add(mapearVenta(rs));
-                    }
+                    Venta v = mapearVenta(rs);
+                    v.setBoleta(boletaDao.buscarPorVentaId(v.getIdVenta()));
+                    lista.add(v);
                 }
             }
         } catch (SQLException ex) {
@@ -293,5 +270,53 @@ public class VentaDaoImpl implements VentaDao {
             System.out.println("Error en top productos vendidos: " + ex.getMessage());
         }
         return lista;
+    }
+
+    private List<DetalleVenta> listarDetallesPorVenta(int idVenta) {
+        List<DetalleVenta> lista = new ArrayList<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idVenta);
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_DETALLES_POR_VENTA", parametrosEntrada)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    DetalleVenta detalle = new DetalleVenta();
+                    detalle.setIdDetalleVenta(rs.getInt("DETALLE_VENTA_ID"));
+                    detalle.setIdPadreVenta(rs.getInt("VENTA_ID"));
+                    detalle.setCantidad(rs.getInt("CANTIDAD"));
+                    detalle.setPrecioUnitario(rs.getDouble("PRECIO_UNITARIO"));
+                    detalle.setSubtotal(rs.getDouble("SUBTOTAL"));
+
+                    Producto producto = new Producto();
+                    producto.setIdProducto(rs.getInt("PRODUCTO_ID"));
+                    producto.setNombre(rs.getString("PRODUCTO_NOMBRE"));
+                    detalle.setProducto(producto);
+                    detalle.setDescripcion(rs.getString("PRODUCTO_NOMBRE"));
+                    lista.add(detalle);
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar detalles por venta: " + ex.getMessage());
+        }
+        return lista;
+    }
+
+    @Override
+    public int confirmarVenta(int idVenta) {
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idVenta);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "sp_ConfirmarVenta", parametrosEntrada, null);
+    }
+
+    @Override
+    public int actualizarEstadoVenta(int idVenta, String estado) {
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idVenta);
+        parametrosEntrada.put(2, estado);
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "sp_ActualizarEstadoVentaBoleta", parametrosEntrada, null);
     }
 }

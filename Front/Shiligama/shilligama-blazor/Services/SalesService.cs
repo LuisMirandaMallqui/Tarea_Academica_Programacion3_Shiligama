@@ -33,6 +33,7 @@ public class SalesService
 
     // Diagnóstico: último error al cargar pedidos (null = sin error)
     public string? UltimoErrorPedidos { get; private set; }
+    public string? UltimoErrorBoleta { get; private set; }
 
     public SalesService(HttpClient http, JsonSerializerOptions json)
     {
@@ -206,11 +207,12 @@ public class SalesService
         var venta = new
         {
             canalVenta  = "PRESENCIAL",
-            estadoVenta = "COMPLETADA",
+            estado      = "PENDIENTE",
             montoTotal  = (double)total,
             montoDescuento = 0.0,
             observaciones  = string.IsNullOrWhiteSpace(customerName)
                              ? null : $"Cliente: {customerName}",
+            cliente     = new { idUsuario = 9 },
             trabajador  = new { idUsuario = idTrabajador },
             metodoPago  = new { idMetodoPago = idMetodoPago },
             detalles    = detalles
@@ -233,7 +235,7 @@ public class SalesService
                     Total      = total,
                     MetodoPago = payMethod,
                     Comprobante= invoiceType,
-                    Estado     = "completado"
+                    Estado     = "pendiente"
                 });
                 return idGenerado;
             }
@@ -505,6 +507,46 @@ public class SalesService
         catch { /* red no disponible */ }
 
         return 0; // 0 indica que no se pudo guardar en la BD
+    }
+
+    public async Task<bool> ConfirmPresencialSaleAsync(int idVenta)
+    {
+        try
+        {
+            var resp = await _http.PostAsync($"ventas/{idVenta}/confirmar", null);
+            return resp.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<BoletaResponse?> GenerateBoletaAsync(int idVenta)
+    {
+        UltimoErrorBoleta = null;
+        try
+        {
+            var resp = await _http.PostAsync($"boleta/generar/{idVenta}", null);
+            if (resp.IsSuccessStatusCode)
+            {
+                var boleta = await resp.Content.ReadFromJsonAsync<BoletaResponse>(_json);
+                if (boleta == null)
+                {
+                    UltimoErrorBoleta = "El servidor respondió sin datos de boleta.";
+                }
+                return boleta;
+            }
+
+            UltimoErrorBoleta = await resp.Content.ReadAsStringAsync();
+            Console.WriteLine($"Error al generar boleta: {UltimoErrorBoleta}");
+        }
+        catch (Exception ex)
+        {
+            UltimoErrorBoleta = ex.Message;
+            Console.WriteLine($"Excepcion al generar boleta: {ex.Message}");
+        }
+        return null;
     }
 }
 

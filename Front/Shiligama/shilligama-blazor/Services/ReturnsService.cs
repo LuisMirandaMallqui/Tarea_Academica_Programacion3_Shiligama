@@ -50,8 +50,6 @@ public class ReturnsService
     public Return? GetReturnById(string id) => _returns.FirstOrDefault(r => r.Id == id);
 
     // Crea devolución en el backend.
-    // idProducto e idTrabajador se requieren; si no se tienen se usan 0
-    // (el backend validará y devolverá error).
     public async Task<bool> AddReturnAsync(Return returnItem, int idProducto, int idTrabajador)
     {
         var dto = DevolucionApi.FromReturn(returnItem, idProducto, idTrabajador);
@@ -77,7 +75,7 @@ public class ReturnsService
         return false;
     }
 
-    // Versión síncrona de compatibilidad (fire-and-forget al API + local)
+    // Versión síncrona de compatibilidad
     public void AddReturn(Return returnItem)
     {
         var localId = _returns.Count + 1;
@@ -85,9 +83,34 @@ public class ReturnsService
         returnItem.Date = DateTime.Now;
         _returns.Insert(0, returnItem);
 
-        // Intenta persistir en el backend en background
-        // idProducto e idTrabajador = 0 → el admin puede usarlo solo como registro local
         _ = _http.PostAsJsonAsync("devoluciones", DevolucionApi.FromReturn(returnItem, 0, 0));
+    }
+
+    public async Task<bool> UpdateReturnAsync(Return returnItem, int idTrabajador)
+    {
+        var dto = DevolucionApi.FromReturn(returnItem, 0, idTrabajador);
+        try
+        {
+            var resp = await _http.PutAsJsonAsync("devoluciones", dto);
+            if (resp.IsSuccessStatusCode)
+            {
+                var existing = GetReturnById(returnItem.Id);
+                if (existing != null)
+                {
+                    existing.Product      = returnItem.Product;
+                    existing.ProductCode  = returnItem.ProductCode;
+                    existing.Quantity     = returnItem.Quantity;
+                    existing.Reason       = returnItem.Reason;
+                    existing.Amount       = returnItem.Amount;
+                    existing.Observations = returnItem.Observations;
+                    existing.IdPedido     = returnItem.IdPedido;
+                    existing.Detalles     = returnItem.Detalles;
+                }
+                return true;
+            }
+        }
+        catch { /* error de red */ }
+        return false;
     }
 
     public void UpdateReturn(Return returnItem)
@@ -101,6 +124,8 @@ public class ReturnsService
         existing.RegisteredBy = returnItem.RegisteredBy;
         existing.Amount      = returnItem.Amount;
         existing.Observations = returnItem.Observations;
+        existing.IdPedido     = returnItem.IdPedido;
+        existing.Detalles     = returnItem.Detalles;
     }
 
     public void DeleteReturn(string id)

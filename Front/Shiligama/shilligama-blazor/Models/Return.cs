@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace shilligama_blazor.Models;
 
@@ -13,4 +14,6 @@ public class Return
     public string RegisteredBy { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public string Observations { get; set; } = string.Empty;
+    public int? IdPedido { get; set; }
+    public List<DetalleDevolucionApi> Detalles { get; set; } = new();
 }

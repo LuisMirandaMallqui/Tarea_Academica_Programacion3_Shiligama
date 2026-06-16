@@ -1213,6 +1213,7 @@ DROP PROCEDURE IF EXISTS INSERTAR_DEVOLUCION$$
 CREATE PROCEDURE INSERTAR_DEVOLUCION(
     OUT _devolucion_id    INT,
     IN  _producto_id      INT,
+    IN  _pedido_id        INT,
     IN  _trabajador_id    INT,
     IN  _estado_devolucion VARCHAR(20),
     IN  _cantidad         INT,
@@ -1220,17 +1221,48 @@ CREATE PROCEDURE INSERTAR_DEVOLUCION(
     IN  _fecha_hora       DATETIME
 )
 BEGIN
-    INSERT INTO devolucion(PRODUCTO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION,
+    INSERT INTO devolucion(PRODUCTO_ID, PEDIDO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION,
                              CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO)
-    VALUES(_producto_id, _trabajador_id, _estado_devolucion,
+    VALUES(_producto_id, _pedido_id, _trabajador_id, _estado_devolucion,
            _cantidad, _motivo, _fecha_hora, 1);
     SET _devolucion_id = LAST_INSERT_ID();
+END$$
+
+DROP PROCEDURE IF EXISTS INSERTAR_DETALLE_DEVOLUCION$$
+CREATE PROCEDURE INSERTAR_DETALLE_DEVOLUCION(
+    IN _devolucion_id INT,
+    IN _producto_id   INT,
+    IN _cantidad      INT
+)
+BEGIN
+    INSERT INTO detalle_devolucion(DEVOLUCION_ID, PRODUCTO_ID, CANTIDAD)
+    VALUES(_devolucion_id, _producto_id, _cantidad);
+END$$
+
+DROP PROCEDURE IF EXISTS ELIMINAR_DETALLES_DEVOLUCION$$
+CREATE PROCEDURE ELIMINAR_DETALLES_DEVOLUCION(
+    IN _devolucion_id INT
+)
+BEGIN
+    DELETE FROM detalle_devolucion WHERE DEVOLUCION_ID = _devolucion_id;
+END$$
+
+DROP PROCEDURE IF EXISTS LISTAR_DETALLES_DEVOLUCION$$
+CREATE PROCEDURE LISTAR_DETALLES_DEVOLUCION(
+    IN _devolucion_id INT
+)
+BEGIN
+    SELECT dd.PRODUCTO_ID, p.NOMBRE AS PRODUCTO_NOMBRE, p.PRECIO_UNITARIO, dd.CANTIDAD
+    FROM detalle_devolucion dd
+    INNER JOIN producto p ON dd.PRODUCTO_ID = p.PRODUCTO_ID
+    WHERE dd.DEVOLUCION_ID = _devolucion_id;
 END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_DEVOLUCION$$
 CREATE PROCEDURE MODIFICAR_DEVOLUCION(
     IN _devolucion_id      INT,
     IN _producto_id        INT,
+    IN _pedido_id          INT,
     IN _trabajador_id      INT,
     IN _estado_devolucion  VARCHAR(20),
     IN _cantidad           INT,
@@ -1240,6 +1272,7 @@ CREATE PROCEDURE MODIFICAR_DEVOLUCION(
 BEGIN
     UPDATE devolucion SET
         PRODUCTO_ID       = _producto_id,
+        PEDIDO_ID         = _pedido_id,
         TRABAJADOR_ID     = _trabajador_id,
         ESTADO_DEVOLUCION = _estado_devolucion,
         CANTIDAD          = _cantidad,
@@ -1248,7 +1281,6 @@ BEGIN
     WHERE DEVOLUCION_ID = _devolucion_id;
 END$$
 
--- CORREGIDO: usaba columnas lowercase (id_devolucion, activo) — ahora UPPERCASE
 DROP PROCEDURE IF EXISTS ELIMINAR_DEVOLUCION$$
 CREATE PROCEDURE ELIMINAR_DEVOLUCION(
     IN _devolucion_id INT
@@ -1258,41 +1290,44 @@ BEGIN
     WHERE DEVOLUCION_ID = _devolucion_id;
 END$$
 
--- DAO: DevolucionDaoImpl.buscarPorID → "BUSCAR_DEVOLUCION_POR_ID"
 DROP PROCEDURE IF EXISTS BUSCAR_DEVOLUCION_POR_ID$$
 CREATE PROCEDURE BUSCAR_DEVOLUCION_POR_ID(
     IN _devolucion_id INT
 )
 BEGIN
-    SELECT DEVOLUCION_ID, PRODUCTO_ID, TRABAJADOR_ID,
-           ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO
-    FROM devolucion
-    WHERE DEVOLUCION_ID = _devolucion_id AND ACTIVO = 1;
+    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.TRABAJADOR_ID,
+           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.FECHA_HORA, d.ACTIVO,
+           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+    FROM devolucion d
+    LEFT JOIN usuario u ON d.TRABAJADOR_ID = u.USUARIO_ID
+    WHERE d.DEVOLUCION_ID = _devolucion_id AND d.ACTIVO = 1;
 END$$
 
--- DAO: DevolucionDaoImpl.listarTodos → "LISTAR_DEVOLUCIONES_TODAS"
 DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_TODAS$$
 CREATE PROCEDURE LISTAR_DEVOLUCIONES_TODAS()
 BEGIN
-    SELECT DEVOLUCION_ID, PRODUCTO_ID, TRABAJADOR_ID,
-           ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO
-    FROM devolucion
-    WHERE ACTIVO = 1
-    ORDER BY FECHA_HORA DESC;
+    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.TRABAJADOR_ID,
+           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.FECHA_HORA, d.ACTIVO,
+           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+    FROM devolucion d
+    LEFT JOIN usuario u ON d.TRABAJADOR_ID = u.USUARIO_ID
+    WHERE d.ACTIVO = 1
+    ORDER BY d.FECHA_HORA DESC;
 END$$
 
--- DAO: DevolucionDaoImpl.listarPorFechas → "LISTAR_DEVOLUCIONES_POR_FECHAS"
 DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_POR_FECHAS$$
 CREATE PROCEDURE LISTAR_DEVOLUCIONES_POR_FECHAS(
     IN _fecha_inicio DATETIME,
     IN _fecha_fin    DATETIME
 )
 BEGIN
-    SELECT DEVOLUCION_ID, PRODUCTO_ID, TRABAJADOR_ID,
-           ESTADO_DEVOLUCION, CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO
-    FROM devolucion
-    WHERE ACTIVO = 1 AND FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
-    ORDER BY FECHA_HORA DESC;
+    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.TRABAJADOR_ID,
+           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.FECHA_HORA, d.ACTIVO,
+           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+    FROM devolucion d
+    LEFT JOIN usuario u ON d.TRABAJADOR_ID = u.USUARIO_ID
+    WHERE d.ACTIVO = 1 AND d.FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
+    ORDER BY d.FECHA_HORA DESC;
 END$$
 
 
@@ -2028,6 +2063,119 @@ CREATE PROCEDURE MARCAR_TOKEN_USADO(
 )
 BEGIN
     UPDATE token_recuperacion SET USADO = 1 WHERE TOKEN_ID = _token_id;
+END$$
+
+-- =====================================================================
+-- MÓDULO NUBEFACT / BOLETAS ELECTRÓNICAS
+-- =====================================================================
+
+DROP PROCEDURE IF EXISTS sp_ObtenerSiguienteNumeroBoleta$$
+CREATE PROCEDURE sp_ObtenerSiguienteNumeroBoleta(
+    IN p_serie VARCHAR(4)
+)
+BEGIN
+    SELECT COALESCE(MAX(numero), 0) + 1 AS siguiente_numero
+    FROM boleta
+    WHERE serie = p_serie;
+END$$
+
+DROP PROCEDURE IF EXISTS sp_InsertarBoleta$$
+CREATE PROCEDURE sp_InsertarBoleta(
+    OUT p_id BIGINT,
+    IN p_venta_id INT,
+    IN p_serie VARCHAR(4),
+    IN p_numero INT,
+    IN p_fecha_emision DATE,
+    IN p_cliente_tipo_documento VARCHAR(2),
+    IN p_cliente_numero_documento VARCHAR(15),
+    IN p_cliente_denominacion VARCHAR(100),
+    IN p_cliente_direccion VARCHAR(100),
+    IN p_cliente_email VARCHAR(250),
+    IN p_moneda INT,
+    IN p_porcentaje_igv DECIMAL(5,2),
+    IN p_total_gravada DECIMAL(12,2),
+    IN p_total_igv DECIMAL(12,2),
+    IN p_total DECIMAL(12,2),
+    IN p_nubefact_enlace VARCHAR(500),
+    IN p_nubefact_enlace_pdf VARCHAR(500),
+    IN p_nubefact_enlace_xml VARCHAR(500),
+    IN p_nubefact_enlace_cdr VARCHAR(500),
+    IN p_nubefact_cadena_qr TEXT,
+    IN p_nubefact_codigo_hash VARCHAR(100),
+    IN p_aceptada_por_sunat BOOLEAN,
+    IN p_sunat_response_code VARCHAR(10),
+    IN p_sunat_description TEXT,
+    IN p_usuario_registro VARCHAR(50)
+)
+BEGIN
+    INSERT INTO boleta (
+        venta_id, serie, numero, fecha_emision,
+        cliente_tipo_documento, cliente_numero_documento, cliente_denominacion,
+        cliente_direccion, cliente_email, moneda, porcentaje_igv,
+        total_gravada, total_igv, total,
+        nubefact_enlace, nubefact_enlace_pdf, nubefact_enlace_xml, nubefact_enlace_cdr,
+        nubefact_cadena_qr, nubefact_codigo_hash,
+        aceptada_por_sunat, sunat_response_code, sunat_description,
+        usuario_registro
+    ) VALUES (
+        p_venta_id, p_serie, p_numero, p_fecha_emision,
+        p_cliente_tipo_documento, p_cliente_numero_documento, p_cliente_denominacion,
+        p_cliente_direccion, p_cliente_email, p_moneda, p_porcentaje_igv,
+        p_total_gravada, p_total_igv, p_total,
+        p_nubefact_enlace, p_nubefact_enlace_pdf, p_nubefact_enlace_xml, p_nubefact_enlace_cdr,
+        p_nubefact_cadena_qr, p_nubefact_codigo_hash,
+        p_aceptada_por_sunat, p_sunat_response_code, p_sunat_description,
+        p_usuario_registro
+    );
+    SET p_id = LAST_INSERT_ID();
+END$$
+
+DROP PROCEDURE IF EXISTS sp_InsertarDetalleBoleta$$
+CREATE PROCEDURE sp_InsertarDetalleBoleta(
+    OUT p_id BIGINT,
+    IN p_id_boleta BIGINT,
+    IN p_id_producto BIGINT,
+    IN p_unidad_medida VARCHAR(5),
+    IN p_descripcion TEXT,
+    IN p_cantidad DECIMAL(12,2),
+    IN p_valor_unitario DECIMAL(12,2),
+    IN p_precio_unitario DECIMAL(12,2),
+    IN p_subtotal DECIMAL(12,2),
+    IN p_igv DECIMAL(12,2),
+    IN p_total DECIMAL(12,2)
+)
+BEGIN
+    INSERT INTO boleta_detalle (
+        id_boleta, id_producto, unidad_medida, descripcion, cantidad,
+        valor_unitario, precio_unitario, subtotal, igv, total
+    ) VALUES (
+        p_id_boleta, p_id_producto, p_unidad_medida, p_descripcion, p_cantidad,
+        p_valor_unitario, p_precio_unitario, p_subtotal, p_igv, p_total
+    );
+    SET p_id = LAST_INSERT_ID();
+END$$
+
+DROP PROCEDURE IF EXISTS sp_ConfirmarVenta$$
+CREATE PROCEDURE sp_ConfirmarVenta(
+    IN p_venta_id INT
+)
+BEGIN
+    DECLARE v_count INT;
+    SELECT COUNT(*) INTO v_count FROM detalle_venta WHERE VENTA_ID = p_venta_id;
+    IF v_count > 0 THEN
+        UPDATE venta SET ESTADO_VENTA = 'CONFIRMADA' WHERE VENTA_ID = p_venta_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La venta no tiene lineas de venta.';
+    END IF;
+END$$
+
+DROP PROCEDURE IF EXISTS sp_ActualizarEstadoVentaBoleta$$
+CREATE PROCEDURE sp_ActualizarEstadoVentaBoleta(
+    IN p_venta_id INT,
+    IN p_estado VARCHAR(20)
+)
+BEGIN
+    UPDATE venta SET ESTADO_VENTA = p_estado WHERE VENTA_ID = p_venta_id;
 END$$
 
 DELIMITER ;

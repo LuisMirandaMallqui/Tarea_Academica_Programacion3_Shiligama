@@ -46,8 +46,8 @@ public class DBManager {
     // -------------------------------------------------------------------------
     // Ejecutar procedimiento almacenado DML (INSERT, UPDATE, DELETE)
     // parametrosEntrada: Map<posicion, valor>
-    // parametrosSalida:  Map<posicion, sqlType (Types.INTEGER, etc.)>
-    //   -> despues de ejecutar, el map se actualiza con los valores de salida
+    // parametrosSalida: Map<posicion, sqlType (Types.INTEGER, etc.)>
+    // -> despues de ejecutar, el map se actualiza con los valores de salida
     // -------------------------------------------------------------------------
 
     public int ejecutarProcedimiento(
@@ -57,10 +57,9 @@ public class DBManager {
 
         int resultado = 0;
         try (
-            Connection con = getConnection();
-            CallableStatement cst = formarLlamadaProcedimiento(
-                    con, nombreProcedimiento, parametrosEntrada, parametrosSalida)
-        ) {
+                Connection con = getConnection();
+                CallableStatement cst = formarLlamadaProcedimiento(
+                        con, nombreProcedimiento, parametrosEntrada, parametrosSalida)) {
             if (parametrosEntrada != null) {
                 registrarParametrosEntrada(cst, parametrosEntrada);
             }
@@ -138,9 +137,8 @@ public class DBManager {
 
         int resultado = 0;
         try (
-            CallableStatement cst = formarLlamadaProcedimiento(
-                    conTransaccion, nombreProcedimiento, parametrosEntrada, parametrosSalida)
-        ) {
+                CallableStatement cst = formarLlamadaProcedimiento(
+                        conTransaccion, nombreProcedimiento, parametrosEntrada, parametrosSalida)) {
             if (parametrosEntrada != null) {
                 registrarParametrosEntrada(cst, parametrosEntrada);
             }
@@ -173,7 +171,8 @@ public class DBManager {
         int numParams = cantEntrada + cantSalida;
         for (int i = 0; i < numParams; i++) {
             call.append("?");
-            if (i < numParams - 1) call.append(",");
+            if (i < numParams - 1)
+                call.append(",");
         }
         call.append(")}");
         return con.prepareCall(call.toString());
@@ -253,12 +252,24 @@ public class DBManager {
 
         @Override
         public void close() {
-            try { if (rs != null) rs.close(); }
-            catch (SQLException ex) { System.out.println("Error cerrando ResultSet: " + ex.getMessage()); }
-            try { if (cs != null) cs.close(); }
-            catch (SQLException ex) { System.out.println("Error cerrando CallableStatement: " + ex.getMessage()); }
-            try { if (con != null) con.close(); }
-            catch (SQLException ex) { System.out.println("Error cerrando Connection: " + ex.getMessage()); }
+            try {
+                if (rs != null)
+                    rs.close();
+            } catch (SQLException ex) {
+                System.out.println("Error cerrando ResultSet: " + ex.getMessage());
+            }
+            try {
+                if (cs != null)
+                    cs.close();
+            } catch (SQLException ex) {
+                System.out.println("Error cerrando CallableStatement: " + ex.getMessage());
+            }
+            try {
+                if (con != null)
+                    con.close();
+            } catch (SQLException ex) {
+                System.out.println("Error cerrando Connection: " + ex.getMessage());
+            }
         }
     }
 }

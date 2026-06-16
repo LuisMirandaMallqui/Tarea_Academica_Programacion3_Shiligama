@@ -16,45 +16,45 @@
     <!-- KPI Cards -->
     <div class="row g-3">
         <div class="col-6 col-xl-3">
-            <div class="metric-card-kpi">
+            <div class="worker-kpi-card kpi-blue">
                 <div>
-                    <div class="metric-kpi-value text-foreground">@_products.Count</div>
-                    <div class="metric-kpi-label">Total Productos</div>
+                    <div class="metric-kpi-value text-foreground" style="font-size:1.6rem;font-weight:700;">@_products.Count</div>
+                    <div class="metric-kpi-label" style="font-size:0.8rem;color:var(--muted-foreground);">Total Productos</div>
                 </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,var(--primary) 15%,transparent);color:var(--primary);">
+                <div class="metric-kpi-icon-custom" style="background:#e3f2fd;color:#0d6efd;">
                     <i class="fas fa-boxes"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-xl-3">
-            <div class="metric-card-kpi">
+            <div class="worker-kpi-card kpi-green">
                 <div>
-                    <div class="metric-kpi-value text-foreground">@_products.Count(p => p.Stock > 10)</div>
-                    <div class="metric-kpi-label">Stock Disponible</div>
+                    <div class="metric-kpi-value text-foreground" style="font-size:1.6rem;font-weight:700;">@_products.Count(p => p.Stock > 10)</div>
+                    <div class="metric-kpi-label" style="font-size:0.8rem;color:var(--muted-foreground);">Stock Disponible</div>
                 </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#2e7d32 15%,transparent);color:#2e7d32;">
+                <div class="metric-kpi-icon-custom" style="background:#e8f5e9;color:#198754;">
                     <i class="fas fa-check-circle"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-xl-3">
-            <div class="metric-card-kpi">
+            <div class="worker-kpi-card kpi-yellow">
                 <div>
-                    <div class="metric-kpi-value text-foreground">@_products.Count(p => p.Stock > 0 && p.Stock <= 10)</div>
-                    <div class="metric-kpi-label">Stock Bajo</div>
+                    <div class="metric-kpi-value text-foreground" style="font-size:1.6rem;font-weight:700;">@_products.Count(p => p.Stock > 0 && p.Stock <= 10)</div>
+                    <div class="metric-kpi-label" style="font-size:0.8rem;color:var(--muted-foreground);">Stock Bajo</div>
                 </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#f59e0b 15%,transparent);color:#f59e0b;">
+                <div class="metric-kpi-icon-custom" style="background:#fff8e1;color:#ffc107;">
                     <i class="fas fa-exclamation-triangle"></i>
                 </div>
             </div>
         </div>
         <div class="col-6 col-xl-3">
-            <div class="metric-card-kpi">
+            <div class="worker-kpi-card kpi-red">
                 <div>
-                    <div class="metric-kpi-value text-foreground">@_products.Count(p => p.Stock == 0)</div>
-                    <div class="metric-kpi-label">Agotados</div>
+                    <div class="metric-kpi-value text-foreground" style="font-size:1.6rem;font-weight:700;">@_products.Count(p => p.Stock == 0)</div>
+                    <div class="metric-kpi-label" style="font-size:0.8rem;color:var(--muted-foreground);">Agotados</div>
                 </div>
-                <div class="metric-kpi-icon" style="background:color-mix(in srgb,#c62828 15%,transparent);color:#c62828;">
+                <div class="metric-kpi-icon-custom" style="background:#ffebee;color:#dc3545;">
                     <i class="fas fa-times-circle"></i>
                 </div>
             </div>
@@ -62,19 +62,19 @@
     </div>
 
     <!-- Filters -->
-    <div class="card border rounded-4 d-flex align-items-center" style="min-height: 72px; padding: 0 18px;">
-        <div class="row g-3 align-items-center w-100">
-            <div class="col-md-8">
-                <div class="position-relative">
-                    <Icons Name="Search" Class="position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px;width:16px;height:16px;" />
+    <div class="card border rounded-4 d-flex align-items-center justify-content-center" style="min-height: 72px; padding: 14px 18px;">
+        <div class="row g-3 align-items-center justify-content-center w-100 m-0">
+            <div class="col-md-8 p-0 pe-md-2">
+                <div class="position-relative w-100 d-flex align-items-center">
+                    <i class="fas fa-search position-absolute text-muted-foreground" style="left:16px;font-size:14px;pointer-events:none;z-index:3;"></i>
                     <input type="search" @bind="_search" @bind:event="oninput"
                            class="form-control text-foreground"
                            placeholder="Buscar por nombre..."
-                           style="height: 44px; padding-left: 40px;" />
+                           style="height: 44px; padding-left: 44px; width:100%; border-radius:8px;" />
                 </div>
             </div>
-            <div class="col-md-4">
-                <select @bind="_categoryFilter" class="form-select text-foreground" style="height: 44px;">
+            <div class="col-md-4 p-0 ps-md-2">
+                <select @bind="_categoryFilter" class="form-select text-foreground w-100" style="height: 44px; border-radius:8px;">
                     <option value="">Categorías (todas)</option>
                     @foreach (var cat in ProductSvc.GetCategories())
                     {
@@ -84,6 +84,72 @@
             </div>
         </div>
     </div>
+
+    <style>
+        .worker-kpi-card {
+            background: var(--card);
+            border-radius: var(--radius);
+            padding: 1.5rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            height: 105px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+        .worker-kpi-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            z-index: 10;
+        }
+        
+        .kpi-blue {
+            border: 2px solid #0d6efd;
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.08);
+        }
+        .kpi-blue:hover {
+            border-color: #0b5ed7;
+            box-shadow: 0 12px 24px rgba(13, 110, 253, 0.2);
+        }
+        
+        .kpi-green {
+            border: 2px solid #198754;
+            box-shadow: 0 4px 12px rgba(25, 135, 84, 0.08);
+        }
+        .kpi-green:hover {
+            border-color: #157347;
+            box-shadow: 0 12px 24px rgba(25, 135, 84, 0.2);
+        }
+        
+        .kpi-yellow {
+            border: 2px solid #ffc107;
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.08);
+        }
+        .kpi-yellow:hover {
+            border-color: #ffca2c;
+            box-shadow: 0 12px 24px rgba(255, 193, 7, 0.2);
+        }
+        
+        .kpi-red {
+            border: 2px solid #dc3545;
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.08);
+        }
+        .kpi-red:hover {
+            border-color: #bb2d3b;
+            box-shadow: 0 12px 24px rgba(220, 53, 69, 0.2);
+        }
+
+        .worker-kpi-card .metric-kpi-icon-custom {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+    </style>
 
     <!-- Inventory Table Grid -->
     <div class="card overflow-hidden">

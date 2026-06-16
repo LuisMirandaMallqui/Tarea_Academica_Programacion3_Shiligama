@@ -58,7 +58,7 @@ public class MainTest {
         ejecutarPruebasUsuarios();
     }
 
-    //Ya con BO implementado
+    // Ya con BO implementado
     private static void ejecutarPruebasUsuarios() throws Exception {
         imprimir_encabezado("Usuarios");
         pruebaCliente();
@@ -66,8 +66,9 @@ public class MainTest {
         pruebaAdministrador();
         imprimir_cierre();
     }
-    //Ya con BO implementado
-    private static void ejectutarPruebasOperacionproductoPromocion() throws Exception{
+
+    // Ya con BO implementado
+    private static void ejectutarPruebasOperacionproductoPromocion() throws Exception {
         imprimir_encabezado("Operaciones, Producto y Promocion");
         pruebaPromocion();
         pruebaDevolucion();
@@ -81,23 +82,20 @@ public class MainTest {
         imprimir_encabezado("Ventas y Pedidos");
         pruebaMetodoPago();
         pruebaVenta();
-        //pruebaDetalleVenta();
+        // pruebaDetalleVenta();
         pruebaPedido();
         pruebaDetallePedido();
         pruebaReporteVentasPorPeriodo();
         imprimir_cierre();
     }
 
-
-
-
-    private static void pruebaPromocion() throws Exception{
+    private static void pruebaPromocion() throws Exception {
         System.out.println("------------ PRUEBA PROMOCIÓN ------------");
         PromocionBO boPromo = new PromocionBoImpl();
 
         // 1. Insertar
         Promocion p = new Promocion(0, "Promo Verano", "Descuento por verano", TipoDescuento.PORCENTAJE, 15.0,
-                LocalDate.now(), LocalDate.now().plusDays(10), "Aplica a bebidas", true);
+                LocalDate.now().atStartOfDay(), LocalDate.now().plusDays(10).atStartOfDay(), "Aplica a bebidas", true);
         int resIns = boPromo.insertar(p);
         System.out.println("Insertar promoción: " + (resIns > 0 ? "Exito ID: " + p.getIdPromocion() : "Error"));
 
@@ -138,7 +136,7 @@ public class MainTest {
         }
     }
 
-    private static void pruebaDevolucion() throws Exception{
+    private static void pruebaDevolucion() throws Exception {
         System.out.println("\n------------ PRUEBA DEVOLUCIÓN ------------");
         DevolucionBO boDevolucion = new DevolucionBoImpl();
 
@@ -164,14 +162,16 @@ public class MainTest {
 
             // 3. Buscar
             Devolucion dBuscada = boDevolucion.buscarPorId(d.getIdDevolucion());
-            System.out.println("Buscar devolución: " + (dBuscada != null ? "Encontrada, Estado: " + dBuscada.getEstadoDevolucion() : "No encontrada"));
+            System.out.println("Buscar devolución: "
+                    + (dBuscada != null ? "Encontrada, Estado: " + dBuscada.getEstadoDevolucion() : "No encontrada"));
 
             // 4. Listar todas
             List<Devolucion> todas = boDevolucion.listarTodos();
             System.out.println("Listar todas las devoluciones. Cantidad: " + todas.size());
 
             // 5. Listar por fechas
-            List<Devolucion> porFechas = boDevolucion.listarPorFechas(LocalDate.now().minusDays(1), LocalDate.now().plusDays(1));
+            List<Devolucion> porFechas = boDevolucion.listarPorFechas(LocalDate.now().minusDays(1),
+                    LocalDate.now().plusDays(1));
             System.out.println("Listar devoluciones por fecha. Cantidad: " + porFechas.size());
 
             // 6. Eliminar
@@ -180,7 +180,7 @@ public class MainTest {
         }
     }
 
-    private static void pruebaMovimientoInventario() throws Exception{
+    private static void pruebaMovimientoInventario() throws Exception {
         System.out.println("\n------------ PRUEBA MOVIMIENTO INVENTARIO ------------");
         MovimientoInventarioBO boMovInvent = new MovimientoInventarioBoImpl();
 
@@ -194,32 +194,33 @@ public class MainTest {
         mov.setStockResultante(60);
         mov.setMotivo("Reabastecimiento");
         mov.setFechaHora(LocalDateTime.now());
-        //mov.setUsuarioCreacion(1); EN CASO SE AGREGE ID DE USUARIO
+        // mov.setUsuarioCreacion(1); EN CASO SE AGREGE ID DE USUARIO
 
         int resIns = boMovInvent.insertar(mov);
-        System.out.println("Insertar movimiento (Log): " + (resIns > 0 ? "Exito ID: " + mov.getIdMovimiento() : "Error"));
+        System.out
+                .println("Insertar movimiento (Log): " + (resIns > 0 ? "Exito ID: " + mov.getIdMovimiento() : "Error"));
 
         if (resIns > 0) {
             // 2. Modificar (Debe dar mensaje de error custom y retornar 0)
-            try{
+            try {
                 int resMod = boMovInvent.modificar(mov);
                 System.out.println("Intentar modificar log inmutable, resultado: " + resMod);
-            }catch (Exception ex){
+            } catch (Exception ex) {
                 System.out.println("Intentar modificar log inmutable, resultado: " + ex.getMessage());
             }
 
-
             // 3. Eliminar (Debe dar mensaje de error custom y retornar 0)
-            try{
+            try {
                 int resElim = boMovInvent.eliminar(mov.getIdMovimiento());
                 System.out.println("Intentar eliminar log inmutable, resultado: " + resElim);
-            }catch (Exception ex){
+            } catch (Exception ex) {
                 System.out.println("Intentar eliminar log inmutable, resultado: " + ex.getMessage());
             }
 
             // 4. Buscar
             MovimientoInventario mBuscado = boMovInvent.buscarPorId(mov.getIdMovimiento());
-            System.out.println("Buscar movimiento: " + (mBuscado != null ? "Encontrado, Tipo: " + mBuscado.getTipoMovimiento() : "No encontrado"));
+            System.out.println("Buscar movimiento: "
+                    + (mBuscado != null ? "Encontrado, Tipo: " + mBuscado.getTipoMovimiento() : "No encontrado"));
 
             // 5. Listar todos
             List<MovimientoInventario> todos = boMovInvent.listarTodos();
@@ -230,12 +231,13 @@ public class MainTest {
             System.out.println("Listar movimientos por producto 1. Cantidad: " + porProd.size());
 
             // 7. Listar por fechas
-            List<MovimientoInventario> porFechas = boMovInvent.listarPorFechas(LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(1));
+            List<MovimientoInventario> porFechas = boMovInvent.listarPorFechas(LocalDateTime.now().minusDays(1),
+                    LocalDateTime.now().plusDays(1));
             System.out.println("Listar movimientos por fecha. Cantidad: " + porFechas.size());
         }
     }
 
-    private static void pruebaCategoria() throws Exception{
+    private static void pruebaCategoria() throws Exception {
         System.out.println("\n------------ PRUEBA CATEGORÍA ------------");
         CategoriaBo boCategoria = new CategoriaBoImpl();
 
@@ -247,7 +249,8 @@ public class MainTest {
         categoriaPadre.setEstado(true);
 
         int resInsPadre = boCategoria.insertar(categoriaPadre);
-        System.out.println("Insertar categoría padre: " + (resInsPadre > 0 ? "Éxito ID: " + categoriaPadre.getIdCategoria() : "Error"));
+        System.out.println("Insertar categoría padre: "
+                + (resInsPadre > 0 ? "Éxito ID: " + categoriaPadre.getIdCategoria() : "Error"));
 
         if (resInsPadre > 0) {
             // 2. Insertar categoría hija
@@ -258,7 +261,8 @@ public class MainTest {
             categoriaHija.setEstado(true);
 
             int resInsHija = boCategoria.insertar(categoriaHija);
-            System.out.println("Insertar categoría hija: " + (resInsHija > 0 ? "Éxito ID: " + categoriaHija.getIdCategoria() : "Error"));
+            System.out.println("Insertar categoría hija: "
+                    + (resInsHija > 0 ? "Éxito ID: " + categoriaHija.getIdCategoria() : "Error"));
 
             if (resInsHija > 0) {
                 // 3. Modificar categoría hija
@@ -269,9 +273,9 @@ public class MainTest {
 
                 // 4. Buscar por ID
                 Categoria cBuscada = boCategoria.buscarPorId(categoriaHija.getIdCategoria());
-                System.out.println("Buscar categoría: " + (cBuscada != null ?
-                        "Encontrada: " + cBuscada.getNombre() + " - " + cBuscada.getDescripcion() :
-                        "No encontrada"));
+                System.out.println("Buscar categoría: "
+                        + (cBuscada != null ? "Encontrada: " + cBuscada.getNombre() + " - " + cBuscada.getDescripcion()
+                                : "No encontrada"));
 
                 // 5. Listar todas
                 List<Categoria> todas = boCategoria.listarTodos();
@@ -279,29 +283,30 @@ public class MainTest {
                 for (Categoria cat : todas) {
                     System.out.println("  - ID: " + cat.getIdCategoria() +
                             " | Nombre: " + cat.getNombre() +
-                            " | Padre: " + (cat.getCategoriaPadre() != null ?
-                            cat.getCategoriaPadre().getIdCategoria() : "Ninguno"));
+                            " | Padre: "
+                            + (cat.getCategoriaPadre() != null ? cat.getCategoriaPadre().getIdCategoria() : "Ninguno"));
                 }
 
                 // 6. Eliminar categoría hija
                 int resElimHija = boCategoria.eliminar(categoriaHija.getIdCategoria());
-                System.out.println("Eliminar categoría hija: " + (resElimHija == 1 ? "Éxito (marcada como inactiva)" : "Error"));
+                System.out.println(
+                        "Eliminar categoría hija: " + (resElimHija == 1 ? "Éxito (marcada como inactiva)" : "Error"));
 
                 // 7. Verificar que fue eliminada (búsqueda debe retornar null o inactiva)
                 Categoria cEliminada = boCategoria.buscarPorId(categoriaHija.getIdCategoria());
                 System.out.println("Verificar eliminación: " +
-                        (cEliminada == null || !cEliminada.isEstado() ?
-                                "Categoría inactiva/no encontrada correctamente" :
-                                "ERROR: Categoría sigue activa"));
+                        (cEliminada == null || !cEliminada.isEstado() ? "Categoría inactiva/no encontrada correctamente"
+                                : "ERROR: Categoría sigue activa"));
             }
 
             // 8. Eliminar categoría padre
             int resElimPadre = boCategoria.eliminar(categoriaPadre.getIdCategoria());
-            System.out.println("Eliminar categoría padre: " + (resElimPadre == 1 ? "Éxito (marcada como inactiva)" : "Error"));
+            System.out.println(
+                    "Eliminar categoría padre: " + (resElimPadre == 1 ? "Éxito (marcada como inactiva)" : "Error"));
         }
     }
 
-    private static void pruebaProducto()throws Exception {
+    private static void pruebaProducto() throws Exception {
         System.out.println("\n------------ PRUEBA PRODUCTO ------------");
         ProductoBo boProducto = new ProductoBoImpl();
         CategoriaBo boCategoria = new CategoriaBoImpl();
@@ -314,7 +319,8 @@ public class MainTest {
         categoria.setEstado(true);
 
         int resInsCat = boCategoria.insertar(categoria);
-        System.out.println("Insertar categoría para productos: " + (resInsCat > 0 ? "Éxito ID: " + categoria.getIdCategoria() : "Error"));
+        System.out.println("Insertar categoría para productos: "
+                + (resInsCat > 0 ? "Éxito ID: " + categoria.getIdCategoria() : "Error"));
 
         if (resInsCat > 0) {
             // 1. Insertar producto
@@ -331,7 +337,8 @@ public class MainTest {
             producto.setCategoria(categoria);
 
             int resIns = boProducto.insertar(producto);
-            System.out.println("Insertar producto: " + (resIns > 0 ? "Éxito ID: " + producto.getIdProducto() : "Error"));
+            System.out
+                    .println("Insertar producto: " + (resIns > 0 ? "Éxito ID: " + producto.getIdProducto() : "Error"));
 
             if (resIns > 0) {
                 // 2. Modificar producto
@@ -343,11 +350,9 @@ public class MainTest {
 
                 // 3. Buscar por ID
                 Producto pBuscado = boProducto.buscarPorId(producto.getIdProducto());
-                System.out.println("Buscar producto: " + (pBuscado != null ?
-                        "Encontrado: " + pBuscado.getNombre() +
+                System.out.println("Buscar producto: " + (pBuscado != null ? "Encontrado: " + pBuscado.getNombre() +
                         " | Precio: S/ " + pBuscado.getPrecioUnitario() +
-                        " | Categoría: " + pBuscado.getCategoria().getNombre() :
-                        "No encontrado"));
+                        " | Categoría: " + pBuscado.getCategoria().getNombre() : "No encontrado"));
 
                 // 4. Verificar stock bajo (método de negocio)
                 if (pBuscado != null) {
@@ -372,9 +377,8 @@ public class MainTest {
                 // 7. Verificar que fue eliminado
                 Producto pEliminado = boProducto.buscarPorId(producto.getIdProducto());
                 System.out.println("Verificar eliminación: " +
-                        (pEliminado == null || !pEliminado.isEstado() ?
-                                "Producto inactivo/no encontrado correctamente" :
-                                "ERROR: Producto sigue activo"));
+                        (pEliminado == null || !pEliminado.isEstado() ? "Producto inactivo/no encontrado correctamente"
+                                : "ERROR: Producto sigue activo"));
             }
 
             // Limpiar: eliminar la categoría de prueba
@@ -384,7 +388,7 @@ public class MainTest {
     }
 
     // =========================================================
-    //  MÉTODO PAGO
+    // MÉTODO PAGO
     // =========================================================
     private static void pruebaMetodoPago() throws Exception {
         System.out.println("------------ PRUEBA MÉTODO DE PAGO ------------");
@@ -397,7 +401,8 @@ public class MainTest {
 
         if (resIns > 0) {
             MetodoPago mpBuscado = bo.buscarPorId(mp.getIdMetodoPago());
-            System.out.println("Buscar método de pago: " + (mpBuscado != null ? mpBuscado.getNombre() : "No encontrado"));
+            System.out
+                    .println("Buscar método de pago: " + (mpBuscado != null ? mpBuscado.getNombre() : "No encontrado"));
 
             mp.setNombre("Yape Modificado");
             int resMod = bo.modificar(mp);
@@ -412,7 +417,7 @@ public class MainTest {
     }
 
     // =========================================================
-    //  VENTA
+    // VENTA
     // =========================================================
     private static void pruebaVenta() throws Exception {
         System.out.println("\n------------ PRUEBA VENTA ------------");
@@ -428,11 +433,11 @@ public class MainTest {
         metodoPago.setIdMetodoPago(1);
 
         Venta venta = new Venta();
-        venta.setCliente(cliente); //CLIENTE_ID int
-        venta.setTrabajador(trabajador); //TRABAJADOR_ID int
-        venta.setMetodoPago(metodoPago); //METODO_PAGO_ID int
-        venta.setCanalVenta(CanalVenta.PRESENCIAL); //CANAL_VENTA enum('PRESENCIAL','WEB')
-        venta.setObservaciones("Venta de prueba"); //OBSERVACIONES varchar(500)
+        venta.setCliente(cliente); // CLIENTE_ID int
+        venta.setTrabajador(trabajador); // TRABAJADOR_ID int
+        venta.setMetodoPago(metodoPago); // METODO_PAGO_ID int
+        venta.setCanalVenta(CanalVenta.PRESENCIAL); // CANAL_VENTA enum('PRESENCIAL','WEB')
+        venta.setObservaciones("Venta de prueba"); // OBSERVACIONES varchar(500)
 
         int resIns = bo.insertar(venta);
         idVentaCreada = venta.getIdVenta(); // guarda el ID
@@ -441,7 +446,8 @@ public class MainTest {
         if (resIns > 0) {
             Venta ventaBuscada = bo.buscarPorId(venta.getIdVenta());
             System.out.println("Buscar venta: " + (ventaBuscada != null
-                    ? "Encontrada, Canal: " + ventaBuscada.getCanalVenta() : "No encontrada"));
+                    ? "Encontrada, Canal: " + ventaBuscada.getCanalVenta()
+                    : "No encontrada"));
 
             int resMod = bo.modificar(venta);
             System.out.println("Completar venta (modificar): " + (resMod == 1 ? "Éxito" : "Error"));
@@ -455,43 +461,49 @@ public class MainTest {
     }
 
     /*
+     * // =========================================================
+     * // DETALLE VENTA
+     * // =========================================================
+     * private static void pruebaDetalleVenta() throws Exception {
+     * System.out.println("\n------------ PRUEBA DETALLE VENTA ------------");
+     * DetalleVentaBo bo = new DetalleVentaBoImpl();
+     * 
+     * Producto producto = new Producto();
+     * producto.setIdProducto(1);
+     * 
+     * DetalleVenta detalle = new DetalleVenta();
+     * detalle.setIdPadreVenta(idVentaCreada); // ID de la venta creada en
+     * pruebaVenta()
+     * detalle.setProducto(producto);
+     * detalle.setCantidad(3);
+     * int resIns = bo.insertar(detalle);
+     * System.out.println("Insertar detalle venta: " + (resIns > 0 ? "Éxito ID: " +
+     * detalle.getIdDetalleVenta() : "Error"));
+     * 
+     * if (resIns > 0) {
+     * DetalleVenta detalleBuscado = bo.buscarPorId(detalle.getIdDetalleVenta());
+     * System.out.println("Buscar detalle venta: " + (detalleBuscado != null
+     * ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() :
+     * "No encontrado"));
+     * 
+     * detalle.setCantidad(5);
+     * int resMod = bo.modificar(detalle);
+     * System.out.println("Modificar detalle venta: " + (resMod == 1 ? "Éxito" :
+     * "Error"));
+     * 
+     * List<DetalleVenta> lista = bo.listarTodos();
+     * System.out.println("Listar todos los detalles de venta. Cantidad: " +
+     * lista.size());
+     * 
+     * int resElim = bo.eliminar(detalle.getIdDetalleVenta());
+     * System.out.println("Eliminar detalle venta: " + (resElim == 1 ? "Éxito" :
+     * "Error"));
+     * }
+     * }
+     */
+
     // =========================================================
-    //  DETALLE VENTA
-    // =========================================================
-    private static void pruebaDetalleVenta() throws Exception {
-        System.out.println("\n------------ PRUEBA DETALLE VENTA ------------");
-        DetalleVentaBo bo = new DetalleVentaBoImpl();
-
-        Producto producto = new Producto();
-        producto.setIdProducto(1);
-
-        DetalleVenta detalle = new DetalleVenta();
-        detalle.setIdPadreVenta(idVentaCreada); // ID de la venta creada en pruebaVenta()
-        detalle.setProducto(producto);
-        detalle.setCantidad(3);
-        int resIns = bo.insertar(detalle);
-        System.out.println("Insertar detalle venta: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetalleVenta() : "Error"));
-
-        if (resIns > 0) {
-            DetalleVenta detalleBuscado = bo.buscarPorId(detalle.getIdDetalleVenta());
-            System.out.println("Buscar detalle venta: " + (detalleBuscado != null
-                    ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() : "No encontrado"));
-
-            detalle.setCantidad(5);
-            int resMod = bo.modificar(detalle);
-            System.out.println("Modificar detalle venta: " + (resMod == 1 ? "Éxito" : "Error"));
-
-            List<DetalleVenta> lista = bo.listarTodos();
-            System.out.println("Listar todos los detalles de venta. Cantidad: " + lista.size());
-
-            int resElim = bo.eliminar(detalle.getIdDetalleVenta());
-            System.out.println("Eliminar detalle venta: " + (resElim == 1 ? "Éxito" : "Error"));
-        }
-    }
-    */
-
-    // =========================================================
-    //  PEDIDO
+    // PEDIDO
     // =========================================================
     private static void pruebaPedido() throws Exception {
         System.out.println("\n------------ PRUEBA PEDIDO ------------");
@@ -512,7 +524,8 @@ public class MainTest {
         if (resIns > 0) {
             Pedido pedidoBuscado = bo.buscarPorId(pedido.getIdPedido());
             System.out.println("Buscar pedido: " + (pedidoBuscado != null
-                    ? "Encontrado, Estado: " + pedidoBuscado.getEstadoPedido() : "No encontrado"));
+                    ? "Encontrado, Estado: " + pedidoBuscado.getEstadoPedido()
+                    : "No encontrado"));
 
             pedido.setEstadoPedido(EstadoPedido.EN_PROCESO);
             int resMod = bo.modificar(pedido);
@@ -527,7 +540,7 @@ public class MainTest {
     }
 
     // =========================================================
-    //  DETALLE PEDIDO
+    // DETALLE PEDIDO
     // =========================================================
     private static void pruebaDetallePedido() throws Exception {
         System.out.println("\n------------ PRUEBA DETALLE PEDIDO ------------");
@@ -541,12 +554,14 @@ public class MainTest {
         detalle.setProducto(producto);
         detalle.setCantidad(2);
         int resIns = bo.insertar(detalle);
-        System.out.println("Insertar detalle pedido: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetallePedido() : "Error"));
+        System.out.println(
+                "Insertar detalle pedido: " + (resIns > 0 ? "Éxito ID: " + detalle.getIdDetallePedido() : "Error"));
 
         if (resIns > 0) {
             DetallePedido detalleBuscado = bo.buscarPorId(detalle.getIdDetallePedido());
             System.out.println("Buscar detalle pedido: " + (detalleBuscado != null
-                    ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad() : "No encontrado"));
+                    ? "Encontrado, Cantidad: " + detalleBuscado.getCantidad()
+                    : "No encontrado"));
 
             detalle.setCantidad(4);
             int resMod = bo.modificar(detalle);
@@ -561,11 +576,11 @@ public class MainTest {
     }
 
     // =========================================================
-    //  CLIENTE
+    // CLIENTE
     // =========================================================
     public static void pruebaCliente() throws Exception {
         System.out.println("\n--- [TEST CLIENTE] ---");
-//        ClienteDaoImpl cliente = new ClienteDaoImpl();
+        // ClienteDaoImpl cliente = new ClienteDaoImpl();
         ClienteBo clienteBO = new ClienteBoImpl();
         // Crear
         Cliente nuevo = new Cliente();
@@ -598,11 +613,11 @@ public class MainTest {
     }
 
     // =========================================================
-    //  TRABAJADOR
+    // TRABAJADOR
     // =========================================================
     public static void pruebaTrabajador() throws Exception {
         System.out.println("\n--- [TEST TRABAJADOR] ---");
-        //TrabajadorDaoImpl dao = new TrabajadorDaoImpl();
+        // TrabajadorDaoImpl dao = new TrabajadorDaoImpl();
         TrabajadorBoImpl trabajadorBo = new TrabajadorBoImpl();
         // Crear
         Trabajador trabajador = new Trabajador();
@@ -633,11 +648,11 @@ public class MainTest {
     }
 
     // =========================================================
-    //  ADMINISTRADOR
+    // ADMINISTRADOR
     // =========================================================
     public static void pruebaAdministrador() throws Exception {
         System.out.println("\n--- [TEST ADMINISTRADOR] ---");
-        //AdministradorDaoImpl dao = new AdministradorDaoImpl();
+        // AdministradorDaoImpl dao = new AdministradorDaoImpl();
         AdministradorBo administradorBo = new AdministradorBoImpl();
         // Crear
         Administrador admin = new Administrador();
@@ -666,13 +681,13 @@ public class MainTest {
         }
     }
 
-    //------------------------REPORTES---------------------------------------
+    // ------------------------REPORTES---------------------------------------
     private static void pruebaReporteVentasPorPeriodo() throws Exception {
         System.out.println("\n------------ PRUEBA REPORTE VENTAS POR PERIODO ------------");
         VentaBo bo = new VentaBoImpl();
 
         String fechaInicio = "2026-01-01";
-        String fechaFin    = "2026-12-31";
+        String fechaFin = "2026-12-31";
 
         List<VentaReporteDto> reporte = bo.reporteVentasPorPeriodo(fechaInicio, fechaFin);
         System.out.println("Reporte de ventas del " + fechaInicio + " al " + fechaFin
@@ -700,7 +715,5 @@ public class MainTest {
         System.out.println(" FIN DE LAS PRUEBAS ");
         System.out.println("==================================================");
     }
-
-
 
 }

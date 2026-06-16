@@ -13,4 +13,5 @@ public interface VentaBo extends BaseBo<Venta> {
     List<Venta> listarPorFechas(LocalDateTime fechaInicio, LocalDateTime fechaFin) throws Exception;
     List<Venta> listarPorTrabajador(int idTrabajador) throws Exception;
     List<TopProductoDto> topProductosVendidos() throws Exception;
+    int confirmarVenta(int idVenta) throws Exception;
 }

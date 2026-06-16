@@ -337,7 +337,7 @@
                             @foreach (var product in _detailOrder.Products)
                             {
                                 <div class="detail-product-row">
-                                    <div class="detail-product-qty">x@product.Quantity</div>
+                                    <div class="detail-product-qty" style="background: #196c3e; font-size: 0.72rem; font-weight: 700; color: #fff; border-radius: 6px; padding: 2px 7px;">PROD-@product.Id.ToString("D3")</div>
                                     <div class="detail-product-name">@product.Name</div>
                                     <div class="detail-product-price">S/. @((product.Price * product.Quantity).ToString("0.00"))</div>
                                 </div>
@@ -398,66 +398,66 @@
                 </div>
 
                 <!-- Timeline -->
-                <div class="detail-section">
-                    <div class="detail-section-title"><i class="fas fa-history me-2"></i>Historial del Pedido</div>
-                    <div class="detail-timeline">
+                <div class="detail-section" style="border-bottom:none;">
+                    <div class="detail-section-title" style="color:#196c3e;font-weight:700;"><i class="fas fa-history me-2"></i>Seguimiento del pedido</div>
+                    <div class="detail-timeline-custom">
                         @if (_detailOrder.TimelinePedidoRecibido.HasValue)
                         {
-                            <div class="timeline-step done">
-                                <div class="timeline-dot"></div>
-                                <div class="timeline-content">
-                                    <span class="timeline-label">Pedido recibido</span>
-                                    <span class="timeline-time">@_detailOrder.TimelinePedidoRecibido.Value.ToString("dd/MM HH:mm")</span>
+                            <div class="timeline-step-custom done">
+                                <div class="timeline-dot-custom"><i class="fas fa-check"></i></div>
+                                <div class="timeline-content-custom">
+                                    <span class="timeline-label-custom">Pedido recibido</span>
+                                    <span class="timeline-time-custom">@_detailOrder.TimelinePedidoRecibido.Value.ToString("dd MMM – HH:mm")</span>
                                 </div>
                             </div>
                         }
                         @if (_detailOrder.TimelineEnPreparacion.HasValue)
                         {
-                            <div class="timeline-step done">
-                                <div class="timeline-dot"></div>
-                                <div class="timeline-content">
-                                    <span class="timeline-label">En preparación</span>
-                                    <span class="timeline-time">@_detailOrder.TimelineEnPreparacion.Value.ToString("dd/MM HH:mm")</span>
+                            <div class="timeline-step-custom done">
+                                <div class="timeline-dot-custom"><i class="fas fa-check"></i></div>
+                                <div class="timeline-content-custom">
+                                    <span class="timeline-label-custom">En preparación</span>
+                                    <span class="timeline-time-custom">@_detailOrder.TimelineEnPreparacion.Value.ToString("dd MMM – HH:mm")</span>
                                 </div>
                             </div>
                         }
                         @if (_detailOrder.TimelineListo.HasValue)
                         {
-                            <div class="timeline-step done">
-                                <div class="timeline-dot"></div>
-                                <div class="timeline-content">
-                                    <span class="timeline-label">Listo para entrega</span>
-                                    <span class="timeline-time">@_detailOrder.TimelineListo.Value.ToString("dd/MM HH:mm")</span>
+                            <div class="timeline-step-custom done">
+                                <div class="timeline-dot-custom"><i class="fas fa-check"></i></div>
+                                <div class="timeline-content-custom">
+                                    <span class="timeline-label-custom">Listo para envío</span>
+                                    <span class="timeline-time-custom">@_detailOrder.TimelineListo.Value.ToString("dd MMM – HH:mm")</span>
                                 </div>
                             </div>
                         }
                         @if (_detailOrder.TimelineEnCamino.HasValue)
                         {
-                            <div class="timeline-step done">
-                                <div class="timeline-dot"></div>
-                                <div class="timeline-content">
-                                    <span class="timeline-label">En camino</span>
-                                    <span class="timeline-time">@_detailOrder.TimelineEnCamino.Value.ToString("dd/MM HH:mm")</span>
+                            <div class="timeline-step-custom done">
+                                <div class="timeline-dot-custom"><i class="fas fa-check"></i></div>
+                                <div class="timeline-content-custom">
+                                    <span class="timeline-label-custom">En camino</span>
+                                    <span class="timeline-time-custom">@_detailOrder.TimelineEnCamino.Value.ToString("dd MMM – HH:mm")</span>
                                 </div>
                             </div>
                         }
                         @if (_detailOrder.TimelineEntregado.HasValue)
                         {
-                            <div class="timeline-step done success">
-                                <div class="timeline-dot"></div>
-                                <div class="timeline-content">
-                                    <span class="timeline-label">Entregado</span>
-                                    <span class="timeline-time">@_detailOrder.TimelineEntregado.Value.ToString("dd/MM HH:mm")</span>
+                            <div class="timeline-step-custom done">
+                                <div class="timeline-dot-custom"><i class="fas fa-check"></i></div>
+                                <div class="timeline-content-custom">
+                                    <span class="timeline-label-custom">Entregado</span>
+                                    <span class="timeline-time-custom">@_detailOrder.TimelineEntregado.Value.ToString("dd MMM – HH:mm")</span>
                                 </div>
                             </div>
                         }
                         @if (_detailOrder.TimelineCancelado.HasValue)
                         {
-                            <div class="timeline-step cancelled">
-                                <div class="timeline-dot"></div>
-                                <div class="timeline-content">
-                                    <span class="timeline-label">Cancelado</span>
-                                    <span class="timeline-time">@_detailOrder.TimelineCancelado.Value.ToString("dd/MM HH:mm")</span>
+                            <div class="timeline-step-custom cancelled">
+                                <div class="timeline-dot-custom"><i class="fas fa-times"></i></div>
+                                <div class="timeline-content-custom">
+                                    <span class="timeline-label-custom">Cancelado</span>
+                                    <span class="timeline-time-custom">@_detailOrder.TimelineCancelado.Value.ToString("dd MMM – HH:mm")</span>
                                 </div>
                             </div>
                         }
@@ -478,6 +478,77 @@
                         <i class="fas fa-arrow-right me-2"></i>@GetNextActionLabel(_detailOrder.Status)
                     </button>
                 }
+            </div>
+
+        </div>
+    </div>
+}
+
+@* ─── Modal Preparación de Pedido ─────────────────────────────────────────── *@
+@if (_showPrepModal && _prepOrder != null)
+{
+    <div class="detail-modal-overlay" @onclick="@(() => _showPrepModal = false)">
+        <div class="detail-modal-container" @onclick:stopPropagation style="max-width:480px;">
+
+            <div class="detail-modal-header" style="background:#f0faf4;">
+                <div class="d-flex flex-column gap-1">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="font-size:1.2rem;">🍴</span>
+                        <span class="fw-bold text-foreground" style="font-size:1.05rem;font-family:'Outfit',sans-serif;">Preparando pedido @_prepOrder.Id</span>
+                    </div>
+                    <span class="text-muted-foreground" style="font-size:0.8rem;">Cliente: <strong class="text-foreground">@_prepOrder.Customer</strong></span>
+                </div>
+                <button class="detail-modal-close" @onclick="@(() => _showPrepModal = false)"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="detail-modal-body">
+                <div class="detail-section">
+                    <div class="detail-section-title" style="color:#196c3e;font-weight:700;">
+                        <i class="fas fa-shopping-basket me-2"></i>MARCAR PRODUCTOS LISTOS
+                    </div>
+                    <p class="text-muted-foreground small mt-1 mb-3">Marca cada producto cuando esté listo para confirmar el pedido.</p>
+
+                    @if (_prepOrder.Products != null)
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var product in _prepOrder.Products)
+                            {
+                                <div class="d-flex align-items-center justify-content-between p-3 rounded-3 @(GetPrepChecked(product.Id) ? "" : "")" 
+                                     style="border: 1.5px solid @(GetPrepChecked(product.Id) ? "#198754" : "#e9ecef"); background: @(GetPrepChecked(product.Id) ? "#f0faf4" : "#fff"); border-radius:12px; transition: all 0.2s ease;">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <input type="checkbox" class="form-check-input" 
+                                               checked="@GetPrepChecked(product.Id)" 
+                                               @onchange="@((e) => OnPrepCheckedChange(product.Id, (bool)e.Value))"
+                                               style="width: 20px; height: 20px; border-radius: 4px; border: 2px solid #ced4da; cursor: pointer;" />
+                                        <div>
+                                            <span class="fw-semibold text-foreground d-block" style="font-size:0.88rem;">@product.Name</span>
+                                            <span class="text-muted-foreground" style="font-size:0.76rem;">Cantidad: @product.Quantity uds.</span>
+                                        </div>
+                                    </div>
+                                    <span class="fw-bold" style="font-size:0.92rem;color:#196c3e;">S/. @((product.Price * product.Quantity).ToString("0,00"))</span>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="d-flex align-items-center justify-content-between mt-3 p-3 rounded-3" style="background:#f8f9fa; border: 1px solid #e9ecef; border-radius:10px;">
+                            <span class="text-muted-foreground small fw-medium">Progreso de preparación</span>
+                            <span class="fw-bold text-foreground" style="font-size:0.92rem;">@PrepCheckedCount / @(_prepOrder.Products?.Count ?? 0)</span>
+                        </div>
+                        <div class="progress mt-2" style="height:6px; border-radius:4px; background:#e9ecef;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width:@PrepProgressPct%; background:#198754; border-radius:4px; transition: width 0.3s ease;"></div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="detail-modal-footer">
+                <button class="btn fw-semibold text-white w-100 py-3 d-flex align-items-center justify-content-center gap-2"
+                        disabled="@(!AllPrepChecked)"
+                        @onclick="ConfirmPreparation"
+                        style="background:@(AllPrepChecked ? "#198754" : "#c8e6c9"); border:none; border-radius:12px; font-size:0.92rem; transition: background 0.2s ease;">
+                    <i class="fas fa-check-circle"></i> Marcar listo
+                </button>
             </div>
 
         </div>
@@ -613,6 +684,74 @@
     .timeline-step.success .timeline-dot { background: #28a745; border-color: #28a745; box-shadow: 0 0 0 3px rgba(40,167,69,0.18); }
     .timeline-step.cancelled .timeline-dot { background: #dc3545; border-color: #dc3545; box-shadow: 0 0 0 3px rgba(220,53,69,0.15); }
     .timeline-step.cancelled::before { background: #dc3545; opacity: 0.3; }
+
+    .detail-timeline-custom {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        position: relative;
+        background: #edf5ef;
+        padding: 1.5rem;
+        border-radius: 1.25rem;
+        border: 1px solid #d0e3d5;
+    }
+    .timeline-step-custom {
+        display: flex;
+        align-items: flex-start;
+        gap: 1.25rem;
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    .timeline-step-custom:last-child {
+        padding-bottom: 0;
+    }
+    .timeline-step-custom::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 34px;
+        bottom: 0;
+        width: 3px;
+        background: #196c3e;
+    }
+    .timeline-step-custom:last-child::before {
+        display: none;
+    }
+    .timeline-dot-custom {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        flex-shrink: 0;
+        margin-top: 2px;
+        z-index: 2;
+        background: #196c3e;
+        color: #fff;
+    }
+    .timeline-step-custom.cancelled .timeline-dot-custom {
+        background: #dc3545;
+    }
+    .timeline-step-custom.cancelled::before {
+        background: #dc3545;
+    }
+    .timeline-content-custom {
+        display: flex;
+        flex-direction: column;
+        gap: 0.1rem;
+    }
+    .timeline-label-custom {
+        font-family: 'Outfit', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #1e3a27;
+    }
+    .timeline-time-custom {
+        font-size: 0.8rem;
+        color: #5c7564;
+    }
     .timeline-content { display: flex; flex-direction: column; gap: 0.1rem; }
     .timeline-label { font-size: 0.82rem; font-weight: 600; color: #212529; }
     .timeline-time { font-size: 0.73rem; color: #6c757d; }
@@ -636,6 +775,11 @@
     private string _selectedFilter = "todos";
     private Order? _detailOrder = null;
     private bool _showDetailModal = false;
+
+    // Preparation modal state
+    private bool _showPrepModal = false;
+    private Order? _prepOrder = null;
+    private Dictionary<int, bool> _prepChecked = new();
 
     private int _currentPage = 1;
     private int _pageSize = 6;
@@ -688,14 +832,46 @@
 
     private async Task SiguienteAccion(Order o)
     {
-        // Flujo lineal según estados del backend: RECIBIDO → EN_PROCESO → ATENDIDO
-        var next = o.Status switch
+        if (o.Status == "recibido")
         {
-            "recibido"   => "en_proceso",
-            "en_proceso" => "atendido",
-            _            => ""
-        };
-        if (!string.IsNullOrEmpty(next)) await UpdateStatus(o.Id, next);
+            // Transition to en_proceso, then open preparation modal
+            await UpdateStatus(o.Id, "en_proceso");
+            OpenPrepModal(o);
+        }
+        else if (o.Status == "en_proceso")
+        {
+            // Already in process, open preparation modal
+            OpenPrepModal(o);
+        }
+    }
+
+    private void OpenPrepModal(Order o)
+    {
+        // Refresh order reference from list (may have updated status)
+        _prepOrder = _allOrders.FirstOrDefault(x => x.Id == o.Id) ?? o;
+        _prepChecked.Clear();
+        if (_prepOrder.Products != null)
+        {
+            foreach (var p in _prepOrder.Products)
+                _prepChecked[p.Id] = false;
+        }
+        _showPrepModal = true;
+    }
+
+    private bool GetPrepChecked(int productId) => _prepChecked.ContainsKey(productId) && _prepChecked[productId];
+    private void OnPrepCheckedChange(int productId, bool val) => _prepChecked[productId] = val;
+    private int PrepCheckedCount => _prepChecked.Values.Count(v => v);
+    private bool AllPrepChecked => _prepOrder?.Products != null && _prepOrder.Products.Count > 0 && _prepChecked.Values.All(v => v);
+    private double PrepProgressPct => _prepOrder?.Products != null && _prepOrder.Products.Count > 0 
+        ? (double)PrepCheckedCount / _prepOrder.Products.Count * 100 : 0;
+
+    private async Task ConfirmPreparation()
+    {
+        if (_prepOrder != null)
+        {
+            await UpdateStatus(_prepOrder.Id, "atendido");
+            _showPrepModal = false;
+        }
     }
 
     private async Task CancelarOrder(Order o) => await UpdateStatus(o.Id, "cancelado");

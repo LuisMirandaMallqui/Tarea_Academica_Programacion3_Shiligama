@@ -1,7 +1,6 @@
 package pe.edu.pucp.model.venta;
 
 import pe.edu.pucp.model.enums.CanalVenta;
-import pe.edu.pucp.model.enums.EstadoVenta;
 import pe.edu.pucp.model.usuario.Cliente;
 import pe.edu.pucp.model.usuario.Trabajador;
 
@@ -46,9 +45,12 @@ public class Venta {
     @XmlElement(name = "canalVenta")
     @JsonbProperty("canalVenta")
     private CanalVenta canalVenta;
-    @XmlElement(name = "estadoVenta")
-    @JsonbProperty("estadoVenta")
-    private EstadoVenta estadoVenta;
+    @XmlElement(name = "estado")
+    @JsonbProperty("estado")
+    private String estado;
+    @XmlElement(name = "boleta")
+    @JsonbProperty("boleta")
+    private Boleta boleta;
     @XmlElement(name = "observaciones")
     @JsonbProperty("observaciones")
     private String observaciones;
@@ -70,7 +72,7 @@ public class Venta {
     }
 
     public Venta(int idVenta, LocalDateTime fechaHora, double montoTotal,
-                 double montoDescuento, CanalVenta canalVenta, EstadoVenta estadoVenta,
+                 double montoDescuento, CanalVenta canalVenta, String estado,
                  String observaciones, Cliente cliente, Trabajador trabajador,
                  MetodoPago metodoPago, List<DetalleVenta> detalles) {
         this.idVenta = idVenta;
@@ -78,7 +80,7 @@ public class Venta {
         this.montoTotal = montoTotal;
         this.montoDescuento = montoDescuento;
         this.canalVenta = canalVenta;
-        this.estadoVenta = estadoVenta;
+        this.estado = estado;
         this.observaciones = observaciones;
         this.cliente = cliente;
         this.trabajador = trabajador;
@@ -126,12 +128,20 @@ public class Venta {
         this.canalVenta = canalVenta;
     }
 
-    public EstadoVenta getEstadoVenta() {
-        return estadoVenta;
+    public String getEstado() {
+        return estado;
     }
 
-    public void setEstadoVenta(EstadoVenta estadoVenta) {
-        this.estadoVenta = estadoVenta;
+    public void setEstado(String estado) {
+        this.estado = estado;
+    }
+
+    public Boleta getBoleta() {
+        return boleta;
+    }
+
+    public void setBoleta(Boleta boleta) {
+        this.boleta = boleta;
     }
 
     public String getObservaciones() {

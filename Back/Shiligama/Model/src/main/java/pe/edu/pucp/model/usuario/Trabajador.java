@@ -15,7 +15,7 @@ public class Trabajador extends Usuario {
     @JsonbProperty("cargo")
     private String cargo;
     @XmlElement(name = "fechaIngreso")
-    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbDateFormat(value = "yyyy-MM-dd")
     @JsonbProperty("fechaIngreso")
     private LocalDate fechaIngreso;
 
@@ -24,8 +24,8 @@ public class Trabajador extends Usuario {
 
     // Constructor completo — usa idUsuario del padre, NO tiene ID propio
     public Trabajador(int idUsuario, String correo, String contrasena,
-                      String nombres, String apellidos, String dni,
-                      String telefono, String cargo, LocalDate fechaIngreso) {
+            String nombres, String apellidos, String dni,
+            String telefono, String cargo, LocalDate fechaIngreso) {
         super(idUsuario, correo, contrasena, nombres, apellidos, dni, telefono);
         this.cargo = cargo;
         this.fechaIngreso = fechaIngreso;

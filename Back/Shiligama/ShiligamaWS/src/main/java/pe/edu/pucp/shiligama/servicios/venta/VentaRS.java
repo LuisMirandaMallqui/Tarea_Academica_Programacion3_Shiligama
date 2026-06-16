@@ -130,4 +130,16 @@ public class VentaRS {
                     .entity("Error al listar ventas por trabajador: " + ex.getMessage()).build();
         }
     }
+
+    @POST
+    @Path("/{id}/confirmar")
+    public Response confirmarVenta(@PathParam("id") int id) {
+        try {
+            int resultado = ventaBo.confirmarVenta(id);
+            return Response.ok("Venta confirmada exitosamente. Filas afectadas: " + resultado).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error al confirmar venta: " + ex.getMessage()).build();
+        }
+    }
 }

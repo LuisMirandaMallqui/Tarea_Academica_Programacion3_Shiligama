@@ -1,6 +1,8 @@
 package pe.edu.pucp.model.operacion;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.ArrayList;
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
 import jakarta.xml.bind.annotation.XmlElement;
@@ -21,6 +23,9 @@ public class Devolucion {
     @XmlElement(name = "idProducto")
     @JsonbProperty("idProducto")
     private int idProducto;        // Solo el ID
+    @XmlElement(name = "idPedido")
+    @JsonbProperty("idPedido")
+    private int idPedido;
     @XmlElement(name = "idTrabajador")
     @JsonbProperty("idTrabajador")
     private int idTrabajador;      // Solo el ID
@@ -40,6 +45,12 @@ public class Devolucion {
     @XmlElement(name = "activo")
     @JsonbProperty("activo")
     private boolean activo;
+    @XmlElement(name = "detalles")
+    @JsonbProperty("detalles")
+    private List<DetalleDevolucion> detalles = new ArrayList<>();
+    @XmlElement(name = "nombreTrabajador")
+    @JsonbProperty("nombreTrabajador")
+    private String nombreTrabajador;
 
     // ================= CONSTRUCTORES =================
     public Devolucion() {}
@@ -64,6 +75,9 @@ public class Devolucion {
     public int getIdProducto() { return idProducto; }
     public void setIdProducto(int idProducto) { this.idProducto = idProducto; }
     
+    public int getIdPedido() { return idPedido; }
+    public void setIdPedido(int idPedido) { this.idPedido = idPedido; }
+    
     public int getIdTrabajador() { return idTrabajador; }
     public void setIdTrabajador(int idTrabajador) { this.idTrabajador = idTrabajador; }
     
@@ -82,15 +96,23 @@ public class Devolucion {
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
 
+    public List<DetalleDevolucion> getDetalles() { return detalles; }
+    public void setDetalles(List<DetalleDevolucion> detalles) { this.detalles = detalles; }
+
+    public String getNombreTrabajador() { return nombreTrabajador; }
+    public void setNombreTrabajador(String nombreTrabajador) { this.nombreTrabajador = nombreTrabajador; }
+
     @Override
     public String toString() {
         return "Devolucion{" +
                 "id=" + idDevolucion +
                 ", idProducto=" + idProducto +
+                ", idPedido=" + idPedido +
                 ", estado='" + estadoDevolucion + '\'' +
                 ", cantidad=" + cantidad +
                 ", motivo='" + motivo + '\'' +
                 ", activo=" + activo +
+                ", detallesCount=" + (detalles != null ? detalles.size() : 0) +
                 '}';
     }
 }
