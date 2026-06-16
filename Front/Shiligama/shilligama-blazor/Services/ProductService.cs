@@ -173,6 +173,22 @@ public class ProductService
     {
         var resp = await _http.PutAsJsonAsync("productos", product);
         resp.EnsureSuccessStatusCode();
+
+        var existente = _products.FirstOrDefault(p => p.Id == product.Id);
+
+        if (existente != null)
+        {
+            existente.Name = product.Name;
+            existente.Description = product.Description;
+            existente.Price = product.Price;
+            existente.Stock = product.Stock;
+            existente.Category = product.Category;
+
+            // Agrega aquí cualquier otro campo que tenga tu modelo Product
+            existente.Image = product.Image;
+            existente.IsPromo = product.IsPromo;
+            existente.OriginalPrice = product.OriginalPrice;
+        }
     }
 
     public async Task DeleteProductAsync(int id)

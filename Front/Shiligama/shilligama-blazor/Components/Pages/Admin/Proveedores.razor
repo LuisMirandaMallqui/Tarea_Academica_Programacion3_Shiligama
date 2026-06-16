@@ -5,57 +5,40 @@
 <PageTitle>Proveedores – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
-    <!-- Header -->
+
+    <!-- ── Encabezado ── -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
-            <h1 class="fs-4 fw-bold text-foreground mb-0">Directorio de Proveedores</h1>
-            <p class="text-muted-foreground small mt-1 mb-0">
-                Administra los contactos de distribuidores oficiales de mercadería
-            </p>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Proveedores</h1>
+            <p class="text-muted-foreground small mt-1 mb-0">Administra los contactos de distribuidores oficiales de mercadería</p>
         </div>
-
-        <button @onclick="OpenCreate"
-                class="btn btn-primary d-flex align-items-center gap-2 fw-semibold"
-                style="border-radius: var(--radius);">
-            <i class="fa-solid fa-plus"></i>
-            Nuevo Proveedor
+        <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-semibold" style="border-radius:var(--radius);">
+            <i class="fa-solid fa-plus"></i> Nuevo Proveedor
         </button>
     </div>
 
-    <!-- Filters -->
-    <div class="card p-4" style="border-radius: 12px;">
+    <!-- ── Filtros ── -->
+    <div class="card p-4" style="border-radius:12px;">
         <div class="row g-2 align-items-center">
-
-            <!-- Buscar proveedor -->
             <div class="col-md-8">
                 <div class="position-relative">
-                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted"
-                       style="left: 16px; font-size: 14px;"></i>
-
-                    <input type="search"
-                           @bind="_search"
-                           @bind:event="oninput"
-                           class="form-control text-foreground"
-                           placeholder="Buscar por Razón Social, RUC o contacto..."
-                           style="height: 56px; border-radius: 10px; padding-left: 42px;" />
+                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:16px;font-size:14px;"></i>
+                    <input type="search" @bind="_search" @bind:event="oninput"
+                           class="form-control text-foreground" placeholder="Buscar por Razón Social, RUC o contacto..."
+                           style="height:56px;border-radius:10px;padding-left:42px;" />
                 </div>
             </div>
-
-            <!-- Filtro de estados -->
             <div class="col-md-4">
-                <select @bind="_statusFilter"
-                        class="form-select text-foreground"
-                        style="height: 56px; border-radius: 10px;">
+                <select @bind="_statusFilter" class="form-select text-foreground" style="height:56px;border-radius:10px;">
                     <option value="">Todos los estados</option>
                     <option value="activo">Activos</option>
                     <option value="inactivo">Inactivos</option>
                 </select>
             </div>
-
         </div>
     </div>
 
-    <!-- Cards Grid -->
+    <!-- ── Cards Grid ── -->
     <div class="row g-3">
         @foreach (var sup in Filtered)
         {
@@ -66,24 +49,17 @@
                             <h2 class="fs-6 fw-bold text-foreground mb-1 text-truncate" title="@sup.RazonSocial">@sup.RazonSocial</h2>
                             <p class="text-xs text-muted-foreground m-0">RUC: @sup.Ruc</p>
                         </div>
-                        <span class="badge @(sup.Estado == "activo" ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger")" style="border-radius: var(--radius); font-size: 0.75rem;">
+                        <span class="badge @(sup.Estado == "activo" ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger")" style="border-radius:var(--radius);font-size:.75rem;white-space:nowrap;">
                             @sup.Estado
                         </span>
                     </div>
-
                     <div class="d-flex flex-wrap gap-1">
                         @foreach (var cat in sup.Categorias)
-                        {
-                            <span class="badge bg-secondary text-muted-foreground small py-1" style="border-radius: calc(var(--radius) - 2px);">@cat</span>
-                        }
+                        { <span class="badge bg-secondary text-muted-foreground small py-1" style="border-radius:calc(var(--radius) - 2px);">@cat</span> }
                     </div>
-
                     <hr class="border-color-default my-0" />
-
-                    <div class="d-flex flex-column gap-1.5 flex-grow-1">
-                        <p class="small text-foreground m-0">
-                            <strong>Contacto:</strong> @sup.Contacto
-                        </p>
+                    <div class="d-flex flex-column gap-1 flex-grow-1">
+                        <p class="small text-foreground m-0"><strong>Contacto:</strong> @sup.Contacto</p>
                         <p class="small text-muted-foreground m-0 d-flex align-items-center gap-2">
                             <Icons Name="Phone" Class="w-3.5 h-3.5" /> @sup.Telefono
                         </p>
@@ -94,20 +70,16 @@
                             <Icons Name="MapPin" Class="w-3.5 h-3.5" /> @sup.Direccion
                         </p>
                     </div>
-
                     <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top border-color-default">
-                        <span class="text-xs text-muted-foreground">
-                            U. Pedido: @sup.UltimoPedido.ToString("dd/MM/yy")
-                        </span>
+                        <span class="text-xs text-muted-foreground">U. Pedido: @sup.UltimoPedido.ToString("dd/MM/yy")</span>
                         <div class="d-flex gap-1">
-                            <button @onclick="@(() => OpenEdit(sup))" class="btn btn-ghost btn-sm text-muted-foreground" style="border-radius: var(--radius);" title="Editar">
+                            <button @onclick="@(() => OpenEdit(sup))" class="btn btn-ghost btn-sm text-muted-foreground" style="border-radius:var(--radius);" title="Editar">
                                 <Icons Name="Edit2" Class="w-4 h-4" />
                             </button>
-                            <button @onclick="@(() => ToggleStatus(sup.Id))" class="btn btn-ghost btn-sm @(sup.Estado == "activo" ? "text-warning" : "text-success")" style="border-radius: var(--radius);" title="@(sup.Estado == "activo" ? "Desactivar" : "Activar")">
-                                <Icons Name="EyeOff" Class="w-4 h-4" />
-                            </button>
-                            <button @onclick="@(() => AskDelete(sup.Id))" class="btn btn-ghost btn-sm text-danger" style="border-radius: var(--radius);" title="Eliminar">
-                                <Icons Name="Trash2" Class="w-4 h-4" />
+                            <button @onclick="@(() => AskToggle(sup.Id))"
+                                    class="btn btn-ghost btn-sm @(sup.Estado == "activo" ? "text-warning" : "text-success")"
+                                    style="border-radius:var(--radius);" title="@(sup.Estado == "activo" ? "Desactivar" : "Activar")">
+                                <i class="fa-solid @(sup.Estado == "activo" ? "fa-eye-slash" : "fa-eye")"></i>
                             </button>
                         </div>
                     </div>
@@ -115,15 +87,31 @@
             </div>
         }
         @if (!Filtered.Any())
-        {
-            <div class="col-12 text-center py-5 text-muted-foreground">
-                No se encontraron proveedores
-            </div>
-        }
+        { <div class="col-12 text-center py-5 text-muted-foreground">No se encontraron proveedores</div> }
     </div>
 </div>
 
-<!-- Modal Confirmar Guardar -->
+<!-- ── Modal: Confirmar toggle ── -->
+@if (_showToggleConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">@(_toggleSup?.Estado == "activo" ? "🔒" : "🔓")</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿@(_toggleSup?.Estado == "activo" ? "Desactivar" : "Activar") proveedor?</h5>
+                    <p class="text-muted-foreground small mb-4"><strong>@_toggleSup?.RazonSocial</strong> quedará @(_toggleSup?.Estado == "activo" ? "inactivo" : "activo").</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showToggleConfirm = false)">Cancelar</button>
+                        <button class="btn @(_toggleSup?.Estado == "activo" ? "btn-warning" : "btn-success")" style="border-radius:var(--radius);" @onclick="ConfirmToggle">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ── Modal: Confirmar guardar ── -->
 @if (_showSaveConfirm)
 {
     <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);z-index:1060;">
@@ -143,19 +131,19 @@
     </div>
 }
 
-<!-- Modal Confirmar Eliminar -->
-@if (_showDeleteConfirm)
+<!-- ── Modal: Salir sin guardar ── -->
+@if (_showUnsavedConfirm)
 {
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1060;">
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;">
         <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
             <div class="modal-content bg-card border-border">
                 <div class="modal-body p-4 text-center">
-                    <i class="fa-solid fa-triangle-exclamation text-danger mb-3" style="font-size:2rem;"></i>
-                    <h5 class="fw-bold text-foreground mb-1">¿Eliminar proveedor?</h5>
-                    <p class="text-muted-foreground small mb-4">El proveedor será eliminado de forma permanente.</p>
+                    <div class="mb-3" style="font-size:2.5rem;">⚠️</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Salir sin guardar?</h5>
+                    <p class="text-muted-foreground small mb-4">Los cambios se perderán.</p>
                     <div class="d-flex gap-2 justify-content-center">
-                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showDeleteConfirm = false)">Cancelar</button>
-                        <button class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ConfirmDelete">Eliminar</button>
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showUnsavedConfirm = false)">Seguir editando</button>
+                        <button class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ForceCloseModal">Salir sin guardar</button>
                     </div>
                 </div>
             </div>
@@ -163,109 +151,212 @@
     </div>
 }
 
-<!-- Supplier Modal -->
+<!-- ── Modal: Crear / Editar proveedor ── -->
 @if (_showModal)
 {
-    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="@(() => _showModal = false)">
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="TryCloseModal">
         <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation>
             <div class="modal-content bg-card border-border">
                 <div class="modal-header border-border">
                     <h5 class="modal-title text-foreground fw-bold">@(_isEditing ? "Editar Proveedor" : "Nuevo Proveedor")</h5>
-                    <button type="button" class="btn-close" @onclick="@(() => _showModal = false)"></button>
+                    <button type="button" class="btn-close" @onclick="TryCloseModal"></button>
                 </div>
                 <div class="modal-body p-4">
-                    <EditForm Model="_form" OnValidSubmit="AskSave" class="d-flex flex-column gap-3">
+                    @if (!string.IsNullOrEmpty(_formError))
+                    { <div class="alert alert-danger py-2 small mb-3">@_formError</div> }
+                    <div class="d-flex flex-column gap-3">
+
+                        <!-- Razón Social -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Razón Social</label>
-                            <input type="text" @bind="_form.RazonSocial" required class="form-control text-foreground" placeholder="Gloria S.A." />
+                            <label class="form-label small fw-medium text-foreground">Razón Social *</label>
+                            <input type="text"
+                                   value="@_form.RazonSocial"
+                                   @oninput="@(e => { _form.RazonSocial = e.Value?.ToString() ?? ""; _formDirty = true; })"
+                                   class="form-control text-foreground @(_submitted && string.IsNullOrWhiteSpace(_form.RazonSocial) ? "is-invalid" : "")"
+                                   placeholder="Gloria S.A." />
+                            @if (_submitted && string.IsNullOrWhiteSpace(_form.RazonSocial))
+                            { <div class="invalid-feedback">Campo obligatorio.</div> }
                         </div>
+
+                        <!-- RUC: solo dígitos, 11 caracteres -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">RUC</label>
-                            <input type="text" @bind="_form.Ruc" required class="form-control text-foreground" placeholder="20100058620" />
+                            <label class="form-label small fw-medium text-foreground">RUC * <span class="text-muted-foreground fw-normal">(11 dígitos)</span></label>
+                            <input type="text"
+                                   value="@_form.Ruc"
+                                   @oninput="OnRucInput"
+                                   inputmode="numeric"
+                                   maxlength="11"
+                                   class="form-control text-foreground @(_submitted && _form.Ruc.Length != 11 ? "is-invalid" : "")"
+                                   placeholder="20100058620" />
+                            @if (_submitted && _form.Ruc.Length != 11)
+                            { <div class="invalid-feedback">El RUC debe tener exactamente 11 dígitos numéricos.</div> }
                         </div>
+
+                        <!-- Contacto -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Nombre de Contacto</label>
-                            <input type="text" @bind="_form.Contacto" required class="form-control text-foreground" placeholder="Ana Mendoza" />
+                            <label class="form-label small fw-medium text-foreground">Nombre de Contacto *</label>
+                            <input type="text"
+                                   value="@_form.Contacto"
+                                   @oninput="OnContactoInput"
+                                   class="form-control text-foreground @(_submitted && string.IsNullOrWhiteSpace(_form.Contacto) ? "is-invalid" : "")"
+                                   placeholder="Ana Mendoza" />
+                            @if (_submitted && string.IsNullOrWhiteSpace(_form.Contacto))
+                            { <div class="invalid-feedback">Campo obligatorio (solo letras).</div> }
                         </div>
+
+                        <!-- Teléfono y Correo -->
                         <div class="row g-2">
                             <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Teléfono</label>
-                                <input type="tel" value="@_form.Telefono" @oninput="OnTelefonoInput" required maxlength="9" inputmode="numeric" class="form-control text-foreground" placeholder="999888777" />
+                                <label class="form-label small fw-medium text-foreground">Teléfono * <span class="text-muted-foreground fw-normal">(9 dígitos)</span></label>
+                                <input type="text"
+                                       value="@_form.Telefono"
+                                       @oninput="OnTelefonoInput"
+                                       inputmode="numeric"
+                                       maxlength="9"
+                                       class="form-control text-foreground @(_submitted && _form.Telefono.Length != 9 ? "is-invalid" : "")"
+                                       placeholder="999888777" />
+                                @if (_submitted && _form.Telefono.Length != 9)
+                                { <div class="invalid-feedback">Debe tener 9 dígitos.</div> }
                             </div>
                             <div class="col-6">
-                                <label class="form-label small fw-medium text-foreground">Correo</label>
-                                <input type="email" @bind="_form.Correo" required class="form-control text-foreground" placeholder="contacto@ventas.com" />
+                                <label class="form-label small fw-medium text-foreground">Correo *</label>
+                                <input type="email"
+                                       value="@_form.Correo"
+                                       @oninput="@(e => { _form.Correo = e.Value?.ToString() ?? ""; _formDirty = true; })"
+                                       class="form-control text-foreground @(_submitted && !EsCorreoValido(_form.Correo) ? "is-invalid" : "")"
+                                       placeholder="contacto@ventas.com" />
+                                @if (_submitted && !EsCorreoValido(_form.Correo))
+                                { <div class="invalid-feedback">Correo inválido (debe contener @@ y un dominio).</div> }
                             </div>
                         </div>
+
+                        <!-- Dirección -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Dirección</label>
-                            <input type="text" @bind="_form.Direccion" required class="form-control text-foreground" placeholder="Av. Industrial 123" />
+                            <label class="form-label small fw-medium text-foreground">Dirección *</label>
+                            <input type="text"
+                                   value="@_form.Direccion"
+                                   @oninput="@(e => { _form.Direccion = e.Value?.ToString() ?? ""; _formDirty = true; })"
+                                   class="form-control text-foreground"
+                                   placeholder="Av. Industrial 123" />
                         </div>
+
+                        <!-- Categorías -->
                         <div>
-                            <label class="form-label small fw-medium text-foreground">Categorías (separadas por coma)</label>
-                            <input type="text" @bind="_formCategoriesRaw" required class="form-control text-foreground" placeholder="Abarrotes, Bebidas, Lácteos" />
+                            <label class="form-label small fw-medium text-foreground">Categorías <span class="text-muted-foreground fw-normal">(separadas por coma)</span></label>
+                            <input type="text"
+                                   value="@_formCategoriesRaw"
+                                   @oninput="@(e => { _formCategoriesRaw = e.Value?.ToString() ?? ""; _formDirty = true; })"
+                                   class="form-control text-foreground"
+                                   placeholder="Abarrotes, Bebidas, Lácteos" />
                         </div>
+
+                        <!-- Estado -->
                         <div>
                             <label class="form-label small fw-medium text-foreground">Estado</label>
-                            <select @bind="_form.Estado" class="form-select text-foreground">
+                            <select value="@_form.Estado"
+                                    @onchange="@(e => { _form.Estado = e.Value?.ToString() ?? "activo"; _formDirty = true; })"
+                                    class="form-select text-foreground">
                                 <option value="activo">Activo</option>
                                 <option value="inactivo">Inactivo</option>
                             </select>
                         </div>
+
                         <div class="d-flex justify-content-end gap-2 mt-3">
-                            <button type="button" @onclick="@(() => _showModal = false)" class="btn btn-secondary" style="border-radius: var(--radius);">Cancelar</button>
-                            <button type="submit" class="btn btn-primary fw-semibold" style="border-radius: var(--radius);">
+                            <button type="button" @onclick="TryCloseModal" class="btn btn-secondary" style="border-radius:var(--radius);">Cancelar</button>
+                            <button type="button" @onclick="AskSave" class="btn btn-primary fw-semibold" style="border-radius:var(--radius);">
                                 @(_isEditing ? "Guardar cambios" : "Registrar")
                             </button>
                         </div>
-                    </EditForm>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 }
 
+<!-- ── Toast éxito ── -->
+@if (_showSavedToast)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+        <div class="toast show text-white border-0 px-3 py-2" style="background:#1A6B3C;border-radius:var(--radius);min-width:260px;">
+            <i class="fa-solid fa-circle-check me-2"></i>
+            <span class="small">Proveedor @(_isEditing ? "actualizado" : "registrado") correctamente</span>
+        </div>
+    </div>
+}
+
 @code {
     private List<Supplier> _suppliers = new();
-    private string _search = "";
+    private string _search       = "";
     private string _statusFilter = "";
 
-    // Form Modal state
-    private bool _showModal = false;
-    private bool _isEditing = false;
-    private Supplier _form = new();
-    private string _formCategoriesRaw = "";
+    private bool     _showModal          = false;
+    private bool     _isEditing          = false;
+    private bool     _formDirty          = false;
+    private bool     _submitted          = false;
+    private Supplier _form               = new();
+    private string   _formCategoriesRaw  = "";
+    private string   _formError          = "";
 
-    // Confirmaciones
-    private bool _showSaveConfirm   = false;
-    private bool _showDeleteConfirm = false;
-    private int  _pendingDeleteId;
+    private bool      _showSaveConfirm    = false;
+    private bool      _showToggleConfirm  = false;
+    private bool      _showUnsavedConfirm = false;
+    private bool      _showSavedToast     = false;
+    private Supplier? _toggleSup          = null;
 
-    // Solo dígitos, máx. 9 (formato peruano)
-    private void OnTelefonoInput(ChangeEventArgs e)
-        => _form.Telefono = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(9).ToArray());
-
-    private void AskSave() => _showSaveConfirm = true;
-    private void ConfirmSave() { _showSaveConfirm = false; Save(); }
-
-    private void AskDelete(int id) { _pendingDeleteId = id; _showDeleteConfirm = true; }
-    private void ConfirmDelete()   { _showDeleteConfirm = false; Delete(_pendingDeleteId); }
-
-    protected override void OnInitialized()
-    {
-        _suppliers = SupplierSvc.GetSuppliers();
-    }
+    protected override void OnInitialized() => _suppliers = SupplierSvc.GetSuppliers();
 
     private IEnumerable<Supplier> Filtered => _suppliers.Where(s =>
-        (string.IsNullOrEmpty(_search) || s.RazonSocial.Contains(_search, StringComparison.OrdinalIgnoreCase) || s.Ruc.Contains(_search) || s.Contacto.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
+        (string.IsNullOrEmpty(_search) ||
+         s.RazonSocial.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+         s.Ruc.Contains(_search) ||
+         s.Contacto.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
         (string.IsNullOrEmpty(_statusFilter) || s.Estado.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase))
     );
 
+    // ── Validaciones de input: solo dígitos o solo letras ────────────────────
+    private void OnRucInput(ChangeEventArgs e)
+    {
+        // Filtrar: solo dígitos, máx 11
+        _form.Ruc  = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(11).ToArray());
+        _formDirty = true;
+    }
+
+    private void OnTelefonoInput(ChangeEventArgs e)
+    {
+        // Filtrar: solo dígitos, máx 9
+        _form.Telefono = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(9).ToArray());
+        _formDirty = true;
+    }
+
+    private void OnContactoInput(ChangeEventArgs e)
+    {
+        // Filtrar: solo letras, espacios y tildes
+        var raw = e.Value?.ToString() ?? "";
+        _form.Contacto = new string(raw.Where(c => char.IsLetter(c) || c == ' ').ToArray());
+        _formDirty = true;
+    }
+
+    private bool EsCorreoValido(string c) =>
+        !string.IsNullOrWhiteSpace(c) && c.Contains('@') && c.LastIndexOf('.') > c.IndexOf('@');
+
+    private bool FormValido() =>
+        !string.IsNullOrWhiteSpace(_form.RazonSocial) &&
+        _form.Ruc.Length == 11 &&
+        !string.IsNullOrWhiteSpace(_form.Contacto) &&
+        _form.Telefono.Length == 9 &&
+        EsCorreoValido(_form.Correo);
+
+    private bool EsDuplicado() => _suppliers.Any(s =>
+        s.Id != _form.Id &&
+        (s.Ruc == _form.Ruc ||
+         s.Correo.Equals(_form.Correo, StringComparison.OrdinalIgnoreCase) ||
+         s.Telefono == _form.Telefono));
+
     private void OpenCreate()
     {
-        _form = new Supplier();
-        _formCategoriesRaw = "";
-        _isEditing = false;
+        _form = new Supplier(); _formCategoriesRaw = "";
+        _isEditing = false; _formDirty = false; _submitted = false; _formError = "";
         _showModal = true;
     }
 
@@ -273,50 +364,47 @@
     {
         _form = new Supplier
         {
-            Id = s.Id,
-            RazonSocial = s.RazonSocial,
-            Ruc = s.Ruc,
-            Contacto = s.Contacto,
-            Telefono = s.Telefono,
-            Correo = s.Correo,
-            Direccion = s.Direccion,
-            Categorias = new List<string>(s.Categorias),
-            Estado = s.Estado,
-            UltimoPedido = s.UltimoPedido
+            Id = s.Id, RazonSocial = s.RazonSocial, Ruc = s.Ruc,
+            Contacto = s.Contacto, Telefono = s.Telefono, Correo = s.Correo,
+            Direccion = s.Direccion, Categorias = new(s.Categorias),
+            Estado = s.Estado, UltimoPedido = s.UltimoPedido
         };
         _formCategoriesRaw = string.Join(", ", s.Categorias);
-        _isEditing = true;
+        _isEditing = true; _formDirty = false; _submitted = false; _formError = "";
         _showModal = true;
     }
 
-    private void Save()
+    private void TryCloseModal()  { if (_formDirty) _showUnsavedConfirm = true; else ForceCloseModal(); }
+    private void ForceCloseModal(){ _showUnsavedConfirm = false; _showModal = false; }
+
+    private void AskSave()
     {
+        _submitted = true; _formError = "";
+        if (!FormValido()) return;
+        if (EsDuplicado()) { _formError = "Ya existe un proveedor con el mismo RUC, correo o teléfono."; return; }
+        _showSaveConfirm = true;
+    }
+
+    private async Task ConfirmSave()
+    {
+        _showSaveConfirm = false;
         _form.Categorias = _formCategoriesRaw
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(c => c.Trim())
-            .ToList();
-
-        if (_isEditing)
-        {
-            SupplierSvc.UpdateSupplier(_form);
-        }
-        else
-        {
-            SupplierSvc.AddSupplier(_form);
-        }
-        _showModal = false;
-        _suppliers = SupplierSvc.GetSuppliers(); // refresh
+            .Select(c => c.Trim()).ToList();
+        if (_isEditing) SupplierSvc.UpdateSupplier(_form);
+        else            SupplierSvc.AddSupplier(_form);
+        _showModal = false; _formDirty = false;
+        _suppliers = SupplierSvc.GetSuppliers();
+        _showSavedToast = true; StateHasChanged();
+        await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
     }
 
-    private void Delete(int id)
+    private void AskToggle(int id)  { _toggleSup = _suppliers.FirstOrDefault(s => s.Id == id); _showToggleConfirm = true; }
+    private void ConfirmToggle()
     {
-        SupplierSvc.DeleteSupplier(id);
-        _suppliers = SupplierSvc.GetSuppliers(); // refresh
-    }
-
-    private void ToggleStatus(int id)
-    {
-        SupplierSvc.ToggleStatus(id);
+        if (_toggleSup != null) SupplierSvc.ToggleStatus(_toggleSup.Id);
+        _showToggleConfirm = false;
+        _suppliers = SupplierSvc.GetSuppliers();
         StateHasChanged();
     }
 }
