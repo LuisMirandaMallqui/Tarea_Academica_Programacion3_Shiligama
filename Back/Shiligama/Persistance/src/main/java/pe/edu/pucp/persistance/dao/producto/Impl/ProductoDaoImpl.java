@@ -40,7 +40,8 @@ public class ProductoDaoImpl implements ProductoDao {
 
     // SP: MODIFICAR_PRODUCTO(IN _producto_id, IN _categoria_id, IN _nombre,
     //   IN _descripcion, IN _precio_unitario, IN _stock_minimo,
-    //   IN _unidad_medida, IN _codigo_barras, IN _imagen_url)
+    //   IN _unidad_medida, IN _codigo_barras, IN _imagen_url,
+    //   IN _stock, IN _estado)   <- posiciones 10 y 11, agregadas al SP
     @Override
     public int modificar(Producto producto) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -54,6 +55,8 @@ public class ProductoDaoImpl implements ProductoDao {
         parametrosEntrada.put(7, producto.getUnidadMedida());
         parametrosEntrada.put(8, producto.getCodigoBarras());
         parametrosEntrada.put(9, producto.getImagenUrl());
+        parametrosEntrada.put(10, producto.getStock());           // AGREGADO
+        parametrosEntrada.put(11, producto.isEstado() ? 1 : 0);  // AGREGADO
 
         return DBManager.getInstance().ejecutarProcedimiento(
                 "MODIFICAR_PRODUCTO", parametrosEntrada, null);

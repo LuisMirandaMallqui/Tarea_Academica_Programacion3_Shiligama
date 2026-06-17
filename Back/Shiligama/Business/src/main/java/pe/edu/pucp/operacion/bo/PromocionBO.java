@@ -10,4 +10,6 @@ public interface PromocionBO extends BaseBo<Promocion> {
     int asociarProducto(int idPromocion, int idProducto) throws Exception;
     int desasociarProducto(int idPromocion, int idProducto) throws Exception;
     List<Integer> listarProductosPorPromocion(int idPromocion) throws Exception;
+    // Nuevo: una sola llamada en vez del loop N+1
+    List<Promocion> listarTodasConProductos() throws Exception;
 }

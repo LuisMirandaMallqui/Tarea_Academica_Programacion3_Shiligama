@@ -8,13 +8,12 @@ import pe.edu.pucp.persistance.dao.operacion.dao.PromocionDao;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class PromocionDaoImpl implements PromocionDao {
 
-    // SP: INSERTAR_PROMOCION(OUT _promocion_id, IN _nombre, IN _descripcion,
-    //   IN _tipo_descuento, IN _valor_descuento, IN _fecha_inicio, IN _fecha_fin, IN _condiciones)
     @Override
     public int insertar(Promocion promocion) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -35,8 +34,6 @@ public class PromocionDaoImpl implements PromocionDao {
         return promocion.getIdPromocion();
     }
 
-    // SP: MODIFICAR_PROMOCION(IN _promocion_id, IN _nombre, IN _descripcion,
-    //   IN _tipo_descuento, IN _valor_descuento, IN _fecha_inicio, IN _fecha_fin, IN _condiciones)
     @Override
     public int modificar(Promocion promocion) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -54,7 +51,6 @@ public class PromocionDaoImpl implements PromocionDao {
                 "MODIFICAR_PROMOCION", parametrosEntrada, null);
     }
 
-    // SP: ELIMINAR_PROMOCION(IN _promocion_id)
     @Override
     public int eliminar(int id) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -63,7 +59,6 @@ public class PromocionDaoImpl implements PromocionDao {
                 "ELIMINAR_PROMOCION", parametrosEntrada, null);
     }
 
-    // SP: BUSCAR_PROMOCION_POR_ID(IN _promocion_id)
     @Override
     public Promocion buscarPorId(int id) {
         Promocion p = null;
@@ -84,7 +79,6 @@ public class PromocionDaoImpl implements PromocionDao {
         return p;
     }
 
-    // SP: LISTAR_PROMOCIONES_TODAS()
     @Override
     public List<Promocion> listarTodos() {
         List<Promocion> lista = new ArrayList<>();
@@ -103,7 +97,6 @@ public class PromocionDaoImpl implements PromocionDao {
         return lista;
     }
 
-    // SP: LISTAR_PROMOCIONES_VIGENTES()
     @Override
     public List<Promocion> listarVigentes() {
         List<Promocion> lista = new ArrayList<>();
@@ -122,7 +115,48 @@ public class PromocionDaoImpl implements PromocionDao {
         return lista;
     }
 
-    // SP: VINCULAR_PRODUCTO_PROMOCION(IN _promocion_id, IN _producto_id)
+    // SP: LISTAR_PROMOCIONES_CON_PRODUCTOS()
+    // Devuelve todas las promos con sus productos en UNA sola query (sin N+1).
+    // El ResultSet tiene una fila por cada (promo, producto). Si la promo no
+    // tiene productos vinculados aparece con producto_id = NULL (LEFT JOIN).
+    @Override
+    public List<Promocion> listarTodasConProductos() {
+        // LinkedHashMap para mantener el orden de inserción (por id_promocion)
+        Map<Integer, Promocion> mapaPromos = new LinkedHashMap<>();
+
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_PROMOCIONES_CON_PRODUCTOS", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    int idPromocion = rs.getInt("id_promocion");
+
+                    // Si la promo aún no está en el mapa, la creamos
+                    Promocion promo = mapaPromos.get(idPromocion);
+                    if (promo == null) {
+                        promo = mapearPromocion(rs);
+                        promo.setProductos(new ArrayList<>());
+                        mapaPromos.put(idPromocion, promo);
+                    }
+
+                    // Agregar el producto vinculado (si existe)
+                    int idProducto = rs.getInt("producto_id");
+                    if (!rs.wasNull() && idProducto > 0) {
+                        // Reutilizamos el campo "productos" de Promocion como lista de IDs
+                        // Los pasamos como objetos mínimos — el front solo necesita el ID
+                        pe.edu.pucp.model.producto.Producto prod = new pe.edu.pucp.model.producto.Producto();
+                        prod.setIdProducto(idProducto);
+                        promo.getProductos().add(prod);
+                    }
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error al listar promociones con productos: " + ex.getMessage());
+        }
+
+        return new ArrayList<>(mapaPromos.values());
+    }
+
     @Override
     public int asociarProducto(int idPromocion, int idProducto) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -132,7 +166,6 @@ public class PromocionDaoImpl implements PromocionDao {
                 "VINCULAR_PRODUCTO_PROMOCION", parametrosEntrada, null);
     }
 
-    // SP: DESVINCULAR_PRODUCTO_PROMOCION(IN _promocion_id, IN _producto_id)
     @Override
     public int desasociarProducto(int idPromocion, int idProducto) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -142,7 +175,6 @@ public class PromocionDaoImpl implements PromocionDao {
                 "DESVINCULAR_PRODUCTO_PROMOCION", parametrosEntrada, null);
     }
 
-    // SP: LISTAR_PRODUCTOS_POR_PROMOCION(IN _promocion_id)
     @Override
     public List<Integer> listarProductosPorPromocion(int idPromocion) {
         List<Integer> lista = new ArrayList<>();
@@ -170,13 +202,8 @@ public class PromocionDaoImpl implements PromocionDao {
         p.setDescripcion(rs.getString("descripcion"));
         p.setTipoDescuento(TipoDescuento.valueOf(rs.getString("tipo_descuento")));
         p.setValorDescuento(rs.getDouble("valor_descuento"));
-        p.setFechaInicio(
-                rs.getTimestamp("fecha_inicio").toLocalDateTime()
-        );
-
-        p.setFechaFin(
-                rs.getTimestamp("fecha_fin").toLocalDateTime()
-        );
+        p.setFechaInicio(rs.getTimestamp("fecha_inicio").toLocalDateTime());
+        p.setFechaFin(rs.getTimestamp("fecha_fin").toLocalDateTime());
         p.setCondiciones(rs.getString("condiciones"));
         p.setActivo(rs.getBoolean("activo"));
         return p;

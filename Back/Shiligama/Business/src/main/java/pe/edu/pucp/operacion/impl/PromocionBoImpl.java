@@ -28,17 +28,13 @@ public class PromocionBoImpl implements PromocionBO {
 
     @Override
     public int eliminar(int id) throws Exception {
-        if (id <= 0) {
-            throw new Exception("El ID de la promocion debe ser mayor que cero.");
-        }
+        if (id <= 0) throw new Exception("El ID de la promocion debe ser mayor que cero.");
         return daoPromocion.eliminar(id);
     }
 
     @Override
     public Promocion buscarPorId(int id) throws Exception {
-        if (id <= 0) {
-            throw new Exception("El ID de la promocion debe ser mayor que cero.");
-        }
+        if (id <= 0) throw new Exception("El ID de la promocion debe ser mayor que cero.");
         return daoPromocion.buscarPorId(id);
     }
 
@@ -53,50 +49,44 @@ public class PromocionBoImpl implements PromocionBO {
     }
 
     @Override
+    public List<Promocion> listarTodasConProductos() throws Exception {
+        return daoPromocion.listarTodasConProductos();
+    }
+
+    @Override
     public int asociarProducto(int idPromocion, int idProducto) throws Exception {
-        if (idPromocion <= 0 || idProducto <= 0) {
+        if (idPromocion <= 0 || idProducto <= 0)
             throw new Exception("Los IDs de promocion y producto deben ser mayores que cero.");
-        }
         return daoPromocion.asociarProducto(idPromocion, idProducto);
     }
 
     @Override
     public int desasociarProducto(int idPromocion, int idProducto) throws Exception {
-        if (idPromocion <= 0 || idProducto <= 0) {
+        if (idPromocion <= 0 || idProducto <= 0)
             throw new Exception("Los IDs de promocion y producto deben ser mayores que cero.");
-        }
         return daoPromocion.desasociarProducto(idPromocion, idProducto);
     }
 
     @Override
     public List<Integer> listarProductosPorPromocion(int idPromocion) throws Exception {
-        if (idPromocion <= 0) {
+        if (idPromocion <= 0)
             throw new Exception("El ID de la promocion debe ser mayor que cero.");
-        }
         return daoPromocion.listarProductosPorPromocion(idPromocion);
     }
 
     private void validar(Promocion promocion, boolean esModificacion) throws Exception {
-        if (promocion == null) {
-            throw new Exception("La promocion no puede ser nula.");
-        }
-        if (esModificacion && promocion.getIdPromocion() <= 0) {
+        if (promocion == null) throw new Exception("La promocion no puede ser nula.");
+        if (esModificacion && promocion.getIdPromocion() <= 0)
             throw new Exception("El ID de la promocion es obligatorio para la modificacion.");
-        }
-        if (promocion.getNombre() == null || promocion.getNombre().trim().isEmpty()) {
+        if (promocion.getNombre() == null || promocion.getNombre().trim().isEmpty())
             throw new Exception("El nombre de la promocion es obligatorio.");
-        }
-        if (promocion.getTipoDescuento() == null) {
+        if (promocion.getTipoDescuento() == null)
             throw new Exception("El tipo de descuento es obligatorio.");
-        }
-        if (promocion.getValorDescuento() < 0) {
+        if (promocion.getValorDescuento() < 0)
             throw new Exception("El valor del descuento no puede ser negativo.");
-        }
-        if (promocion.getFechaInicio() == null || promocion.getFechaFin() == null) {
+        if (promocion.getFechaInicio() == null || promocion.getFechaFin() == null)
             throw new Exception("Las fechas de inicio y fin son obligatorias.");
-        }
-        if (promocion.getFechaInicio().isAfter(promocion.getFechaFin())) {
+        if (promocion.getFechaInicio().isAfter(promocion.getFechaFin()))
             throw new Exception("La fecha de inicio no puede ser posterior a la fecha de fin.");
-        }
     }
 }

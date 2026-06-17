@@ -5,6 +5,8 @@
 @inject SupplierService SupplierSvc
 @inject StaffService StaffSvc
 @inject IJSRuntime JS
+@inject HttpClient Http
+@using System.Text.Json
 
 <PageTitle>Dashboard – Shiligama Admin</PageTitle>
 
@@ -28,8 +30,8 @@
                             <span class="text-muted-foreground" style="font-size:0.75rem;">@kpi.Subtitle</span>
                             @if (!string.IsNullOrEmpty(kpi.Trend))
                             {
-                                <span class="badge small py-1" style="@(kpi.TrendUp?"background:color-mix(in srgb,#1A6B3C 15%,transparent);color:#1A6B3C;":"background:color-mix(in srgb,#c62828 15%,transparent);color:#c62828;") border-radius:var(--radius);">
-                                    <i class="fas @(kpi.TrendUp?"fa-arrow-up":"fa-arrow-down") me-1" style="font-size:0.6rem;"></i>@kpi.Trend
+                                <span class="badge small py-1" style="@(kpi.TrendUp ? "background:color-mix(in srgb,#1A6B3C 15%,transparent);color:#1A6B3C;" : "background:color-mix(in srgb,#c62828 15%,transparent);color:#c62828;") border-radius:var(--radius);">
+                                    <i class="fas @(kpi.TrendUp ? "fa-arrow-up" : "fa-arrow-down") me-1" style="font-size:0.6rem;"></i>@kpi.Trend
                                 </span>
                             }
                         </div>
@@ -42,9 +44,8 @@
         }
     </div>
 
-    <!-- Charts Row (2 columns) -->
+    <!-- Charts Row -->
     <div class="row g-4">
-        <!-- Sales Line Chart -->
         <div class="col-lg-7">
             <div class="card p-4 h-100">
                 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -64,7 +65,6 @@
             </div>
         </div>
 
-        <!-- Channels Bar Chart -->
         <div class="col-lg-5">
             <div class="card p-4 h-100">
                 <div class="mb-3">
@@ -80,9 +80,8 @@
         </div>
     </div>
 
-    <!-- Recent Sales + Quick Stats -->
+    <!-- Recent Sales -->
     <div class="row g-4">
-        <!-- Recent Transactions Table -->
         <div class="col-12">
             <div class="card overflow-hidden">
                 <div class="d-flex align-items-center justify-content-between p-4 border-bottom border-color-default">
@@ -133,12 +132,11 @@
                                     <td colspan="4" class="text-center py-5 text-muted-foreground">Sin ventas recientes</td>
                                 </tr>
                             }
-                        </tbody>    
+                        </tbody>
                     </table>
                 </div>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -147,6 +145,15 @@
     private List<Sale> _recentSales = new();
 
     private record KpiItem(string Title, string Value, string Subtitle, string FaIcon, string Color, string Trend, bool TrendUp);
+
+    // DTO para mapear GET /api/dashboard/admin
+    private class KpiAdminDto
+    {
+        public double VentasHoy { get; set; }
+        public int PedidosPendientes { get; set; }
+        public int ProductosBajoStock { get; set; }
+        public double IngresosMes { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -160,29 +167,65 @@
     {
         if (!firstRender) return;
 
-        var sales    = SalesSvc.GetSales();
-        var products = ProductSvc.GetProducts();
-        var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
-
-        _kpis = new()
+        // Intentar cargar KPIs reales desde GET /api/dashboard/admin
+        KpiAdminDto? kpiReal = null;
+        try
         {
-            new("Ventas hoy",
-                $"S/. {todaySales:0.00}",
-                "8 transacciones hoy",
-                "fa-wallet", "#1A6B3C", "+12.5%", true),
-            new("Pedidos pendientes",
-                $"{SalesSvc.GetRecentOrders().Count(o => o.Status == "pendiente")}",
-                "+3 nuevos hoy",
-                "fa-clock", "#e67e22", "+3", true),
-            new("Productos con bajo stock",
-                $"{products.Count(p => p.Stock < 10)}",
-                "-5 requieren atención",
-                "fa-box-open", "#c62828", "-5", false),
-            new("Ingresos del mes",
-                $"S/. {sales.Sum(s => s.Total):0.00}",
-                "vs. mes anterior",
-                "fa-chart-line", "#2563EB", "+8.2%", true),
-        };
+            var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+            kpiReal = await Http.GetFromJsonAsync<KpiAdminDto>("dashboard/admin", jsonOpts);
+        }
+        catch { /* backend no disponible, usar datos de caché local */ }
+
+        var sales = SalesSvc.GetSales();
+        var products = ProductSvc.GetProducts();
+
+        if (kpiReal != null)
+        {
+            // KPIs reales del SP KPI_ADMIN_DASHBOARD del back
+            _kpis = new()
+            {
+                new("Ventas hoy",
+                    $"S/. {kpiReal.VentasHoy:0.00}",
+                    "Facturado hoy",
+                    "fa-wallet", "#1A6B3C", "", true),
+                new("Pedidos pendientes",
+                    $"{kpiReal.PedidosPendientes}",
+                    "En estado RECIBIDO o EN_PROCESO",
+                    "fa-clock", "#e67e22", "", true),
+                new("Productos bajo stock",
+                    $"{kpiReal.ProductosBajoStock}",
+                    "Stock <= stock mínimo",
+                    "fa-box-open", "#c62828", "", false),
+                new("Ingresos del mes",
+                    $"S/. {kpiReal.IngresosMes:0.00}",
+                    "Facturado este mes",
+                    "fa-chart-line", "#2563EB", "", true),
+            };
+        }
+        else
+        {
+            // Fallback: calcular desde la caché local si el back no responde
+            var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
+            _kpis = new()
+            {
+                new("Ventas hoy",
+                    $"S/. {todaySales:0.00}",
+                    "Calculado desde caché",
+                    "fa-wallet", "#1A6B3C", "", true),
+                new("Pedidos pendientes",
+                    $"{SalesSvc.GetRecentOrders().Count(o => o.Status is "recibido" or "en_proceso")}",
+                    "Recibidos o en proceso",
+                    "fa-clock", "#e67e22", "", true),
+                new("Productos bajo stock",
+                    $"{products.Count(p => p.Stock <= p.MinStock)}",
+                    "Stock <= mínimo configurado",
+                    "fa-box-open", "#c62828", "", false),
+                new("Ingresos del mes",
+                    $"S/. {sales.Sum(s => s.Total):0.00}",
+                    "Total en caché",
+                    "fa-chart-line", "#2563EB", "", true),
+            };
+        }
 
         _recentSales = sales.OrderByDescending(s => s.Fecha).Take(6).ToList();
 
@@ -192,16 +235,26 @@
 
     private async Task RenderCharts()
     {
-        // Sales chart
         var labels = Enumerable.Range(-6, 7).Select(d => DateTime.Today.AddDays(d).ToString("dd/MM")).ToArray();
-        var data   = Enumerable.Range(-6, 7).Select(d =>
+        var data = Enumerable.Range(-6, 7).Select(d =>
             SalesSvc.GetSales().Where(s => s.Fecha.Date == DateTime.Today.AddDays(d)).Sum(s => s.Total)
         ).ToArray();
         await JS.InvokeVoidAsync("chartHelper.renderSalesChart", "salesChart", labels, data);
 
-        // Channels chart
-        var presencialData = new[] { 8, 10, 9, 12, 15, 18, 14 };
-        var onlineData     = new[] { 5, 7,  6,  8, 10, 12, 9  };
+        var presencialData = SalesSvc.GetRecentOrders()
+            .Where(o => o.Channel == "Presencial")
+            .GroupBy(o => o.Date.DayOfWeek)
+            .Select(g => g.Count())
+            .ToArray();
+        var onlineData = SalesSvc.GetRecentOrders()
+            .Where(o => o.Channel == "Online")
+            .GroupBy(o => o.Date.DayOfWeek)
+            .Select(g => g.Count())
+            .ToArray();
+
+        if (presencialData.Length == 0) presencialData = new[] { 8, 10, 9, 12, 15, 18, 14 };
+        if (onlineData.Length == 0) onlineData = new[] { 5, 7, 6, 8, 10, 12, 9 };
+
         await JS.InvokeVoidAsync("chartHelper.renderChannelsChart", "channelsChart",
             Enumerable.Range(-6, 7).Select(d => DateTime.Today.AddDays(d).ToString("ddd")).ToArray(),
             presencialData, onlineData);

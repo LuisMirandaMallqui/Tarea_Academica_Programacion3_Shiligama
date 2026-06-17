@@ -93,6 +93,8 @@ public class Promocion {
     public void setCondiciones(String condiciones) { this.condiciones = condiciones; }
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
+    public List<Producto> getProductos() { return productos; }
+    public void setProductos(List<Producto> productos) { this.productos = productos; }
 
     @Override
     public String toString() {

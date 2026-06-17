@@ -386,30 +386,36 @@ BEGIN
     SET _producto_id = LAST_INSERT_ID();
 END$$
 
-DROP PROCEDURE IF EXISTS MODIFICAR_PRODUCTO$$
+DROP PROCEDURE IF EXISTS MODIFICAR_PRODUCTO;
+
 CREATE PROCEDURE MODIFICAR_PRODUCTO(
-    IN _producto_id     INT,
-    IN _categoria_id    INT,
-    IN _nombre          VARCHAR(150),
-    IN _descripcion     VARCHAR(500),
-    IN _precio_unitario DECIMAL(10,2),
-    IN _stock_minimo    INT,
-    IN _unidad_medida   VARCHAR(30),
-    IN _codigo_barras   VARCHAR(50),
-    IN _imagen_url      VARCHAR(500)
+    IN _producto_id   INT,
+    IN _categoria_id  INT,
+    IN _nombre        VARCHAR(255),
+    IN _descripcion   TEXT,
+    IN _precio        DECIMAL(10,2),
+    IN _stock_minimo  INT,
+    IN _unidad_medida VARCHAR(50),
+    IN _codigo_barras VARCHAR(50),
+    IN _imagen_url    VARCHAR(500),
+    IN _stock         INT,
+    IN _estado        BOOLEAN
 )
 BEGIN
     UPDATE producto SET
-        CATEGORIA_ID    = _categoria_id,
-        NOMBRE          = _nombre,
-        DESCRIPCION     = _descripcion,
-        PRECIO_UNITARIO = _precio_unitario,
-        STOCK_MINIMO    = _stock_minimo,
-        UNIDAD_MEDIDA   = _unidad_medida,
-        CODIGO_BARRAS   = _codigo_barras,
-        IMAGEN_URL      = _imagen_url
-    WHERE PRODUCTO_ID = _producto_id;
+        id_categoria    = _categoria_id,
+        nombre          = _nombre,
+        descripcion     = _descripcion,
+        precio_unitario = _precio,
+        stock_minimo    = _stock_minimo,
+        unidad_medida   = _unidad_medida,
+        codigo_barras   = _codigo_barras,
+        imagen_url      = _imagen_url,
+        stock           = _stock,
+        estado          = _estado
+    WHERE id_producto = _producto_id;
 END$$
+
 
 DROP PROCEDURE IF EXISTS ELIMINAR_PRODUCTO$$
 CREATE PROCEDURE ELIMINAR_PRODUCTO(

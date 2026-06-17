@@ -60,6 +60,7 @@ public class ProductoRS {
         }
     }
 
+    // PUT /api/productos — ahora sí actualiza stock y estado via MODIFICAR_PRODUCTO
     @PUT
     public Response modificar(Producto producto) {
         try {
@@ -83,10 +84,6 @@ public class ProductoRS {
         }
     }
 
-    // Búsqueda paginada con filtros opcionales.
-    // GET /api/productos/buscar?categoria=2&q=arroz&precioMin=10&precioMax=50&soloPromo=true&pagina=1&tamano=20
-    // Respuesta: body con List<Producto> de la página actual + headers
-    //   X-Total-Count, X-Page, X-Page-Size, X-Total-Pages.
     @GET
     @Path("/buscar")
     public Response buscarPaginado(@QueryParam("categoria") Integer categoriaId,
@@ -108,7 +105,6 @@ public class ProductoRS {
                     .header("X-Page", pagina)
                     .header("X-Page-Size", tamano)
                     .header("X-Total-Pages", totalPaginas)
-                    // CORS expose para que el front pueda leer estos headers
                     .header("Access-Control-Expose-Headers",
                             "X-Total-Count, X-Page, X-Page-Size, X-Total-Pages")
                     .build();
@@ -118,7 +114,6 @@ public class ProductoRS {
         }
     }
 
-    // GET /api/productos/codigo-barras/7750885000123  — uso clave para POS
     @GET
     @Path("/codigo-barras/{codigo}")
     public Response buscarPorCodigoBarras(@PathParam("codigo") String codigo) {
@@ -136,7 +131,6 @@ public class ProductoRS {
         }
     }
 
-    // GET /api/productos/bajo-stock  — panel inventario admin
     @GET
     @Path("/bajo-stock")
     public Response listarBajoStock() {
