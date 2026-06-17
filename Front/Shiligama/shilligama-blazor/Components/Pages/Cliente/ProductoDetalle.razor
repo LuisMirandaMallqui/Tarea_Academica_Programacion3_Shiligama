@@ -5,6 +5,27 @@
 @inject CartService Cart
 @inject NavigationManager Navigation
 
+<style>
+.qty-input {
+    width:44px;text-align:center;border:none;background:transparent;
+    color:var(--foreground);font-size:.95rem;font-weight:500;
+    -moz-appearance:textfield;
+}
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button { -webkit-appearance:none;margin:0; }
+@@keyframes cartToastIn  { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+@@keyframes cartToastOut { from{opacity:1} to{opacity:0} }
+.cart-toast {
+    position:fixed;bottom:1.5rem;right:1.5rem;z-index:1090;
+    display:flex;align-items:center;gap:.65rem;
+    background:#16a34a;color:#fff;border-radius:var(--radius);
+    padding:.65rem 1.1rem;font-size:.84rem;font-weight:500;
+    box-shadow:0 4px 18px rgba(0,0,0,.25);
+    animation:cartToastIn .3s ease-out forwards;
+    max-width:320px;
+}
+</style>
+
 @if (_product == null)
 {
     <div class="d-flex align-items-center justify-content-center" style="min-height:60vh;">
@@ -122,10 +143,12 @@ else
                                         style="font-size:1.1rem;font-weight:500;">
                                     −
                                 </button>
-                                <span class="px-3 fw-medium text-foreground d-flex align-items-center justify-content-center"
-                                      style="min-width:32px;font-size:0.95rem;">
-                                    @_quantity
-                                </span>
+                                <input type="number"
+                                       class="qty-input"
+                                       min="1"
+                                       max="@_product.Stock"
+                                       @bind:get="_quantity"
+                                       @bind:set="HandleQuantityChange" />
                                 <button class="btn btn-ghost px-3 h-100 border-0 text-foreground
                                     d-flex align-items-center justify-content-center"
                                         @onclick="@(() => { if (_quantity < _product.Stock) _quantity++; })"
@@ -264,15 +287,24 @@ else
 </div>
 }
 
+@if (_showToast && _product != null)
+{
+    <div class="cart-toast">
+        <i class="fa-solid fa-circle-check" style="font-size:1.05rem;flex-shrink:0;"></i>
+        <span><strong>@_product.Name</strong> agregado al carrito</span>
+    </div>
+}
+
 @code {
     [Parameter] public int Id { get; set; }
 
     private Product? _product;
     private List<Product> _related = new();
-    private int _quantity = 1;
-    private bool _added = false;
+    private int  _quantity = 1;
+    private bool _added    = false;
+    private bool _showToast = false;
     private Promocion? _promo;
-    private decimal _precioEfectivo;
+    private decimal    _precioEfectivo;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -292,16 +324,28 @@ else
         if (firstRender) { await Cart.InitializeAsync(); StateHasChanged(); }
     }
 
+    private async Task HandleQuantityChange(int qty)
+    {
+        if (_product == null) return;
+        // Snap-back: force re-render with clamped value
+        _quantity = qty;
+        await Task.Yield();
+        _quantity = Math.Clamp(qty, 1, _product.Stock);
+        StateHasChanged();
+    }
+
     private async Task HandleAddToCart()
     {
         if (_product == null) return;
         for (int i = 0; i < _quantity; i++)
             await Cart.AddToCartAsync(_product);
-        _added = true;
+        _added    = true;
+        _showToast = true;
         _quantity = 1;
         StateHasChanged();
-        await Task.Delay(2000);
-        _added = false;
+        await Task.Delay(2500);
+        _added    = false;
+        _showToast = false;
         StateHasChanged();
     }
 

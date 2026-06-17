@@ -1,8 +1,10 @@
 @page "/configuracion"
 @layout MainLayout
 @inject AuthService Auth
+@inject AddressService AddressSvc
 @inject NavigationManager Navigation
 @inject HttpClient Http
+@implements IDisposable
 
 <PageTitle>Configuración – Shiligama</PageTitle>
 
@@ -111,20 +113,28 @@
                     <i class="fa-solid fa-location-dot" style="color:#0D4525;font-size:1.1rem;"></i>
                 </div>
                 <div>
-                    <h3 class="fw-bold text-foreground mb-0" style="font-size:1.05rem;">Dirección de Entrega</h3>
-                    <p class="text-muted-foreground small mb-0">La dirección donde recibirás tus pedidos</p>
+                    <h3 class="fw-bold text-foreground mb-0" style="font-size:1.05rem;">Direcciones de Entrega</h3>
+                    <p class="text-muted-foreground small mb-0">Tus direcciones guardadas para entrega</p>
                 </div>
             </div>
             <div class="mt-1">
-                <label class="form-label small fw-medium text-foreground mb-2">Dirección actual</label>
-
-                @* Mostrar dirección actual *@
-                @if (!string.IsNullOrWhiteSpace(_address))
+                @* Lista de direcciones guardadas en localStorage *@
+                @if (_savedAddresses.Count > 0)
                 {
-                    <div class="d-flex align-items-start gap-2 p-3 mb-3"
-                         style="background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
-                        <i class="fa-solid fa-location-dot mt-1" style="color:#0D4525;flex-shrink:0;"></i>
-                        <span style="font-size:0.9rem;color:#374151;word-break:break-word;">@_address</span>
+                    <div class="d-flex flex-column gap-2 mb-3">
+                        @foreach (var addr in _savedAddresses)
+                        {
+                            <div class="d-flex align-items-start gap-2 p-3"
+                                 style="background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
+                                <i class="fa-solid fa-location-dot mt-1 flex-shrink-0" style="color:#0D4525;"></i>
+                                <span class="flex-grow-1" style="font-size:0.88rem;color:#374151;word-break:break-word;">@addr</span>
+                                <button type="button" class="btn btn-link p-0 text-danger flex-shrink-0"
+                                        style="font-size:.75rem;"
+                                        @onclick="() => DeleteSavedAddress(addr)">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        }
                     </div>
                 }
                 else
@@ -132,24 +142,24 @@
                     <div class="d-flex flex-column align-items-center justify-content-center py-4 px-3 mb-3"
                          style="border-radius:10px;border:1px dashed #d1d5db;background:#f9fafb;">
                         <i class="fa-solid fa-map-location-dot mb-2" style="font-size:2rem;color:#c4c9d1;"></i>
-                        <span style="font-size:0.9rem;color:#6b7280;font-weight:500;">No hay dirección registrada</span>
-                        <span style="font-size:0.8rem;color:#9ca3af;">Selecciona una dirección en el mapa</span>
+                        <span style="font-size:0.9rem;color:#6b7280;font-weight:500;">No hay direcciones guardadas</span>
+                        <span style="font-size:0.8rem;color:#9ca3af;">Agrega una dirección desde el mapa</span>
                     </div>
                 }
 
-                @* Botón para abrir el mapa *@
+                @* Botón para abrir el mapa y agregar dirección *@
                 <button type="button" @onclick="OpenMapModal"
                         class="btn d-flex align-items-center gap-2 px-3 py-2"
                         style="border:2px dashed #0D4525;border-radius:10px;background:transparent;
                                color:#0D4525;font-weight:600;font-size:0.9rem;transition:all 0.2s;"
                         onmouseover="this.style.backgroundColor='#f0fdf4';"
                         onmouseout="this.style.backgroundColor='transparent';">
-                    <i class="fa-solid fa-map-location-dot"></i>
-                    @(string.IsNullOrWhiteSpace(_address) ? "Seleccionar dirección en mapa" : "Cambiar dirección")
+                    <i class="fa-solid fa-plus"></i>
+                    Agregar dirección en mapa
                 </button>
 
                 <div class="form-text text-muted-foreground mt-2" style="font-size:0.75rem;">
-                    Haz clic en el mapa para obtener la dirección exacta por geocodificación inversa.
+                    Las direcciones guardadas aparecerán en el checkout para seleccionar rápidamente.
                 </div>
             </div>
         </div>
@@ -216,6 +226,9 @@
     private string _error     = "";
     private bool   _showConfirm = false;
 
+    // ── Saved addresses (localStorage via AddressService) ────────────────────
+    private List<string> _savedAddresses = new();
+
     // Permite solo dígitos en el DNI (máx. 8), bloqueando letras.
     private void OnDniInput(ChangeEventArgs e)
     {
@@ -248,7 +261,7 @@
     // ── Mapa Leaflet ──────────────────────────────────────────────────────────
     private MapAddressPicker? _mapPicker;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         if (!Auth.IsLoggedIn())
         {
@@ -262,7 +275,20 @@
         _dni       = u.Dni ?? "";
         _phone     = u.Telefono ?? "";
         _address   = u.DireccionEntrega ?? "";
+
+        // Load saved addresses from localStorage
+        await AddressSvc.InitializeAsync();
+        AddressSvc.OnChange += OnSavedAddressesChanged;
+        _savedAddresses = AddressSvc.GetAddresses();
     }
+
+    private void OnSavedAddressesChanged()
+    {
+        _savedAddresses = AddressSvc.GetAddresses();
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => AddressSvc.OnChange -= OnSavedAddressesChanged;
 
     private async Task SaveChanges()
     {
@@ -329,9 +355,17 @@
             await _mapPicker.OpenAsync();
     }
 
-    private void OnMapAddressSelected(string address)
+    private async void OnMapAddressSelected(string address)
     {
         _address = address;
+        await AddressSvc.AddAddressAsync(address);
+        _savedAddresses = AddressSvc.GetAddresses();
         StateHasChanged();
+    }
+
+    private async Task DeleteSavedAddress(string addr)
+    {
+        await AddressSvc.RemoveAddressAsync(addr);
+        _savedAddresses = AddressSvc.GetAddresses();
     }
 }

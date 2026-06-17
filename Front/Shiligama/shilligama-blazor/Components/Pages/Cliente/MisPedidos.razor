@@ -5,8 +5,50 @@
 @inject NavigationManager Navigation
 @inject CartService Cart
 @inject ProductService ProductSvc
+@inject IJSRuntime JS
 
 <PageTitle>Mis Pedidos – Shiligama</PageTitle>
+
+<style>
+/* ── Pagination ──────────────────────────────────────────────────────────── */
+.pagination-nav-btn {
+    width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--border);background:var(--background);color:var(--foreground);
+    cursor:pointer;transition:background .15s,border-color .15s;font-size:.8rem;
+}
+.pagination-nav-btn:disabled { opacity:.4;cursor:not-allowed; }
+.pagination-nav-btn:not(:disabled):hover { background:var(--secondary); }
+.pagination-num-btn {
+    width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--border);background:var(--background);color:var(--foreground);
+    cursor:pointer;transition:background .15s,border-color .15s;font-size:.8rem;
+}
+.pagination-num-btn.active-page {
+    background:var(--primary);border-color:var(--primary);color:#fff;font-weight:600;
+}
+.pagination-num-btn:not(.active-page):hover { background:var(--secondary); }
+/* ── Cancel toast ────────────────────────────────────────────────────────── */
+@@keyframes toastSlideIn  { from{transform:translateY(40px);opacity:0} to{transform:translateY(0);opacity:1} }
+@@keyframes toastSlideOut { from{opacity:1} to{opacity:0} }
+.cancelled-toast {
+    position:fixed;bottom:1.5rem;right:1.5rem;z-index:1090;
+    display:flex;align-items:center;gap:.6rem;
+    background:#1d4ed8;color:#fff;border-radius:var(--radius);
+    padding:.65rem 1rem;font-size:.84rem;font-weight:500;
+    box-shadow:0 4px 18px rgba(0,0,0,.25);
+    animation:toastSlideIn .3s ease-out forwards;
+    max-width:320px;
+}
+/* ── Repeat modal qty input ──────────────────────────────────────────────── */
+.qty-input-sm {
+    width:54px;text-align:center;border:1.5px solid var(--border);
+    border-radius:6px;padding:.2rem .3rem;font-size:.8rem;
+    background:var(--background);color:var(--foreground);
+}
+.qty-input-sm::-webkit-inner-spin-button,
+.qty-input-sm::-webkit-outer-spin-button { -webkit-appearance:none;margin:0; }
+.qty-input-sm[type=number] { -moz-appearance:textfield; }
+</style>
 
 <div class="container-xl px-3 px-sm-4 py-4" style="max-width:960px;">
 
@@ -87,7 +129,7 @@
     else
     {
         <div class="d-flex flex-column gap-3">
-            @foreach (var order in _filtered)
+            @foreach (var order in PagedOrders)
             {
                 <div class="card border border-border rounded-4 overflow-hidden">
                     <div class="d-flex flex-column flex-lg-row">
@@ -178,7 +220,7 @@
                                 @if (order.Status != "cancelado")
                                 {
                                     <button class="btn btn-primary btn-sm d-flex align-items-center gap-1"
-                                            @onclick="() => RepeatOrder(order)">
+                                            @onclick="() => OpenRepeatModal(order)">
                                         <Icons Name="RotateCcw" style="width:13px;height:13px;" />
                                         <span>Repetir</span>
                                     </button>
@@ -199,11 +241,106 @@
             }
         </div>
 
-        <p class="text-center small text-muted-foreground mt-4">
-            Mostrando @_filtered.Count de @_allOrders.Count pedidos
+        @if (TotalPages > 1)
+        {
+            <nav class="d-flex align-items-center justify-content-center gap-2 mt-4 flex-wrap">
+                <button class="pagination-nav-btn" disabled="@(_currentPage == 1)"
+                        @onclick="() => GoToPage(_currentPage - 1)">
+                    <Icons Name="ChevronLeft" style="width:14px;height:14px;" />
+                </button>
+                @for (int pg = 1; pg <= TotalPages; pg++)
+                {
+                    int p = pg;
+                    <button class="pagination-num-btn @(_currentPage == p ? "active-page" : "")"
+                            @onclick="() => GoToPage(p)">@p</button>
+                }
+                <button class="pagination-nav-btn" disabled="@(_currentPage == TotalPages)"
+                        @onclick="() => GoToPage(_currentPage + 1)">
+                    <Icons Name="ChevronRight" style="width:14px;height:14px;" />
+                </button>
+            </nav>
+        }
+
+        <p class="text-center small text-muted-foreground mt-3">
+            Mostrando @PagedOrders.Count de @_filtered.Count pedidos
+            @if (TotalPages > 1) { <text> (página @_currentPage de @TotalPages)</text> }
         </p>
     }
 </div>
+
+@* ===== Toast cancelación ===== *@
+@if (_showCancelledToast)
+{
+    <div class="cancelled-toast">
+        <Icons Name="CheckCircle" style="width:18px;height:18px;flex-shrink:0;" />
+        <span>Pedido cancelado correctamente</span>
+    </div>
+}
+
+@* ===== Modal repetir pedido ===== *@
+@if (_showRepeatModal && _orderToRepeat != null)
+{
+    <div class="modal fade show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);backdrop-filter:blur(3px);"
+         @onclick="CloseRepeatModal">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+             style="max-width:500px;"
+             @onclick:stopPropagation="true">
+            <div class="modal-content rounded-4 border-0"
+                 style="background:var(--card);color:var(--foreground);">
+                <div class="modal-header border-bottom border-border py-3">
+                    <h5 class="modal-title fw-bold d-flex align-items-center gap-2">
+                        <Icons Name="RotateCcw" Class="text-primary" style="width:18px;height:18px;" />
+                        Repetir pedido @_orderToRepeat.Id
+                    </h5>
+                    <button class="btn-close ms-auto" @onclick="CloseRepeatModal"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <p class="text-muted-foreground small mb-3">
+                        Selecciona los productos y ajusta las cantidades a tu gusto.
+                    </p>
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var item in _orderToRepeat.Products)
+                        {
+                            bool isSelected = _selectedProductsToRepeat.Contains(item.Id);
+                            <div class="d-flex align-items-center gap-3 p-2 rounded-3
+                                        @(isSelected ? "" : "opacity-50")"
+                                 style="border:1.5px solid var(--border);transition:opacity .15s;">
+                                <input type="checkbox" class="form-check-input flex-shrink-0"
+                                       checked="@isSelected"
+                                       @onchange="() => ToggleProductSelection(item.Id)" />
+                                <div class="flex-grow-1 min-w-0">
+                                    <p class="fw-medium small mb-0 text-truncate">@item.Name</p>
+                                    <p class="text-muted-foreground mb-0" style="font-size:.72rem;">
+                                        S/. @item.Price.ToString("0.00") c/u
+                                    </p>
+                                </div>
+                                <input type="number"
+                                       class="qty-input-sm"
+                                       min="1"
+                                       value="@(_quantitiesToRepeat.GetValueOrDefault(item.Id, item.Quantity))"
+                                       disabled="@(!isSelected)"
+                                       @onchange="@(e => HandleRepeatQuantityChange(item.Id,
+                                                   int.TryParse(e.Value?.ToString(), out var q) ? q : 1))" />
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer border-top border-border py-3 d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="CloseRepeatModal">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-primary btn-sm fw-semibold d-flex align-items-center gap-2"
+                            @onclick="ConfirmRepeatOrder"
+                            disabled="@(!_selectedProductsToRepeat.Any())">
+                        <Icons Name="ShoppingCart" style="width:13px;height:13px;" />
+                        Agregar al carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @* ===== Modal confirmación de cancelación ===== *@
 @if (_showCancelConfirm && _orderToCancel != null)
@@ -477,105 +614,74 @@
 
 @code {
     private List<Order> _allOrders = new();
-    private List<Order> _filtered = new();
+    private List<Order> _filtered  = new();
 
-    private string _statusFilter = "todos";
+    private string    _statusFilter = "todos";
     private DateTime? _dateFrom;
     private DateTime? _dateTo;
 
     private Order? _selectedOrder;
-    private bool _showModal;
+    private bool   _showModal;
 
-    // Alertas de stock al repetir pedido
-    private List<string> _stockAlerts = new();
-    private bool _showStockAlerts => _stockAlerts.Any();
+    // ── Pagination ───────────────────────────────────────────────────────────
+    private int _currentPage = 1;
+    private const int PageSize = 10;
+    private int TotalPages => (int)Math.Ceiling(_filtered.Count / (double)PageSize);
+    private List<Order> PagedOrders => _filtered
+        .Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
 
-    // Cancelación de pedido
-    private Order? _orderToCancel;
-    private bool _showCancelConfirm = false;
-    private bool _cancelling = false;
-
-    // Cancelable mientras no haya sido atendido, rechazado ni cancelado ya
-    private bool CanCancel(Order o) =>
-        o.Status == "recibido" || o.Status == "en_proceso";
-
-    private void AskCancel(Order o)
+    private async Task GoToPage(int page)
     {
-        _orderToCancel = o;
-        _showCancelConfirm = true;
+        if (page < 1 || page > TotalPages) return;
+        _currentPage = page;
+        await JS.InvokeVoidAsync("window.scrollTo", 0, 0);
     }
 
-    private async Task ConfirmCancel()
+    // ── Repeat-order modal ───────────────────────────────────────────────────
+    private bool   _showRepeatModal = false;
+    private Order? _orderToRepeat;
+    private HashSet<int>     _selectedProductsToRepeat = new();
+    private Dictionary<int, int> _quantitiesToRepeat   = new();
+
+    private void OpenRepeatModal(Order o)
     {
-        if (_orderToCancel == null) return;
-        _cancelling = true;
-
-        // Extraer ID numérico de "PED-0012"
-        int idPedido = 0;
-        if (_orderToCancel.Id.StartsWith("PED-"))
-            int.TryParse(_orderToCancel.Id[4..], out idPedido);
-
-        await SalesSvc.CancelOrderAsync(idPedido);
-
-        // Refrescar lista
-        _orderToCancel.Status = "cancelado";
-        _showCancelConfirm = false;
-        _orderToCancel = null;
-        _cancelling = false;
-        ApplyFilters();
+        _orderToRepeat = o;
+        _selectedProductsToRepeat = o.Products.Select(p => p.Id).ToHashSet();
+        _quantitiesToRepeat = o.Products.ToDictionary(p => p.Id, p => p.Quantity);
+        _showRepeatModal = true;
     }
 
-    protected override async Task OnInitializedAsync()
+    private void CloseRepeatModal()
     {
-        if (!Auth.IsLoggedIn()) { Navigation.NavigateTo("/"); return; }
-        var idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
-        _allOrders = await SalesSvc.GetClientOrdersAsync(idCliente);
-        ApplyFilters();
+        _showRepeatModal = false;
+        _orderToRepeat   = null;
     }
 
-    private void ApplyFilters()
+    private void ToggleProductSelection(int productId)
     {
-        _filtered = _allOrders.Where(o =>
-        {
-            if (_statusFilter != "todos" && o.Status != _statusFilter) return false;
-            if (_dateFrom.HasValue && o.Date.Date < _dateFrom.Value.Date) return false;
-            if (_dateTo.HasValue && o.Date.Date > _dateTo.Value.Date) return false;
-            return true;
-        }).ToList();
+        if (_selectedProductsToRepeat.Contains(productId))
+            _selectedProductsToRepeat.Remove(productId);
+        else
+            _selectedProductsToRepeat.Add(productId);
     }
 
-    private void OnStatusChanged(ChangeEventArgs e)
-    { _statusFilter = e.Value?.ToString() ?? "todos"; ApplyFilters(); }
-
-    private void OnDateFromChanged(ChangeEventArgs e)
+    private void HandleRepeatQuantityChange(int productId, int qty)
     {
-        _dateFrom = string.IsNullOrEmpty(e.Value?.ToString())
-            ? null : DateTime.Parse(e.Value.ToString()!);
-        ApplyFilters();
+        _quantitiesToRepeat[productId] = Math.Max(1, qty);
     }
 
-    private void OnDateToChanged(ChangeEventArgs e)
+    private async Task ConfirmRepeatOrder()
     {
-        _dateTo = string.IsNullOrEmpty(e.Value?.ToString())
-            ? null : DateTime.Parse(e.Value.ToString()!);
-        ApplyFilters();
-    }
-
-    private void ClearFilters()
-    { _statusFilter = "todos"; _dateFrom = null; _dateTo = null; ApplyFilters(); }
-
-    private void OpenDetail(Order o) { _selectedOrder = o; _showModal = true; }
-    private void CloseModal() { _showModal = false; _selectedOrder = null; }
-
-    private async Task RepeatOrder(Order o)
-    {
+        if (_orderToRepeat == null) return;
         _stockAlerts.Clear();
         await ProductSvc.EnsureLoadedAsync();
 
         bool anyAdded = false;
-        foreach (var item in o.Products)
+        foreach (var item in _orderToRepeat.Products)
         {
-            int quantityToAdd = item.Quantity;
+            if (!_selectedProductsToRepeat.Contains(item.Id)) continue;
+
+            int quantityToAdd = _quantitiesToRepeat.GetValueOrDefault(item.Id, item.Quantity);
             var currentProduct = ProductSvc.GetProductById(item.Id);
 
             if (currentProduct != null)
@@ -604,20 +710,108 @@
             };
             for (int i = 0; i < quantityToAdd; i++)
                 await Cart.AddToCartAsync(p);
-
             anyAdded = true;
         }
 
-        if (!_showStockAlerts)
-        {
-            Navigation.NavigateTo("/carrito");
-        }
-        else
-        {
-            // Si hay alertas se muestra el resumen; el usuario decide si ir al carrito
+        CloseRepeatModal();
+
+        if (_showStockAlerts)
             StateHasChanged();
-        }
+        else if (anyAdded)
+            Navigation.NavigateTo("/carrito?repeated=true");
     }
+
+    // ── Cancel toast ─────────────────────────────────────────────────────────
+    private bool _showCancelledToast = false;
+
+    // ── Alertas de stock al repetir pedido ───────────────────────────────────
+    private List<string> _stockAlerts = new();
+    private bool _showStockAlerts => _stockAlerts.Any();
+
+    // ── Cancelación de pedido ─────────────────────────────────────────────────
+    private Order? _orderToCancel;
+    private bool   _showCancelConfirm = false;
+    private bool   _cancelling = false;
+
+    // Cancelable mientras no haya sido atendido, rechazado ni cancelado ya
+    private bool CanCancel(Order o) =>
+        o.Status == "recibido" || o.Status == "en_proceso";
+
+    private void AskCancel(Order o)
+    {
+        _orderToCancel = o;
+        _showCancelConfirm = true;
+    }
+
+    private async Task ConfirmCancel()
+    {
+        if (_orderToCancel == null) return;
+        _cancelling = true;
+
+        // Extraer ID numérico de "PED-0012"
+        int idPedido = 0;
+        if (_orderToCancel.Id.StartsWith("PED-"))
+            int.TryParse(_orderToCancel.Id[4..], out idPedido);
+
+        await SalesSvc.CancelOrderAsync(idPedido);
+
+        // Refrescar lista y mostrar toast
+        _orderToCancel.Status = "cancelado";
+        _showCancelConfirm = false;
+        _orderToCancel = null;
+        _cancelling = false;
+        ApplyFilters();
+
+        // Toast temporal
+        _showCancelledToast = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        _showCancelledToast = false;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsLoggedIn()) { Navigation.NavigateTo("/"); return; }
+        var idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
+        _allOrders = await SalesSvc.GetClientOrdersAsync(idCliente);
+        ApplyFilters();
+    }
+
+    private void ApplyFilters()
+    {
+        _filtered = _allOrders.Where(o =>
+        {
+            if (_statusFilter != "todos" && o.Status != _statusFilter) return false;
+            if (_dateFrom.HasValue && o.Date.Date < _dateFrom.Value.Date) return false;
+            if (_dateTo.HasValue && o.Date.Date > _dateTo.Value.Date) return false;
+            return true;
+        }).ToList();
+        _currentPage = 1;
+    }
+
+    private void OnStatusChanged(ChangeEventArgs e)
+    { _statusFilter = e.Value?.ToString() ?? "todos"; ApplyFilters(); }
+
+    private void OnDateFromChanged(ChangeEventArgs e)
+    {
+        _dateFrom = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null : DateTime.Parse(e.Value.ToString()!);
+        ApplyFilters();
+    }
+
+    private void OnDateToChanged(ChangeEventArgs e)
+    {
+        _dateTo = string.IsNullOrEmpty(e.Value?.ToString())
+            ? null : DateTime.Parse(e.Value.ToString()!);
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    { _statusFilter = "todos"; _dateFrom = null; _dateTo = null; ApplyFilters(); }
+
+    private void OpenDetail(Order o) { _selectedOrder = o; _showModal = true; }
+    private void CloseModal() { _showModal = false; _selectedOrder = null; }
 
     private string StatusBadgeClass(string s) => s.ToLower() switch
     {

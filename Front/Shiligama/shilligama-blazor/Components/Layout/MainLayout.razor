@@ -32,14 +32,73 @@
     .dropdown-divider {
         border-color: var(--border) !important;
     }
+
+    .search-results-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        z-index: 1050;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 8px 24px rgba(0,0,0,.12);
+        max-height: 360px;
+        overflow-y: auto;
+    }
+
+    .search-result-item {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .55rem 1rem;
+        cursor: pointer;
+        transition: background-color .15s;
+    }
+
+    .search-result-item:hover {
+        background-color: var(--secondary);
+    }
+
+    .search-result-item img {
+        width: 38px;
+        height: 38px;
+        object-fit: cover;
+        border-radius: 6px;
+        flex-shrink: 0;
+    }
+
+    .search-result-name {
+        font-size: .875rem;
+        font-weight: 500;
+        color: var(--foreground);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .search-result-price {
+        font-size: .78rem;
+        color: var(--primary);
+        font-weight: 600;
+    }
+
+    .search-result-stock-out {
+        font-size: .72rem;
+        color: #ef4444;
+        font-weight: 600;
+        margin-left: auto;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
 </style>
 
-<div class="d-flex flex-column min-vh-100 bg-background text-foreground" @onclick="CloseUserDropdown">
+<div class="d-flex flex-column min-vh-100 bg-background text-foreground" @onclick="CloseDropdowns">
     <!-- Navbar Header -->
     <header class="sticky-top z-3 w-100 border-bottom bg-card shadow-sm border-color-default" style="backdrop-filter: blur(8px); background-color: rgba(var(--bs-body-bg-rgb), 0.95);">
         <div class="container-xl px-3 px-sm-4">
             <div class="d-flex align-items-center justify-content-between gap-3" style="height: 64px;">
-                
+
                 <!-- Logo -->
                 <a href="/catalogo" class="d-flex align-items-center gap-2 text-decoration-none shrink-0">
                     <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width: 40px; height: 40px;">
@@ -51,20 +110,47 @@
                 </a>
 
                 <!-- Search Bar - Desktop -->
-                <div class="d-none d-md-flex align-items-center flex-grow-1 max-w-xl mx-auto" style="max-width: 500px;">
-                    <div class="position-relative w-100 d-flex align-items-center">
-                        <i class="fa-solid fa-magnifying-glass text-muted-foreground position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; pointer-events: none;"></i>
-                        <input
-                            type="search"
-                            placeholder="Buscar productos..."
-                            @bind="SearchQuery"
-                            @bind:event="oninput"
-                            @onkeypress="HandleSearchKeyPress"
-                            class="form-control w-100 border-0 bg-muted text-foreground"
-                            style="padding-left: 42px; height: 40px; background-color: var(--secondary) !important; border-radius: var(--radius);"
-                        />
+                @if (ShouldShowSearchBar)
+                {
+                    <div class="d-none d-md-flex align-items-center flex-grow-1 mx-auto" style="max-width: 500px;">
+                        <div class="position-relative w-100 d-flex align-items-center" @onclick:stopPropagation>
+                            <i class="fa-solid fa-magnifying-glass text-muted-foreground position-absolute" style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 0.95rem; pointer-events: none;"></i>
+                            <input
+                                type="search"
+                                placeholder="Buscar productos..."
+                                @bind="SearchQuery"
+                                @bind:event="oninput"
+                                @onkeypress="HandleSearchKeyPress"
+                                class="form-control w-100 border-0 bg-muted text-foreground"
+                                style="padding-left: 42px; height: 40px; background-color: var(--secondary) !important; border-radius: var(--radius);"
+                            />
+                            @if (_isSearchDropdownOpen && SearchResults.Any())
+                            {
+                                <div class="search-results-dropdown">
+                                    @foreach (var p in SearchResults)
+                                    {
+                                        <div class="search-result-item" @onclick="() => NavigateToProduct(p.Id)">
+                                            <img src="@p.Image" alt="@p.Name"
+                                                 onerror="this.src='https://placehold.co/38x38/e8f5e9/1A6B3C?text=🛒'" />
+                                            <div style="overflow:hidden;flex:1;">
+                                                <div class="search-result-name">@p.Name</div>
+                                                <div class="search-result-price">S/. @p.Price.ToString("0.00")</div>
+                                            </div>
+                                            @if (p.Stock == 0)
+                                            {
+                                                <span class="search-result-stock-out">Agotado</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
                     </div>
-                </div>
+                }
+                else
+                {
+                    <div class="flex-grow-1 d-none d-md-block"></div>
+                }
 
                 <!-- Nav links desktop -->
                 <nav class="d-none d-lg-flex align-items-center gap-1">
@@ -84,11 +170,14 @@
 
                 <!-- Right Actions -->
                 <div class="d-flex align-items-center gap-2">
-                    
+
                     <!-- Mobile Search Trigger -->
-                    <button type="button" @onclick="ToggleMobileSearch" class="btn btn-ghost p-2 d-md-none text-foreground" style="border-radius: var(--radius);">
-                        <Icons Name="Search" Class="w-5 h-5" />
-                    </button>
+                    @if (ShouldShowSearchBar)
+                    {
+                        <button type="button" @onclick="ToggleMobileSearch" @onclick:stopPropagation class="btn btn-ghost p-2 d-md-none text-foreground" style="border-radius: var(--radius);">
+                            <Icons Name="Search" Class="w-5 h-5" />
+                        </button>
+                    }
 
                     <!-- Theme Switcher -->
                     <ThemeSelector />
@@ -109,32 +198,47 @@
                         <button class="btn btn-secondary p-0 d-flex align-items-center justify-content-center border-0 shadow-sm" type="button" @onclick="ToggleUserDropdown" @onclick:stopPropagation style="width: 40px; height: 40px; border-radius: var(--radius); background-color: var(--secondary);" title="Menú de Usuario">
                             <i class="fa-solid fa-user text-foreground" style="font-size: 1.1rem;"></i>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end card border shadow-lg p-2 @(_isUserDropdownOpen ? "show" : "")" 
+                        <ul class="dropdown-menu dropdown-menu-end card border shadow-lg p-2 @(_isUserDropdownOpen ? "show" : "")"
                             style="width: 240px; border-radius: var(--radius); position: absolute; right: 0; top: 100%; display: @(_isUserDropdownOpen ? "block" : "none"); margin-top: 8px; z-index: 1000;"
-                            @onclick="CloseUserDropdown" @onclick:stopPropagation>
-                            <li class="px-3 py-2 border-bottom border-color-default mb-1">
-                                <p class="text-sm font-semibold text-foreground m-0">@(Auth.CurrentUser?.Name ?? "Cliente Invitado")</p>
-                                <p class="text-xs text-muted-foreground m-0 text-truncate">@(Auth.CurrentUser?.Email ?? "cliente@shiligama.com")</p>
-                            </li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/mis-pedidos" style="border-radius: var(--radius);">
-                                    <Icons Name="Package" Class="w-4 h-4 me-2 text-muted-foreground" />
-                                    Mis Pedidos
-                                </a>
-                            </li>
-                            <li>
-                                <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/configuracion" style="border-radius: var(--radius);">
-                                    <Icons Name="Settings" Class="w-4 h-4 me-2 text-muted-foreground" />
-                                    Configuración
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider border-color-default"></li>
-                            <li>
-                                <button type="button" @onclick="HandleLogout" class="dropdown-item d-flex align-items-center text-danger py-2" style="border-radius: var(--radius);">
-                                    <Icons Name="LogOut" Class="w-4 h-4 me-2" />
-                                    Cerrar Sesión
-                                </button>
-                            </li>
+                            @onclick="CloseDropdowns" @onclick:stopPropagation>
+                            @if (Auth.IsCliente())
+                            {
+                                <li class="px-3 py-2 border-bottom border-color-default mb-1">
+                                    <p class="text-sm font-semibold text-foreground m-0">@(Auth.CurrentUser?.Name ?? "Cliente")</p>
+                                    <p class="text-xs text-muted-foreground m-0 text-truncate">@(Auth.CurrentUser?.Email ?? "")</p>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/mis-pedidos" style="border-radius: var(--radius);">
+                                        <Icons Name="Package" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                        Mis Pedidos
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/configuracion" style="border-radius: var(--radius);">
+                                        <Icons Name="Settings" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                        Configuración
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider border-color-default"></li>
+                                <li>
+                                    <button type="button" @onclick="HandleLogout" class="dropdown-item d-flex align-items-center text-danger py-2" style="border-radius: var(--radius);">
+                                        <Icons Name="LogOut" Class="w-4 h-4 me-2" />
+                                        Cerrar Sesión
+                                    </button>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="px-3 py-2 border-bottom border-color-default mb-1">
+                                    <p class="text-sm text-muted-foreground m-0">No has iniciado sesión</p>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/" style="border-radius: var(--radius);">
+                                        <i class="fa-solid fa-right-to-bracket me-2 text-muted-foreground" style="width:16px;"></i>
+                                        Iniciar Sesión
+                                    </a>
+                                </li>
+                            }
                         </ul>
                     </div>
 
@@ -148,10 +252,10 @@
         </div>
 
         <!-- Mobile Search Dropdown Drawer -->
-        @if (_isMobileSearchOpen)
+        @if (_isMobileSearchOpen && ShouldShowSearchBar)
         {
             <div class="d-md-none border-top bg-card p-3 shadow-inner border-color-default border-bottom">
-                <div class="position-relative">
+                <div class="position-relative" @onclick:stopPropagation>
                     <Icons Name="Search" Class="position-absolute start-3 top-50 translate-middle-y w-5 h-5 text-muted-foreground" style="left: 14px;" />
                     <input
                         type="search"
@@ -163,6 +267,26 @@
                         style="padding-left: 42px; background-color: var(--secondary) !important;"
                         autofocus
                     />
+                    @if (_isSearchDropdownOpen && SearchResults.Any())
+                    {
+                        <div class="search-results-dropdown">
+                            @foreach (var p in SearchResults)
+                            {
+                                <div class="search-result-item" @onclick="() => NavigateToProduct(p.Id)">
+                                    <img src="@p.Image" alt="@p.Name"
+                                         onerror="this.src='https://placehold.co/38x38/e8f5e9/1A6B3C?text=🛒'" />
+                                    <div style="overflow:hidden;flex:1;">
+                                        <div class="search-result-name">@p.Name</div>
+                                        <div class="search-result-price">S/. @p.Price.ToString("0.00")</div>
+                                    </div>
+                                    @if (p.Stock == 0)
+                                    {
+                                        <span class="search-result-stock-out">Agotado</span>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
                 </div>
             </div>
         }
@@ -197,7 +321,7 @@
                     </a>
                 </nav>
             </div>
-            
+
             <div class="pt-3 border-top border-color-default">
                 <button type="button" @onclick="HandleLogout" class="btn btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-2" style="border-radius: var(--radius);">
                     <Icons Name="LogOut" Class="w-4 h-4" />
@@ -226,21 +350,45 @@
     private string SearchQuery
     {
         get => Product.SearchQuery;
-        set => Product.NotifySearch(value);
+        set
+        {
+            Product.NotifySearch(value);
+            _isSearchDropdownOpen = !string.IsNullOrWhiteSpace(value);
+        }
     }
 
-    private bool _isMobileMenuOpen = false;
-    private bool _isMobileSearchOpen = false;
-    private bool _isUserDropdownOpen = false;
+    private bool _isMobileMenuOpen    = false;
+    private bool _isMobileSearchOpen  = false;
+    private bool _isUserDropdownOpen  = false;
+    private bool _isSearchDropdownOpen = false;
+
+    private bool ShouldShowSearchBar =>
+        !new[] { "/checkout", "/configuracion", "/mis-pedidos", "/carrito" }
+         .Any(path => Navigation.Uri.Contains(path, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<Product> SearchResults =>
+        string.IsNullOrWhiteSpace(Product.SearchQuery)
+            ? Enumerable.Empty<Product>()
+            : Product.GetProducts()
+                     .Where(p => p.Name.Contains(Product.SearchQuery, StringComparison.OrdinalIgnoreCase))
+                     .Take(8);
+
+    private void NavigateToProduct(int productId)
+    {
+        CloseDropdowns();
+        Product.NotifySearch("");
+        Navigation.NavigateTo($"/catalogo/{productId}");
+    }
+
+    private void CloseDropdowns()
+    {
+        _isUserDropdownOpen  = false;
+        _isSearchDropdownOpen = false;
+    }
 
     private void ToggleUserDropdown()
     {
         _isUserDropdownOpen = !_isUserDropdownOpen;
-    }
-
-    private void CloseUserDropdown()
-    {
-        _isUserDropdownOpen = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -248,10 +396,19 @@
         if (firstRender)
         {
             await Cart.InitializeAsync();
+            await Auth.InitializeAsync();
             Cart.OnChange += StateHasChanged;
             Auth.OnChange += StateHasChanged;
+            Navigation.LocationChanged += OnLocationChanged;
             StateHasChanged();
         }
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        Product.NotifySearch("");
+        _isSearchDropdownOpen = false;
+        InvokeAsync(StateHasChanged);
     }
 
     private void ToggleMobileMenu()
@@ -272,7 +429,8 @@
             {
                 Navigation.NavigateTo("/catalogo");
             }
-            _isMobileSearchOpen = false;
+            _isMobileSearchOpen   = false;
+            _isSearchDropdownOpen = false;
         }
     }
 
@@ -286,5 +444,6 @@
     {
         Cart.OnChange -= StateHasChanged;
         Auth.OnChange -= StateHasChanged;
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }
