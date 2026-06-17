@@ -691,7 +691,9 @@ else
         }
 
         _showModal = false;
+        await ReturnsSvc.EnsureLoadedAsync(recargar: true);
         _returns = ReturnsSvc.GetReturns();
+        StateHasChanged();
     }
 
     private void Delete(string id)
