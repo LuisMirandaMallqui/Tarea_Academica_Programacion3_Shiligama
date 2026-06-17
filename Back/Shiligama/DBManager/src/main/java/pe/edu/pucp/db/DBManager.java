@@ -24,7 +24,7 @@ public class DBManager {
         this.puerto = db.getString("db.port");
         this.usuario = db.getString("db.user");
         this.password = db.getString("db.password");
-        this.url = "jdbc:mysql://" + hostname + ":" + puerto + "/" + esquema;
+        this.url = "jdbc:mysql://" + hostname + ":" + puerto + "/" + esquema + "&zeroDateTimeBehavior=CONVERT_TO_NULL";
     }
 
     public static DBManager getInstance() {
