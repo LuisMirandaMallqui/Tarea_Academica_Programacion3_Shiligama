@@ -11,7 +11,8 @@ builder.Services.AddRazorComponents()
 // ── HttpClient apuntando al API REST del back ────────────────────────────────
 // Base URL configurable en appsettings.json (clave "ApiBaseUrl").
 var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
-                 ?? "http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/";
+                 ?? "http://localhost:8080/ShiligamaWS-1.0-SNAPSHOT/api/";
+//                                        ↑ S y WS en mayúscula
 
 // Opciones JSON globales: case-insensitive para que los nombres del JSON del
 // backend Java (camelCase: idVenta, fechaHora…) mapeen automáticamente a las
@@ -30,6 +31,7 @@ builder.Services.AddSingleton(httpClient);
 // AuthService y CartService son Scoped (dependen del usuario actual).
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<DetalleVentaService>();
 
 // Los demás son Singleton: comparten caché en memoria entre peticiones
 // (correcto para un sistema single-tenant de minimarket). Si fueran Scoped, cada usuario tendría su propia instancia sin compartir datos cacheados (ej. lista de productos)

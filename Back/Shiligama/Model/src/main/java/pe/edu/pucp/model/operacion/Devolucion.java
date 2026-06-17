@@ -55,8 +55,8 @@ public class Devolucion {
     // ================= CONSTRUCTORES =================
     public Devolucion() {}
 
-    public Devolucion(int idDevolucion, int idProducto, int idTrabajador, 
-                      String estadoDevolucion, int cantidad, String motivo, 
+    public Devolucion(int idDevolucion, int idProducto, int idTrabajador,
+                      String estadoDevolucion, int cantidad, String motivo,
                       LocalDateTime fechaHora, boolean activo) {
         this.idDevolucion = idDevolucion;
         this.idProducto = idProducto;
@@ -71,28 +71,28 @@ public class Devolucion {
     // ================= GETTERS Y SETTERS =================
     public int getIdDevolucion() { return idDevolucion; }
     public void setIdDevolucion(int idDevolucion) { this.idDevolucion = idDevolucion; }
-    
+
     public int getIdProducto() { return idProducto; }
     public void setIdProducto(int idProducto) { this.idProducto = idProducto; }
-    
+
     public int getIdPedido() { return idPedido; }
     public void setIdPedido(int idPedido) { this.idPedido = idPedido; }
-    
+
     public int getIdTrabajador() { return idTrabajador; }
     public void setIdTrabajador(int idTrabajador) { this.idTrabajador = idTrabajador; }
-    
+
     public String getEstadoDevolucion() { return estadoDevolucion; }
     public void setEstadoDevolucion(String estadoDevolucion) { this.estadoDevolucion = estadoDevolucion; }
-    
+
     public int getCantidad() { return cantidad; }
     public void setCantidad(int cantidad) { this.cantidad = cantidad; }
-    
+
     public String getMotivo() { return motivo; }
     public void setMotivo(String motivo) { this.motivo = motivo; }
-    
+
     public LocalDateTime getFechaHora() { return fechaHora; }
     public void setFechaHora(LocalDateTime fechaHora) { this.fechaHora = fechaHora; }
-    
+
     public boolean isActivo() { return activo; }
     public void setActivo(boolean activo) { this.activo = activo; }
 

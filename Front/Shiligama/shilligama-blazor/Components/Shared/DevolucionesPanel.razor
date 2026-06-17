@@ -482,7 +482,7 @@ else
         await Task.WhenAll(
             ProductSvc.EnsureLoadedAsync(),
             ReturnsSvc.EnsureLoadedAsync(),
-            SalesSvc.EnsureLoadedAsync()
+            SalesSvc.EnsureLoadedAsync(cargarDetalles: true) // ← con detalles (necesita productos del pedido)
         );
         _returns = ReturnsSvc.GetReturns();
     }

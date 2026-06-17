@@ -200,7 +200,7 @@
 <!-- ── Modal: Crear / Editar miembro ── -->
 @if (_showModal)
 {
-    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="TryCloseModal">
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" >
         <div class="modal-dialog modal-dialog-centered modal-lg" @onclick:stopPropagation>
             <div class="modal-content bg-card border-border">
                 <div class="modal-header border-border">
@@ -218,6 +218,7 @@
                             <input type="text"
                                    value="@_form.Nombre"
                                    @oninput="OnNombreInput"
+                                   onkeypress="return /[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(event.key)"
                                    class="form-control text-foreground @(_submitted && string.IsNullOrWhiteSpace(_form.Nombre) ? "is-invalid" : "")"
                                    placeholder="Marcos Díaz" />
                             @if (_submitted && string.IsNullOrWhiteSpace(_form.Nombre))
@@ -228,8 +229,11 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-medium text-foreground">DNI * <span class="text-muted-foreground fw-normal">(8 dígitos)</span></label>
                             <input type="text"
+                                   step=".01"
+                                   min="0"
                                    value="@_form.Dni"
                                    @oninput="OnDniInput"
+                                   onkeypress="return /[0-9]/.test(event.key)"
                                    inputmode="numeric"
                                    maxlength="8"
                                    class="form-control text-foreground @(_submitted && _form.Dni.Length != 8 ? "is-invalid" : "")"
@@ -242,8 +246,11 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-medium text-foreground">Teléfono * <span class="text-muted-foreground fw-normal">(9 dígitos)</span></label>
                             <input type="text"
+                                   step=".01"
+                                   min="0"
                                    value="@_form.Telefono"
                                    @oninput="OnTelefonoInput"
+                                   onkeypress="return /[0-9]/.test(event.key)"
                                    inputmode="numeric"
                                    maxlength="9"
                                    class="form-control text-foreground @(_submitted && _form.Telefono.Length != 9 ? "is-invalid" : "")"
@@ -397,15 +404,23 @@
     // Solo letras y espacios (incluye tildes y ñ)
     private void OnNombreInput(ChangeEventArgs e)
     {
-        var raw = e.Value?.ToString() ?? "";
-        _form.Nombre = new string(raw.Where(c => char.IsLetter(c) || c == ' ').ToArray());
-        _formDirty = true;
+        var value = e.Value?.ToString() ?? "";
+
+        _form.Nombre = new string(
+            value.Where(c => char.IsLetter(c) || char.IsWhiteSpace(c))
+                 .ToArray()
+        );
     }
 
     // Solo dígitos, máx 8
     private void OnDniInput(ChangeEventArgs e)
     {
-        _form.Dni  = new string((e.Value?.ToString() ?? "").Where(char.IsDigit).Take(8).ToArray());
+        var value = e.Value?.ToString() ?? "";
+
+        _form.Dni = new string(
+            value.Where(char.IsDigit).Take(8).ToArray()
+        );
+
         _formDirty = true;
     }
 
@@ -461,6 +476,7 @@
         if (EsDuplicado()) { _formError = "Ya existe un miembro con el mismo DNI, correo o teléfono."; return; }
         _showSaveConfirm = true;
     }
+
 
     private async Task Save()
     {

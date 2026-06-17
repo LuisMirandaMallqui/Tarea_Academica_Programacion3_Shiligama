@@ -11,6 +11,7 @@
         <p class="text-muted-foreground small mt-1 mb-0">Reportes de ingresos consolidados físicos y virtuales</p>
     </div>
 
+
     <!-- Stats summary -->
     <div class="row g-3">
         <div class="col-md-4">
@@ -65,6 +66,41 @@
                 </select>
             </div>
         </div>
+        
+        <!-- Rango de fechas -->
+            <div class="col-12 mt-4">
+                <div class="card border rounded-3 p-3" style="background:var(--secondary);">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-auto d-flex align-items-center gap-2"
+                             style="margin-bottom:8px;">
+                            <i class="fa-regular fa-calendar text-primary" style="font-size:1.1rem;"></i>
+                            <span class="small fw-semibold text-foreground">Rango de fechas</span>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted-foreground mb-1">Desde</label>
+                            <input type="date" @bind="_fechaDesde" @bind:after="OnFilterChange"
+                                   class="form-control text-foreground" style="height:40px;" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted-foreground mb-1">Hasta</label>
+                            <input type="date" @bind="_fechaHasta" @bind:after="OnFilterChange"
+                                   class="form-control text-foreground" style="height:40px;" />
+                        </div>
+                        <div class="col-auto d-flex gap-2 align-items-end">
+                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="SetHoy">Hoy</button>
+                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="Set7Dias">7 días</button>
+                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="Set30Dias">30 días</button>
+                            @if (_fechaDesde.HasValue || _fechaHasta.HasValue)
+                            {
+                                <button class="btn btn-ghost btn-sm text-muted-foreground" style="height:40px;" @onclick="LimpiarFechas" title="Limpiar fechas">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
     </div>
 
     <!-- Tabla -->
@@ -153,6 +189,9 @@
     private int _pageSize    = 10;
     private int _currentPage = 1;
 
+    private DateTime? _fechaDesde   = null;
+    private DateTime? _fechaHasta   = null;
+
     protected override async Task OnInitializedAsync()
     {
         await SalesSvc.EnsureLoadedAsync();
@@ -161,13 +200,18 @@
 
     private void OnFilterChange() => _currentPage = 1;
     private void GoToPage(int p) { if (p >= 1 && p <= TotalPages) _currentPage = p; }
-
+    private void SetHoy()    { _fechaDesde = DateTime.Today; _fechaHasta = DateTime.Today; OnFilterChange(); }
+    private void Set7Dias()  { _fechaDesde = DateTime.Today.AddDays(-7); _fechaHasta = DateTime.Today; OnFilterChange(); }
+    private void Set30Dias() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; OnFilterChange(); }
+    private void LimpiarFechas() { _fechaDesde = null; _fechaHasta = null; OnFilterChange(); }
     private IEnumerable<Sale> Filtered => _sales.Where(s =>
         (string.IsNullOrEmpty(_search) ||
          s.Cliente.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
          s.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
         (string.IsNullOrEmpty(_channelFilter) || s.Canal.Equals(_channelFilter, StringComparison.OrdinalIgnoreCase)) &&
-        (string.IsNullOrEmpty(_payFilter) || s.MetodoPago.Equals(_payFilter, StringComparison.OrdinalIgnoreCase))
+        (string.IsNullOrEmpty(_payFilter) || s.MetodoPago.Equals(_payFilter, StringComparison.OrdinalIgnoreCase)) &&
+        (!_fechaDesde.HasValue || s.Fecha.Date >= _fechaDesde.Value.Date) &&
+        (!_fechaHasta.HasValue || s.Fecha.Date <= _fechaHasta.Value.Date)
     ).OrderByDescending(s => s.Fecha);
 
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));

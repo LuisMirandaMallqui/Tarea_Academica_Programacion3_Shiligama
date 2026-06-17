@@ -43,7 +43,7 @@ public class SalesService
 
     // Llama al API y llena la caché. Las páginas deben hacer await antes de
     // leer GetSales() / GetRecentOrders() si quieren datos reales.
-    public async Task EnsureLoadedAsync(bool recargar = false)
+    public async Task EnsureLoadedAsync(bool recargar = false, bool cargarDetalles = true)
     {
         if (_cargado && !recargar) return;
 
@@ -54,7 +54,7 @@ public class SalesService
             if (ventas != null)
                 _sales.AddRange(ventas.Select(v => v.ToSale()));
         }
-        catch { /* backend no disponible — mantener lista vacía */ }
+        catch { }
 
         try
         {
@@ -65,38 +65,40 @@ public class SalesService
                 _orders.Clear();
                 if (pedidos != null)
                 {
-                    // Fetch detalles en paralelo para que Items > 0 en la vista
-                    var tareas = pedidos.Select(async p =>
+                    if (cargarDetalles)
                     {
-                        var order = p.ToOrder();
-                        try
+                        // Carga completa con detalles — solo cuando se necesita
+                        var tareas = pedidos.Select(async p =>
                         {
-                            var detalles = await _http.GetFromJsonAsync<List<DetallePedidoApi>>(
-                                $"detalles-pedido/por-pedido/{p.IdPedido}", _json);
-                            if (detalles != null && detalles.Count > 0)
+                            var order = p.ToOrder();
+                            try
                             {
-                                order.Items    = detalles.Count;
-                                order.Products = detalles.Select(d => new CartItem
+                                var detalles = await _http.GetFromJsonAsync<List<DetallePedidoApi>>(
+                                    $"detalles-pedido/por-pedido/{p.IdPedido}", _json);
+                                if (detalles != null && detalles.Count > 0)
                                 {
-                                    Id       = d.Producto?.IdProducto ?? 0,
-                                    Name     = d.Producto?.Nombre ?? "Producto",
-                                    Price    = (decimal)d.PrecioUnitario,
-                                    Quantity = d.Cantidad,
-                                    Image    = ""
-                                }).ToList();
+                                    order.Items = detalles.Count;
+                                    order.Products = detalles.Select(d => new CartItem
+                                    {
+                                        Id = d.Producto?.IdProducto ?? 0,
+                                        Name = d.Producto?.Nombre ?? "Producto",
+                                        Price = (decimal)d.PrecioUnitario,
+                                        Quantity = d.Cantidad,
+                                        Image = ""
+                                    }).ToList();
+                                }
                             }
-                        }
-                        catch { /* si falla el detalle, el pedido igual aparece con Items=0 */ }
-                        return order;
-                    });
-                    _orders.AddRange(await Task.WhenAll(tareas));
+                            catch { }
+                            return order;
+                        });
+                        _orders.AddRange(await Task.WhenAll(tareas));
+                    }
+                    else
+                    {
+                        // Carga rápida sin detalles
+                        _orders.AddRange(pedidos.Select(p => p.ToOrder()));
+                    }
                 }
-                UltimoErrorPedidos = null;
-            }
-            else
-            {
-                var body = await response.Content.ReadAsStringAsync();
-                UltimoErrorPedidos = $"HTTP {(int)response.StatusCode}: {body}";
             }
         }
         catch (Exception ex)
@@ -110,6 +112,7 @@ public class SalesService
     // ----- Getters síncronos (sobre la caché) -----
     public List<Sale>  GetSales()        => _sales;
     public List<Order> GetRecentOrders() => _orders;
+
 
     // Pedidos filtrados por cliente — para la pantalla "Mis Pedidos".
     // Enriquece cada pedido con sus líneas de detalle (GET /detalles-pedido/por-pedido/{id})
