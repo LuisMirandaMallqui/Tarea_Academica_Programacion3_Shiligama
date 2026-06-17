@@ -2,8 +2,14 @@ package pe.edu.pucp.venta.impl;
 
 import java.util.List;
 import pe.edu.pucp.model.enums.EstadoPedido;
+import pe.edu.pucp.model.producto.Producto;
+import pe.edu.pucp.model.venta.DetallePedido;
 import pe.edu.pucp.model.venta.Pedido;
+import pe.edu.pucp.persistance.dao.producto.Impl.ProductoDaoImpl;
+import pe.edu.pucp.persistance.dao.producto.dao.ProductoDao;
+import pe.edu.pucp.persistance.dao.venta.Impl.DetallePedidoDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.Impl.PedidoDaoImpl;
+import pe.edu.pucp.persistance.dao.venta.dao.DetallePedidoDao;
 import pe.edu.pucp.persistance.dao.venta.dao.PedidoDao;
 import pe.edu.pucp.venta.bo.PedidoBo;
 
@@ -23,7 +29,25 @@ public class PedidoBoImpl implements PedidoBo {
     @Override
     public int modificar(Pedido pedido) throws Exception {
         validar(pedido, true);
-        return daoPedido.modificar(pedido);
+        int resultado = daoPedido.modificar(pedido);
+
+        // Al confirmar (ATENDIDO), descontar el stock de cada producto del pedido
+        if (pedido.getEstadoPedido() == EstadoPedido.ATENDIDO) {
+            DetallePedidoDao daoDetalle = new DetallePedidoDaoImpl();
+            ProductoDao daoProducto = new ProductoDaoImpl();
+
+            List<DetallePedido> detalles = daoDetalle.listarPorPedido(pedido.getIdPedido());
+            for (DetallePedido detalle : detalles) {
+                Producto producto = daoProducto.buscarPorId(detalle.getProducto().getIdProducto());
+                if (producto != null) {
+                    int nuevoStock = Math.max(0, producto.getStock() - detalle.getCantidad());
+                    producto.setStock(nuevoStock);
+                    daoProducto.modificar(producto);
+                }
+            }
+        }
+
+        return resultado;
     }
 
     @Override
