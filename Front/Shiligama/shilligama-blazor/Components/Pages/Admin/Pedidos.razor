@@ -178,12 +178,21 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow border p-1" style="border-radius:var(--radius);">
                                             <li><h6 class="dropdown-header small">Cambiar estado</h6></li>
-                                            <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "recibido"))" class="dropdown-item py-1 small rounded"><i class="fa-solid fa-inbox me-2 text-secondary"></i>Recibido</button></li>
-                                            <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "en_proceso"))" class="dropdown-item py-1 small rounded"><i class="fa-solid fa-box-open me-2 text-warning"></i>En proceso</button></li>
-                                            <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "atendido"))" class="dropdown-item py-1 small rounded text-success"><i class="fa-solid fa-circle-check me-2"></i>Atendido</button></li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "rechazado"))" class="dropdown-item py-1 small rounded text-danger"><i class="fa-solid fa-xmark me-2"></i>Rechazado</button></li>
-                                            <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "cancelado"))" class="dropdown-item py-1 small rounded text-danger"><i class="fa-solid fa-ban me-2"></i>Cancelado</button></li>
+                                            @if (!EsTerminal(order.Status))
+                                            {
+                                                <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "recibido"))" class="dropdown-item py-1 small rounded" disabled="@(order.Status == "recibido")"><i class="fa-solid fa-inbox me-2 text-secondary"></i>Recibido</button></li>
+                                                <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "en_proceso"))" class="dropdown-item py-1 small rounded" disabled="@(order.Status == "en_proceso")"><i class="fa-solid fa-box-open me-2 text-warning"></i>En proceso</button></li>
+                                                <li><button type="button" @onclick="@(() => AskConfirmar(order.Id))" class="dropdown-item py-1 small rounded text-success"><i class="fa-solid fa-circle-check me-2"></i>Confirmar (→ Venta)</button></li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "rechazado"))" class="dropdown-item py-1 small rounded text-danger"><i class="fa-solid fa-xmark me-2"></i>Rechazado</button></li>
+                                                <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "cancelado"))" class="dropdown-item py-1 small rounded text-danger"><i class="fa-solid fa-ban me-2"></i>Cancelado</button></li>
+                                            }
+                                            else
+                                            {
+                                                <li><span class="dropdown-item-text py-1 small text-muted-foreground">
+                                                    <i class="fa-solid fa-lock me-2"></i>Estado final — sin cambios permitidos
+                                                </span></li>
+                                            }
                                         </ul>
                                     </div>
                                 </div>
@@ -224,19 +233,40 @@
     }
 </div>
 
-<!-- Modal: Confirmar Cambio de Estado -->
+<!-- Modal: Confirmar Cambio de Estado / Confirmar Pedido -->
 @if (_showEditConfirm)
 {
     <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
             <div class="modal-content bg-card border-border">
                 <div class="modal-body p-4 text-center">
-                    <div class="mb-3" style="font-size:2.5rem;">⚙️</div>
-                    <h5 class="fw-bold text-foreground mb-1">¿Cambiar estado?</h5>
-                    <p class="text-muted-foreground small mb-4">El pedido <strong>@_pendingEditId</strong> pasará a <strong>@GetStatusLabel(_pendingEditStatus ?? "")</strong>.</p>
+                    @if (_pendingConfirmar)
+                    {
+                        <div class="mb-3" style="font-size:2.5rem;">✅</div>
+                        <h5 class="fw-bold text-foreground mb-1">¿Confirmar pedido?</h5>
+                        <p class="text-muted-foreground small mb-2">
+                            El pedido <strong>@_pendingEditId</strong> pasará a <strong>Atendido</strong>
+                            y se generará una <strong>Venta</strong> automáticamente.
+                        </p>
+                        <p class="small text-danger mb-4">
+                            <i class="fa-solid fa-lock me-1"></i>Esta acción es irreversible.
+                        </p>
+                    }
+                    else
+                    {
+                        <div class="mb-3" style="font-size:2.5rem;">⚙️</div>
+                        <h5 class="fw-bold text-foreground mb-1">¿Cambiar estado?</h5>
+                        <p class="text-muted-foreground small mb-4">
+                            El pedido <strong>@_pendingEditId</strong> pasará a
+                            <strong>@GetStatusLabel(_pendingEditStatus ?? "")</strong>.
+                        </p>
+                    }
                     <div class="d-flex gap-2 justify-content-center">
                         <button type="button" class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="CancelEdit">Cancelar</button>
-                        <button type="button" class="btn btn-primary" style="border-radius:var(--radius);" @onclick="ConfirmEdit">Confirmar</button>
+                        <button type="button" class="btn @(_pendingConfirmar ? "btn-success" : "btn-primary")"
+                                style="border-radius:var(--radius);" @onclick="ConfirmEdit">
+                            @(_pendingConfirmar ? "Confirmar y generar venta" : "Confirmar")
+                        </button>
                     </div>
                 </div>
             </div>
@@ -252,6 +282,19 @@
             <div class="d-flex align-items-center gap-2 px-3 py-2">
                 <i class="fa-solid fa-circle-check"></i>
                 <span class="small">Estado actualizado correctamente</span>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Toast: Error -->
+@if (_showErrorToast)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+        <div class="toast show align-items-center text-white border-0" style="background:#dc2626;border-radius:var(--radius);min-width:280px;">
+            <div class="d-flex align-items-center gap-2 px-3 py-2">
+                <i class="fa-solid fa-circle-xmark"></i>
+                <span class="small">@_errorToastMsg</span>
             </div>
         </div>
     </div>
@@ -281,6 +324,9 @@
     // Modales
     private bool _showEditConfirm  = false;
     private bool _showEditedToast  = false;
+    private bool _showErrorToast   = false;
+    private string _errorToastMsg  = "";
+    private bool _pendingConfirmar = false;   // true = flujo confirmar (→ Venta), false = cambio estado normal
     private string? _pendingEditId;
     private string? _pendingEditStatus;
 
@@ -337,24 +383,74 @@
     private void Set30Dias() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; _currentPage = 1; }
     private void LimpiarFechas() { _fechaDesde = null; _fechaHasta = null; _currentPage = 1; }
 
+    private static readonly HashSet<string> EstadosTerminales =
+        new(StringComparer.OrdinalIgnoreCase) { "atendido", "rechazado", "cancelado" };
+
+    private static bool EsTerminal(string status) => EstadosTerminales.Contains(status);
+
     private void AskStatusChange(string id, string newStatus)
     {
         _pendingEditId     = id;
         _pendingEditStatus = newStatus;
+        _pendingConfirmar  = false;
         _showEditConfirm   = true;
     }
-    private void CancelEdit() { _showEditConfirm = false; _pendingEditId = null; _pendingEditStatus = null; }
+
+    private void AskConfirmar(string id)
+    {
+        _pendingEditId    = id;
+        _pendingEditStatus = "atendido";
+        _pendingConfirmar  = true;
+        _showEditConfirm   = true;
+    }
+
+    private void CancelEdit()
+    {
+        _showEditConfirm   = false;
+        _pendingEditId     = null;
+        _pendingEditStatus = null;
+        _pendingConfirmar  = false;
+    }
+
     private async Task ConfirmEdit()
     {
         if (_pendingEditId == null || _pendingEditStatus == null) return;
-        await SalesSvc.UpdateOrderStatusAsync(_pendingEditId, _pendingEditStatus);
-        _showEditConfirm = false;
-        _pendingEditId   = null;
+
+        bool ok = true;
+        string errMsg = "";
+
+        if (_pendingConfirmar)
+        {
+            // Flujo confirmar: llama al endpoint especializado que genera la Venta
+            var (success, error) = await SalesSvc.ConfirmOrderAsync(_pendingEditId);
+            ok = success;
+            errMsg = error;
+        }
+        else
+        {
+            await SalesSvc.UpdateOrderStatusAsync(_pendingEditId, _pendingEditStatus);
+        }
+
+        _showEditConfirm   = false;
+        _pendingEditId     = null;
         _pendingEditStatus = null;
-        _showEditedToast = true;
-        StateHasChanged();
-        await Task.Delay(3000);
-        _showEditedToast = false;
+        _pendingConfirmar  = false;
+
+        if (ok)
+        {
+            _showEditedToast = true;
+            StateHasChanged();
+            await Task.Delay(3000);
+            _showEditedToast = false;
+        }
+        else
+        {
+            _errorToastMsg  = errMsg;
+            _showErrorToast = true;
+            StateHasChanged();
+            await Task.Delay(4000);
+            _showErrorToast = false;
+        }
         StateHasChanged();
     }
 

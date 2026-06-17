@@ -386,8 +386,7 @@ BEGIN
     SET _producto_id = LAST_INSERT_ID();
 END$$
 
-DROP PROCEDURE IF EXISTS MODIFICAR_PRODUCTO;
-
+DROP PROCEDURE IF EXISTS MODIFICAR_PRODUCTO$$
 CREATE PROCEDURE MODIFICAR_PRODUCTO(
     IN _producto_id   INT,
     IN _categoria_id  INT,
@@ -403,17 +402,17 @@ CREATE PROCEDURE MODIFICAR_PRODUCTO(
 )
 BEGIN
     UPDATE producto SET
-        id_categoria    = _categoria_id,
-        nombre          = _nombre,
-        descripcion     = _descripcion,
-        precio_unitario = _precio,
-        stock_minimo    = _stock_minimo,
-        unidad_medida   = _unidad_medida,
-        codigo_barras   = _codigo_barras,
-        imagen_url      = _imagen_url,
-        stock           = _stock,
-        estado          = _estado
-    WHERE id_producto = _producto_id;
+        CATEGORIA_ID    = _categoria_id,
+        NOMBRE          = _nombre,
+        DESCRIPCION     = _descripcion,
+        PRECIO_UNITARIO = _precio,
+        STOCK_MINIMO    = _stock_minimo,
+        UNIDAD_MEDIDA   = _unidad_medida,
+        CODIGO_BARRAS   = _codigo_barras,
+        IMAGEN_URL      = _imagen_url,
+        STOCK           = _stock,
+        ACTIVO          = _estado
+    WHERE PRODUCTO_ID = _producto_id;
 END$$
 
 
@@ -1060,6 +1059,71 @@ BEGIN
     FROM detalle_pedido dp
     INNER JOIN producto p ON dp.PRODUCTO_ID = p.PRODUCTO_ID
     WHERE dp.PEDIDO_ID = _pedido_id;
+END$$
+
+-- Confirma un pedido creando la Venta correspondiente de forma atómica.
+-- Valida que el pedido no esté ya en estado terminal.
+-- Detecta el METODO_PAGO_ID desde la tabla pago (pasarela web); si no existe usa p_metodo_pago_id.
+-- Parámetros: OUT p_venta_id (nuevo ID de venta), IN p_pedido_id, IN p_trabajador_id, IN p_metodo_pago_id (fallback)
+DROP PROCEDURE IF EXISTS CONFIRMAR_PEDIDO_A_VENTA$$
+CREATE PROCEDURE CONFIRMAR_PEDIDO_A_VENTA(
+    OUT p_venta_id       INT,
+    IN  p_pedido_id      INT,
+    IN  p_trabajador_id  INT,
+    IN  p_metodo_pago_id INT
+)
+BEGIN
+    DECLARE v_estado        VARCHAR(20);
+    DECLARE v_cliente_id    INT;
+    DECLARE v_monto         DECIMAL(10,2);
+    DECLARE v_metodo_real   INT;
+
+    -- 1. Leer estado y datos actuales del pedido
+    SELECT ESTADO_PEDIDO, CLIENTE_ID, MONTO_TOTAL
+    INTO   v_estado, v_cliente_id, v_monto
+    FROM   pedido
+    WHERE  PEDIDO_ID = p_pedido_id;
+
+    -- 2. Guard: bloquear si ya está en estado terminal
+    IF v_estado IN ('ATENDIDO', 'RECHAZADO', 'CANCELADO') THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'El pedido ya se encuentra en estado terminal y no puede confirmarse.';
+    END IF;
+
+    -- 3. Detectar método de pago real desde la tabla pago (si existe)
+    SELECT METODO_PAGO_ID INTO v_metodo_real
+    FROM   pago
+    WHERE  PEDIDO_ID = p_pedido_id AND ACTIVO = 1
+    ORDER  BY PAGO_ID DESC LIMIT 1;
+
+    IF v_metodo_real IS NULL THEN
+        SET v_metodo_real = p_metodo_pago_id;
+    END IF;
+
+    -- 4. Crear la venta
+    INSERT INTO venta(CLIENTE_ID, TRABAJADOR_ID, METODO_PAGO_ID,
+                      MONTO_TOTAL, CANAL_VENTA, ESTADO_VENTA)
+    VALUES (v_cliente_id, p_trabajador_id, v_metodo_real,
+            v_monto, 'WEB', 'COMPLETADA');
+    SET p_venta_id = LAST_INSERT_ID();
+
+    -- 5. Copiar detalle_pedido → detalle_venta
+    INSERT INTO detalle_venta(VENTA_ID, PRODUCTO_ID, CANTIDAD, PRECIO_UNITARIO, SUBTOTAL)
+    SELECT p_venta_id, PRODUCTO_ID, CANTIDAD, PRECIO_UNITARIO, SUBTOTAL
+    FROM   detalle_pedido
+    WHERE  PEDIDO_ID = p_pedido_id;
+
+    -- 6. Decrementar stock (GREATEST evita negativos)
+    UPDATE producto p
+    INNER JOIN detalle_pedido dp ON p.PRODUCTO_ID = dp.PRODUCTO_ID
+    SET    p.STOCK = GREATEST(0, p.STOCK - dp.CANTIDAD)
+    WHERE  dp.PEDIDO_ID = p_pedido_id;
+
+    -- 7. Actualizar pedido: marcar ATENDIDO y vincular venta
+    UPDATE pedido
+    SET    ESTADO_PEDIDO = 'ATENDIDO',
+           VENTA_ID      = p_venta_id
+    WHERE  PEDIDO_ID = p_pedido_id;
 END$$
 
 

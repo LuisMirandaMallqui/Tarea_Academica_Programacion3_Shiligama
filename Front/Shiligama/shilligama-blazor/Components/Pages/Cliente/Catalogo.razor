@@ -86,6 +86,70 @@
     border-color: #0D4525 !important; box-shadow: 0 4px 10px rgba(13,69,37,0.2);
 }
 .dark .active-page { box-shadow: 0 4px 10px rgba(13,69,37,0.4); }
+
+.btn-agregar-pill {
+    background-color: white !important;
+    color: #0D4525 !important;
+    border: 1.5px solid #0D4525 !important;
+    border-radius: 24px !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.05em !important;
+    padding: 0.5rem 1.5rem !important;
+    transition: all 0.2s ease-in-out !important;
+    text-transform: uppercase !important;
+}
+.btn-agregar-pill:hover {
+    background-color: #0D4525 !important;
+    color: white !important;
+}
+.btn-cart-control-round:hover {
+    transform: scale(1.08);
+}
+.qty-input {
+    width: 42px;
+    border: none;
+    text-align: center;
+    font-weight: 700;
+    outline: none;
+    font-size: 0.95rem;
+    color: var(--foreground);
+    background: transparent;
+}
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.qty-input[type=number] {
+    -moz-appearance: textfield;
+}
+.subtotal-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 6px;
+    background-color: #0D4525;
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    padding: 5px 10px;
+    white-space: nowrap;
+    width: 100%;
+    text-align: center;
+    letter-spacing: 0.02em;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    pointer-events: none;
+}
+.cart-controls-container:hover .subtotal-badge,
+.product-card:hover .subtotal-badge {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
 </style>
 
 <div class="bg-background">
@@ -296,7 +360,7 @@
                         @foreach (var product in _page.Items)
                         {
                             <div class="col-6 col-md-4 col-xl-3">
-                                <div class="card h-100 d-flex flex-column position-relative overflow-hidden"
+                                <div class="card product-card h-100 d-flex flex-column position-relative overflow-hidden"
                                      style="transition:transform .2s,box-shadow .2s;border-radius:16px;
                                             border:1px solid var(--border);
                                             box-shadow:0 4px 12px rgba(0,0,0,0.03);cursor:pointer;">
@@ -403,27 +467,77 @@
                                             }
                                         </div>
 
-                                        <!-- Botón Agregar (único, con feedback) -->
-                                        <div class="mt-auto">
+                                        <!-- Botón Agregar / Controles de cantidad -->
+                                        <div class="mt-auto" style="height:80px;display:flex;flex-direction:column;justify-content:flex-end;">
                                             @if (product.Stock > 0)
                                             {
-                                                <button @onclick="@(() => AddToCart(product))"
-                                                        class="btn text-white w-100 py-2 d-flex align-items-center justify-content-center gap-2"
-                                                        style="background-color:@(_addedIds.Contains(product.Id) ? "#16a34a" : "#0D4525");
-                                                               border:none;border-radius:8px;font-weight:500;
-                                                               font-size:0.9rem;transition:background-color 0.3s;"
-                                                        title="Agregar al carrito">
-                                                    @if (_addedIds.Contains(product.Id))
-                                                    {
-                                                        <i class="fa-solid fa-check" style="font-size:0.85rem;"></i>
-                                                        <span>¡Agregado!</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <i class="fa-solid fa-plus" style="font-size:0.85rem;"></i>
-                                                        <span>Agregar</span>
-                                                    }
-                                                </button>
+                                                var cartItem = Cart.GetCartItems().FirstOrDefault(i => i.Id == product.Id);
+                                                @if (cartItem == null)
+                                                {
+                                                    <button @onclick="@(() => AddToCart(product))"
+                                                            class="btn btn-agregar-pill w-100 d-flex align-items-center justify-content-center"
+                                                            style="height:42px;"
+                                                            title="Agregar al carrito">
+                                                        <span>AGREGAR</span>
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <div class="cart-controls-container">
+                                                        <!-- Controles: trash/minus | cantidad | plus -->
+                                                        <div class="d-flex align-items-center justify-content-between px-1 py-1"
+                                                             style="border:1.5px solid #e5e7eb;border-radius:50px;background:white;height:42px;">
+
+                                                            <!-- Disminuir / Eliminar -->
+                                                            <button type="button"
+                                                                    class="btn btn-cart-control-round d-flex align-items-center justify-content-center flex-shrink-0"
+                                                                    @onclick="() => DecreaseQty(product)"
+                                                                    style="width:34px;height:34px;border-radius:50%;border:none;
+                                                                           background:transparent;color:#6b7280;transition:all 0.2s;">
+                                                                @if (cartItem.Quantity == 1)
+                                                                {
+                                                                    <i class="fa-regular fa-trash-can" style="font-size:0.9rem;"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="fa-solid fa-minus" style="font-size:0.85rem;"></i>
+                                                                }
+                                                            </button>
+
+                                                            <!-- Cantidad editable -->
+                                                            @{ var renderKey = _inputRenderKey.TryGetValue(product.Id, out var rk) ? rk : 0; }
+                                                            <input type="number" class="qty-input"
+                                                                   @key="@($"qty-{product.Id}-{renderKey}")"
+                                                                   value="@(_tempInputs.TryGetValue(product.Id, out var tmpVal) ? tmpVal : cartItem.Quantity.ToString())"
+                                                                   @oninput="@(e => ChangeQuantity(product, e.Value?.ToString()))"
+                                                                   @onblur="@(e => HandleBlur(product))"
+                                                                   min="1" max="@product.Stock" />
+
+                                                            <!-- Incrementar con badge check -->
+                                                            <div class="position-relative flex-shrink-0">
+                                                                <button type="button"
+                                                                        class="btn btn-cart-control-round d-flex align-items-center justify-content-center"
+                                                                        @onclick="() => IncreaseQty(product)"
+                                                                        disabled="@(product.Stock <= cartItem.Quantity)"
+                                                                        style="width:34px;height:34px;border-radius:50%;
+                                                                               border:2px solid #0D4525;background:white;
+                                                                               color:#0D4525;transition:all 0.2s;">
+                                                                    <i class="fa-solid fa-plus" style="font-size:0.85rem;"></i>
+                                                                </button>
+                                                                <span class="position-absolute d-flex align-items-center justify-content-center rounded-circle bg-success"
+                                                                      style="width:15px;height:15px;top:-3px;right:-3px;
+                                                                             border:2px solid white;font-size:0.5rem;">
+                                                                    <i class="fa-solid fa-check text-white"></i>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Subtotal badge -->
+                                                        <div class="subtotal-badge">
+                                                            S/. @((cartItem.Quantity * cartItem.Price).ToString("0.00"))
+                                                        </div>
+                                                    </div>
+                                                }
                                             }
                                             else
                                             {
@@ -482,16 +596,14 @@
 
 @code {
     // ===== PAGINACIÓN DEL LADO DEL SERVIDOR =====
-    // En vez de traer TODO el catálogo y filtrar/paginar en el navegador, ahora
-    // pedimos al back solo la página actual con los filtros aplicados:
-    //   GET /api/productos/buscar?categoria=&q=&precioMin=&precioMax=&pagina=&tamano=
-    // y leemos el total desde los headers (X-Total-Count, X-Total-Pages).
+    // GET /api/productos/buscar?categoria=&q=&precioMin=&precioMax=&pagina=&tamano=
+    // El total viene en headers: X-Total-Count, X-Total-Pages.
     private List<Category> _categories = new();
     private PagedResult<Product> _page = new();
 
-    private string? _selectedCategory = null;   // id de categoría (string del int)
+    private string? _selectedCategory = null;
     private decimal _minPrice = 0;
-    private decimal _maxPrice = 100;             // 100 = "sin tope" superior
+    private decimal _maxPrice = 100;    // 100 = sin tope superior
 
     private bool _showMobileFilters = false;
     private bool _isLoading = true;
@@ -511,16 +623,21 @@
         ("fa-candy-cane", "2x1 en Snacks",         "Paga 1 y lleva 2 en snacks seleccionados",        "#4a1942", "/snacks-2x1"),
     };
 
-    // Pide al back la página actual con los filtros vigentes.
+    // IDs de productos con promoción 2×1 vigente
+    private HashSet<int> _promo2x1Ids = new();
+
+    // Control de edición de cantidad por teclado
+    private Dictionary<int, string> _tempInputs = new();
+    private Dictionary<int, int> _inputRenderKey = new();
+
+    // Carga la página actual desde el servidor con los filtros vigentes.
     private async Task LoadAsync()
     {
-        // Si el usuario cruza los topes, los normalizamos (el back rechaza min>max).
         if (_minPrice > _maxPrice) (_minPrice, _maxPrice) = (_maxPrice, _minPrice);
 
         _isLoading = true;
         StateHasChanged();
 
-        // 0 = sin mínimo; 100 = sin máximo (coincide con el rango del slider).
         decimal? min = _minPrice <= 0 ? (decimal?)null : _minPrice;
         decimal? max = _maxPrice >= 100 ? (decimal?)null : _maxPrice;
 
@@ -537,13 +654,35 @@
     }
 
     // Cualquier cambio de filtro vuelve a la página 1 y recarga desde el servidor.
-    private async Task SelectCategoryAsync(string? id) { _selectedCategory = id; _currentPage = 1; _showMobileFilters = false; await LoadAsync(); }
+    private async Task SelectCategoryAsync(string? id)
+    {
+        _selectedCategory = id;
+        _currentPage = 1;
+        _showMobileFilters = false;
+        await LoadAsync();
+    }
     private async Task ApplyFiltersAsync() { _currentPage = 1; await LoadAsync(); }
     private async Task ClearFiltersAsync() { _minPrice = 0; _maxPrice = 100; _currentPage = 1; await LoadAsync(); }
     private async Task ClearAllAsync() { _selectedCategory = null; ProductSvc.NotifySearch(""); }
 
     // Disparado por el buscador del navbar (evento OnSearch del ProductService).
     private void OnSearchChanged() { _currentPage = 1; _ = InvokeAsync(LoadAsync); }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ProductSvc.EnsureLoadedAsync();
+        _categories = ProductSvc.GetCategories();
+        ProductSvc.OnSearch += OnSearchChanged;
+        Cart.OnChange += RefreshCart;
+
+        await PromoSvc.EnsureLoadedAsync();
+        _promo2x1Ids = PromoSvc.GetVigentes()
+            .Where(p => p.Es2x1)
+            .SelectMany(p => p.ProductoIds)
+            .ToHashSet();
+
+        await LoadAsync();
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -567,13 +706,7 @@
     private void PrevSlide()      => _carouselIndex = (_carouselIndex - 1 + _carouselTotal) % _carouselTotal;
     private void GoToSlide(int i) => _carouselIndex = i;
 
-    private void Refresh()
-    {
-        _currentPage = 1;
-        InvokeAsync(StateHasChanged);
-    }
-
-    // Cambia de página pidiendo esa página al servidor (no recorta en memoria).
+    // Cambia de página pidiendo esa página al servidor.
     private async Task GoToPage(int page)
     {
         if (page >= 1 && page <= _page.TotalPages && page != _currentPage)
@@ -584,65 +717,103 @@
         }
     }
 
-    private HashSet<int> _addedIds = new();
-    // IDs de productos con promoción 2×1 vigente
-    private HashSet<int> _promo2x1Ids = new();
+    // ── Carrito ─────────────────────────────────────────────────────────────
 
-    protected override async Task OnInitializedAsync()
-    {
-        await ProductSvc.EnsureLoadedAsync();
-        _categories = ProductSvc.GetCategories();
-        ProductSvc.OnSearch += OnSearchChanged;
-        await PromoSvc.EnsureLoadedAsync();
-        _promo2x1Ids = PromoSvc.GetVigentes()
-            .Where(p => p.Es2x1)
-            .SelectMany(p => p.ProductoIds)
-            .ToHashSet();
-        await LoadAsync();
-    }
+    private void RefreshCart() => InvokeAsync(StateHasChanged);
 
     private async Task AddToCart(Product p)
     {
         await Cart.AddToCartAsync(p);
-        _addedIds.Add(p.Id);
-        StateHasChanged();
-        await Task.Delay(1800);
-        _addedIds.Remove(p.Id);
+        // Cart.OnChange → RefreshCart → StateHasChanged actualiza la tarjeta al control de cantidad
+    }
+
+    private async Task DecreaseQty(Product p)
+    {
+        var item = Cart.GetCartItems().FirstOrDefault(i => i.Id == p.Id);
+        if (item != null)
+            await Cart.UpdateQuantityAsync(p.Id, item.Quantity - 1);
+    }
+
+    private async Task IncreaseQty(Product p)
+    {
+        var item = Cart.GetCartItems().FirstOrDefault(i => i.Id == p.Id);
+        if (item != null)
+            await Cart.UpdateQuantityAsync(p.Id, item.Quantity + 1);
+    }
+
+    private async Task ChangeQuantity(Product p, string? val)
+    {
+        if (val == null) return;
+        _tempInputs[p.Id] = val;
+
+        if (string.IsNullOrWhiteSpace(val)) return;
+
+        if (int.TryParse(val, out int qty))
+        {
+            if (qty < 1) qty = 1;
+            if (qty > p.Stock) qty = p.Stock;
+            await Cart.UpdateQuantityAsync(p.Id, qty);
+            _tempInputs[p.Id] = qty.ToString();
+        }
+    }
+
+    private async Task HandleBlur(Product p)
+    {
+        var item = Cart.GetCartItems().FirstOrDefault(i => i.Id == p.Id);
+        if (item != null)
+        {
+            int finalQty;
+            if (!_tempInputs.TryGetValue(p.Id, out var val)
+                || string.IsNullOrWhiteSpace(val)
+                || !int.TryParse(val, out int qty)
+                || qty < 1)
+            {
+                finalQty = item.Quantity < 1 ? 1 : item.Quantity;
+            }
+            else
+            {
+                finalQty = qty > p.Stock ? p.Stock : qty;
+            }
+            _tempInputs[p.Id] = finalQty.ToString();
+            await Cart.UpdateQuantityAsync(p.Id, finalQty);
+            // Forzar re-render del input para reflejar el valor normalizado
+            _inputRenderKey[p.Id] = (_inputRenderKey.TryGetValue(p.Id, out var k) ? k : 0) + 1;
+        }
         StateHasChanged();
     }
 
-    // Devuelve la promo vigente de un producto (null si no tiene)
+    // ── Promociones ─────────────────────────────────────────────────────────
+
     private Promocion? GetPromo(int productId) =>
         PromoSvc.GetVigentes().FirstOrDefault(p => p.ProductoIds.Contains(productId));
 
-    // Precio efectivo para mostrar en la tarjeta (1 unidad con promo aplicada)
     private decimal PrecioEfectivo(Product p) =>
         PromocionHelper.PrecioEfectivo(p.Price, 1, GetPromo(p.Id));
 
     private string GetDiscountPct(Product p) =>
         p.OriginalPrice.HasValue ? $"-{100 - (int)(p.Price / p.OriginalPrice.Value * 100)}%" : "";
 
-    // Como ahora la categoría tiene id numérico (no slug), el ícono se elige
-    // por el NOMBRE de la categoría que viene del back.
+    // Ícono por nombre de categoría (el id ahora es numérico, no slug)
     private string GetCategoryIcon(string categoryName)
     {
         var n = (categoryName ?? "").ToLowerInvariant();
-        if (n.Contains("abarrote")) return "fa-bag-shopping";
-        if (n.Contains("bebida")) return "fa-wine-glass";
+        if (n.Contains("abarrote"))                      return "fa-bag-shopping";
+        if (n.Contains("bebida"))                        return "fa-wine-glass";
         if (n.Contains("lácteo") || n.Contains("lacteo")) return "fa-wine-bottle";
-        if (n.Contains("snack")) return "fa-cookie-bite";
-        if (n.Contains("limpieza")) return "fa-spray-can";
+        if (n.Contains("snack"))                         return "fa-cookie-bite";
+        if (n.Contains("limpieza"))                      return "fa-spray-can";
         if (n.Contains("carne") || n.Contains("embutido")) return "fa-drumstick-bite";
         if (n.Contains("fruta") || n.Contains("verdura")) return "fa-apple-whole";
         if (n.Contains("dulce") || n.Contains("golosina")) return "fa-candy-cane";
-        if (n.Contains("congelado")) return "fa-snowflake";
-        if (n.Contains("bebé") || n.Contains("bebe")) return "fa-baby-carriage";
+        if (n.Contains("congelado"))                     return "fa-snowflake";
+        if (n.Contains("bebé") || n.Contains("bebe"))   return "fa-baby-carriage";
         return "fa-box";
     }
 
     public async ValueTask DisposeAsync()
     {
         ProductSvc.OnSearch -= OnSearchChanged;
+        Cart.OnChange -= RefreshCart;
         try
         {
             await JS.InvokeVoidAsync("carouselHelper.stopCarousel");

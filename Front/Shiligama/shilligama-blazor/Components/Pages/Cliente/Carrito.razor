@@ -345,6 +345,49 @@
     </div>
 }
 
+@* ===== Modal: stock insuficiente ===== *@
+@if (_showStockWarning)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4">
+                    <div class="text-center mb-3" style="font-size:2.5rem;">⚠️</div>
+                    <h5 class="fw-bold text-foreground mb-2 text-center">Stock insuficiente</h5>
+                    <p class="text-muted-foreground small mb-3 text-center">
+                        Algunos productos tienen menos unidades disponibles que las que tienes en el carrito:
+                    </p>
+                    <ul class="list-unstyled mb-4">
+                        @foreach (var (name, available) in _stockErrors)
+                        {
+                            <li class="d-flex align-items-center gap-2 py-2 border-bottom border-color-default">
+                                <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+                                <span class="small flex-grow-1">
+                                    <strong>@name</strong>
+                                    <span class="text-muted-foreground"> — solo <strong>@available</strong> disponible(s)</span>
+                                </span>
+                            </li>
+                        }
+                    </ul>
+                    <p class="text-muted-foreground small text-center mb-3">
+                        Puedes ajustar las cantidades automáticamente y continuar, o revisar el carrito manualmente.
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button type="button" class="btn btn-primary" style="border-radius:var(--radius);"
+                                @onclick="AdjustAndProceed">
+                            <i class="fa-solid fa-check me-1"></i>Ajustar y continuar
+                        </button>
+                        <button type="button" class="btn btn-secondary" style="border-radius:var(--radius);"
+                                @onclick="() => _showStockWarning = false">
+                            Revisar carrito
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @implements IDisposable
 
 @code {
@@ -363,6 +406,8 @@
     private int?   _pendingRemoveId;
     private string _pendingRemoveName  = "";
     private string _removedProductName = "";
+    private bool   _showStockWarning   = false;
+    private List<(string Name, int Available)> _stockErrors = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -470,9 +515,32 @@
     private string CheckoutReturnUrl =>
         $"/checkout?delivery={(_deliveryMethod == DeliveryMethod.Delivery ? "delivery" : "pickup")}";
 
-    private void TryProceedToCheckout()
+    private async Task TryProceedToCheckout()
     {
         if (!Auth.IsCliente()) { _showLoginRequired = true; return; }
+
+        // Validar que ningún item supera el stock disponible
+        _stockErrors = new();
+        foreach (var item in Cart.GetCartItems())
+        {
+            int avail = StockOf(item.Id);
+            if (avail != int.MaxValue && item.Quantity > avail)
+                _stockErrors.Add((item.Name, avail));
+        }
+        if (_stockErrors.Any()) { _showStockWarning = true; return; }
+
+        Navigation.NavigateTo(CheckoutReturnUrl);
+    }
+
+    // Ajusta automáticamente las cantidades al stock disponible y procede al checkout.
+    private async Task AdjustAndProceed()
+    {
+        foreach (var (name, avail) in _stockErrors)
+        {
+            var item = Cart.GetCartItems().FirstOrDefault(i => i.Name == name);
+            if (item != null) await Cart.UpdateQuantityAsync(item.Id, avail);
+        }
+        _showStockWarning = false;
         Navigation.NavigateTo(CheckoutReturnUrl);
     }
 

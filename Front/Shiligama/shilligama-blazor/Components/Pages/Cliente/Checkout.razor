@@ -143,9 +143,44 @@ else
                 <Icons Name="Lock" Class="text-primary" style="width:16px;height:16px;" />
                 <h1 class="fs-5 fw-semibold text-foreground mb-0">Pago Seguro</h1>
             </div>
-            <div style="width:140px;"></div>
+            <div style="width:140px;" class="d-flex justify-content-end align-items-center">
+                <span class="badge d-flex align-items-center gap-1 px-2 py-1"
+                      style="font-family:monospace;font-size:0.8rem;border-radius:8px;
+                             background:@(_secondsLeft <= 10 ? "#dc2626" : _secondsLeft <= 20 ? "#d97706" : "#6b7280");
+                             color:white;">
+                    <i class="fa-regular fa-clock"></i>
+                    @_secondsLeft.ToString("00")s
+                </span>
+            </div>
         </div>
     </header>
+
+    @if (_sessionExpired)
+    {
+        <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.65);z-index:2000;">
+            <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+                <div class="modal-content bg-card border-border">
+                    <div class="modal-body p-4 text-center">
+                        <div class="mb-3" style="font-size:3rem;">⏰</div>
+                        <h5 class="fw-bold text-foreground mb-1">Tiempo de pago agotado</h5>
+                        <p class="text-muted-foreground small mb-4">
+                            El tiempo para completar tu transacción ha vencido.<br/>
+                            Tu carrito sigue guardado — puedes volver a intentarlo.
+                        </p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button type="button" class="btn btn-primary" style="border-radius:var(--radius);"
+                                    @onclick="RestartTimer">
+                                <i class="fa-solid fa-rotate-right me-1"></i>Reintentar (60s)
+                            </button>
+                            <a href="/carrito" class="btn btn-secondary" style="border-radius:var(--radius);">
+                                Volver al carrito
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
 
     <div class="container-xl px-3 py-4" style="max-width:960px;">
         <div class="row g-4">
@@ -478,8 +513,9 @@ else
                                     <span class="input-group-text fw-medium">S/.</span>
                                     <input type="number" class="form-control text-center fw-bold fs-5"
                                            style="height:52px;"
-                                           placeholder="0.00" step="0.10" min="0"
-                                           @bind="_cashAmount" @bind:event="oninput" />
+                                           placeholder="0.00" step="0.01" min="0"
+                                           value="@_cashAmount"
+                                           @onchange="OnCashInput" />
                                 </div>
                             </div>
 
@@ -554,6 +590,13 @@ else
                             Ingresa tu dirección de entrega para continuar.
                         </p>
                     }
+                    @if (_payMethod == "efectivo" && _cashAmount > 0 && !CashEnough)
+                    {
+                        <p class="text-danger small mt-2 mb-0 d-flex align-items-center gap-1">
+                            <Icons Name="AlertCircle" style="width:13px;height:13px;" />
+                            El monto ingresado es menor al total del pedido (S/. @Total.ToString("0.00")).
+                        </p>
+                    }
                     <button class="btn btn-primary w-100 fw-semibold mt-3 d-flex align-items-center justify-content-center gap-2"
                             style="height:52px;border-radius:var(--radius);"
                             disabled="@(_isLoading || !CanPlaceOrder)"
@@ -590,6 +633,18 @@ else
     private decimal CashChange => _cashAmount >= Total ? _cashAmount - Total : 0;
     private bool    CashEnough => _cashAmount >= Total;
 
+    // Trunca a 2 decimales al escribir manualmente (evita valores como 10.999)
+    private void OnCashInput(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(),
+                System.Globalization.NumberStyles.Any,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out var v))
+            _cashAmount = Math.Truncate(v * 100m) / 100m;
+        else
+            _cashAmount = 0m;
+    }
+
     private string _yapePhone     = "";
     private string _yapeCode      = "";
     private bool   _yapeConfirmed = false;
@@ -599,6 +654,11 @@ else
     private string _orderId   = "";
     private string? _payError;
     private bool   _showLoginRequired = false;
+
+    // ── Countdown timer ──────────────────────────────────────────────────────
+    private int  _secondsLeft    = 60;
+    private bool _sessionExpired = false;
+    private System.Threading.Timer? _countdownTimer;
 
     // ── Mapa de dirección ────────────────────────────────────────────────────
     private MapAddressPicker? _mapPicker;
@@ -639,9 +699,10 @@ else
         await OpenMapModal();
     }
 
-    // El pedido para delivery requiere dirección.
+    // El pedido para delivery requiere dirección; efectivo requiere monto ≥ total.
     private bool CanPlaceOrder =>
-        _deliveryMethod != "delivery" || !string.IsNullOrWhiteSpace(_address);
+        (_deliveryMethod != "delivery" || !string.IsNullOrWhiteSpace(_address)) &&
+        (_payMethod != "efectivo" || CashEnough);
 
     // Extrae el id numérico del pedido del código "PED-0012".
     private int ParsePedidoId(string orderId)
@@ -677,8 +738,38 @@ else
                     _address = u.DireccionEntrega ?? "";
             }
 
+            // Iniciar timer de 1 minuto para la transacción
+            StartCountdown();
+
             StateHasChanged();
         }
+    }
+
+    private void StartCountdown()
+    {
+        _countdownTimer?.Dispose();
+        _countdownTimer = new System.Threading.Timer(async _ =>
+        {
+            if (_success) return; // el pedido ya se completó, no expira
+            if (_secondsLeft > 0)
+            {
+                _secondsLeft--;
+                await InvokeAsync(StateHasChanged);
+            }
+            else if (!_sessionExpired)
+            {
+                _sessionExpired = true;
+                _countdownTimer?.Change(System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private void RestartTimer()
+    {
+        _secondsLeft    = 60;
+        _sessionExpired = false;
+        StartCountdown();
     }
 
     // Subtotal aplicando promos vigentes del backend (lógica en PromocionHelper)
@@ -724,6 +815,7 @@ else
             if (idPedido > 0)
             {
                 await Cart.ClearCartAsync();
+                _countdownTimer?.Dispose(); // timer ya no necesario
                 // Pasamos el total para que el backend pueda usar el monto correcto
                 // (el SP INSERTAR_PEDIDO no guarda MONTO_TOTAL, queda en 0 en la BD)
                 Navigation.NavigateTo($"/checkout/pago?pedido={idPedido}&total={Total:F2}");
@@ -736,12 +828,14 @@ else
 
         // 3) Yape / Efectivo → confirmación directa (pago manual / contra entrega).
         await Cart.ClearCartAsync();
+        _countdownTimer?.Dispose(); // timer ya no necesario
         _success   = true;
         _isLoading = false;
     }
 
     public void Dispose()
     {
+        _countdownTimer?.Dispose();
         AddressSvc.OnChange -= OnAddressesChanged;
     }
 }

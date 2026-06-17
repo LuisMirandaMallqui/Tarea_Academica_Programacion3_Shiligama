@@ -9,4 +9,6 @@ import java.util.List;
 public interface PedidoDao extends IDAO<Pedido> {
     List<Pedido> listarPorCliente(int idCliente);
     List<Pedido> listarPorEstado(EstadoPedido estado);
+    /** Confirma un pedido creando la Venta de forma atómica. Devuelve el idVenta generado. */
+    int confirmarPedidoAVenta(int idPedido, int idTrabajador, int idMetodoPago);
 }

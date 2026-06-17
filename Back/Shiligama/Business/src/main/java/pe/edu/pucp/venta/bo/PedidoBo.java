@@ -9,4 +9,6 @@ import java.util.List;
 public interface PedidoBo extends BaseBo<Pedido> {
     List<Pedido> listarPorCliente(int idCliente) throws Exception;
     List<Pedido> listarPorEstado(EstadoPedido estado) throws Exception;
+    /** Confirma el pedido creando la Venta atómicamente. Devuelve idVenta. */
+    int confirmarPedido(int idPedido, int idTrabajador, int idMetodoPago) throws Exception;
 }

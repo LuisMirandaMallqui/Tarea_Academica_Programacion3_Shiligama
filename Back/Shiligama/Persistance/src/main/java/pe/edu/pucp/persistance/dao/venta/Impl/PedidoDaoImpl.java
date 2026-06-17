@@ -128,6 +128,22 @@ public class PedidoDaoImpl implements PedidoDao {
         return lista;
     }
 
+    @Override
+    public int confirmarPedidoAVenta(int idPedido, int idTrabajador, int idMetodoPago) {
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosSalida.put(1, Types.INTEGER); // OUT p_venta_id
+        parametrosEntrada.put(2, idPedido);     // IN  p_pedido_id
+        parametrosEntrada.put(3, idTrabajador); // IN  p_trabajador_id
+        parametrosEntrada.put(4, idMetodoPago); // IN  p_metodo_pago_id (fallback)
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "CONFIRMAR_PEDIDO_A_VENTA", parametrosEntrada, parametrosSalida);
+
+        Object result = parametrosSalida.get(1);
+        return result != null ? ((Number) result).intValue() : 0;
+    }
+
     private Pedido mapearPedido(ResultSet rs) throws SQLException {
         Pedido p = new Pedido();
         p.setIdPedido(rs.getInt("PEDIDO_ID"));

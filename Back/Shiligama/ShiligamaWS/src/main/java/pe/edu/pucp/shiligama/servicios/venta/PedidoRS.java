@@ -97,6 +97,28 @@ public class PedidoRS {
         }
     }
 
+    /**
+     * POST /api/pedidos/{id}/confirmar?trabajador=1&metodoPago=1
+     *
+     * Confirma el pedido creando la Venta de forma atómica (SP CONFIRMAR_PEDIDO_A_VENTA).
+     * Una vez confirmado, el pedido queda en ATENDIDO y ya no puede revertirse.
+     * Devuelve el idVenta generado (int).
+     */
+    @POST
+    @Path("/{id}/confirmar")
+    public Response confirmarPedido(
+            @PathParam("id")                          int id,
+            @QueryParam("trabajador") @DefaultValue("1") int idTrabajador,
+            @QueryParam("metodoPago") @DefaultValue("1") int idMetodoPago) {
+        try {
+            int idVenta = pedidoBo.confirmarPedido(id, idTrabajador, idMetodoPago);
+            return Response.ok(idVenta).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error al confirmar pedido: " + ex.getMessage()).build();
+        }
+    }
+
     // GET /api/pedidos/por-estado/RECIBIDO  — panel pedidos del admin
     @GET
     @Path("/por-estado/{estado}")

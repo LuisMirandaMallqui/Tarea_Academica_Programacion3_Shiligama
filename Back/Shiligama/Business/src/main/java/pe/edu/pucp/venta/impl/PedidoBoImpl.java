@@ -2,14 +2,8 @@ package pe.edu.pucp.venta.impl;
 
 import java.util.List;
 import pe.edu.pucp.model.enums.EstadoPedido;
-import pe.edu.pucp.model.producto.Producto;
-import pe.edu.pucp.model.venta.DetallePedido;
 import pe.edu.pucp.model.venta.Pedido;
-import pe.edu.pucp.persistance.dao.producto.Impl.ProductoDaoImpl;
-import pe.edu.pucp.persistance.dao.producto.dao.ProductoDao;
-import pe.edu.pucp.persistance.dao.venta.Impl.DetallePedidoDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.Impl.PedidoDaoImpl;
-import pe.edu.pucp.persistance.dao.venta.dao.DetallePedidoDao;
 import pe.edu.pucp.persistance.dao.venta.dao.PedidoDao;
 import pe.edu.pucp.venta.bo.PedidoBo;
 
@@ -29,25 +23,44 @@ public class PedidoBoImpl implements PedidoBo {
     @Override
     public int modificar(Pedido pedido) throws Exception {
         validar(pedido, true);
-        int resultado = daoPedido.modificar(pedido);
 
-        // Al confirmar (ATENDIDO), descontar el stock de cada producto del pedido
+        // ATENDIDO solo se puede alcanzar via confirmarPedido(); bloquear aqui.
         if (pedido.getEstadoPedido() == EstadoPedido.ATENDIDO) {
-            DetallePedidoDao daoDetalle = new DetallePedidoDaoImpl();
-            ProductoDao daoProducto = new ProductoDaoImpl();
-
-            List<DetallePedido> detalles = daoDetalle.listarPorPedido(pedido.getIdPedido());
-            for (DetallePedido detalle : detalles) {
-                Producto producto = daoProducto.buscarPorId(detalle.getProducto().getIdProducto());
-                if (producto != null) {
-                    int nuevoStock = Math.max(0, producto.getStock() - detalle.getCantidad());
-                    producto.setStock(nuevoStock);
-                    daoProducto.modificar(producto);
-                }
-            }
+            throw new Exception(
+                "Para confirmar un pedido use el endpoint POST /pedidos/{id}/confirmar. " +
+                "El estado ATENDIDO no puede asignarse mediante modificar().");
         }
 
-        return resultado;
+        // Irreversibilidad: verificar que el pedido no esté ya confirmado.
+        Pedido actual = daoPedido.buscarPorId(pedido.getIdPedido());
+        if (actual != null && actual.getEstadoPedido() == EstadoPedido.ATENDIDO) {
+            throw new Exception(
+                "El pedido ya fue confirmado (ATENDIDO) y su estado no puede revertirse.");
+        }
+
+        return daoPedido.modificar(pedido);
+    }
+
+    @Override
+    public int confirmarPedido(int idPedido, int idTrabajador, int idMetodoPago) throws Exception {
+        if (idPedido <= 0) throw new Exception("El ID del pedido debe ser mayor que cero.");
+
+        // Verificar estado actual antes de delegar al SP (error amigable en caso terminal)
+        Pedido actual = daoPedido.buscarPorId(idPedido);
+        if (actual == null) throw new Exception("Pedido con ID " + idPedido + " no encontrado.");
+
+        EstadoPedido estado = actual.getEstadoPedido();
+        if (estado == EstadoPedido.ATENDIDO || estado == EstadoPedido.RECHAZADO
+                || estado == EstadoPedido.CANCELADO) {
+            throw new Exception(
+                "El pedido ya está en estado terminal (" + estado + ") y no puede confirmarse.");
+        }
+
+        // El SP CONFIRMAR_PEDIDO_A_VENTA se encarga de: crear venta, copiar detalles,
+        // decrementar stock y marcar el pedido como ATENDIDO de forma atómica.
+        int idVenta = daoPedido.confirmarPedidoAVenta(idPedido, idTrabajador, idMetodoPago);
+        if (idVenta <= 0) throw new Exception("Error al crear la venta para el pedido " + idPedido + ".");
+        return idVenta;
     }
 
     @Override

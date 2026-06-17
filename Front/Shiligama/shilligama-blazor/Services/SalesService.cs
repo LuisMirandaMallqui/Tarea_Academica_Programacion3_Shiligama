@@ -309,6 +309,38 @@ public class SalesService
         _            => status.ToUpper()
     };
 
+    /// <summary>
+    /// Llama a POST /api/pedidos/{id}/confirmar para confirmar el pedido y generar la Venta.
+    /// Devuelve el idVenta generado, o 0 si hubo error.
+    /// </summary>
+    public async Task<(bool ok, string error)> ConfirmOrderAsync(
+        string id, int idTrabajador = 1, int idMetodoPago = 1)
+    {
+        if (!int.TryParse(id.StartsWith("PED-") ? id[4..] : id, out var numId) || numId <= 0)
+            return (false, "ID de pedido inválido.");
+
+        try
+        {
+            var resp = await _http.PostAsync(
+                $"pedidos/{numId}/confirmar?trabajador={idTrabajador}&metodoPago={idMetodoPago}",
+                null);
+
+            if (resp.IsSuccessStatusCode)
+            {
+                var order = _orders.FirstOrDefault(o => o.Id == id);
+                if (order != null) order.Status = "atendido";
+                return (true, string.Empty);
+            }
+
+            string body = await resp.Content.ReadAsStringAsync();
+            return (false, body);
+        }
+        catch (Exception ex)
+        {
+            return (false, ex.Message);
+        }
+    }
+
     public async Task UpdateOrderStatusAsync(string id, string status)
     {
         // Actualizar caché local
