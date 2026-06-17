@@ -12,11 +12,7 @@
                 Controla los productos defectuosos, vencidos o errores de despacho
             </p>
         </div>
-        <button @onclick="@(() => _panel?.OpenCreate())"
-                class="btn btn-primary d-flex align-items-center gap-2 fw-semibold"
-                style="border-radius: var(--radius);">
-            <i class="fa-solid fa-plus"></i> Nueva Devolución
-        </button>
+        
     </div>
 
     <DevolucionesPanel Rol="admin" @ref="_panel" />

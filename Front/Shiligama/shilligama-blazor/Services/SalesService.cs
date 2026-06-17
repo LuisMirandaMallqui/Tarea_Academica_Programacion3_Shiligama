@@ -551,6 +551,23 @@ public class SalesService
         }
         return null;
     }
+
+    public async Task<KpiAdminDto?> GetKpisAdminAsync()
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<KpiAdminDto>("dashboard/admin", _json);
+        }
+        catch { return null; }
+    }
+
+    public class KpiAdminDto
+    {
+        public double VentasHoy { get; set; }
+        public int PedidosPendientes { get; set; }
+        public int ProductosBajoStock { get; set; }
+        public double IngresosMes { get; set; }
+    }
 }
 
 // ── VentaApi, PedidoApi y clases de referencia se encuentran en Models/Api/SalesApiModels.cs ──
