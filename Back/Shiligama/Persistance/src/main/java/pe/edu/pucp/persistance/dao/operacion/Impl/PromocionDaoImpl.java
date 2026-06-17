@@ -129,7 +129,7 @@ public class PromocionDaoImpl implements PromocionDao {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
                 while (rs.next()) {
-                    int idPromocion = rs.getInt("id_promocion");
+                    int idPromocion = rs.getInt("PROMOCION_ID");
 
                     // Si la promo aún no está en el mapa, la creamos
                     Promocion promo = mapaPromos.get(idPromocion);
@@ -140,7 +140,7 @@ public class PromocionDaoImpl implements PromocionDao {
                     }
 
                     // Agregar el producto vinculado (si existe)
-                    int idProducto = rs.getInt("producto_id");
+                    int idProducto = rs.getInt("PRODUCTO_ID");
                     if (!rs.wasNull() && idProducto > 0) {
                         // Reutilizamos el campo "productos" de Promocion como lista de IDs
                         // Los pasamos como objetos mínimos — el front solo necesita el ID
@@ -197,7 +197,7 @@ public class PromocionDaoImpl implements PromocionDao {
 
     private Promocion mapearPromocion(ResultSet rs) throws SQLException {
         Promocion p = new Promocion();
-        p.setIdPromocion(rs.getInt("id_promocion"));
+        p.setIdPromocion(rs.getInt("PROMOCION_ID"));
         p.setNombre(rs.getString("nombre"));
         p.setDescripcion(rs.getString("descripcion"));
         p.setTipoDescuento(TipoDescuento.valueOf(rs.getString("tipo_descuento")));

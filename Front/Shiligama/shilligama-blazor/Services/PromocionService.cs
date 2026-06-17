@@ -48,7 +48,10 @@ public class PromocionService
             if (lista != null)
                 _promociones.AddRange(lista.Select(p => p.ToPromocion()));
         }
-        catch { /* backend no disponible */ }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex.ToString());
+        }
         _cargado = true;
     }
 

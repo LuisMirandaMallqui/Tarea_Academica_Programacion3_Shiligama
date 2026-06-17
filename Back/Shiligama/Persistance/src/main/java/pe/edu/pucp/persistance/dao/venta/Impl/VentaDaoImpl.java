@@ -9,10 +9,9 @@ import pe.edu.pucp.model.venta.Boleta;
 import pe.edu.pucp.model.venta.DetalleVenta;
 import pe.edu.pucp.model.venta.MetodoPago;
 import pe.edu.pucp.model.venta.Venta;
-import pe.edu.pucp.persistance.dao.usuario.impl.ClienteDaoImpl;
-import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
 import pe.edu.pucp.model.venta.TopProductoDto;
 import pe.edu.pucp.model.venta.VentaReporteDto;
+import pe.edu.pucp.persistance.dao.venta.dao.VentaDao;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -29,9 +28,8 @@ public class VentaDaoImpl implements VentaDao {
         try {
             dbManager.iniciarTransaccion();
 
-            // Insertar cabecera de venta
             Map<Integer, Object> paramsEntrada = new HashMap<>();
-            Map<Integer, Object> paramsSalida = new HashMap<>();
+            Map<Integer, Object> paramsSalida  = new HashMap<>();
 
             paramsSalida.put(1, Types.INTEGER);
             if (venta.getCliente() != null && venta.getCliente().getIdUsuario() > 0) {
@@ -48,11 +46,10 @@ public class VentaDaoImpl implements VentaDao {
                     "INSERTAR_VENTA", paramsEntrada, paramsSalida);
             venta.setIdVenta((int) paramsSalida.get(1));
 
-            // Insertar detalles
             if (venta.getDetalles() != null) {
                 for (DetalleVenta detalle : venta.getDetalles()) {
                     Map<Integer, Object> paramsDetEntrada = new HashMap<>();
-                    Map<Integer, Object> paramsDetSalida = new HashMap<>();
+                    Map<Integer, Object> paramsDetSalida  = new HashMap<>();
 
                     paramsDetSalida.put(1, Types.INTEGER);
                     paramsDetEntrada.put(2, venta.getIdVenta());
@@ -113,6 +110,10 @@ public class VentaDaoImpl implements VentaDao {
         return venta;
     }
 
+    // FIX: se eliminaron las llamadas a ClienteDaoImpl y BoletaDaoImpl por cada fila.
+    // El SP LISTAR_VENTAS ya devuelve CLIENTE_NOMBRES y CLIENTE_APELLIDOS directamente,
+    // por lo que hacer buscarPorId en ClienteDAO era completamente innecesario y
+    // causaba N+1 queries (18 ventas = 36 queries extra) que hacían timeout el endpoint.
     @Override
     public List<Venta> listarTodos() {
         List<Venta> lista = new ArrayList<>();
@@ -121,11 +122,8 @@ public class VentaDaoImpl implements VentaDao {
                 .ejecutarProcedimientoLectura("LISTAR_VENTAS", null)) {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
-                BoletaDaoImpl boletaDao = new BoletaDaoImpl();
                 while (rs.next()) {
-                    Venta v = mapearVenta(rs);
-                    v.setBoleta(boletaDao.buscarPorVentaId(v.getIdVenta()));
-                    lista.add(v);
+                    lista.add(mapearVenta(rs));
                 }
             }
         } catch (SQLException ex) {
@@ -140,26 +138,34 @@ public class VentaDaoImpl implements VentaDao {
         return v;
     }
 
+    // FIX: usa CLIENTE_NOMBRES y CLIENTE_APELLIDOS del SP directamente.
+    // Ya NO llama a ClienteDaoImpl.buscarPorId() — eso causaba N+1 queries.
     private void completarCamposVenta(ResultSet rs, Venta v) throws SQLException {
         v.setIdVenta(rs.getInt("VENTA_ID"));
         v.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
         v.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
         v.setMontoDescuento(rs.getDouble("MONTO_DESCUENTO"));
-        v.setCanalVenta(CanalVenta.valueOf(rs.getString("CANAL_VENTA")));
+
+        String canal = rs.getString("CANAL_VENTA");
+        try {
+            v.setCanalVenta(canal != null ? CanalVenta.valueOf(canal) : CanalVenta.PRESENCIAL);
+        } catch (IllegalArgumentException e) {
+            v.setCanalVenta(CanalVenta.PRESENCIAL);
+        }
+
         v.setEstado(rs.getString("ESTADO_VENTA"));
         v.setObservaciones(rs.getString("OBSERVACIONES"));
 
+        // Construir cliente con los datos que ya trae el SP (sin query extra)
         int clienteId = rs.getInt("CLIENTE_ID");
         if (clienteId > 0) {
-            ClienteDaoImpl clienteDao = new ClienteDaoImpl();
-            Cliente cliente = clienteDao.buscarPorId(clienteId);
-            if (cliente != null) {
-                v.setCliente(cliente);
-            } else {
-                Cliente clienteMinimo = new Cliente();
-                clienteMinimo.setIdUsuario(clienteId);
-                v.setCliente(clienteMinimo);
-            }
+            Cliente cliente = new Cliente();
+            cliente.setIdUsuario(clienteId);
+            try {
+                cliente.setNombres(rs.getString("CLIENTE_NOMBRES"));
+                cliente.setApellidos(rs.getString("CLIENTE_APELLIDOS"));
+            } catch (SQLException ignored) { }
+            v.setCliente(cliente);
         }
 
         Trabajador trabajador = new Trabajador();
@@ -173,7 +179,8 @@ public class VentaDaoImpl implements VentaDao {
     }
 
     @Override
-    public List<Venta> listarPorFechas(java.time.LocalDateTime fechaInicio, java.time.LocalDateTime fechaFin) {
+    public List<Venta> listarPorFechas(java.time.LocalDateTime fechaInicio,
+                                       java.time.LocalDateTime fechaFin) {
         List<Venta> lista = new ArrayList<>();
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, Timestamp.valueOf(fechaInicio));
@@ -183,11 +190,8 @@ public class VentaDaoImpl implements VentaDao {
                 .ejecutarProcedimientoLectura("LISTAR_VENTAS_X_FECHAS", parametrosEntrada)) {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
-                BoletaDaoImpl boletaDao = new BoletaDaoImpl();
                 while (rs.next()) {
-                    Venta v = mapearVenta(rs);
-                    v.setBoleta(boletaDao.buscarPorVentaId(v.getIdVenta()));
-                    lista.add(v);
+                    lista.add(mapearVenta(rs));
                 }
             }
         } catch (SQLException ex) {
@@ -206,11 +210,8 @@ public class VentaDaoImpl implements VentaDao {
                 .ejecutarProcedimientoLectura("LISTAR_VENTAS_X_TRABAJADOR", parametrosEntrada)) {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
-                BoletaDaoImpl boletaDao = new BoletaDaoImpl();
                 while (rs.next()) {
-                    Venta v = mapearVenta(rs);
-                    v.setBoleta(boletaDao.buscarPorVentaId(v.getIdVenta()));
-                    lista.add(v);
+                    lista.add(mapearVenta(rs));
                 }
             }
         } catch (SQLException ex) {

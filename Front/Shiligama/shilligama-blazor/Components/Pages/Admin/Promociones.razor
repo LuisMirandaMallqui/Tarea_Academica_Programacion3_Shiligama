@@ -506,19 +506,26 @@
     private int    _pendingToggleId;
     private string _toastMsg = "";
 
-    protected override async Task OnInitializedAsync()
+   protected override async Task OnInitializedAsync()
     {
-        // Una sola llamada al back en vez del loop N+1
+        Console.WriteLine("PASO 1");
+
         await ProductSvc.EnsureLoadedAsync(recargar: true);
+
+        Console.WriteLine("PASO 2");
+
         _allProducts = ProductSvc.GetProducts();
 
         await PromoSvc.EnsureLoadedAsync(recargar: true);
+
+        Console.WriteLine("PASO 3");
+
         _promos = new List<Promocion>(PromoSvc.GetPromociones());
 
-        // Las promos ya vienen con ProductoIds cargados desde /con-productos
-        // No hay loop aquí — eso era el N+1 que causaba la lentitud
+        Console.WriteLine($"PROMOS={_promos.Count}");
+
         SyncProductBadges();
-    }
+}
 
     private IEnumerable<Promocion> Filtered => _promos.Where(p =>
         (string.IsNullOrEmpty(_search) ||
@@ -705,3 +712,4 @@
         await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
     }
 }
+    

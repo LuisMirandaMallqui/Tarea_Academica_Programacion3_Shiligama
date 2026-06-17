@@ -5,8 +5,6 @@
 @inject SupplierService SupplierSvc
 @inject StaffService StaffSvc
 @inject IJSRuntime JS
-@inject HttpClient Http
-@using System.Text.Json
 
 <PageTitle>Dashboard – Shiligama Admin</PageTitle>
 
@@ -146,15 +144,6 @@
 
     private record KpiItem(string Title, string Value, string Subtitle, string FaIcon, string Color, string Trend, bool TrendUp);
 
-    // DTO para mapear GET /api/dashboard/admin
-    private class KpiAdminDto
-    {
-        public double VentasHoy { get; set; }
-        public int PedidosPendientes { get; set; }
-        public int ProductosBajoStock { get; set; }
-        public double IngresosMes { get; set; }
-    }
-
     protected override async Task OnInitializedAsync()
     {
         await Task.WhenAll(
@@ -167,21 +156,14 @@
     {
         if (!firstRender) return;
 
-        // Intentar cargar KPIs reales desde GET /api/dashboard/admin
-        KpiAdminDto? kpiReal = null;
-        try
-        {
-            var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-            kpiReal = await Http.GetFromJsonAsync<KpiAdminDto>("dashboard/admin", jsonOpts);
-        }
-        catch { /* backend no disponible, usar datos de caché local */ }
+        SalesService.KpiAdminDto? kpiReal = null;
+        try { kpiReal = await SalesSvc.GetKpisAdminAsync(); } catch { }
 
         var sales = SalesSvc.GetSales();
         var products = ProductSvc.GetProducts();
 
         if (kpiReal != null)
         {
-            // KPIs reales del SP KPI_ADMIN_DASHBOARD del back
             _kpis = new()
             {
                 new("Ventas hoy",
@@ -204,7 +186,6 @@
         }
         else
         {
-            // Fallback: calcular desde la caché local si el back no responde
             var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
             _kpis = new()
             {

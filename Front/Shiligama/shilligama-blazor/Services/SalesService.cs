@@ -65,31 +65,9 @@ public class SalesService
                 _orders.Clear();
                 if (pedidos != null)
                 {
-                    // Fetch detalles en paralelo para que Items > 0 en la vista
-                    var tareas = pedidos.Select(async p =>
-                    {
-                        var order = p.ToOrder();
-                        try
-                        {
-                            var detalles = await _http.GetFromJsonAsync<List<DetallePedidoApi>>(
-                                $"detalles-pedido/por-pedido/{p.IdPedido}", _json);
-                            if (detalles != null && detalles.Count > 0)
-                            {
-                                order.Items    = detalles.Count;
-                                order.Products = detalles.Select(d => new CartItem
-                                {
-                                    Id       = d.Producto?.IdProducto ?? 0,
-                                    Name     = d.Producto?.Nombre ?? "Producto",
-                                    Price    = (decimal)d.PrecioUnitario,
-                                    Quantity = d.Cantidad,
-                                    Image    = ""
-                                }).ToList();
-                            }
-                        }
-                        catch { /* si falla el detalle, el pedido igual aparece con Items=0 */ }
-                        return order;
-                    });
-                    _orders.AddRange(await Task.WhenAll(tareas));
+                    // Sin N+1: cargamos solo los datos base del pedido.
+                    // Los detalles se cargan bajo demanda en GetClientOrdersAsync().
+                    _orders.AddRange(pedidos.Select(p => p.ToOrder()));
                 }
                 UltimoErrorPedidos = null;
             }
@@ -548,6 +526,24 @@ public class SalesService
         }
         return null;
     }
+
+    public async Task<KpiAdminDto?> GetKpisAdminAsync()
+    {
+        try
+        {
+            return await _http.GetFromJsonAsync<KpiAdminDto>("dashboard/admin", _json);
+        }
+        catch { return null; }
+    }
+
+    public class KpiAdminDto
+    {
+        public double VentasHoy { get; set; }
+        public int PedidosPendientes { get; set; }
+        public int ProductosBajoStock { get; set; }
+        public double IngresosMes { get; set; }
+    }
+
 }
 
 // ── VentaApi, PedidoApi y clases de referencia se encuentran en Models/Api/SalesApiModels.cs ──

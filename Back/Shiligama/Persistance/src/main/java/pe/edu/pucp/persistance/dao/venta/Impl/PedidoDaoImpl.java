@@ -15,8 +15,6 @@ import java.util.Map;
 
 public class PedidoDaoImpl implements PedidoDao {
 
-    // SP: INSERTAR_PEDIDO(OUT _pedido_id, IN _cliente_id, IN _monto_total,
-    //   IN _direccion_entrega, IN _modalidad_entrega, IN _observaciones)
     @Override
     public int insertar(Pedido pedido) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -35,7 +33,6 @@ public class PedidoDaoImpl implements PedidoDao {
         return pedido.getIdPedido();
     }
 
-    // SP: MODIFICAR_ESTADO_PEDIDO(IN _pedido_id, IN _estado_pedido)
     @Override
     public int modificar(Pedido pedido) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -45,7 +42,6 @@ public class PedidoDaoImpl implements PedidoDao {
                 "MODIFICAR_ESTADO_PEDIDO", parametrosEntrada, null);
     }
 
-    // SP: ELIMINAR_PEDIDO(IN _pedido_id)
     @Override
     public int eliminar(int id) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -54,7 +50,6 @@ public class PedidoDaoImpl implements PedidoDao {
                 "ELIMINAR_PEDIDO", parametrosEntrada, null);
     }
 
-    // SP: BUSCAR_PEDIDO_X_ID(IN _pedido_id)
     @Override
     public Pedido buscarPorId(int id) {
         Pedido pedido = null;
@@ -75,7 +70,6 @@ public class PedidoDaoImpl implements PedidoDao {
         return pedido;
     }
 
-    // SP: LISTAR_PEDIDOS()
     @Override
     public List<Pedido> listarTodos() {
         List<Pedido> lista = new ArrayList<>();
@@ -94,7 +88,6 @@ public class PedidoDaoImpl implements PedidoDao {
         return lista;
     }
 
-    // SP: LISTAR_PEDIDOS_X_CLIENTE(IN _cliente_id)
     @Override
     public List<Pedido> listarPorCliente(int idCliente) {
         List<Pedido> lista = new ArrayList<>();
@@ -115,7 +108,6 @@ public class PedidoDaoImpl implements PedidoDao {
         return lista;
     }
 
-    // SP: LISTAR_PEDIDOS_X_ESTADO(IN _estado VARCHAR)
     @Override
     public List<Pedido> listarPorEstado(EstadoPedido estado) {
         List<Pedido> lista = new ArrayList<>();
@@ -141,9 +133,26 @@ public class PedidoDaoImpl implements PedidoDao {
         p.setIdPedido(rs.getInt("PEDIDO_ID"));
         p.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
         p.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
-        p.setEstadoPedido(EstadoPedido.valueOf(rs.getString("ESTADO_PEDIDO")));
+
+        // Proteger contra valores null o inesperados en ESTADO_PEDIDO
+        String estadoStr = rs.getString("ESTADO_PEDIDO");
+        try {
+            p.setEstadoPedido(estadoStr != null ? EstadoPedido.valueOf(estadoStr) : EstadoPedido.RECIBIDO);
+        } catch (IllegalArgumentException e) {
+            p.setEstadoPedido(EstadoPedido.RECIBIDO);
+        }
+
         p.setDireccionEntrega(rs.getString("DIRECCION_ENTREGA"));
-        p.setModalidadVenta(ModalidadVenta.valueOf(rs.getString("MODALIDAD_ENTREGA")));
+
+        // FIX: proteger contra null en MODALIDAD_ENTREGA — si es null o valor
+        // desconocido, usar DELIVERY como fallback en vez de lanzar excepción.
+        String modalidadStr = rs.getString("MODALIDAD_ENTREGA");
+        try {
+            p.setModalidadVenta(modalidadStr != null ? ModalidadVenta.valueOf(modalidadStr) : ModalidadVenta.DELIVERY);
+        } catch (IllegalArgumentException e) {
+            p.setModalidadVenta(ModalidadVenta.DELIVERY);
+        }
+
         p.setObservaciones(rs.getString("OBSERVACIONES"));
 
         Cliente cliente = new Cliente();
