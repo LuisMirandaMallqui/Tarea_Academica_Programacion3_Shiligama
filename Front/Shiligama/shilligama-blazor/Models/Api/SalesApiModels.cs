@@ -123,13 +123,17 @@ internal class MetodoPagoRef
 internal class UserRef
 {
     public int IdUsuario { get; set; }
-    public string Nombres { get; set; } = string.Empty;
-    public string Apellidos { get; set; } = string.Empty;
     public string? Correo { get; set; }
     public string? Dni { get; set; }
     public string? Telefono { get; set; }
     public string? Cargo { get; set; }
     public string? Rol { get; set; }
+
+    [JsonPropertyName("nombres")]
+    public string Nombres { get; set; } = string.Empty;
+
+    [JsonPropertyName("apellidos")]
+    public string Apellidos { get; set; } = string.Empty;
 }
 
 internal class DetalleVentaApi
