@@ -4,7 +4,9 @@
 @inject SalesService SalesSvc
 @inject PromocionService PromoSvc
 @inject AuthService Auth
+@inject AddressService AddressSvc
 @inject NavigationManager Navigation
+@implements IDisposable
 
 <PageTitle>Checkout – Shiligama</PageTitle>
 
@@ -36,6 +38,48 @@
 .checkout-input-solo:focus {
     border-color: var(--primary) !important;
 }
+/* Address picker dropdown */
+.checkout-address-picker { position: relative; }
+.checkout-address-trigger {
+    width: 100%; min-height: 38px; padding: 0.4rem 0.65rem;
+    font-size: 0.8125rem; line-height: 1.35;
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    background: var(--background); color: var(--foreground);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    display: flex; align-items: center; gap: 0.5rem; text-align: left;
+}
+.checkout-address-trigger:hover { border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+.checkout-address-trigger.is-open,
+.checkout-address-trigger:focus-visible {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--primary) 18%, transparent);
+    outline: none;
+}
+.checkout-address-trigger__chevron {
+    font-size: 0.65rem; color: var(--muted-foreground);
+    transition: transform 0.15s ease; margin-left: auto;
+}
+.checkout-address-trigger.is-open .checkout-address-trigger__chevron { transform: rotate(180deg); }
+.checkout-address-backdrop { position: fixed; inset: 0; z-index: 1040; background: transparent; }
+.checkout-address-menu {
+    position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 1050;
+    margin: 0; padding: 0.25rem; list-style: none;
+    border: 1.5px solid var(--border); border-radius: var(--radius);
+    background: var(--card); box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    max-height: 210px; overflow-y: auto;
+}
+.checkout-address-item {
+    display: flex; align-items: center; gap: 0.5rem; width: 100%;
+    padding: 0.45rem 0.55rem; border: none;
+    border-radius: calc(var(--radius) - 2px); background: transparent;
+    color: var(--foreground); font-size: 0.8125rem; text-align: left; cursor: pointer;
+}
+.checkout-address-item:hover { background: var(--secondary); }
+.checkout-address-item.is-selected {
+    background: color-mix(in srgb, var(--primary) 10%, transparent); font-weight: 500;
+}
+.checkout-address-item--add { color: var(--primary); font-weight: 500; }
+.checkout-address-divider { margin: 0.2rem 0.35rem; border-color: var(--border); opacity: 1; }
 /* QR Yape: fondo blanco siempre (es un código QR real) */
 .yape-qr-box {
     border: 2px solid #c4b5fd !important;
@@ -163,36 +207,64 @@ else
                     </div>
                     @if (_deliveryMethod == "delivery")
                     {
-                        <div class="mt-2">
-                            @if (!_editingAddress && !string.IsNullOrWhiteSpace(_address))
+                        <div class="mt-3 checkout-address-picker">
+                            <label class="form-label small fw-semibold text-foreground mb-2">
+                                <i class="fa-solid fa-location-dot me-1 text-primary" style="font-size:0.75rem;"></i>
+                                Dirección de entrega
+                            </label>
+
+                            @if (_addressMenuOpen)
                             {
-                                <!-- Dirección pre-llenada desde el perfil: mostrar confirmada -->
-                                <div class="d-flex align-items-start gap-2 p-2"
-                                     style="background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;font-size:.82rem;">
-                                    <Icons Name="MapPin" Class="text-success flex-shrink-0" style="width:14px;height:14px;margin-top:3px;" />
-                                    <span class="flex-grow-1">@_address</span>
-                                    <button type="button"
-                                            class="btn btn-link p-0 flex-shrink-0"
-                                            style="font-size:.75rem;color:var(--primary);text-decoration:none;"
-                                            @onclick="() => _editingAddress = true">
-                                        Cambiar
-                                    </button>
-                                </div>
+                                <div class="checkout-address-backdrop" @onclick="CloseAddressMenu"></div>
                             }
-                            else
+
+                            <button type="button"
+                                    class="checkout-address-trigger @(_addressMenuOpen ? "is-open" : "")"
+                                    @onclick="ToggleAddressMenu">
+                                @if (string.IsNullOrWhiteSpace(_address))
+                                {
+                                    <i class="fa-solid fa-location-dot text-muted-foreground" style="font-size:0.75rem;"></i>
+                                    <span class="text-muted-foreground flex-grow-1 text-truncate">Selecciona una dirección</span>
+                                }
+                                else
+                                {
+                                    <i class="fa-solid fa-location-dot text-primary" style="font-size:0.75rem;"></i>
+                                    <span class="flex-grow-1 text-truncate">@_address</span>
+                                }
+                                <i class="fa-solid fa-chevron-down checkout-address-trigger__chevron"></i>
+                            </button>
+
+                            @if (_addressMenuOpen)
                             {
-                                <!-- Sin dirección o en modo edición: input + mapa -->
-                                <div class="d-flex gap-2">
-                                    <input type="text" @bind="_address" @bind:event="oninput"
-                                           class="form-control form-control-sm checkout-input-solo flex-grow-1"
-                                           placeholder="Ingresa tu dirección" />
-                                    <button type="button" @onclick="OpenMapModal"
-                                            class="btn btn-sm btn-outline-secondary flex-shrink-0 d-flex align-items-center gap-1"
-                                            title="Seleccionar en mapa">
-                                        <Icons Name="MapPin" style="width:13px;height:13px;" />
-                                        <span class="d-none d-sm-inline">Mapa</span>
-                                    </button>
-                                </div>
+                                <ul class="checkout-address-menu" role="listbox">
+                                    @foreach (var addr in _addresses)
+                                    {
+                                        <li>
+                                            <button type="button"
+                                                    class="checkout-address-item @(_address == addr ? "is-selected" : "")"
+                                                    @onclick="@(() => ChooseAddress(addr))">
+                                                <i class="fa-solid fa-location-dot text-primary" style="font-size:0.75rem;"></i>
+                                                <span class="text-truncate">@addr</span>
+                                            </button>
+                                        </li>
+                                    }
+                                    <li><hr class="checkout-address-divider" /></li>
+                                    <li>
+                                        <button type="button"
+                                                class="checkout-address-item checkout-address-item--add"
+                                                @onclick="ChooseAddAddress">
+                                            <i class="fa-solid fa-plus" style="font-size:0.75rem;"></i>
+                                            <span>Agregar dirección en mapa</span>
+                                        </button>
+                                    </li>
+                                </ul>
+                            }
+
+                            @if (string.IsNullOrWhiteSpace(_address))
+                            {
+                                <p class="text-danger mb-0 mt-2" style="font-size:0.75rem;">
+                                    Selecciona o agrega una dirección para continuar.
+                                </p>
                             }
                         </div>
                     }
@@ -510,8 +582,8 @@ else
     private string _deliveryMethod = "delivery";
     private string _name    = "";   // se llena en OnAfterRenderAsync desde el usuario logueado
     private string _address = "";   // ídem con DireccionEntrega
-    // false = mostrar la dirección pre-llenada como confirmada; true = mostrar input editable
-    private bool   _editingAddress = false;
+    private List<string> _addresses     = new();
+    private bool         _addressMenuOpen = false;
     private string _payMethod = "tarjeta";
 
     private decimal _cashAmount;
@@ -537,11 +609,34 @@ else
             await _mapPicker.OpenAsync();
     }
 
-    private void OnMapAddressSelected(string address)
+    private async void OnMapAddressSelected(string address)
     {
+        await AddressSvc.AddAddressAsync(address);
+        _addresses = AddressSvc.GetAddresses();
         _address = address;
-        _editingAddress = false;  // volver a modo "confirmado" tras elegir en mapa
         StateHasChanged();
+    }
+
+    // ── Address picker ───────────────────────────────────────────────────────
+    private void OnAddressesChanged()
+    {
+        _addresses = AddressSvc.GetAddresses();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleAddressMenu() => _addressMenuOpen = !_addressMenuOpen;
+    private void CloseAddressMenu()  => _addressMenuOpen = false;
+
+    private void ChooseAddress(string addr)
+    {
+        _address = addr;
+        _addressMenuOpen = false;
+    }
+
+    private async Task ChooseAddAddress()
+    {
+        _addressMenuOpen = false;
+        await OpenMapModal();
     }
 
     // El pedido para delivery requiere dirección.
@@ -563,6 +658,9 @@ else
         {
             await Cart.InitializeAsync();
             await PromoSvc.EnsureLoadedAsync();
+            await AddressSvc.InitializeAsync();
+            AddressSvc.OnChange += OnAddressesChanged;
+            _addresses = AddressSvc.GetAddresses();
 
             if (!string.IsNullOrEmpty(DeliveryParam))
                 _deliveryMethod = DeliveryParam;
@@ -571,12 +669,13 @@ else
             var u = Auth.CurrentUser;
             if (u != null)
             {
-                _name    = u.Name;
-                _address = u.DireccionEntrega ?? "";
+                _name = u.Name;
+                // Prefer last-used address from localStorage; fall back to profile address
+                if (_addresses.Count > 0)
+                    _address = _addresses[^1];
+                else
+                    _address = u.DireccionEntrega ?? "";
             }
-            // Si hay dirección guardada → mostrar confirmada sin pedir nada
-            // Si está vacía → abrir directamente el input para que el usuario la ingrese
-            _editingAddress = string.IsNullOrWhiteSpace(_address);
 
             StateHasChanged();
         }
@@ -639,5 +738,10 @@ else
         await Cart.ClearCartAsync();
         _success   = true;
         _isLoading = false;
+    }
+
+    public void Dispose()
+    {
+        AddressSvc.OnChange -= OnAddressesChanged;
     }
 }

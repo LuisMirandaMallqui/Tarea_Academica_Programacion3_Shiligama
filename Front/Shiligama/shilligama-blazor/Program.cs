@@ -30,6 +30,7 @@ builder.Services.AddSingleton(httpClient);
 // AuthService y CartService son Scoped (dependen del usuario actual).
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<AddressService>();
 
 // Los demás son Singleton: comparten caché en memoria entre peticiones
 // (correcto para un sistema single-tenant de minimarket). Si fueran Scoped, cada usuario tendría su propia instancia sin compartir datos cacheados (ej. lista de productos)
