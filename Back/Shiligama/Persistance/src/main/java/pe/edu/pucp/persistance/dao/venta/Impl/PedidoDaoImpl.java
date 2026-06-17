@@ -154,6 +154,7 @@ public class PedidoDaoImpl implements PedidoDao {
         }
 
         p.setObservaciones(rs.getString("OBSERVACIONES"));
+        try { p.setTotalItems(rs.getInt("TOTAL_ITEMS")); } catch (SQLException ignored) {}
 
         Cliente cliente = new Cliente();
         cliente.setIdUsuario(rs.getInt("CLIENTE_ID"));
