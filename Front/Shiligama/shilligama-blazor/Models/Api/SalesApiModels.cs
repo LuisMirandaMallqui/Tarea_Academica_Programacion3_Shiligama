@@ -78,6 +78,7 @@ internal class PedidoApi
     public string? Observaciones { get; set; }
     public UserRef? Cliente { get; set; }
     public List<DetallePedidoApi>? Detalles { get; set; }
+    public int TotalItems { get; set; }
 
     public Order ToOrder() => new Order
     {
@@ -88,7 +89,7 @@ internal class PedidoApi
                    : "Cliente",
         Date = FechaHora ?? DateTime.Now,
         Total = (decimal)MontoTotal,
-        Items = Detalles?.Count ?? 0,
+        Items = TotalItems > 0 ? TotalItems : (Detalles?.Count ?? 0),
         Status = (EstadoPedido ?? "").ToLower() switch
         {
             "recibido" => "recibido",
@@ -168,3 +169,4 @@ internal class PagoEstadoApi
     public int IdPedido { get; set; }
     public string? Estado { get; set; } // PENDIENTE | AUTORIZADO | RECHAZADO | CANCELADO
 }
+

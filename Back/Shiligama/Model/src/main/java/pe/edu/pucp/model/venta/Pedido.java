@@ -51,6 +51,12 @@ public class Pedido {
     @XmlElement(name = "detalles")
     @JsonbProperty("detalles")
     private List<DetallePedido> detalles = new ArrayList<>(); // nunca null — Yasson/JSON-B requiere lista vacía, no null
+    @XmlElement(name = "totalItems")
+    @JsonbProperty("totalItems")
+    private int totalItems;
+
+    public int getTotalItems() { return totalItems; }
+    public void setTotalItems(int totalItems) { this.totalItems = totalItems; }
 
     public Pedido() {
     }
