@@ -1,6 +1,7 @@
 using System.Text.Json;
 using shilligama_blazor.Components;
 using shilligama_blazor.Services;
+using shilligama_blazor.Shared;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,7 +19,15 @@ var apiBaseUrl = builder.Configuration["ApiBaseUrl"]
 // propiedades C# (PascalCase: IdVenta, FechaHora…) sin atributos extra.
 var jsonOpts = new JsonSerializerOptions
 {
-    PropertyNameCaseInsensitive = true
+    PropertyNameCaseInsensitive = true,
+    // Converters que hacen que DateTime se serialice como "yyyy-MM-ddTHH:mm:ss"
+    // (sin offset ni microsegundos) para que el backend Java pueda parsearlo
+    // con @JsonbDateFormat("yyyy-MM-dd'T'HH:mm:ss") sobre LocalDateTime.
+    Converters =
+    {
+        new JavaLocalDateTimeConverter(),
+        new NullableJavaLocalDateTimeConverter()
+    }
 };
 builder.Services.AddSingleton(jsonOpts);
 
