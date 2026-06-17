@@ -74,25 +74,20 @@
                     <option value="inactivo">Inactivas</option>
                 </select>
             </div>
-
-            <!-- Rango de fechas -->
             <div class="col-12">
                 <div class="card border rounded-3 p-3" style="background:var(--secondary);">
                     <div class="row g-3 align-items-end">
-                        <div class="col-auto d-flex align-items-center gap-2"
-                             style="margin-bottom:8px;">
+                        <div class="col-auto d-flex align-items-center gap-2" style="margin-bottom:8px;">
                             <i class="fa-regular fa-calendar text-primary" style="font-size:1.1rem;"></i>
                             <span class="small fw-semibold text-foreground">Rango de fechas</span>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small text-muted-foreground mb-1">Desde</label>
-                            <input type="date" @bind="_fechaDesde" @bind:after="OnFilterChange"
-                                   class="form-control text-foreground" style="height:40px;" />
+                            <input type="date" @bind="_fechaDesde" @bind:after="OnFilterChange" class="form-control text-foreground" style="height:40px;" />
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small text-muted-foreground mb-1">Hasta</label>
-                            <input type="date" @bind="_fechaHasta" @bind:after="OnFilterChange"
-                                   class="form-control text-foreground" style="height:40px;" />
+                            <input type="date" @bind="_fechaHasta" @bind:after="OnFilterChange" class="form-control text-foreground" style="height:40px;" />
                         </div>
                         <div class="col-auto d-flex gap-2 align-items-end">
                             <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="SetHoy">Hoy</button>
@@ -100,7 +95,7 @@
                             <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="Set30Dias">30 días</button>
                             @if (_fechaDesde.HasValue || _fechaHasta.HasValue)
                             {
-                                <button class="btn btn-ghost btn-sm text-muted-foreground" style="height:40px;" @onclick="LimpiarFechas" title="Limpiar fechas">
+                                <button class="btn btn-ghost btn-sm text-muted-foreground" style="height:40px;" @onclick="LimpiarFechas">
                                     <i class="fa-solid fa-xmark"></i>
                                 </button>
                             }
@@ -111,7 +106,7 @@
         </div>
     </div>
 
-    <!-- Tabla mejorada -->
+    <!-- Tabla -->
     <div class="card" style="overflow:visible;">
         <div class="table-responsive" style="overflow:visible;">
             <table class="table table-borderless mb-0 align-middle">
@@ -129,10 +124,10 @@
                     @foreach (var promo in Paged)
                     {
                         var isVigente = IsActive(promo);
+                        var vencida   = !promo.Activo || promo.FechaFin < DateTime.Today;
                         <tr class="border-bottom border-color-default" style="transition:background .15s;">
                             <td class="px-4 py-3">
                                 <div class="d-flex align-items-start gap-3">
-                                    <!-- Ícono de tipo -->
                                     <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
                                          style="width:40px;height:40px;background:color-mix(in srgb,@(promo.TipoDescuento == "PORCENTAJE" ? "#f59e0b" : "#2563EB") 15%,transparent);">
                                         <i class="fas @(promo.TipoDescuento == "PORCENTAJE" ? "fa-percent" : "fa-dollar-sign")"
@@ -141,13 +136,9 @@
                                     <div>
                                         <p class="fw-semibold text-foreground mb-0 small">@promo.Nombre</p>
                                         @if (!string.IsNullOrEmpty(promo.Descripcion))
-                                        {
-                                            <p class="text-xs text-muted-foreground mb-0">@promo.Descripcion</p>
-                                        }
+                                        { <p class="text-xs text-muted-foreground mb-0">@promo.Descripcion</p> }
                                         @if (!string.IsNullOrEmpty(promo.Condiciones))
-                                        {
-                                            <p class="text-xs text-muted-foreground mb-0"><i class="fa-solid fa-circle-info me-1"></i>@promo.Condiciones</p>
-                                        }
+                                        { <p class="text-xs text-muted-foreground mb-0"><i class="fa-solid fa-circle-info me-1"></i>@promo.Condiciones</p> }
                                     </div>
                                 </div>
                             </td>
@@ -157,20 +148,12 @@
                                 </span>
                             </td>
                             <td class="px-4 py-3 small text-muted-foreground d-none d-md-table-cell">
-                                <div>
-                                    <span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:.7rem;">Inicio</span>
-                                    @promo.FechaInicio.ToString("dd/MM/yy")
-                                </div>
-                                <div class="mt-1">
-                                    <span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:.7rem;">Fin</span>
-                                    @promo.FechaFin.ToString("dd/MM/yy")
-                                </div>
+                                <div><span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:.7rem;">Inicio</span>@promo.FechaInicio.ToString("dd/MM/yy")</div>
+                                <div class="mt-1"><span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:.7rem;">Fin</span>@promo.FechaFin.ToString("dd/MM/yy")</div>
                             </td>
                             <td class="px-4 py-3 small text-muted-foreground d-none d-lg-table-cell">
                                 @if (promo.ProductoIds.Count == 0)
-                                {
-                                    <span class="text-muted-foreground fst-italic">Ninguno asignado</span>
-                                }
+                                { <span class="text-muted-foreground fst-italic">Ninguno asignado</span> }
                                 else
                                 {
                                     <div class="d-flex flex-wrap gap-1">
@@ -180,16 +163,30 @@
                                             <span class="badge bg-secondary" style="font-size:.7rem;border-radius:6px;">@pNombre</span>
                                         }
                                         @if (promo.ProductoIds.Count > 3)
-                                        {
-                                            <span class="badge bg-secondary-subtle text-secondary" style="font-size:.7rem;border-radius:6px;">+@(promo.ProductoIds.Count - 3) más</span>
-                                        }
+                                        { <span class="badge bg-secondary-subtle text-secondary" style="font-size:.7rem;border-radius:6px;">+@(promo.ProductoIds.Count - 3) más</span> }
                                     </div>
                                 }
                             </td>
                             <td class="px-4 py-3">
-                                <span class="badge px-2 py-1 @(isVigente ? "bg-success" : promo.Activo && promo.FechaInicio > DateTime.Today ? "bg-primary-subtle text-primary" : "bg-secondary")" style="border-radius:var(--radius);font-size:.75rem;">
-                                    @(isVigente ? "✓ Vigente" : promo.Activo && promo.FechaInicio > DateTime.Today ? "⏳ Próxima" : "Inactiva")
-                                </span>
+                                @if (isVigente)
+                                {
+                                    <span class="badge bg-success px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">✓ Vigente</span>
+                                }
+                                else if (promo.Activo && promo.FechaInicio > DateTime.Today)
+                                {
+                                    <span class="badge bg-primary-subtle text-primary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">⏳ Próxima</span>
+                                }
+                                else if (promo.FechaFin < DateTime.Today)
+                                {
+                                    <!-- Vencida: mostrar badge rojo -->
+                                    <span class="badge px-2 py-1" style="background:#fff0f0;color:#c62828;border:1px solid #f5c6c6;border-radius:var(--radius);font-size:.75rem;">
+                                        <i class="fa-solid fa-clock-rotate-left me-1"></i>Vencida
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">Inactiva</span>
+                                }
                             </td>
                             <td class="px-4 py-3 text-end">
                                 <div class="d-flex align-items-center justify-content-end gap-1">
@@ -198,12 +195,23 @@
                                             style="border-radius:var(--radius);" title="Editar">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <button @onclick="@(() => AskToggle(promo.Id))"
-                                            class="btn btn-ghost btn-sm @(promo.Activo ? "text-warning" : "text-success")"
-                                            style="border-radius:var(--radius);" title="@(promo.Activo ? "Desactivar" : "Activar")">
-                                        <i class="fa-solid @(promo.Activo ? "fa-eye-slash" : "fa-eye")"></i>
-                                    </button>
-                                    <!-- Sin eliminar según requerimiento -->
+                                    @if (!vencida)
+                                    {
+                                        <!-- Solo mostrar toggle si NO está vencida -->
+                                        <button @onclick="@(() => AskToggle(promo.Id))"
+                                                class="btn btn-ghost btn-sm @(promo.Activo ? "text-warning" : "text-success")"
+                                                style="border-radius:var(--radius);" title="@(promo.Activo ? "Desactivar" : "Activar")">
+                                            <i class="fa-solid @(promo.Activo ? "fa-eye-slash" : "fa-eye")"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <!-- Vencida: ojo deshabilitado con tooltip explicativo -->
+                                        <button disabled class="btn btn-ghost btn-sm text-muted-foreground" style="border-radius:var(--radius);opacity:.4;"
+                                                title="No se puede activar: la fecha de vigencia ya venció">
+                                            <i class="fa-solid fa-eye-slash"></i>
+                                        </button>
+                                    }
                                 </div>
                             </td>
                         </tr>
@@ -217,7 +225,6 @@
         </div>
     </div>
 
-    <!-- Paginación -->
     @if (TotalPages > 1)
     {
         <div class="d-flex justify-content-center align-items-center gap-2 py-2">
@@ -241,6 +248,8 @@
                     <button type="button" class="btn-close" @onclick="TryCloseModal"></button>
                 </div>
                 <div class="modal-body p-4">
+                    @if (!string.IsNullOrEmpty(_generalError))
+                    { <div class="alert alert-danger py-2 small mb-3">@_generalError</div> }
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label small fw-medium text-foreground">Nombre *</label>
@@ -248,9 +257,7 @@
                                    class="form-control text-foreground @(string.IsNullOrWhiteSpace(_form.Nombre) && _submitted ? "is-invalid" : "")"
                                    placeholder="Descuento Verano" />
                             @if (string.IsNullOrWhiteSpace(_form.Nombre) && _submitted)
-                            {
-                                <div class="invalid-feedback">El nombre es obligatorio.</div>
-                            }
+                            { <div class="invalid-feedback">El nombre es obligatorio.</div> }
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-medium text-foreground">Descripción</label>
@@ -293,7 +300,8 @@
                             <label class="form-label small fw-medium text-foreground">Fecha Fin *</label>
                             <input type="date" @bind="_form.FechaFin" @bind:after="MarkDirty"
                                    class="form-control text-foreground @(_dateError != null ? "is-invalid" : "")" />
-                            @if (_dateError != null) { <div class="invalid-feedback d-block" style="font-size:.8rem;">@_dateError</div> }
+                            @if (_dateError != null)
+                            { <div class="invalid-feedback d-block" style="font-size:.8rem;">@_dateError</div> }
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-medium text-foreground">Condiciones (opcional)</label>
@@ -310,19 +318,39 @@
                                 Productos vinculados
                                 <span class="text-muted-foreground fw-normal">(@_form.ProductoIds.Count seleccionados)</span>
                             </label>
-                            <div class="border rounded-3 p-3" style="max-height:180px;overflow-y:auto;background:var(--secondary);">
+                            @if (_conflictos.Count > 0)
+                            {
+                                <div class="alert alert-warning py-2 small mb-2">
+                                    <i class="fa-solid fa-triangle-exclamation me-1"></i>
+                                    Los siguientes productos ya están en otra promoción activa:
+                                    <ul class="mb-0 mt-1 ps-3">
+                                        @foreach (var c in _conflictos) { <li>@c</li> }
+                                    </ul>
+                                </div>
+                            }
+                            <div class="border rounded-3 p-3" style="max-height:200px;overflow-y:auto;background:var(--secondary);">
                                 <div class="row g-1">
                                     @foreach (var prod in _allProducts.OrderBy(p => p.Name))
                                     {
                                         var pid = prod.Id;
+                                        var otraPromo = _promos.FirstOrDefault(pr =>
+                                            pr.Id != _form.Id && pr.Activo && pr.FechaFin >= DateTime.Today && pr.ProductoIds.Contains(pid));
+                                        var enOtraPromo = otraPromo != null;
                                         <div class="col-6">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" id="prod_@pid"
                                                        checked="@_form.ProductoIds.Contains(pid)"
+                                                       disabled="@(enOtraPromo && !_form.ProductoIds.Contains(pid))"
                                                        @onchange="@(() => { ToggleProduct(pid); MarkDirty(); })" />
                                                 <label class="form-check-label small text-foreground" for="prod_@pid">
                                                     @prod.Name
                                                     <span class="text-muted-foreground" style="font-size:.75rem;">(S/. @prod.Price.ToString("0.00"))</span>
+                                                    @if (enOtraPromo)
+                                                    {
+                                                        <span class="badge bg-warning-subtle text-warning ms-1" style="font-size:.65rem;" title="Ya en: @otraPromo!.Nombre">
+                                                            <i class="fa-solid fa-lock"></i> @otraPromo!.Nombre
+                                                        </span>
+                                                    }
                                                 </label>
                                             </div>
                                         </div>
@@ -343,7 +371,27 @@
     </div>
 }
 
-<!-- Modal Confirmar Salir sin Guardar -->
+<!-- Modal: Fechas pasadas -->
+@if (_showFechasPasadasAlert)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);z-index:1070;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">📅</div>
+                    <h5 class="fw-bold text-foreground mb-1">Fechas en el pasado</h5>
+                    <p class="text-muted-foreground small mb-4">
+                        No puedes crear una promoción con fechas que ya pasaron.<br/>
+                        La fecha de fin debe ser <strong>hoy o posterior</strong>.
+                    </p>
+                    <button class="btn btn-primary" style="border-radius:var(--radius);" @onclick="@(() => _showFechasPasadasAlert = false)">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal Confirmar Salir -->
 @if (_showUnsavedConfirm)
 {
     <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;">
@@ -408,22 +456,13 @@
     </div>
 }
 
-<!-- Toasts -->
+<!-- Toast -->
 @if (_showSavedToast)
 {
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
         <div class="toast show text-white border-0 px-3 py-2" style="background:#1A6B3C;border-radius:var(--radius);min-width:260px;">
             <i class="fa-solid fa-circle-check me-2"></i>
-            <span class="small">Promoción @(_isEditing ? "actualizada" : "creada") correctamente</span>
-        </div>
-    </div>
-}
-@if (_showToggledToast)
-{
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
-        <div class="toast show text-white border-0 px-3 py-2" style="background:#1A6B3C;border-radius:var(--radius);min-width:260px;">
-            <i class="fa-solid fa-circle-check me-2"></i>
-            <span class="small">Estado de promoción actualizado</span>
+            <span class="small">@_toastMsg</span>
         </div>
     </div>
 }
@@ -447,46 +486,53 @@
     private int _pageSize    = 6;
     private int _currentPage = 1;
 
-    // Modal
-    private bool     _showModal    = false;
-    private bool     _isEditing    = false;
-    private bool     _formDirty    = false;
-    private bool     _submitted    = false;
-    private bool     _saving       = false;
-    private Promocion _form        = new();
-    private string?  _dateError;
-    private string?  _valorError;
-    private List<string> _invalidProducts = new();
+    private bool      _showModal             = false;
+    private bool      _isEditing             = false;
+    private bool      _formDirty             = false;
+    private bool      _submitted             = false;
+    private bool      _saving                = false;
+    private Promocion _form                  = new();
+    private string?   _dateError;
+    private string?   _valorError;
+    private string    _generalError          = "";
+    private List<string> _invalidProducts    = new();
+    private List<string> _conflictos         = new();
 
-    // Confirmaciones / toasts
-    private bool _showSaveConfirm    = false;
-    private bool _showToggleConfirm  = false;
-    private bool _showSavedToast     = false;
-    private bool _showToggledToast   = false;
-    private bool _showUnsavedConfirm = false;
-    private int  _pendingToggleId;
+    private bool   _showSaveConfirm       = false;
+    private bool   _showToggleConfirm     = false;
+    private bool   _showSavedToast        = false;
+    private bool   _showUnsavedConfirm    = false;
+    private bool   _showFechasPasadasAlert = false;  // ← alerta fechas pasadas
+    private int    _pendingToggleId;
+    private string _toastMsg = "";
 
-    protected override async Task OnInitializedAsync()
+   protected override async Task OnInitializedAsync()
     {
-        await ProductSvc.EnsureLoadedAsync();
+        Console.WriteLine("PASO 1");
+
+        await ProductSvc.EnsureLoadedAsync(recargar: true);
+
+        Console.WriteLine("PASO 2");
+
         _allProducts = ProductSvc.GetProducts();
 
-        // FIX: recargar siempre para que los cambios persistan entre visitas
         await PromoSvc.EnsureLoadedAsync(recargar: true);
+
+        Console.WriteLine("PASO 3");
+
         _promos = new List<Promocion>(PromoSvc.GetPromociones());
 
-        foreach (var promo in _promos)
-            promo.ProductoIds = await PromoSvc.GetProductosDePromocionAsync(promo.Id);
+        Console.WriteLine($"PROMOS={_promos.Count}");
 
         SyncProductBadges();
-    }
+}
 
     private IEnumerable<Promocion> Filtered => _promos.Where(p =>
         (string.IsNullOrEmpty(_search) ||
             p.Nombre.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
             (p.Descripcion ?? "").Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
         (string.IsNullOrEmpty(_tipoFilter) || p.TipoDescuento == _tipoFilter) &&
-        (_estadoFilter switch { "activo" => p.Activo, "inactivo" => !p.Activo, _ => true }) &&
+        (_estadoFilter switch { "activo" => IsActive(p), "inactivo" => !IsActive(p), _ => true }) &&
         (!_fechaDesde.HasValue || p.FechaFin  >= _fechaDesde.Value) &&
         (!_fechaHasta.HasValue || p.FechaInicio <= _fechaHasta.Value)
     ).OrderByDescending(p => p.FechaInicio);
@@ -501,18 +547,20 @@
     private void Set30Dias() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; OnFilterChange(); }
     private void LimpiarFechas() { _fechaDesde = null; _fechaHasta = null; OnFilterChange(); }
 
+    // Una promo es activa si activo=true Y no ha vencido
     private bool IsActive(Promocion p) => p.Activo && p.FechaFin >= DateTime.Today;
 
     private void SyncProductBadges()
     {
         foreach (var prod in _allProducts)
-            prod.IsPromo = _promos.Any(pr => pr.Activo && pr.FechaFin >= DateTime.Today && pr.ProductoIds.Contains(prod.Id));
+            prod.IsPromo = _promos.Any(pr => IsActive(pr) && pr.ProductoIds.Contains(prod.Id));
     }
 
     private void ToggleProduct(int id)
     {
         if (_form.ProductoIds.Contains(id)) _form.ProductoIds.Remove(id);
         else _form.ProductoIds.Add(id);
+        _conflictos.Clear();
     }
 
     private void MarkDirty() => _formDirty = true;
@@ -521,8 +569,11 @@
     {
         _form      = new Promocion { FechaInicio = DateTime.Today, FechaFin = DateTime.Today.AddDays(7) };
         _isEditing = false; _formDirty = false; _submitted = false;
-        _dateError = null; _valorError = null; _invalidProducts.Clear(); _showModal = true;
+        _dateError = null; _valorError = null; _generalError = "";
+        _invalidProducts.Clear(); _conflictos.Clear();
+        _showModal = true;
     }
+
     private void OpenEdit(Promocion p)
     {
         _form = new Promocion
@@ -533,25 +584,33 @@
             Condiciones = p.Condiciones, Activo = p.Activo, ProductoIds = new(p.ProductoIds)
         };
         _isEditing = true; _formDirty = false; _submitted = false;
-        _dateError = null; _valorError = null; _invalidProducts.Clear(); _showModal = true;
+        _dateError = null; _valorError = null; _generalError = "";
+        _invalidProducts.Clear(); _conflictos.Clear();
+        _showModal = true;
     }
 
-    private void TryCloseModal()
-    {
-        if (_formDirty) _showUnsavedConfirm = true;
-        else            ForceCloseModal();
-    }
+    private void TryCloseModal() { if (_formDirty) _showUnsavedConfirm = true; else ForceCloseModal(); }
     private void ForceCloseModal() { _showUnsavedConfirm = false; _showModal = false; }
 
     private void TrySubmit()
     {
         _submitted = true;
-        _dateError = null; _valorError = null; _invalidProducts.Clear();
+        _dateError = null; _valorError = null; _generalError = "";
+        _invalidProducts.Clear(); _conflictos.Clear();
 
-        if (string.IsNullOrWhiteSpace(_form.Nombre)) { _valorError = "El nombre es obligatorio."; return; }
+        if (string.IsNullOrWhiteSpace(_form.Nombre)) return;
         if (_form.FechaFin < _form.FechaInicio) { _dateError = "La fecha de fin no puede ser anterior al inicio."; return; }
+
+        // Validar fechas pasadas SOLO para nuevas promociones
+        if (!_isEditing && _form.FechaFin < DateTime.Today)
+        {
+            _showFechasPasadasAlert = true;
+            return;
+        }
+
         if (_form.ValorDescuento <= 0) { _valorError = "El valor de descuento debe ser mayor a 0."; return; }
         if (_form.TipoDescuento == "PORCENTAJE" && _form.ValorDescuento > 100) { _valorError = "El porcentaje no puede superar 100%."; return; }
+
         if (_form.TipoDescuento == "MONTO_FIJO" && _form.ProductoIds.Count > 0)
         {
             foreach (var id in _form.ProductoIds)
@@ -563,6 +622,18 @@
             if (_invalidProducts.Count > 0) { _valorError = $"El monto S/. {_form.ValorDescuento:0.00} supera el precio de {_invalidProducts.Count} producto(s)."; return; }
         }
 
+        foreach (var pid in _form.ProductoIds)
+        {
+            var otraPromo = _promos.FirstOrDefault(pr =>
+                pr.Id != _form.Id && IsActive(pr) && pr.ProductoIds.Contains(pid));
+            if (otraPromo != null)
+            {
+                var prodNombre = _allProducts.FirstOrDefault(p => p.Id == pid)?.Name ?? $"ID {pid}";
+                _conflictos.Add($"{prodNombre} ya está en '{otraPromo.Nombre}'");
+            }
+        }
+        if (_conflictos.Count > 0) { _generalError = "Corrige los conflictos marcados antes de guardar."; return; }
+
         _showSaveConfirm = true;
     }
 
@@ -573,16 +644,13 @@
         {
             if (_isEditing)
             {
-                var idx        = _promos.FindIndex(p => p.Id == _form.Id);
+                var idx         = _promos.FindIndex(p => p.Id == _form.Id);
                 var idsAntiguos = idx >= 0 ? new List<int>(_promos[idx].ProductoIds) : new List<int>();
 
-                // FIX: Guardar en el backend primero, luego sincronizar productos
                 await PromoSvc.UpdatePromocionAsync(_form);
                 await SincronizarProductosAsync(_form.Id, idsAntiguos, _form.ProductoIds);
 
-                // Actualizar lista local con los nuevos datos
                 if (idx >= 0)
-                {
                     _promos[idx] = new Promocion
                     {
                         Id = _form.Id, Nombre = _form.Nombre, Descripcion = _form.Descripcion,
@@ -591,7 +659,6 @@
                         Condiciones = _form.Condiciones, Activo = _form.Activo,
                         ProductoIds = new List<int>(_form.ProductoIds)
                     };
-                }
             }
             else
             {
@@ -609,11 +676,14 @@
 
             SyncProductBadges();
             _showModal = false; _showSaveConfirm = false; _formDirty = false;
+            _toastMsg = $"Promoción {(_isEditing ? "actualizada" : "creada")} correctamente";
             _showSavedToast = true; StateHasChanged();
             await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
         }
+        catch (Exception ex) { _showSaveConfirm = false; _generalError = $"Error: {ex.Message}"; }
         finally { _saving = false; }
     }
+
     private void CancelSave() => _showSaveConfirm = false;
 
     private async Task SincronizarProductosAsync(int idPromo, List<int> antiguos, List<int> nuevos)
@@ -624,8 +694,9 @@
             await PromoSvc.DesasociarProductoAsync(idPromo, pid);
     }
 
-    private void AskToggle(int id) { _pendingToggleId = id; _showToggleConfirm = true; }
-    private void CancelToggle()    { _showToggleConfirm = false; }
+    private void AskToggle(int id)  { _pendingToggleId = id; _showToggleConfirm = true; }
+    private void CancelToggle()     { _showToggleConfirm = false; }
+
     private async Task ConfirmToggle()
     {
         var p = _promos.FirstOrDefault(x => x.Id == _pendingToggleId);
@@ -636,7 +707,9 @@
             SyncProductBadges();
         }
         _showToggleConfirm = false;
-        _showToggledToast  = true; StateHasChanged();
-        await Task.Delay(3000); _showToggledToast = false; StateHasChanged();
+        _toastMsg = "Estado de promoción actualizado";
+        _showSavedToast = true; StateHasChanged();
+        await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
     }
 }
+    

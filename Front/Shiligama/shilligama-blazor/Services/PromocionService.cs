@@ -4,22 +4,21 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using shilligama_blazor.Models;
 
 namespace shilligama_blazor.Services;
 
 // ============================================================================
-// PromocionService — gestiona promociones desde /api/promociones
+// PromocionService
 //
-// GET    /api/promociones              → lista de promociones
-// GET    /api/promociones/vigentes     → solo las activas hoy
-// POST   /api/promociones              → crear promoción
-// PUT    /api/promociones              → modificar
-// DELETE /api/promociones/{id}         → eliminar
-// POST   /api/promociones/{id}/productos/{pid}   → asociar producto
-// DELETE /api/promociones/{id}/productos/{pid}   → desasociar producto
-// GET    /api/promociones/{id}/productos          → IDs de productos asociados
+// GET  /api/promociones/con-productos  → todas las promos CON sus productos
+//                                        en UNA sola llamada (sin N+1)
+// POST /api/promociones                → crear
+// PUT  /api/promociones                → modificar
+// POST /api/promociones/{id}/productos/{pid}  → asociar
+// DELETE /api/promociones/{id}/productos/{pid} → desasociar
 // ============================================================================
 public class PromocionService
 {
@@ -35,22 +34,29 @@ public class PromocionService
         _json = json;
     }
 
+    // Carga todas las promos con sus productos en UNA sola llamada HTTP.
+    // Antes: 1 llamada para promos + N llamadas para productos = muy lento.
+    // Ahora: 1 sola llamada a /api/promociones/con-productos.
     public async Task EnsureLoadedAsync(bool recargar = false)
     {
         if (_cargado && !recargar) return;
         try
         {
-            var lista = await _http.GetFromJsonAsync<List<PromocionApi>>("promociones", _json);
+            var lista = await _http.GetFromJsonAsync<List<PromocionConProductosApi>>(
+                "promociones/con-productos", _json);
             _promociones.Clear();
             if (lista != null)
                 _promociones.AddRange(lista.Select(p => p.ToPromocion()));
         }
-        catch { /* backend no disponible */ }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex.ToString());
+        }
         _cargado = true;
     }
 
     public List<Promocion> GetPromociones() => _promociones;
-    public List<Promocion> GetVigentes()    => _promociones.Where(p => p.EsVigente).ToList();
+    public List<Promocion> GetVigentes() => _promociones.Where(p => p.EsVigente).ToList();
 
     public async Task<bool> AddPromocionAsync(Promocion promo)
     {
@@ -82,13 +88,15 @@ public class PromocionService
                 var existing = _promociones.FirstOrDefault(p => p.Id == promo.Id);
                 if (existing != null)
                 {
-                    existing.Nombre        = promo.Nombre;
-                    existing.Descripcion   = promo.Descripcion;
+                    existing.Nombre = promo.Nombre;
+                    existing.Descripcion = promo.Descripcion;
                     existing.TipoDescuento = promo.TipoDescuento;
-                    existing.ValorDescuento= promo.ValorDescuento;
-                    existing.FechaInicio   = promo.FechaInicio;
-                    existing.FechaFin      = promo.FechaFin;
-                    existing.Condiciones   = promo.Condiciones;
+                    existing.ValorDescuento = promo.ValorDescuento;
+                    existing.FechaInicio = promo.FechaInicio;
+                    existing.FechaFin = promo.FechaFin;
+                    existing.Condiciones = promo.Condiciones;
+                    existing.Activo = promo.Activo;
+                    existing.ProductoIds = new List<int>(promo.ProductoIds);
                 }
                 return true;
             }
@@ -133,15 +141,61 @@ public class PromocionService
         catch { return false; }
     }
 
+    // Se mantiene por compatibilidad pero ya no se llama en el loop N+1
     public async Task<List<int>> GetProductosDePromocionAsync(int idPromocion)
     {
         try
         {
-            return await _http.GetFromJsonAsync<List<int>>($"promociones/{idPromocion}/productos", _json)
-                   ?? new List<int>();
+            return await _http.GetFromJsonAsync<List<int>>(
+                $"promociones/{idPromocion}/productos", _json) ?? new List<int>();
         }
         catch { return new List<int>(); }
     }
 }
 
-// ── PromocionApi se encuentra en Models/Api/PromocionApi.cs ──
+// DTO que mapea la respuesta de /api/promociones/con-productos
+// El back devuelve la lista de productos como objetos con idProducto
+internal class PromocionConProductosApi
+{
+    public int IdPromocion { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string? Descripcion { get; set; }
+    public string TipoDescuento { get; set; } = "PORCENTAJE";
+    public double ValorDescuento { get; set; }
+    public string FechaInicio { get; set; } = string.Empty;
+    public string FechaFin { get; set; } = string.Empty;
+    public string? Condiciones { get; set; }
+    public bool Activo { get; set; } = true;
+
+    // Lista de productos con solo idProducto (el back devuelve objetos mínimos)
+    [JsonPropertyName("productos")]
+    public List<ProductoIdRef>? Productos { get; set; }
+
+    public Promocion ToPromocion()
+    {
+        var promo = new Promocion
+        {
+            Id = IdPromocion,
+            Nombre = Nombre,
+            Descripcion = Descripcion,
+            TipoDescuento = TipoDescuento,
+            ValorDescuento = ValorDescuento,
+            FechaInicio = DateTime.TryParse(FechaInicio, out var fi) ? fi : DateTime.Today,
+            FechaFin = DateTime.TryParse(FechaFin, out var ff) ? ff : DateTime.Today,
+            Condiciones = Condiciones,
+            Activo = Activo
+        };
+        // Extraer solo los IDs de los productos vinculados
+        if (Productos != null)
+            promo.ProductoIds = Productos
+                .Where(p => p.IdProducto > 0)
+                .Select(p => p.IdProducto)
+                .ToList();
+        return promo;
+    }
+}
+
+internal class ProductoIdRef
+{
+    public int IdProducto { get; set; }
+}

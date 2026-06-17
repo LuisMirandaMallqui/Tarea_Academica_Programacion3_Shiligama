@@ -27,6 +27,21 @@ public class PromocionRS {
         }
     }
 
+    // GET /api/promociones/con-productos
+    // Devuelve todas las promociones con sus IDs de productos en UNA sola query.
+    // Elimina el loop N+1 del front (1 call en vez de 1 + N calls).
+    @GET
+    @Path("/con-productos")
+    public Response listarConProductos() {
+        try {
+            List<Promocion> promociones = promocionBo.listarTodasConProductos();
+            return Response.ok(promociones).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error al listar promociones con productos: " + ex.getMessage()).build();
+        }
+    }
+
     @GET
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") int id) {
@@ -83,7 +98,6 @@ public class PromocionRS {
         }
     }
 
-    // GET /api/promociones/vigentes
     @GET
     @Path("/vigentes")
     public Response listarVigentes() {
@@ -96,7 +110,6 @@ public class PromocionRS {
         }
     }
 
-    // POST /api/promociones/{idPromocion}/productos/{idProducto}
     @POST
     @Path("/{idPromocion}/productos/{idProducto}")
     public Response asociarProducto(@PathParam("idPromocion") int idPromocion,
@@ -110,7 +123,6 @@ public class PromocionRS {
         }
     }
 
-    // DELETE /api/promociones/{idPromocion}/productos/{idProducto}
     @DELETE
     @Path("/{idPromocion}/productos/{idProducto}")
     public Response desasociarProducto(@PathParam("idPromocion") int idPromocion,
@@ -124,7 +136,6 @@ public class PromocionRS {
         }
     }
 
-    // GET /api/promociones/{idPromocion}/productos
     @GET
     @Path("/{idPromocion}/productos")
     public Response listarProductosPorPromocion(@PathParam("idPromocion") int idPromocion) {

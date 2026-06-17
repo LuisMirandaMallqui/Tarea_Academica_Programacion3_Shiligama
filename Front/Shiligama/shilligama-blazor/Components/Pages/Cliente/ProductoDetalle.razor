@@ -1,6 +1,7 @@
 @page "/catalogo/{Id:int}"
 @layout MainLayout
 @inject ProductService ProductSvc
+@inject PromocionService PromoSvc
 @inject CartService Cart
 @inject NavigationManager Navigation
 
@@ -32,7 +33,7 @@ else
                      style="min-height:320px;background:var(--secondary);">
                     <img src="@_product.Image" alt="@_product.Name"
                          class="img-fluid rounded-3"
-                         style="max-height:320px;width:100%;object-fit:cover;"
+                         style="max-height:320px;width:100%;object-fit:contain;"
                          onerror="this.src='https://placehold.co/400x400/e8f5e9/1A6B3C?text=🛒'" />
                 </div>
             </div>
@@ -69,9 +70,19 @@ else
                 <div class="d-flex align-items-baseline gap-3 my-1">
                     <span class="fw-bold"
                           style="font-size:2.25rem;color:var(--primary);font-family:'Outfit',sans-serif;">
-                        S/. @_product.Price.ToString("0.00")
+                        S/. @_precioEfectivo.ToString("0.00")
                     </span>
-                    @if (_product.OriginalPrice.HasValue)
+                    @if (_promo != null && _promo.EsVigente && _precioEfectivo < _product.Price)
+                    {
+                        <span class="text-decoration-line-through text-muted-foreground fs-5">
+                            S/. @_product.Price.ToString("0.00")
+                        </span>
+                        <span class="badge"
+                              style="background:#7c3aed;font-size:.75rem;vertical-align:middle;padding:.3rem .55rem;">
+                            @_promo.DescuentoLabel
+                        </span>
+                    }
+                    else if (_product.OriginalPrice.HasValue)
                     {
                         <span class="text-decoration-line-through text-muted-foreground fs-5">
                             S/. @_product.OriginalPrice.Value.ToString("0.00")
@@ -149,7 +160,7 @@ else
 
                     <div class="text-muted-foreground" style="font-size:0.95rem;">
                         Total: <strong class="text-foreground" style="font-size:1rem;">
-                        S/. @((_product.Price * _quantity).ToString("0.00"))
+                        S/. @(PromocionHelper.PrecioEfectivo(_product.Price, _quantity, _promo).ToString("0.00"))
                     </strong>
                 </div>
             }
@@ -185,11 +196,27 @@ else
                                 <a href="/catalogo/@p.Id" class="text-decoration-none">
                                     <p class="fw-semibold text-foreground mb-0 small">@p.Name</p>
                                 </a>
+                                @{
+                                    var _rPromo    = PromoSvc.GetVigentes().FirstOrDefault(x => x.ProductoIds.Contains(p.Id));
+                                    var _rEfectivo = PromocionHelper.PrecioEfectivo(p.Price, 1, _rPromo);
+                                    bool _rTienePromo = _rPromo != null && _rPromo.EsVigente && _rEfectivo < p.Price;
+                                }
                                 <div class="d-flex align-items-baseline gap-2">
                                     <span class="fw-bold" style="font-size:1.2rem; color:var(--primary);">
-                                        S/. @p.Price.ToString("0.00")
+                                        S/. @_rEfectivo.ToString("0.00")
                                     </span>
-                                    @if (p.OriginalPrice.HasValue)
+                                    @if (_rTienePromo)
+                                    {
+                                        <span class="text-decoration-line-through text-muted-foreground"
+                                              style="font-size:.8rem;">
+                                            S/. @p.Price.ToString("0.00")
+                                        </span>
+                                        <span class="badge"
+                                              style="background:#7c3aed;font-size:.6rem;vertical-align:middle;">
+                                            @_rPromo!.DescuentoLabel
+                                        </span>
+                                    }
+                                    else if (p.OriginalPrice.HasValue)
                                     {
                                         <span class="text-decoration-line-through text-muted-foreground"
                                               style="font-size:.8rem;">
@@ -244,13 +271,18 @@ else
     private List<Product> _related = new();
     private int _quantity = 1;
     private bool _added = false;
+    private Promocion? _promo;
+    private decimal _precioEfectivo;
 
     protected override async Task OnParametersSetAsync()
     {
         await ProductSvc.EnsureLoadedAsync();
+        await PromoSvc.EnsureLoadedAsync();
         _product = ProductSvc.GetProductById(Id);
         if (_product == null) { Navigation.NavigateTo("/catalogo"); return; }
         _related = ProductSvc.GetRelatedProducts(_product, 4);
+        _promo = PromoSvc.GetVigentes().FirstOrDefault(p => p.ProductoIds.Contains(_product.Id));
+        _precioEfectivo = PromocionHelper.PrecioEfectivo(_product.Price, 1, _promo);
         _quantity = 1;
         _added = false;
     }
