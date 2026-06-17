@@ -4,6 +4,7 @@
 @inject ProductService ProductSvc
 @inject ReporteService ReporteSvc
 @inject IJSRuntime JS
+@inject DetalleVentaService DetalleVentaSvc
 
 <PageTitle>Reportes & Estadísticas – Shiligama Admin</PageTitle>
 
@@ -30,12 +31,16 @@
             </div>
             <div class="col-6 col-md-3">
                 <label class="form-label small text-muted-foreground mb-1">Desde</label>
-                <input type="date" @bind="_fechaDesde"
+                <input type="date"
+                       @bind="_fechaDesde"
+                       @bind:after="OnDateRangeChanged"
                        class="form-control form-control-sm text-foreground" />
             </div>
             <div class="col-6 col-md-3">
                 <label class="form-label small text-muted-foreground mb-1">Hasta</label>
-                <input type="date" @bind="_fechaHasta"
+                <input type="date"
+                       @bind="_fechaHasta"
+                       @bind:after="OnDateRangeChanged"
                        class="form-control form-control-sm text-foreground" />
             </div>
             <div class="col-12 col-md-auto">
@@ -147,13 +152,14 @@
             </div>
         </div>
     </div>
-
+    
     <!-- Top Products Table -->
     <div class="card overflow-hidden">
         <div class="p-4 border-bottom border-color-default">
             <h2 class="fs-5 fw-bold text-foreground mb-0">
                 <i class="fas fa-trophy me-2" style="color:#f59e0b;"></i>Top Productos Más Vendidos
             </h2>
+            
             <p class="text-muted-foreground small m-0">Basado en unidades vendidas en el período seleccionado</p>
         </div>
         <div class="table-responsive">
@@ -170,7 +176,7 @@
                     @{
                         string[] medals = { "🥇", "🥈", "🥉", "4°", "5°" };
                     }
-                    @if (!_topProductos.Any())
+                    @if (!TopProductosFiltrados.Any())
                     {
                         <tr>
                             <td colspan="4" class="text-center py-4 text-muted-foreground small">
@@ -178,9 +184,9 @@
                             </td>
                         </tr>
                     }
-                    @for (int i = 0; i < _topProductos.Count; i++)
+                    @for (int i = 0; i < TopProductosFiltrados.Count; i++)
                     {
-                        var item = _topProductos[i];
+                        var item = TopProductosFiltrados[i];
                         var rank = medals[i];
                         <tr class="border-bottom border-color-default">
                             <td class="px-4 py-3 fw-bold text-center" style="font-size:1.1rem;">@rank</td>
@@ -209,27 +215,142 @@
 </div>
 
 @code {
+    private List<DetalleVenta> _detallesVenta = new();
+    private bool _cargandoDetalles = false;
+    private class CategoriaStats
+    {
+        public string Nombre { get; set; } = "";
+        public int Porcentaje { get; set; }
+        public string Color { get; set; } = "";
+    }
+
+    private List<CategoriaStats> CategoriasFiltradas
+    {
+        get
+        {
+            var colores = new[]
+            {
+            "#1A6B3C",
+            "#2e7d32",
+            "#2563EB",
+            "#f59e0b",
+            "#7C3AED",
+            "#DC2626"
+        };
+
+            var productosVendidos = FilteredSales
+                .Where(s => s.Estado == "completado")
+                .SelectMany(s => s.Productos);
+
+            var totalUnidades = productosVendidos.Sum(p => p.Quantity);
+
+            if (totalUnidades == 0)
+                return new();
+
+            return productosVendidos
+                .GroupBy(p =>
+                {
+                    var producto = ProductSvc.GetProducts()
+                    .FirstOrDefault(x => x.Id == p.Id);
+
+                    return producto?.Categoria?.Name ?? "Sin categoría";
+                })
+                .Select((g, index) => new CategoriaStats
+                {
+                    Nombre = g.Key,
+                    Porcentaje = (int)Math.Round(
+                        (double)g.Sum(x => x.Quantity) * 100 / totalUnidades
+                    ),
+                    Color = colores[index % colores.Length]
+                })
+                .OrderByDescending(x => x.Porcentaje)
+                .ToList();
+        }
+    }
+
     private DateTime _fechaDesde = DateTime.Today.AddDays(-30);
     private DateTime _fechaHasta = DateTime.Today;
 
     private List<Sale> FilteredSales => SalesSvc.GetSales()
         .Where(s => s.Fecha.Date >= _fechaDesde.Date && s.Fecha.Date <= _fechaHasta.Date)
         .ToList();
+        
+
+    // Reemplaza la propiedad TopProductosFiltrados existente
+    private List<TopProductoItem> TopProductosFiltrados
+    {
+        get
+        {
+            // IDs numéricos de las ventas en el rango actual
+            var ventaIdsEnRango = FilteredSales
+                .Select(s => s.Id.Replace("VTA-", "").TrimStart('0'))
+                .ToHashSet();
+
+            return _detallesVenta
+                .Where(d => ventaIdsEnRango.Contains(d.idPadreVenta.ToString()))
+                .GroupBy(d => d.producto.IdProducto)
+                .Select(g => new TopProductoItem
+                {
+                    Nombre = g.First().producto.Nombre,
+                    ImagenUrl = g.First().producto.ImagenUrl,
+                    TotalUnidades = g.Sum(d => d.cantidad),
+                    TotalIngresos = g.Sum(d => d.subtotal)
+                })
+                .OrderByDescending(x => x.TotalUnidades)
+                .Take(5)
+                .ToList();
+        }
+    }
+
+
+    private async Task CargarDetallesFiltradosAsync()
+    {
+        // No recarga si ya están en memoria
+        if (_detallesVenta.Count == 0)
+        {
+            _detallesVenta = await DetalleVentaSvc.GetAllDetallesVentaAsync();
+        }
+        StateHasChanged();
+    }
 
     // Top productos — cargados desde el API, no hardcodeados
-    private List<TopProductoItem> _topProductos = new();
+    //private List<TopProductoItem> _topProductos = new();
+    private async Task OnDateRangeChanged()
+    {
+        await CargarDetallesFiltradosAsync();
+        await RenderCharts();
+    }
+    private async Task SetRangeHoy()
+    {
+        _fechaDesde = DateTime.Today;
+        _fechaHasta = DateTime.Today;
+        await CargarDetallesFiltradosAsync();
+        await RenderCharts();
+    }
+    private async Task SetRange7Days()
+    {
+        _fechaDesde = DateTime.Today.AddDays(-7);
+        _fechaHasta = DateTime.Today;
+        await CargarDetallesFiltradosAsync();
+        await RenderCharts();
+    }
 
-    private void SetRangeHoy()    { _fechaDesde = DateTime.Today;             _fechaHasta = DateTime.Today; }
-    private void SetRange7Days()  { _fechaDesde = DateTime.Today.AddDays(-7); _fechaHasta = DateTime.Today; }
-    private void SetRange30Days() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; }
+    // Reemplaza SetRange30Days
+    private async Task SetRange30Days()
+    {
+        _fechaDesde = DateTime.Today.AddDays(-30);
+        _fechaHasta = DateTime.Today;
+        await CargarDetallesFiltradosAsync();
+        await RenderCharts();
+    }
 
     protected override async Task OnInitializedAsync()
     {
         await Task.WhenAll(
             ProductSvc.EnsureLoadedAsync(),
-            SalesSvc.EnsureLoadedAsync()
+            SalesSvc.EnsureLoadedAsync(cargarDetalles: false) // ← sin detalles
         );
-        _topProductos = await ReporteSvc.GetTopProductosAsync();
+        await CargarDetallesFiltradosAsync();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -241,11 +362,31 @@
 
     private async Task RenderCharts()
     {
-        var labels         = new[] { "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo" };
-        var presencialData = new[] { 12, 19, 3,  5,  2,  3, 10 };
-        var onlineData     = new[] {  5, 12, 10, 8, 15, 20, 25 };
+        var labels = Enumerable.Range(0, 7)
+            .Select(i => DateTime.Today.AddDays(-6 + i).ToString("dd/MM"))
+            .ToArray();
 
-        await JS.InvokeVoidAsync("chartHelper.renderOrdersComparisonChart",
-            "channelsComparisonChart", labels, presencialData, onlineData);
+        var presencialData = new int[7];
+        var onlineData = new int[7];
+
+        for (int i = 0; i < 7; i++)
+        {
+            var fecha = DateTime.Today.AddDays(-6 + i).Date;
+
+            presencialData[i] = FilteredSales.Count(s =>
+                s.Fecha.Date == fecha &&
+                s.Canal == "presencial");
+
+            onlineData[i] = FilteredSales.Count(s =>
+                s.Fecha.Date == fecha &&
+                (s.Canal == "web" || s.Canal == "whatsapp"));
+        }
+
+        await JS.InvokeVoidAsync(
+            "chartHelper.renderOrdersComparisonChart",
+            "channelsComparisonChart",
+            labels,
+            presencialData,
+            onlineData);
     }
 }
