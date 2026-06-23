@@ -30,6 +30,7 @@ internal class VentaApi
     public string EstadoVenta { get; set; } = string.Empty;
 
     public string? Observaciones { get; set; }
+    public string? NumeroBoleta { get; set; }
     public UserRef? Cliente { get; set; }
     public UserRef? Trabajador { get; set; }
     public MetodoPagoRef? MetodoPago { get; set; }
@@ -59,7 +60,8 @@ internal class VentaApi
             "completada" => "completado",
             "anulada" => "cancelado",
             _ => "completado"
-        }
+        },
+        NumeroBoleta = NumeroBoleta
     };
 }
 
@@ -104,12 +106,9 @@ internal class PedidoApi
             "RECOJO_TIENDA" => "pickup",
             _ => "delivery"
         },
-        Channel = (ModalidadVenta ?? "").ToUpper() switch
-        {
-            "RECOJO_TIENDA" => "Presencial",
-            _ => "Online"
-        },
+        Channel = "Online",
         Address = DireccionEntrega ?? string.Empty,
+        Observaciones = Observaciones,
         TimelinePedidoRecibido = FechaHora ?? DateTime.Now,
     };
 }

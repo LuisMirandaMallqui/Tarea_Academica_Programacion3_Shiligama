@@ -38,6 +38,7 @@ public class PedidoDaoImpl implements PedidoDao {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
         parametrosEntrada.put(1, pedido.getIdPedido());
         parametrosEntrada.put(2, pedido.getEstadoPedido().name());
+        parametrosEntrada.put(3, pedido.getObservaciones());
         return DBManager.getInstance().ejecutarProcedimiento(
                 "MODIFICAR_ESTADO_PEDIDO", parametrosEntrada, null);
     }

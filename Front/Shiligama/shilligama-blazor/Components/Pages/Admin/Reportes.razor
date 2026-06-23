@@ -21,29 +21,24 @@
         </button>
     </div>
 
-    <!-- Date Range Filters -->
-    <div class="card p-3">
-        <div class="row g-2 align-items-end">
-            <div class="col-12 col-md-auto">
-                <span class="small fw-semibold text-foreground">
-                    <i class="fas fa-calendar-alt me-2 text-primary"></i>Rango de fechas
-                </span>
-            </div>
-            <div class="col-6 col-md-3">
-                <label class="form-label small text-muted-foreground mb-1">Desde</label>
+    <!-- Filtros -->
+    <div class="card p-4" style="border-radius:12px;">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small fw-medium text-foreground mb-1">Desde</label>
                 <input type="date"
                        @bind="_fechaDesde"
                        @bind:after="OnDateRangeChanged"
-                       class="form-control form-control-sm text-foreground" />
+                       class="form-control text-foreground" style="height:44px;border-radius:10px;" />
             </div>
-            <div class="col-6 col-md-3">
-                <label class="form-label small text-muted-foreground mb-1">Hasta</label>
+            <div class="col-md-3">
+                <label class="form-label small fw-medium text-foreground mb-1">Hasta</label>
                 <input type="date"
                        @bind="_fechaHasta"
                        @bind:after="OnDateRangeChanged"
-                       class="form-control form-control-sm text-foreground" />
+                       class="form-control text-foreground" style="height:44px;border-radius:10px;" />
             </div>
-            <div class="col-12 col-md-auto">
+            <div class="col-md-auto">
                 <div class="d-flex gap-2 flex-wrap">
                     <button class="btn btn-secondary btn-sm" @onclick="SetRangeHoy"
                             style="border-radius:var(--radius);">Hoy</button>

@@ -76,38 +76,37 @@
 
     <!-- ── Filtros ── -->
     <div class="card p-3">
-        <div class="row g-2 align-items-center">
-            <div class="col-md-4">
+        <div class="row g-2">
+            <div class="col-12">
                 <div class="position-relative">
                     <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:14px;"></i>
                     <input type="search" @bind="_search" @bind:event="oninput" @bind:after="ResetPage"
                            class="form-control text-foreground" placeholder="Buscar productos..." style="padding-left:40px;" />
                 </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <select @bind="_categoryFilter" @bind:after="ResetPage" class="form-select text-foreground">
                     <option value="">Categorías (todas)</option>
                     @foreach (var cat in _categories)
                     { <option value="@cat.Id">@cat.Name</option> }
                 </select>
             </div>
-            <div class="col-md-5 d-flex flex-wrap gap-3 align-items-center">
-                <div class="form-check d-flex align-items-center gap-2 m-0">
-                    <input class="form-check-input mt-0" type="checkbox" id="activosChk" @bind="_activosOnly" style="width:18px;height:18px;" />
-                    <label class="form-check-label text-foreground small fw-medium" for="activosChk">Solo activos</label>
-                </div>
-                <div class="form-check d-flex align-items-center gap-2 m-0">
-                    <input class="form-check-input mt-0" type="checkbox" id="lowStockChk" @bind="_lowStockOnly" style="width:18px;height:18px;" />
-                    <label class="form-check-label text-foreground small fw-medium" for="lowStockChk">Stock bajo</label>
-                </div>
-                <div class="form-check d-flex align-items-center gap-2 m-0">
-                    <input class="form-check-input mt-0" type="checkbox" id="agotadosChk" @bind="_agotadosOnly" style="width:18px;height:18px;" />
-                    <label class="form-check-label text-danger small fw-medium" for="agotadosChk">Agotados</label>
-                </div>
-                <div class="form-check d-flex align-items-center gap-2 m-0">
-                    <input class="form-check-input mt-0" type="checkbox" id="promoChk" @bind="_promoOnly" style="width:18px;height:18px;" />
-                    <label class="form-check-label text-foreground small fw-medium" for="promoChk">En oferta</label>
-                </div>
+            <div class="col-md-8 d-flex gap-2 align-items-center justify-content-end flex-wrap">
+                <button @onclick='() => SetFilterOption("")'
+                        class="btn btn-sm @BtnClass("")"
+                        style="border-radius:9999px;font-size:.8rem;">Todos</button>
+                <button @onclick='() => SetFilterOption("activos")'
+                        class="btn btn-sm @BtnClass("activos")"
+                        style="border-radius:9999px;font-size:.8rem;">Solo activos</button>
+                <button @onclick='() => SetFilterOption("stock_bajo")'
+                        class="btn btn-sm @BtnClass("stock_bajo", "btn-warning text-dark")"
+                        style="border-radius:9999px;font-size:.8rem;">Stock bajo</button>
+                <button @onclick='() => SetFilterOption("agotados")'
+                        class="btn btn-sm @BtnClass("agotados", "btn-danger")"
+                        style="border-radius:9999px;font-size:.8rem;">Agotados</button>
+                <button @onclick='() => SetFilterOption("en_oferta")'
+                        class="btn btn-sm @BtnClass("en_oferta")"
+                        style="border-radius:9999px;font-size:.8rem;">En oferta</button>
             </div>
         </div>
     </div>
@@ -400,9 +399,14 @@
                                 </div>
                             }
                             <div class="mb-2">
-                                <label class="form-label small text-muted-foreground mb-1">Subir archivo (JPG / PNG / WebP, máx. 5 MB)</label>
-                                <InputFile OnChange="HandleImageSelected" accept="image/jpeg,image/png,image/gif,image/webp"
-                                           class="form-control text-foreground" disabled="@_uploadingImage" />
+                                <label class="form-label small text-muted-foreground mb-1">Subir archivo (JPG / PNG / WebP)</label>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="flex-grow-1">
+                                        <InputFile OnChange="HandleImageSelected" accept="image/jpeg,image/png,image/gif,image/webp"
+                                                   class="form-control text-foreground" disabled="@_uploadingImage" />
+                                    </div>
+                                    <span class="badge bg-secondary text-nowrap flex-shrink-0" style="font-size:.72rem;padding:.35em .6em;">Máx. 5 MB</span>
+                                </div>
                                 @if (_uploadingImage) { <div class="small text-muted-foreground mt-1"><span class="spinner-border spinner-border-sm me-1"></span>Subiendo…</div> }
                                 @if (!string.IsNullOrEmpty(_uploadError)) { <div class="small text-danger mt-1">@_uploadError</div> }
                             </div>
@@ -449,8 +453,7 @@
     private List<Promocion> _promos     = new();
 
     private string _search = ""; private string _categoryFilter = "";
-    private bool _activosOnly = false; private bool _lowStockOnly = false;
-    private bool _agotadosOnly = false; private bool _promoOnly = false;
+    private string _filterOption = "";
 
     private int _pageSize = 10; private int _currentPage = 1;
 
@@ -493,16 +496,23 @@
         .Where(p =>
             (string.IsNullOrEmpty(_search)         || p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
             (string.IsNullOrEmpty(_categoryFilter) || p.Category == _categoryFilter) &&
-            (!_activosOnly  || p.Estado) &&
-            (!_lowStockOnly || (p.Stock > 0 && p.Stock <= p.MinStock)) &&
-            (!_agotadosOnly || p.Stock == 0) &&
-            (!_promoOnly    || p.IsPromo)
+            (_filterOption switch
+            {
+                "activos"    => p.Estado,
+                "stock_bajo" => p.Stock > 0 && p.Stock <= p.MinStock,
+                "agotados"   => p.Stock == 0,
+                "en_oferta"  => p.IsPromo,
+                _            => true
+            })
         )
         .OrderBy(p => p.Stock == 0 || !p.Estado ? 2 : p.Stock <= p.MinStock ? 1 : 0)
-        .ThenBy(p => p.Name);
+        .ThenByDescending(p => p.Id);
 
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
     private IEnumerable<Product> Paged => Filtered.Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+    private void SetFilterOption(string opt) { _filterOption = opt; _currentPage = 1; }
+    private string BtnClass(string opt, string activeClass = "btn-dark")
+        => _filterOption == opt ? activeClass : "btn-outline-secondary";
     private void ResetPage() => _currentPage = 1;
     private void GoToPage(int p) { if (p >= 1 && p <= TotalPages) _currentPage = p; }
 
@@ -596,7 +606,21 @@
     private async Task HandleImageSelected(InputFileChangeEventArgs e)
     {
         _uploadError = ""; _uploadingImage = true;
-        try { _form.Image = await ImagenSvc.UploadAsync(e.File); _formDirty = true; }
+        var file = e.File;
+        if (file.Size > 5L * 1024 * 1024)
+        {
+            _uploadError = $"El archivo '{file.Name}' supera el límite de 5 MB.";
+            _uploadingImage = false; return;
+        }
+        try { _form.Image = await ImagenSvc.UploadAsync(file); _formDirty = true; }
+        catch (InvalidOperationException) { throw; }
+        catch (Exception ex) when (ex.Message.Contains("circuit", StringComparison.OrdinalIgnoreCase) ||
+                                   ex.Message.Contains("SignalR", StringComparison.OrdinalIgnoreCase) ||
+                                   ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
+                                   ex.Message.Contains("transport", StringComparison.OrdinalIgnoreCase))
+        {
+            _uploadError = "Error de conexión al subir la imagen. Intente con un archivo más pequeño o recargue la página.";
+        }
         catch (Exception ex) { _uploadError = ex.Message; }
         finally { _uploadingImage = false; }
     }

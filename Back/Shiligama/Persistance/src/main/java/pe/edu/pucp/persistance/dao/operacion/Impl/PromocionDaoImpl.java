@@ -46,6 +46,7 @@ public class PromocionDaoImpl implements PromocionDao {
         parametrosEntrada.put(6, Timestamp.valueOf(promocion.getFechaInicio()));
         parametrosEntrada.put(7, Timestamp.valueOf(promocion.getFechaFin()));
         parametrosEntrada.put(8, promocion.getCondiciones());
+        parametrosEntrada.put(9, promocion.isActivo() ? 1 : 0);
 
         return DBManager.getInstance().ejecutarProcedimiento(
                 "MODIFICAR_PROMOCION", parametrosEntrada, null);
@@ -129,7 +130,7 @@ public class PromocionDaoImpl implements PromocionDao {
             if (resultado != null) {
                 ResultSet rs = resultado.getRs();
                 while (rs.next()) {
-                    int idPromocion = rs.getInt("PROMOCION_ID");
+                    int idPromocion = rs.getInt("id_promocion");
 
                     // Si la promo aún no está en el mapa, la creamos
                     Promocion promo = mapaPromos.get(idPromocion);
@@ -197,7 +198,7 @@ public class PromocionDaoImpl implements PromocionDao {
 
     private Promocion mapearPromocion(ResultSet rs) throws SQLException {
         Promocion p = new Promocion();
-        p.setIdPromocion(rs.getInt("PROMOCION_ID"));
+        p.setIdPromocion(rs.getInt("id_promocion"));
         p.setNombre(rs.getString("nombre"));
         p.setDescripcion(rs.getString("descripcion"));
         p.setTipoDescuento(TipoDescuento.valueOf(rs.getString("tipo_descuento")));

@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS `categoria` (
     `CATEGORIA_PADRE_ID`     INT          NULL DEFAULT NULL,
     `NOMBRE`                 VARCHAR(100) NOT NULL,
     `DESCRIPCION`            VARCHAR(255) NULL DEFAULT NULL,
+    `ICONO`                  VARCHAR(50)  NULL DEFAULT 'fa-folder',
     `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
 	PRIMARY KEY (`CATEGORIA_ID`),
 	-- Auditoría Automática
@@ -228,7 +229,7 @@ CREATE TABLE IF NOT EXISTS `movimiento_inventario` (
     CONSTRAINT `fk_movimientos_productos`
         FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_movimientos_trabajadores`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`USUARIO_ID`) ON UPDATE CASCADE
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `usuario` (`USUARIO_ID`) ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Auditoría de movimientos de inventario: entradas, salidas, ajustes y devoluciones de productos';
 
@@ -291,7 +292,7 @@ CREATE TABLE IF NOT EXISTS `venta` (
     CONSTRAINT `fk_venta_cliente`
         FOREIGN KEY (`CLIENTE_ID`) REFERENCES `cliente` (`USUARIO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_venta_trabajador`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`USUARIO_ID`) ON UPDATE CASCADE,
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `usuario` (`USUARIO_ID`) ON UPDATE CASCADE,
     CONSTRAINT `fk_venta_metodo_pago`
         FOREIGN KEY (`METODO_PAGO_ID`) REFERENCES `metodo_pago` (`METODO_PAGO_ID`) ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
@@ -387,10 +388,11 @@ CREATE TABLE IF NOT EXISTS `devolucion` (
     -- Atributos
     `PRODUCTO_ID`            INT            NULL DEFAULT NULL,
     `PEDIDO_ID`              INT            NULL DEFAULT NULL,
-    `TRABAJADOR_ID`          INT            NULL DEFAULT NULL,
+    `USUARIO_REGISTRA_ID`    INT            NULL DEFAULT NULL,
     `ESTADO_DEVOLUCION`      ENUM('PENDIENTE','APROBADO','RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
     `CANTIDAD`               INT            NULL DEFAULT 0,
     `MOTIVO`                 VARCHAR(500)   NULL DEFAULT NULL,
+    `OBSERVACIONES`          VARCHAR(500)   NULL DEFAULT NULL,
     `FECHA_HORA`             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
 	PRIMARY KEY (`DEVOLUCION_ID`),
@@ -402,15 +404,15 @@ CREATE TABLE IF NOT EXISTS `devolucion` (
     `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó',
     INDEX `fk_devolucion_producto_idx` (`PRODUCTO_ID`),
     INDEX `fk_devolucion_pedido_idx` (`PEDIDO_ID`),
-    INDEX `fk_devolucion_trabajador_idx` (`TRABAJADOR_ID`),
+    INDEX `fk_devolucion_usuario_registra_idx` (`USUARIO_REGISTRA_ID`),
     CONSTRAINT `fk_devolucion_producto`
         FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
         ON UPDATE CASCADE,
     CONSTRAINT `fk_devolucion_pedido`
         FOREIGN KEY (`PEDIDO_ID`) REFERENCES `pedido` (`PEDIDO_ID`)
         ON UPDATE CASCADE,
-    CONSTRAINT `fk_devolucion_trabajador`
-        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `trabajador` (`USUARIO_ID`)
+    CONSTRAINT `fk_devolucion_usuario_registra`
+        FOREIGN KEY (`USUARIO_REGISTRA_ID`) REFERENCES `usuario` (`USUARIO_ID`)
         ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Tabla de Devolucion, baja de stock';

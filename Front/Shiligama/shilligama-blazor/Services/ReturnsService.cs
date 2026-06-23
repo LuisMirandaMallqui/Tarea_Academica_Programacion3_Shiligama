@@ -50,9 +50,9 @@ public class ReturnsService
     public Return? GetReturnById(string id) => _returns.FirstOrDefault(r => r.Id == id);
 
     // Crea devolución en el backend.
-    public async Task<bool> AddReturnAsync(Return returnItem, int idProducto, int idTrabajador)
+    public async Task<bool> AddReturnAsync(Return returnItem, int idProducto, int idUsuarioRegistra)
     {
-        var dto = DevolucionApi.FromReturn(returnItem, idProducto, idTrabajador);
+        var dto = DevolucionApi.FromReturn(returnItem, idProducto, idUsuarioRegistra);
         try
         {
             var resp = await _http.PostAsJsonAsync("devoluciones", dto);
@@ -86,9 +86,9 @@ public class ReturnsService
         _ = _http.PostAsJsonAsync("devoluciones", DevolucionApi.FromReturn(returnItem, 0, 0));
     }
 
-    public async Task<bool> UpdateReturnAsync(Return returnItem, int idTrabajador)
+    public async Task<bool> UpdateReturnAsync(Return returnItem, int idUsuarioRegistra)
     {
-        var dto = DevolucionApi.FromReturn(returnItem, 0, idTrabajador);
+        var dto = DevolucionApi.FromReturn(returnItem, 0, idUsuarioRegistra);
         try
         {
             var resp = await _http.PutAsJsonAsync("devoluciones", dto);

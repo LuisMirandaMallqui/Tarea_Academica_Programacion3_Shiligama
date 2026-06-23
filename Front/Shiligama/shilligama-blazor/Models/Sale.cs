@@ -14,4 +14,5 @@ public class Sale
     public string MetodoPago { get; set; } = "tarjeta"; // "yape" | "plin" | "tarjeta" | "efectivo"
     public string Comprobante { get; set; } = "boleta"; // "boleta" | "factura" | "ninguno"
     public string Estado { get; set; } = "completado"; // "completado" | "pendiente" | "cancelado" | "reembolsado"
+    public string? NumeroBoleta { get; set; }
 }

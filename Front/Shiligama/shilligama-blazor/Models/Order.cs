@@ -12,19 +12,16 @@ public class Order
     public decimal Total { get; set; }
     public int Items { get; set; }
     public string Status { get; set; } = "pendiente";
-    // "delivery" | "pickup"
     public string DeliveryMethod { get; set; } = "delivery";
-    // "yape" | "plin" | "tarjeta" | "efectivo" | "" (desconocido para pedidos online sin venta creada)
     public string PaymentMethod { get; set; } = "";
     public string Address { get; set; } = string.Empty;
-    // Lista de productos del pedido
     public List<CartItem> Products { get; set; } = new();
-    // Fechas del timeline de seguimiento
     public DateTime? TimelinePedidoRecibido { get; set; }
     public DateTime? TimelineEnPreparacion { get; set; }
     public DateTime? TimelineListo { get; set; }
     public DateTime? TimelineEnCamino { get; set; }
     public DateTime? TimelineEntregado { get; set; }
     public DateTime? TimelineCancelado { get; set; }
-    public string Channel { get; set; } = "Online"; // "Online" | "Presencial"
+    public string Channel { get; set; } = "Online";
+    public string? Observaciones { get; set; }
 }

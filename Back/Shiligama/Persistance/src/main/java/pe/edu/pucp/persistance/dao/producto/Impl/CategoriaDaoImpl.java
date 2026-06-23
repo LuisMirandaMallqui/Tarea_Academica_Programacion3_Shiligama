@@ -23,6 +23,7 @@ public class CategoriaDaoImpl implements CategoriaDao {
         parametrosEntrada.put(3, categoria.getDescripcion());
         parametrosEntrada.put(4, categoria.getCategoriaPadre() != null
                 ? categoria.getCategoriaPadre().getIdCategoria() : null);
+        parametrosEntrada.put(5, categoria.getIcono());
 
         DBManager.getInstance().ejecutarProcedimiento(
                 "INSERTAR_CATEGORIA", parametrosEntrada, parametrosSalida);
@@ -40,6 +41,7 @@ public class CategoriaDaoImpl implements CategoriaDao {
         parametrosEntrada.put(3, categoria.getDescripcion());
         parametrosEntrada.put(4, categoria.getCategoriaPadre() != null
                 ? categoria.getCategoriaPadre().getIdCategoria() : null);
+        parametrosEntrada.put(5, categoria.getIcono());
 
         return DBManager.getInstance().ejecutarProcedimiento(
                 "MODIFICAR_CATEGORIA", parametrosEntrada, null);
@@ -99,6 +101,7 @@ public class CategoriaDaoImpl implements CategoriaDao {
         c.setIdCategoria(rs.getInt("CATEGORIA_ID"));
         c.setNombre(rs.getString("NOMBRE"));
         c.setDescripcion(rs.getString("DESCRIPCION"));
+        c.setIcono(rs.getString("ICONO"));
         c.setEstado(rs.getBoolean("ACTIVO"));
 
         int categoriaPadreId = rs.getInt("CATEGORIA_PADRE_ID");

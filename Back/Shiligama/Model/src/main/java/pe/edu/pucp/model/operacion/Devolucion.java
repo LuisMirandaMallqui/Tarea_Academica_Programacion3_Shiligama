@@ -26,9 +26,9 @@ public class Devolucion {
     @XmlElement(name = "idPedido")
     @JsonbProperty("idPedido")
     private int idPedido;
-    @XmlElement(name = "idTrabajador")
-    @JsonbProperty("idTrabajador")
-    private int idTrabajador;      // Solo el ID
+    @XmlElement(name = "idUsuarioRegistra")
+    @JsonbProperty("idUsuarioRegistra")
+    private int idUsuarioRegistra;      // ID del usuario que registra (trabajador o admin)
     @XmlElement(name = "estadoDevolucion")
     @JsonbProperty("estadoDevolucion")
     private String estadoDevolucion; // "PENDIENTE", "APROBADO", "RECHAZADO"
@@ -38,8 +38,10 @@ public class Devolucion {
     @XmlElement(name = "motivo")
     @JsonbProperty("motivo")
     private String motivo;
+    @XmlElement(name = "observaciones")
+    @JsonbProperty("observaciones")
+    private String observaciones;
     @XmlElement(name = "fechaHora")
-    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
     @JsonbProperty("fechaHora")
     private LocalDateTime fechaHora;
     @XmlElement(name = "activo")
@@ -55,12 +57,12 @@ public class Devolucion {
     // ================= CONSTRUCTORES =================
     public Devolucion() {}
 
-    public Devolucion(int idDevolucion, int idProducto, int idTrabajador,
+    public Devolucion(int idDevolucion, int idProducto, int idUsuarioRegistra,
                       String estadoDevolucion, int cantidad, String motivo,
                       LocalDateTime fechaHora, boolean activo) {
         this.idDevolucion = idDevolucion;
         this.idProducto = idProducto;
-        this.idTrabajador = idTrabajador;
+        this.idUsuarioRegistra = idUsuarioRegistra;
         this.estadoDevolucion = estadoDevolucion;
         this.cantidad = cantidad;
         this.motivo = motivo;
@@ -78,8 +80,8 @@ public class Devolucion {
     public int getIdPedido() { return idPedido; }
     public void setIdPedido(int idPedido) { this.idPedido = idPedido; }
 
-    public int getIdTrabajador() { return idTrabajador; }
-    public void setIdTrabajador(int idTrabajador) { this.idTrabajador = idTrabajador; }
+    public int getIdUsuarioRegistra() { return idUsuarioRegistra; }
+    public void setIdUsuarioRegistra(int idUsuarioRegistra) { this.idUsuarioRegistra = idUsuarioRegistra; }
 
     public String getEstadoDevolucion() { return estadoDevolucion; }
     public void setEstadoDevolucion(String estadoDevolucion) { this.estadoDevolucion = estadoDevolucion; }
@@ -89,6 +91,9 @@ public class Devolucion {
 
     public String getMotivo() { return motivo; }
     public void setMotivo(String motivo) { this.motivo = motivo; }
+
+    public String getObservaciones() { return observaciones; }
+    public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
 
     public LocalDateTime getFechaHora() { return fechaHora; }
     public void setFechaHora(LocalDateTime fechaHora) { this.fechaHora = fechaHora; }

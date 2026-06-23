@@ -1,0 +1,512 @@
+@page "/admin/categorias"
+@layout AdminLayout
+@inject CategoryService CatSvc
+
+<PageTitle>Categorías – Shiligama Admin</PageTitle>
+
+<div class="d-flex flex-column gap-4">
+
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Categorías</h1>
+            <p class="text-muted-foreground small mt-1 mb-0">@_categories.Count categorías registradas</p>
+        </div>
+        <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-medium" style="border-radius:var(--radius);">
+            <i class="fa-solid fa-plus"></i> Nueva Categoría
+        </button>
+    </div>
+
+    <div class="card border shadow-sm" style="border-radius:var(--radius);">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-muted-foreground">
+                        <tr>
+                            <th class="ps-4 py-3 fw-semibold text-center" style="width:50px;">Icono</th>
+                            <th class="py-3 fw-semibold">Nombre</th>
+                            <th class="py-3 fw-semibold">Descripción</th>
+                            <th class="py-3 fw-semibold">Categoría Padre</th>
+                            <th class="py-3 fw-semibold text-center" style="width:120px;">Estado</th>
+                            <th class="pe-4 py-3 fw-semibold text-center" style="width:100px;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cat in _paged)
+                        {
+                            <tr>
+                                <td class="ps-4 py-3 text-center"><i class="fas @cat.Icono" style="font-size:1.1rem;"></i></td>
+                                <td class="py-3 fw-medium text-foreground">@cat.Name</td>
+                                <td class="py-3 text-muted-foreground">@(cat.Descripcion ?? "-")</td>
+                                <td class="py-3 text-muted-foreground">@GetParentName(cat)</td>
+                                <td class="py-3 text-center">
+                                    <span class="badge px-3 py-1 @(cat.Estado ? "bg-success" : "bg-secondary")" style="border-radius:20px;font-weight:500;font-size:0.8rem;">
+                                        @(cat.Estado ? "Activo" : "Inactivo")
+                                    </span>
+                                </td>
+                                <td class="pe-4 py-3 text-center">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <button @onclick="() => OpenEdit(cat)" class="btn btn-sm btn-ghost p-1" title="Editar" style="border-radius:var(--radius);">
+                                            <i class="fas fa-pen text-muted-foreground"></i>
+                                        </button>
+                                        @if (cat.Estado)
+                                        {
+                                            <button @onclick="() => AskToggle(cat)" class="btn btn-sm btn-ghost p-1" title="Desactivar" style="border-radius:var(--radius);">
+                                                <i class="fas fa-toggle-on text-muted-foreground"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button @onclick="() => AskToggle(cat)" class="btn btn-sm btn-ghost p-1" title="Activar" style="border-radius:var(--radius);">
+                                                <i class="fas fa-toggle-off text-muted-foreground"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (_filtered.Count == 0)
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted-foreground">
+                                    <i class="fas fa-folder-open d-block mb-2" style="font-size:2rem;opacity:0.4;"></i>
+                                    No hay categorías registradas
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            @if (TotalPages > 1)
+            {
+                <div class="d-flex align-items-center justify-content-between px-4 py-3 border-top">
+                    <small class="text-muted-foreground">
+                        Mostrando @((_currentPage - 1) * _pageSize + 1)–@Math.Min(_currentPage * _pageSize, _filtered.Count) de @_filtered.Count
+                    </small>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm rounded-circle pag-btn" @onclick="@(() => GoToPage(_currentPage - 1))" disabled="@(_currentPage == 1)" style="width:36px;height:36px;">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        @{
+                            var total = TotalPages;
+                            for (var pg = 1; pg <= total; pg++)
+                            {
+                                var pgLocal = pg;
+                                <button class="btn btn-sm rounded-circle pag-btn @(pgLocal == _currentPage ? "pag-active" : "")"
+                                        @onclick="@(() => GoToPage(pgLocal))" style="width:36px;height:36px;font-size:0.85rem;">
+                                    @pgLocal
+                                </button>
+                            }
+                        }
+                        <button class="btn btn-sm rounded-circle pag-btn" @onclick="@(() => GoToPage(_currentPage + 1))" disabled="@(_currentPage == TotalPages)" style="width:36px;height:36px;">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (_showModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1050;" @onclick="TryCloseModal">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation>
+            <div class="modal-content border-0 shadow-lg" style="border-radius:var(--radius);">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold fs-5">@(_isEditing ? "Editar Categoría" : "Nueva Categoría")</h5>
+                    <button type="button" class="btn-close" @onclick="TryCloseModal"></button>
+                </div>
+                <div class="modal-body px-4 pt-3">
+                    <div class="mb-3">
+                        <label class="form-label fw-medium small text-foreground">Nombre <span class="text-danger">*</span></label>
+                        <input value="@_formName" @oninput="OnNameInput" class="form-control" placeholder="Ej: Lácteos" maxlength="100" />
+                        @if (!string.IsNullOrEmpty(_nameError))
+                        {
+                            <div class="text-danger small mt-1">@_nameError</div>
+                        }
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-medium small text-foreground">Descripción</label>
+                        <textarea value="@_formDesc" @oninput="OnDescInput" class="form-control" rows="2" placeholder="Descripción opcional" maxlength="255"></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-medium small text-foreground">Categoría Padre</label>
+                        <select value="@_formParentId" @onchange="OnParentInput" class="form-select">
+                            <option value="">— Sin padre —</option>
+                            @foreach (var p in _categories.Where(c => c.IdCategoria != _editingId && c.Estado).OrderBy(c => c.Name))
+                            {
+                                <option value="@p.Id">@p.Name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-2 position-relative">
+                        <label class="form-label fw-medium small text-foreground">Icono</label>
+                        <button type="button" @onclick="ToggleIconPicker" class="btn btn-outline-secondary d-flex align-items-center gap-2 w-100" style="border-radius:var(--radius);">
+                            <i class="fas @_formIcono"></i>
+                            <span>@GetIconLabel(_formIcono)</span>
+                            <span class="ms-auto"><i class="fas fa-chevron-down small"></i></span>
+                        </button>
+                        @if (_showIconPicker)
+                        {
+                            <div class="position-absolute start-0 w-100 p-3 bg-white border shadow-lg rounded-3 z-3" style="top:100%;max-height:300px;overflow-y:auto;">
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var (cls, lbl) in _iconosDisponibles)
+                                    {
+                                        <button type="button" @onclick="() => SelectIcon(cls)"
+                                                class="btn d-flex align-items-center justify-content-center @(_formIcono == cls ? "btn-primary" : "btn-light")"
+                                                style="width:54px;height:54px;border-radius:var(--radius);padding:0;"
+                                                title="@lbl">
+                                            <i class="fas @cls" style="font-size:1.4rem;"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-2">
+                    <button type="button" class="btn btn-secondary" @onclick="TryCloseModal" style="border-radius:var(--radius);">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="Save" disabled="@_saving" style="border-radius:var(--radius);">
+                        @if (_saving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        @(_isEditing ? "Guardar Cambios" : "Crear Categoría")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showUnsavedConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">⚠️</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Salir sin guardar?</h5>
+                    <p class="text-muted-foreground small mb-4">Los cambios en <strong>@_formName</strong> se perderán.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showUnsavedConfirm = false)">Seguir editando</button>
+                        <button class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ForceCloseModal">Salir sin guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showConfirmToggle)
+{
+    <div class="modal d-block" tabindex="-1" style="background:rgba(0,0,0,0.4);">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow-lg" style="border-radius:var(--radius);">
+                <div class="modal-body text-center py-4">
+                    <i class="fas @(_targetToggle?.Estado == true ? "fa-toggle-on" : "fa-toggle-off") d-block mb-3" style="font-size:2.5rem;color:var(--primary);"></i>
+                    <h6 class="fw-bold mb-2">@(_targetToggle?.Estado == true ? "Desactivar" : "Activar") Categoría</h6>
+                    <p class="small text-muted-foreground mb-0">
+                        ¿Estás seguro de @(_targetToggle?.Estado == true ? "desactivar" : "activar") <strong>@_targetToggle?.Name</strong>?
+                    </p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pt-0">
+                    <button class="btn btn-secondary" @onclick="CancelToggle" style="border-radius:var(--radius);">Cancelar</button>
+                    <button class="btn btn-primary" @onclick="ConfirmToggle" style="border-radius:var(--radius);">
+                        Sí, @(_targetToggle?.Estado == true ? "Desactivar" : "Activar")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showToast)
+{
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
+        <div class="toast show align-items-center border-0 @(_toastOk ? "bg-success" : "bg-danger") text-white" role="alert" style="border-radius:var(--radius);">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas @(_toastOk ? "fa-check-circle" : "fa-exclamation-circle") me-2"></i>
+                    @_toastMsg
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="() => _showToast = false"></button>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .pag-btn { background:var(--card); border:1px solid var(--border); color:var(--foreground); transition:all .15s; }
+    .pag-btn:hover:not(:disabled) { background:var(--secondary); }
+    .pag-btn:disabled { opacity:.4; }
+    .pag-active { background:#1A6B3C !important; color:#fff !important; border-color:#1A6B3C !important; }
+</style>
+
+@code {
+    private List<Category> _categories = new();
+    private List<Category> _filtered = new();
+
+    private int _pageSize = 10;
+    private int _currentPage = 1;
+
+    private bool _showModal;
+    private bool _isEditing;
+    private int _editingId;
+    private string _formName = "";
+    private string _formDesc = "";
+    private string _formParentId = "";
+    private string _formIcono = "fa-folder";
+    private string _nameError = "";
+    private bool _saving;
+    private bool _formDirty;
+    private bool _showUnsavedConfirm;
+    private bool _showIconPicker;
+
+    private static readonly List<(string Class, string Label)> _iconosDisponibles = new()
+    {
+        ("fa-bag-shopping", "Abarrotes"), ("fa-wine-glass", "Bebidas"),
+        ("fa-spray-can", "Limpieza"), ("fa-hand-sparkles", "Cuidado"),
+        ("fa-cheese", "Lácteos"), ("fa-cookie-bite", "Snacks"),
+        ("fa-droplet", "Agua"), ("fa-soap", "Detergentes"),
+        ("fa-wheat-awn", "Cereales"), ("fa-bottle-droplet", "Aceites"),
+        ("fa-bowl-food", "Pastas"), ("fa-lemon", "Jugos"),
+        ("fa-seedling", "Frutería"), ("fa-drumstick-bite", "Carnes"),
+        ("fa-fish", "Pescado"), ("fa-egg", "Huevos"),
+        ("fa-bread-slice", "Panadería"), ("fa-jar", "Conservas"),
+        ("fa-candy-cane", "Golosinas"), ("fa-mug-saucer", "Café"),
+        ("fa-wine-bottle", "Licores"), ("fa-snowflake", "Congelados"),
+        ("fa-tag", "General"), ("fa-folder", "Default"),
+    };
+
+    private bool _showConfirmToggle;
+    private Category? _targetToggle;
+
+    private bool _showToast;
+    private string _toastMsg = "";
+    private bool _toastOk;
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(_filtered.Count / (double)_pageSize));
+    private IEnumerable<Category> _paged => _filtered.Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+    private void GoToPage(int p) { if (p >= 1 && p <= TotalPages) _currentPage = p; }
+    private void ResetPage() => _currentPage = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CatSvc.EnsureLoadedAsync();
+        _categories = CatSvc.GetAll();
+        _filtered = [.. _categories.OrderByDescending(c => c.IdCategoria)];
+    }
+
+    private void OnNameInput(ChangeEventArgs e)
+    {
+        var raw = e.Value?.ToString() ?? "";
+        _formName = string.Concat(raw.Where(c => char.IsLetter(c) || c == ' ' || c == '-'));
+        _nameError = raw != _formName ? "Solo se permiten letras." : "";
+        _formDirty = true;
+    }
+
+    private void OnDescInput(ChangeEventArgs e)
+    {
+        _formDesc = e.Value?.ToString() ?? "";
+        _formDirty = true;
+    }
+
+    private void OnParentInput(ChangeEventArgs e)
+    {
+        _formParentId = e.Value?.ToString() ?? "";
+        _formDirty = true;
+    }
+
+    private void ToggleIconPicker()
+    {
+        _showIconPicker = !_showIconPicker;
+    }
+
+    private void SelectIcon(string cls)
+    {
+        _formIcono = cls;
+        _showIconPicker = false;
+        _formDirty = true;
+    }
+
+    private string GetIconLabel(string cls)
+    {
+        return _iconosDisponibles.FirstOrDefault(i => i.Class == cls).Label ?? "Default";
+    }
+
+    private void OpenCreate()
+    {
+        _isEditing = false;
+        _editingId = 0;
+        _formName = "";
+        _formDesc = "";
+        _formParentId = "";
+        _formIcono = "fa-folder";
+        _nameError = "";
+        _formDirty = false;
+        _showModal = true;
+    }
+
+    private void OpenEdit(Category cat)
+    {
+        _isEditing = true;
+        _editingId = cat.IdCategoria;
+        _formName = cat.Name;
+        _formDesc = cat.Descripcion ?? "";
+        _formParentId = cat.CategoriaPadre?.Id ?? "";
+        _formIcono = string.IsNullOrEmpty(cat.Icono) ? "fa-folder" : cat.Icono;
+        _nameError = "";
+        _formDirty = false;
+        _showModal = true;
+    }
+
+    private void TryCloseModal()
+    {
+        if (_showIconPicker) { _showIconPicker = false; return; }
+        if (_formDirty)
+            _showUnsavedConfirm = true;
+        else
+            ForceCloseModal();
+    }
+
+    private void ForceCloseModal()
+    {
+        _showUnsavedConfirm = false;
+        _showIconPicker = false;
+        _showModal = false;
+    }
+
+    private async Task Save()
+    {
+        _nameError = "";
+        if (string.IsNullOrWhiteSpace(_formName))
+        {
+            _nameError = "El nombre es obligatorio.";
+            return;
+        }
+
+        _saving = true;
+        try
+        {
+            if (_isEditing)
+            {
+                var cat = new Category
+                {
+                    IdCategoria = _editingId,
+                    Name = _formName.Trim(),
+                    Descripcion = string.IsNullOrWhiteSpace(_formDesc) ? null : _formDesc.Trim(),
+                    Estado = true,
+                    CategoriaPadre = string.IsNullOrEmpty(_formParentId) ? null : new Category { IdCategoria = int.Parse(_formParentId) },
+                    Icono = _formIcono
+                };
+                var ok = await CatSvc.UpdateAsync(cat);
+                if (ok)
+                {
+                    _categories = CatSvc.GetAll();
+                    _filtered = [.. _categories.OrderByDescending(c => c.IdCategoria)];
+                    _formDirty = false;
+                    _showIconPicker = false;
+                    _showModal = false;
+                    ShowToast(true, "Categoría actualizada correctamente.");
+                }
+                else
+                    ShowToast(false, "Error al actualizar la categoría.");
+            }
+            else
+            {
+                var cat = new Category
+                {
+                    Name = _formName.Trim(),
+                    Descripcion = string.IsNullOrWhiteSpace(_formDesc) ? null : _formDesc.Trim(),
+                    Estado = true,
+                    CategoriaPadre = string.IsNullOrEmpty(_formParentId) ? null : new Category { IdCategoria = int.Parse(_formParentId) },
+                    Icono = _formIcono
+                };
+                var id = await CatSvc.CreateAsync(cat);
+                if (id > 0)
+                {
+                    _categories = CatSvc.GetAll();
+                    _filtered = [.. _categories.OrderByDescending(c => c.IdCategoria)];
+                    ResetPage();
+                    _formDirty = false;
+                    _showModal = false;
+                    ShowToast(true, "Categoría creada correctamente.");
+                }
+                else
+                    ShowToast(false, "Error al crear la categoría.");
+            }
+        }
+        catch
+        {
+            ShowToast(false, "Error de conexión con el servidor.");
+        }
+        _saving = false;
+    }
+
+    private void AskToggle(Category cat)
+    {
+        _targetToggle = cat;
+        _showConfirmToggle = true;
+    }
+
+    private void CancelToggle()
+    {
+        _showConfirmToggle = false;
+        _targetToggle = null;
+    }
+
+    private async Task ConfirmToggle()
+    {
+        if (_targetToggle == null) return;
+        var id = _targetToggle.IdCategoria;
+        if (_targetToggle.Estado)
+        {
+            var ok = await CatSvc.DeleteAsync(id);
+            if (ok)
+            {
+                _categories = CatSvc.GetAll();
+                _filtered = [.. _categories.OrderByDescending(c => c.IdCategoria)];
+                ShowToast(true, "Categoría desactivada.");
+            }
+            else
+                ShowToast(false, "Error al desactivar la categoría.");
+        }
+        else
+        {
+            var cat = new Category
+            {
+                IdCategoria = id,
+                Name = _targetToggle.Name,
+                Descripcion = _targetToggle.Descripcion,
+                Estado = true
+            };
+            var ok = await CatSvc.UpdateAsync(cat);
+            if (ok)
+            {
+                _categories = CatSvc.GetAll();
+                _filtered = [.. _categories.OrderByDescending(c => c.IdCategoria)];
+                ShowToast(true, "Categoría activada.");
+            }
+            else
+                ShowToast(false, "Error al activar la categoría.");
+        }
+        _showConfirmToggle = false;
+        _targetToggle = null;
+    }
+
+    private string GetParentName(Category cat)
+    {
+        if (cat.CategoriaPadre == null) return "-";
+        return _categories.FirstOrDefault(c => c.IdCategoria == cat.CategoriaPadre.IdCategoria)?.Name
+               ?? cat.CategoriaPadre.Name
+               ?? "-";
+    }
+
+    private void ShowToast(bool ok, string msg)
+    {
+        _toastOk = ok;
+        _toastMsg = msg;
+        _showToast = true;
+    }
+}

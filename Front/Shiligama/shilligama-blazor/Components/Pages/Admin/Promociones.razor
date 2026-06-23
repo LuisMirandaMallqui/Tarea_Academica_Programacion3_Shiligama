@@ -74,37 +74,42 @@
                     <option value="inactivo">Inactivas</option>
                 </select>
             </div>
-            <div class="col-12">
-                <div class="card border rounded-3 p-3" style="background:var(--secondary);">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-auto d-flex align-items-center gap-2" style="margin-bottom:8px;">
-                            <i class="fa-regular fa-calendar text-primary" style="font-size:1.1rem;"></i>
-                            <span class="small fw-semibold text-foreground">Rango de fechas</span>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted-foreground mb-1">Desde</label>
-                            <input type="date" @bind="_fechaDesde" @bind:after="OnFilterChange" class="form-control text-foreground" style="height:40px;" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted-foreground mb-1">Hasta</label>
-                            <input type="date" @bind="_fechaHasta" @bind:after="OnFilterChange" class="form-control text-foreground" style="height:40px;" />
-                        </div>
-                        <div class="col-auto d-flex gap-2 align-items-end">
-                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="SetHoy">Hoy</button>
-                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="Set7Dias">7 días</button>
-                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="Set30Dias">30 días</button>
-                            @if (_fechaDesde.HasValue || _fechaHasta.HasValue)
-                            {
-                                <button class="btn btn-ghost btn-sm text-muted-foreground" style="height:40px;" @onclick="LimpiarFechas">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            }
-                        </div>
-                    </div>
-                </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-medium text-foreground mb-1">Desde</label>
+                <input type="date" @bind="_fechaDesde" @bind:after="OnFilterChange"
+                       class="form-control text-foreground" style="height:44px;" />
             </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-medium text-foreground mb-1">Hasta</label>
+                <input type="date" @bind="_fechaHasta" @bind:after="OnFilterChange"
+                       class="form-control text-foreground" style="height:44px;" />
+            </div>
+
         </div>
     </div>
+
+    <!-- Filtros activos -->
+    @if (TieneFiltrosActivos)
+    {
+        <div class="d-flex align-items-center gap-2 flex-wrap">
+            <span class="small text-muted-foreground">Filtros activos:</span>
+            @if (!string.IsNullOrEmpty(_search))
+            {
+                <span class="badge bg-primary-subtle text-primary">
+                    Búsqueda: "@_search"
+                    <button class="btn-close btn-close-sm ms-1" style="font-size:.6rem;" @onclick="@(() => { _search = ""; _currentPage = 1; })"></button>
+                </span>
+            }
+            @if (_fechaDesde.HasValue || _fechaHasta.HasValue)
+            {
+                <span class="badge bg-info-subtle text-info">
+                    @(_fechaDesde?.ToString("dd/MM/yy") ?? "…") → @(_fechaHasta?.ToString("dd/MM/yy") ?? "…")
+                    <button class="btn-close btn-close-sm ms-1" style="font-size:.6rem;" @onclick="LimpiarFechas"></button>
+                </span>
+            }
+            <span class="small text-muted-foreground ms-2">@Filtered.Count() resultado(s)</span>
+        </div>
+    }
 
     <!-- Tabla -->
     <div class="card" style="overflow:visible;">
@@ -266,7 +271,7 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-medium text-foreground">Tipo de descuento *</label>
-                            <select @bind="_form.TipoDescuento" class="form-select text-foreground">
+                            <select @bind="_form.TipoDescuento" @bind:after="MarkDirty" class="form-select text-foreground">
                                 <option value="PORCENTAJE">Porcentaje (%)</option>
                                 <option value="MONTO_FIJO">Monto Fijo (S/.)</option>
                             </select>
@@ -305,11 +310,11 @@
                         </div>
                         <div class="col-12">
                             <label class="form-label small fw-medium text-foreground">Condiciones (opcional)</label>
-                            <input type="text" @bind="_form.Condiciones" class="form-control text-foreground" placeholder="Ej: Solo fines de semana" />
+                            <input type="text" @bind="_form.Condiciones" @bind:event="oninput" @bind:after="MarkDirty" class="form-control text-foreground" placeholder="Ej: Solo fines de semana" />
                         </div>
                         <div class="col-md-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="promoActivo" @bind="_form.Activo" />
+                                <input class="form-check-input" type="checkbox" id="promoActivo" @bind="_form.Activo" @bind:after="MarkDirty" />
                                 <label class="form-check-label small text-foreground" for="promoActivo">Promoción activa</label>
                             </div>
                         </div>
@@ -478,11 +483,11 @@
     private List<Promocion> _promos      = new();
     private List<Product>   _allProducts = new();
 
-    private string    _search       = "";
-    private string    _tipoFilter   = "";
-    private string    _estadoFilter = "";
-    private DateTime? _fechaDesde   = null;
-    private DateTime? _fechaHasta   = null;
+    private string    _search        = "";
+    private string    _tipoFilter    = "";
+    private string    _estadoFilter  = "";
+    private DateTime? _fechaDesde    = null;
+    private DateTime? _fechaHasta    = null;
     private int _pageSize    = 6;
     private int _currentPage = 1;
 
@@ -542,10 +547,9 @@
     private void OnFilterChange() { _currentPage = 1; }
     private void GoToPage(int p)  { if (p >= 1 && p <= TotalPages) _currentPage = p; }
 
-    private void SetHoy()    { _fechaDesde = DateTime.Today; _fechaHasta = DateTime.Today; OnFilterChange(); }
-    private void Set7Dias()  { _fechaDesde = DateTime.Today.AddDays(-7); _fechaHasta = DateTime.Today; OnFilterChange(); }
-    private void Set30Dias() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; OnFilterChange(); }
     private void LimpiarFechas() { _fechaDesde = null; _fechaHasta = null; OnFilterChange(); }
+    private bool TieneFiltrosActivos =>
+        !string.IsNullOrEmpty(_search) || _fechaDesde.HasValue || _fechaHasta.HasValue;
 
     // Una promo es activa si activo=true Y no ha vencido
     private bool IsActive(Promocion p) => p.Activo && p.FechaFin >= DateTime.Today;

@@ -56,12 +56,25 @@ public class BoletaBoImpl implements BoletaBo {
             throw new Exception("La venta no tiene productos para facturar.");
         }
 
-        String serie = Config.get("nubefact.serie", "B001");
-        int siguienteNumero = boletaDao.obtenerSiguienteNumero(serie);
+        String serie = Config.get("nubefact.serie", "BBB1");
+
+        // 1. Siguiente número según BD local
+        int localNext = boletaDao.obtenerSiguienteNumero(serie);
+
+        // 2. Consultar último número en Nubefact (fallback a 1 si falla)
+        int nubefactNext = 1;
+        try {
+            nubefactNext = nubefactService.consultarUltimoNumero(serie);
+            System.out.println("[BoletaBoImpl] Local next: " + localNext + ", Nubefact next: " + nubefactNext);
+        } catch (Exception ex) {
+            System.out.println("[BoletaBoImpl] No se pudo consultar Nubefact: " + ex.getMessage());
+        }
+
+        // 3. Usar el mayor de ambos para evitar duplicados por DB reseteada
+        int siguienteNumero = Math.max(localNext, nubefactNext);
 
         NubefactRequestDTO request = new NubefactRequestDTO();
         request.setSerie(serie);
-        request.setNumero(siguienteNumero);
         request.setFechaDeEmision(LocalDate.now().format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
         configurarClienteNubefact(request, venta);
 
@@ -125,12 +138,34 @@ public class BoletaBoImpl implements BoletaBo {
         request.setTotalIgv(Math.round(totalIgv * 100.0) / 100.0);
         request.setTotal(Math.round(total * 100.0) / 100.0);
 
-        NubefactResponseDTO response;
-        try {
-            response = nubefactService.enviarComprobante(request);
-        } catch (Exception ex) {
-            String detalle = ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName();
-            throw new Exception("Error al conectar con Nubefact: " + detalle, ex);
+        // 4. Retry loop: enviar a Nubefact, reintentar si el número ya existe (código 23)
+        NubefactResponseDTO response = null;
+        int maxRetries = 3;
+        Exception lastException = null;
+
+        for (int attempt = 0; attempt < maxRetries; attempt++) {
+            request.setNumero(siguienteNumero);
+            try {
+                response = nubefactService.enviarComprobante(request);
+                lastException = null;
+                break;
+            } catch (Exception ex) {
+                lastException = ex;
+                String msg = ex.getMessage() != null ? ex.getMessage() : "";
+                boolean isDuplicate = msg.contains("ya existe") || msg.contains("codigo\":23");
+                if (isDuplicate && attempt < maxRetries - 1) {
+                    siguienteNumero++;
+                    System.out.println("[BoletaBoImpl] Número duplicado, reintentando con: " + siguienteNumero);
+                    continue;
+                }
+                // Si no es duplicado o es el último intento, salimos del loop
+                break;
+            }
+        }
+
+        if (lastException != null) {
+            String detalle = lastException.getMessage() != null ? lastException.getMessage() : lastException.getClass().getSimpleName();
+            throw new Exception("Error al conectar con Nubefact: " + detalle, lastException);
         }
 
         if (response.getErrors() != null && !response.getErrors().isBlank()) {

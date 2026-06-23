@@ -1,14 +1,17 @@
-@page "/admin/pedidos"
+﻿@page "/admin/pedidos"
 @layout AdminLayout
 @inject SalesService SalesSvc
 
 <PageTitle>Pedidos – Shiligama Admin</PageTitle>
 
 <div class="d-flex flex-column gap-4">
-    <!-- Header -->
-    <div>
-        <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Pedidos</h1>
-        <p class="text-muted-foreground small mt-1 mb-0">Monitorea y despacha pedidos realizados por clientes</p>
+
+    <PedidosCardList ActiveOnly="true" PageSize="6" OnOrderStatusChanged="RecargarPedidos" />
+
+    <!-- Historial de pedidos -->
+    <div class="mt-4">
+        <h2 class="fw-bold text-foreground mb-0" style="font-family:'Outfit',sans-serif;font-size:1.9rem;letter-spacing:-0.01em;">Historial de pedidos</h2>
+        <p class="text-muted-foreground small mb-0">Pedidos atendidos, rechazados y cancelados</p>
     </div>
 
     <!-- Filtros -->
@@ -16,7 +19,7 @@
         <div class="row g-3 align-items-end">
 
             <!-- Buscar -->
-            <div class="col-md-5">
+            <div class="col-md-4">
                 <label class="form-label small fw-medium text-foreground mb-1">Buscar</label>
                 <div class="position-relative">
                     <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:14px;font-size:14px;"></i>
@@ -29,75 +32,43 @@
             </div>
 
             <!-- Estado -->
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label small fw-medium text-foreground mb-1">Estado</label>
                 <select value="@_statusFilter"
                         @onchange="@(e => { _statusFilter = e.Value?.ToString() ?? ""; _currentPage = 1; })"
                         class="form-select text-foreground" style="height:44px;">
                     <option value="">Todos los estados</option>
-                    <option value="recibido">Recibido</option>
-                    <option value="en_proceso">En proceso</option>
-                    <option value="atendido">Atendido</option>
+                    <option value="atendido">Aceptado</option>
                     <option value="rechazado">Rechazado</option>
                     <option value="cancelado">Cancelado</option>
                 </select>
             </div>
 
-            <!-- Activo / Inactivo (equivale a estados "vivos" vs terminados) -->
-            <div class="col-md-4">
-                <label class="form-label small fw-medium text-foreground mb-1">Actividad</label>
-                <select value="@_actividadFilter"
-                        @onchange="@(e => { _actividadFilter = e.Value?.ToString() ?? ""; _currentPage = 1; })"
-                        class="form-select text-foreground" style="height:44px;">
-                    <option value="">Todos</option>
-                    <option value="activo">Activos (recibido / en proceso)</option>
-                    <option value="inactivo">Inactivos (atendido / rechazado / cancelado)</option>
-                </select>
+            <!-- Desde -->
+            <div class="col-md-2">
+                <label class="form-label small fw-medium text-foreground mb-1">Desde</label>
+                <input type="date" @bind="_fechaDesde" @bind:after="OnFechaChange"
+                       class="form-control text-foreground" style="height:44px;" />
             </div>
 
-            <!-- Rango de fechas -->
-            <div class="col-12">
-                <div class="card border rounded-3 p-3" style="background:var(--secondary);">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-auto d-flex align-items-center gap-2" style="margin-bottom:8px;">
-                            <i class="fa-regular fa-calendar text-primary" style="font-size:1.1rem;"></i>
-                            <span class="small fw-semibold text-foreground">Rango de fechas</span>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted-foreground mb-1">Desde</label>
-                            <input type="date" @bind="_fechaDesde" @bind:after="OnFechaChange"
-                                   class="form-control text-foreground" style="height:40px;" />
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label small text-muted-foreground mb-1">Hasta</label>
-                            <input type="date" @bind="_fechaHasta" @bind:after="OnFechaChange"
-                                   class="form-control text-foreground" style="height:40px;" />
-                        </div>
-                        <div class="col-auto d-flex gap-2 align-items-end">
-                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="SetHoy">Hoy</button>
-                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="Set7Dias">7 días</button>
-                            <button class="btn btn-outline-secondary btn-sm" style="height:40px;border-radius:8px;" @onclick="Set30Dias">30 días</button>
-                            @if (_fechaDesde.HasValue || _fechaHasta.HasValue)
-                            {
-                                <button class="btn btn-ghost btn-sm text-muted-foreground" style="height:40px;" @onclick="LimpiarFechas" title="Limpiar fechas">
-                                    <i class="fa-solid fa-xmark"></i>
-                                </button>
-                            }
-                        </div>
-                    </div>
-                </div>
+            <!-- Hasta -->
+            <div class="col-md-2">
+                <label class="form-label small fw-medium text-foreground mb-1">Hasta</label>
+                <input type="date" @bind="_fechaHasta" @bind:after="OnFechaChange"
+                       class="form-control text-foreground" style="height:44px;" />
             </div>
 
-            <!-- Rango de monto total -->
-            <div class="col-md-6">
-                <label class="form-label small fw-medium text-foreground mb-1">Monto mínimo (S/.)</label>
-                <input type="number" min="0" step="0.01" @bind="_montoMin" @bind:after="OnMontoChange"
-                       class="form-control text-foreground" placeholder="0.00" style="height:44px;" />
-            </div>
-            <div class="col-md-6">
-                <label class="form-label small fw-medium text-foreground mb-1">Monto máximo (S/.)</label>
-                <input type="number" min="0" step="0.01" @bind="_montoMax" @bind:after="OnMontoChange"
-                       class="form-control text-foreground" placeholder="Sin límite" style="height:44px;" />
+            <!-- Botones rápidos -->
+            <div class="col-md-2 d-flex gap-1 align-items-end">
+                <button class="btn btn-outline-secondary btn-sm" style="height:44px;border-radius:8px;flex:1;font-size:0.78rem;padding:0;" @onclick="SetHoy">Hoy</button>
+                <button class="btn btn-outline-secondary btn-sm" style="height:44px;border-radius:8px;flex:1;font-size:0.78rem;padding:0;" @onclick="Set7Dias">7d</button>
+                <button class="btn btn-outline-secondary btn-sm" style="height:44px;border-radius:8px;flex:1;font-size:0.78rem;padding:0;" @onclick="Set30Dias">30d</button>
+                @if (_fechaDesde.HasValue || _fechaHasta.HasValue)
+                {
+                    <button class="btn btn-ghost btn-sm text-muted-foreground d-flex align-items-center justify-content-center" style="height:44px;width:44px;flex-shrink:0;" @onclick="LimpiarFechas" title="Limpiar fechas">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                }
             </div>
 
         </div>
@@ -120,13 +91,6 @@
                 <span class="badge bg-info-subtle text-info">
                     Fechas: @(_fechaDesde?.ToString("dd/MM/yy") ?? "…") → @(_fechaHasta?.ToString("dd/MM/yy") ?? "…")
                     <button class="btn-close btn-close-sm ms-1" style="font-size:.6rem;" @onclick="LimpiarFechas"></button>
-                </span>
-            }
-            @if (_montoMin.HasValue || _montoMax.HasValue)
-            {
-                <span class="badge bg-warning-subtle text-warning">
-                    Monto: S/. @(_montoMin?.ToString("0.00") ?? "0") – @(_montoMax?.ToString("0.00") ?? "∞")
-                    <button class="btn-close btn-close-sm ms-1" style="font-size:.6rem;" @onclick="@(() => { _montoMin = null; _montoMax = null; _currentPage = 1; })"></button>
                 </span>
             }
             <span class="small text-muted-foreground ms-2">@Filtered.Count() resultado(s)</span>
@@ -166,36 +130,19 @@
                                 <span class="badge @GetStatusClass(order.Status) py-1 px-2" style="border-radius:var(--radius);font-size:.8rem;">
                                     @GetStatusLabel(order.Status)
                                 </span>
+                                @if (!string.IsNullOrEmpty(order.Observaciones))
+                                {
+                                    <br/><span class="text-muted-foreground" style="font-size:0.65rem;line-height:1.2;display:inline-block;margin-top:2px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="@order.Observaciones">
+                                        <i class="fa-regular fa-comment me-1"></i>@order.Observaciones
+                                    </span>
+                                }
                             </td>
                             <td class="px-4 py-3 text-end">
-                                <div class="d-flex align-items-center justify-content-end gap-1">
-                                    <!-- Cambio de estado -->
-                                    <div class="dropdown d-inline-block">
-                                        <button class="btn btn-ghost btn-sm text-muted-foreground"
-                                                type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                                                style="border-radius:var(--radius);" title="Cambiar estado">
-                                            <i class="fa-solid fa-gear"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow border p-1" style="border-radius:var(--radius);">
-                                            <li><h6 class="dropdown-header small">Cambiar estado</h6></li>
-                                            @if (!EsTerminal(order.Status))
-                                            {
-                                                <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "recibido"))" class="dropdown-item py-1 small rounded" disabled="@(order.Status == "recibido")"><i class="fa-solid fa-inbox me-2 text-secondary"></i>Recibido</button></li>
-                                                <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "en_proceso"))" class="dropdown-item py-1 small rounded" disabled="@(order.Status == "en_proceso")"><i class="fa-solid fa-box-open me-2 text-warning"></i>En proceso</button></li>
-                                                <li><button type="button" @onclick="@(() => AskConfirmar(order.Id))" class="dropdown-item py-1 small rounded text-success"><i class="fa-solid fa-circle-check me-2"></i>Confirmar (→ Venta)</button></li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "rechazado"))" class="dropdown-item py-1 small rounded text-danger"><i class="fa-solid fa-xmark me-2"></i>Rechazado</button></li>
-                                                <li><button type="button" @onclick="@(() => AskStatusChange(order.Id, "cancelado"))" class="dropdown-item py-1 small rounded text-danger"><i class="fa-solid fa-ban me-2"></i>Cancelado</button></li>
-                                            }
-                                            else
-                                            {
-                                                <li><span class="dropdown-item-text py-1 small text-muted-foreground">
-                                                    <i class="fa-solid fa-lock me-2"></i>Estado final — sin cambios permitidos
-                                                </span></li>
-                                            }
-                                        </ul>
-                                    </div>
-                                </div>
+                                <button class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                                        @onclick="@(() => VerDetalle(order))"
+                                        style="border-radius:var(--radius);font-size:0.8rem;">
+                                    <i class="fa-solid fa-eye"></i> Ver detalles
+                                </button>
                             </td>
                         </tr>
                     }
@@ -233,69 +180,229 @@
     }
 </div>
 
-<!-- Modal: Confirmar Cambio de Estado / Confirmar Pedido -->
-@if (_showEditConfirm)
+<!-- Modal Detalle de Pedido -->
+@if (_showDetailModal && _detailOrder != null)
 {
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
-            <div class="modal-content bg-card border-border">
-                <div class="modal-body p-4 text-center">
-                    @if (_pendingConfirmar)
+    <div class="detail-modal-overlay" @onclick="CerrarDetalle">
+        <div class="detail-modal-container" @onclick:stopPropagation>
+
+            <div class="detail-modal-header">
+                <div class="d-flex flex-column gap-1">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold text-foreground" style="font-size:1.1rem;font-family:'Outfit',sans-serif;">@_detailOrder.Id</span>
+                        <span class="badge" style="@GetStatusBadgeStyle(_detailOrder.Status) font-size:0.73rem;border-radius:9999px;padding:4px 11px;">@GetStatusLabel(_detailOrder.Status)</span>
+                    </div>
+                    <span class="text-muted-foreground" style="font-size:0.78rem;">
+                        <i class="far fa-calendar-alt me-1"></i>@_detailOrder.Date.ToString("dd/MM/yyyy")&nbsp;·&nbsp;
+                        <i class="far fa-clock me-1"></i>@_detailOrder.Date.ToString("HH:mm")
+                    </span>
+                </div>
+                <button class="detail-modal-close" @onclick="CerrarDetalle"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="detail-modal-body">
+
+                <!-- Datos del cliente -->
+                <div class="detail-section">
+                    <div class="detail-section-title"><i class="fas fa-user me-2"></i>Datos del Cliente</div>
+                    <div class="detail-info-grid">
+                        <div class="detail-info-row">
+                            <span class="detail-label">Nombre</span>
+                            <span class="detail-value fw-semibold">@_detailOrder.Customer</span>
+                        </div>
+                        <div class="detail-info-row">
+                            <span class="detail-label">Canal</span>
+                            <span class="detail-value">
+                                <i class="fas @(_detailOrder.Channel=="Online"?"fa-globe":"fa-store") me-1 text-primary"></i>@_detailOrder.Channel
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tipo de envío -->
+                <div class="detail-section">
+                    <div class="detail-section-title">
+                        @if (_detailOrder.DeliveryMethod?.ToLower() == "delivery")
+                        { <i class="fas fa-truck me-2" style="color:#0d6efd;"></i> }
+                        else
+                        { <i class="fas fa-store me-2" style="color:#198754;"></i> }
+                        Tipo de Envío
+                    </div>
+                    <div class="detail-info-grid">
+                        <div class="detail-info-row">
+                            <span class="detail-label">Método</span>
+                            @if (_detailOrder.DeliveryMethod?.ToLower() == "delivery")
+                            {
+                                <span class="badge" style="background:#e3f2fd;color:#0d6efd;font-size:0.73rem;font-weight:600;border-radius:9999px;padding:4px 11px;"><i class="fas fa-truck me-1"></i>Delivery</span>
+                            }
+                            else
+                            {
+                                <span class="badge" style="background:#e8f5e9;color:#198754;font-size:0.73rem;font-weight:600;border-radius:9999px;padding:4px 11px;"><i class="fas fa-store me-1"></i>Recojo en tienda</span>
+                            }
+                        </div>
+                        @if (_detailOrder.DeliveryMethod?.ToLower() == "delivery" && !string.IsNullOrEmpty(_detailOrder.Address))
+                        {
+                            <div class="detail-info-row">
+                                <span class="detail-label">Dirección</span>
+                                <span class="detail-value"><i class="fas fa-map-marker-alt me-1" style="color:#dc3545;"></i>@_detailOrder.Address</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Productos -->
+                <div class="detail-section">
+                    <div class="detail-section-title"><i class="fas fa-shopping-basket me-2"></i>Productos del Pedido</div>
+                    @if (_detailOrder.Products != null && _detailOrder.Products.Any())
                     {
-                        <div class="mb-3" style="font-size:2.5rem;">✅</div>
-                        <h5 class="fw-bold text-foreground mb-1">¿Confirmar pedido?</h5>
-                        <p class="text-muted-foreground small mb-2">
-                            El pedido <strong>@_pendingEditId</strong> pasará a <strong>Atendido</strong>
-                            y se generará una <strong>Venta</strong> automáticamente.
-                        </p>
-                        <p class="small text-danger mb-4">
-                            <i class="fa-solid fa-lock me-1"></i>Esta acción es irreversible.
-                        </p>
+                        <div class="detail-products-list">
+                            @foreach (var product in _detailOrder.Products)
+                            {
+                                <div class="detail-product-row">
+                                    <div class="detail-product-qty">x@product.Quantity</div>
+                                    <div class="detail-product-name">@product.Name</div>
+                                    <div class="detail-product-price">S/. @((product.Price * product.Quantity).ToString("0.00"))</div>
+                                </div>
+                            }
+                        </div>
                     }
                     else
                     {
-                        <div class="mb-3" style="font-size:2.5rem;">⚙️</div>
-                        <h5 class="fw-bold text-foreground mb-1">¿Cambiar estado?</h5>
-                        <p class="text-muted-foreground small mb-4">
-                            El pedido <strong>@_pendingEditId</strong> pasará a
-                            <strong>@GetStatusLabel(_pendingEditStatus ?? "")</strong>.
-                        </p>
+                        <p class="text-muted-foreground small m-0">Sin detalle de productos disponible.</p>
                     }
-                    <div class="d-flex gap-2 justify-content-center">
-                        <button type="button" class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="CancelEdit">Cancelar</button>
-                        <button type="button" class="btn @(_pendingConfirmar ? "btn-success" : "btn-primary")"
-                                style="border-radius:var(--radius);" @onclick="ConfirmEdit">
-                            @(_pendingConfirmar ? "Confirmar y generar venta" : "Confirmar")
-                        </button>
+                </div>
+
+                <!-- Resumen de pago -->
+                <div class="detail-section">
+                    <div class="detail-section-title"><i class="fas fa-receipt me-2"></i>Resumen de Pago</div>
+                    <div class="detail-totals-block">
+                        <div class="detail-totals-row">
+                            <span class="detail-label">Subtotal</span>
+                            <span class="detail-value">S/. @_detailOrder.Subtotal.ToString("0.00")</span>
+                        </div>
+                        <div class="detail-totals-row">
+                            <span class="detail-label">Costo de envío</span>
+                            @if (_detailOrder.DeliveryFee == 0)
+                            { <span class="detail-value" style="color:#198754;font-weight:600;">Gratis</span> }
+                            else
+                            { <span class="detail-value">S/. @_detailOrder.DeliveryFee.ToString("0.00")</span> }
+                        </div>
+                        <div class="detail-totals-divider"></div>
+                        <div class="detail-totals-row total-final">
+                            <span>Total</span>
+                            <span class="text-primary fw-bold" style="font-size:1.15rem;">S/. @_detailOrder.Total.ToString("0.00")</span>
+                        </div>
+                        <div class="detail-payment-method mt-2">
+                            <span class="detail-label">Método de pago</span>
+                            <div class="d-flex gap-2 mt-1">
+                                @switch (_detailOrder.PaymentMethod?.ToLower())
+                                {
+                                    case "yape":
+                                        <span class="badge text-white" style="background:#6f42c1;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-mobile-alt me-1"></i>Yape</span>
+                                        <span class="badge" style="background:#e8f5e9;color:#198754;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-check-circle me-1"></i>Pagado</span>
+                                        break;
+                                    case "plin":
+                                        <span class="badge text-white" style="background:#0dcaf0;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-mobile-alt me-1"></i>Plin</span>
+                                        <span class="badge" style="background:#e8f5e9;color:#198754;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-check-circle me-1"></i>Pagado</span>
+                                        break;
+                                    case "tarjeta":
+                                        <span class="badge text-white" style="background:#0d6efd;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-credit-card me-1"></i>Tarjeta</span>
+                                        <span class="badge" style="background:#e8f5e9;color:#198754;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-check-circle me-1"></i>Pagado</span>
+                                        break;
+                                    default:
+                                        <span class="badge text-white" style="background:#198754;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-money-bill-wave me-1"></i>Efectivo</span>
+                                        <span class="badge" style="background:#fff3e0;color:#b25e00;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-clock me-1"></i>Pago al recibir</span>
+                                        break;
+                                }
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-}
 
-<!-- Toast: Estado actualizado -->
-@if (_showEditedToast)
-{
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
-        <div class="toast show align-items-center text-white border-0" style="background:#1A6B3C;border-radius:var(--radius);min-width:280px;">
-            <div class="d-flex align-items-center gap-2 px-3 py-2">
-                <i class="fa-solid fa-circle-check"></i>
-                <span class="small">Estado actualizado correctamente</span>
-            </div>
-        </div>
-    </div>
-}
+                <!-- Timeline -->
+                <div class="detail-section">
+                    <div class="detail-section-title"><i class="fas fa-history me-2"></i>Historial del Pedido</div>
+                    <div class="detail-timeline">
+                        @if (_detailOrder.TimelinePedidoRecibido.HasValue)
+                        {
+                            <div class="timeline-step done">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-label">Pedido recibido</span>
+                                    <span class="timeline-time">@_detailOrder.TimelinePedidoRecibido.Value.ToString("dd/MM HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (_detailOrder.TimelineEnPreparacion.HasValue)
+                        {
+                            <div class="timeline-step done">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-label">En preparación</span>
+                                    <span class="timeline-time">@_detailOrder.TimelineEnPreparacion.Value.ToString("dd/MM HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (_detailOrder.TimelineListo.HasValue)
+                        {
+                            <div class="timeline-step done">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-label">Listo para entrega</span>
+                                    <span class="timeline-time">@_detailOrder.TimelineListo.Value.ToString("dd/MM HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (_detailOrder.TimelineEnCamino.HasValue)
+                        {
+                            <div class="timeline-step done">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-label">En camino</span>
+                                    <span class="timeline-time">@_detailOrder.TimelineEnCamino.Value.ToString("dd/MM HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (_detailOrder.TimelineEntregado.HasValue)
+                        {
+                            <div class="timeline-step done success">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-label">Entregado</span>
+                                    <span class="timeline-time">@_detailOrder.TimelineEntregado.Value.ToString("dd/MM HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                        @if (_detailOrder.TimelineCancelado.HasValue)
+                        {
+                            <div class="timeline-step cancelled">
+                                <div class="timeline-dot"></div>
+                                <div class="timeline-content">
+                                    <span class="timeline-label">Cancelado</span>
+                                    <span class="timeline-time">@_detailOrder.TimelineCancelado.Value.ToString("dd/MM HH:mm")</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
 
-<!-- Toast: Error -->
-@if (_showErrorToast)
-{
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
-        <div class="toast show align-items-center text-white border-0" style="background:#dc2626;border-radius:var(--radius);min-width:280px;">
-            <div class="d-flex align-items-center gap-2 px-3 py-2">
-                <i class="fa-solid fa-circle-xmark"></i>
-                <span class="small">@_errorToastMsg</span>
+                <!-- Observaciones -->
+                @if (!string.IsNullOrEmpty(_detailOrder.Observaciones))
+                {
+                    <div class="detail-section">
+                        <div class="detail-section-title"><i class="fas fa-comment me-2"></i>Observaciones</div>
+                        <p class="small text-foreground mb-0" style="white-space:pre-wrap;background:#f8f9fa;border-radius:0.85rem;padding:0.75rem 1rem;border:1px solid #f0f0f0;">@_detailOrder.Observaciones</p>
+                    </div>
+                }
+
             </div>
+
+            <div class="detail-modal-footer">
+                <button class="btn btn-outline-secondary fw-medium" @onclick="CerrarDetalle" style="border-radius:var(--radius);min-width:90px;">
+                    <i class="fas fa-times me-1"></i>Cerrar
+                </button>
+            </div>
+
         </div>
     </div>
 }
@@ -305,30 +412,74 @@
     .pag-btn:hover:not(:disabled) { background:var(--secondary); }
     .pag-btn:disabled { opacity:.4; }
     .pag-active { background:#1A6B3C !important; color:#fff !important; border-color:#1A6B3C !important; }
+
+    /* Modal detalle */
+    .detail-modal-overlay { position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9998;padding:1rem;backdrop-filter:blur(2px); }
+    .detail-modal-container { background:#fff;border-radius:1.5rem;max-width:500px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.18);overflow:hidden; }
+    .detail-modal-header { display:flex;align-items:flex-start;justify-content:space-between;padding:1.35rem 1.5rem 1.1rem;border-bottom:1px solid #f0f0f0;flex-shrink:0; }
+    .detail-modal-close { width:34px;height:34px;border-radius:50%;border:1px solid #e9ecef;background:#f8f9fa;color:#6c757d;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s ease; }
+    .detail-modal-close:hover { background:#fee2e2;border-color:#fca5a5;color:#dc3545; }
+    .detail-modal-body { flex:1;overflow-y:auto;padding:.5rem 1.5rem 1rem;display:flex;flex-direction:column;gap:0;scrollbar-width:thin;scrollbar-color:#dee2e6 transparent; }
+    .detail-modal-body::-webkit-scrollbar { width:5px; }
+    .detail-modal-body::-webkit-scrollbar-thumb { background:#dee2e6;border-radius:4px; }
+    .detail-section { padding:.9rem 0;border-bottom:1px solid #f0f0f0; }
+    .detail-section:last-of-type { border-bottom:none; }
+    .detail-section-title { font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#6c757d;margin-bottom:.75rem;display:flex;align-items:center; }
+    .detail-info-grid { display:flex;flex-direction:column;gap:.5rem; }
+    .detail-info-row { display:flex;align-items:center;justify-content:space-between;gap:1rem; }
+    .detail-label { font-size:.78rem;color:#6c757d;flex-shrink:0; }
+    .detail-value { font-size:.82rem;color:#212529;text-align:right; }
+    .detail-products-list { display:flex;flex-direction:column;gap:.4rem;background:#f8f9fa;border-radius:.85rem;padding:.75rem 1rem;border:1px solid #f0f0f0; }
+    .detail-product-row { display:flex;align-items:center;gap:.75rem;padding:.35rem 0;border-bottom:1px solid #f0f0f0; }
+    .detail-product-row:last-child { border-bottom:none; }
+    .detail-product-qty { font-size:.72rem;font-weight:700;color:#fff;background:#064e3b;border-radius:6px;padding:2px 7px;flex-shrink:0; }
+    .detail-product-name { font-size:.82rem;color:#212529;flex:1; }
+    .detail-product-price { font-size:.82rem;font-weight:600;color:#064e3b;flex-shrink:0; }
+    .detail-totals-block { background:#f8f9fa;border-radius:.85rem;padding:.85rem 1rem;border:1px solid #f0f0f0;display:flex;flex-direction:column;gap:.45rem; }
+    .detail-totals-row { display:flex;justify-content:space-between;align-items:center;font-size:.83rem; }
+    .detail-totals-divider { height:1px;background:#dee2e6;margin:.3rem 0; }
+    .detail-totals-row.total-final { font-size:.9rem;font-weight:700;color:#212529; }
+    .detail-timeline { display:flex;flex-direction:column;gap:0;position:relative; }
+    .timeline-step { display:flex;align-items:flex-start;gap:.85rem;position:relative;padding-bottom:1rem; }
+    .timeline-step:last-child { padding-bottom:0; }
+    .timeline-step::before { content:'';position:absolute;left:7px;top:18px;bottom:0;width:2px;background:#e9ecef; }
+    .timeline-step:last-child::before { display:none; }
+    .timeline-dot { width:16px;height:16px;border-radius:50%;border:2px solid #e9ecef;background:#fff;flex-shrink:0;margin-top:2px;z-index:1;transition:all .2s; }
+    .timeline-step.done .timeline-dot { background:#064e3b;border-color:#064e3b;box-shadow:0 0 0 3px rgba(6,78,59,.15); }
+    .timeline-step.done::before { background:#064e3b;opacity:.4; }
+    .timeline-step.success .timeline-dot { background:#28a745;border-color:#28a745;box-shadow:0 0 0 3px rgba(40,167,69,.18); }
+    .timeline-step.cancelled .timeline-dot { background:#dc3545;border-color:#dc3545;box-shadow:0 0 0 3px rgba(220,53,69,.15); }
+    .timeline-step.cancelled::before { background:#dc3545;opacity:.3; }
+    .timeline-content { display:flex;flex-direction:column;gap:2px; }
+    .timeline-label { font-size:.8rem;font-weight:600;color:#212529; }
+    .timeline-time { font-size:.72rem;color:#6c757d; }
+    .detail-modal-footer { padding:1rem 1.5rem 1.2rem;border-top:1px solid #f0f0f0;display:flex;justify-content:flex-end;gap:.75rem;flex-shrink:0;background:#fafafa;border-radius:0 0 1.5rem 1.5rem; }
+    .dark .detail-modal-container { background:var(--card); }
+    .dark .detail-modal-header, .dark .detail-section { border-color:var(--border); }
+    .dark .detail-modal-close { background:var(--secondary);border-color:var(--border);color:var(--muted-foreground); }
+    .dark .detail-section-title, .dark .detail-label { color:var(--muted-foreground); }
+    .dark .detail-value { color:var(--foreground); }
+    .dark .detail-products-list, .dark .detail-totals-block { background:var(--secondary);border-color:var(--border); }
+    .dark .detail-product-row { border-color:var(--border); }
+    .dark .detail-totals-divider { background:var(--border); }
+    .dark .detail-modal-footer { background:var(--card);border-color:var(--border);border-radius:0 0 1.5rem 1.5rem; }
 </style>
 
 @code {
     private List<Order> _orders = new();
-    private string _search        = "";
-    private string _statusFilter  = "";
-    private string _actividadFilter = "";
-    private DateTime? _fechaDesde = null;
-    private DateTime? _fechaHasta = null;
-    private decimal? _montoMin    = null;
-    private decimal? _montoMax    = null;
+    private string _search          = "";
+    private string _statusFilter    = "";
+    private DateTime? _fechaDesde   = null;
+    private DateTime? _fechaHasta   = null;
+
 
     // Paginación
     private int _pageSize    = 8;
     private int _currentPage = 1;
 
-    // Modales
-    private bool _showEditConfirm  = false;
-    private bool _showEditedToast  = false;
-    private bool _showErrorToast   = false;
-    private string _errorToastMsg  = "";
-    private bool _pendingConfirmar = false;   // true = flujo confirmar (→ Venta), false = cambio estado normal
-    private string? _pendingEditId;
-    private string? _pendingEditStatus;
+    // Modal detalle
+    private bool _showDetailModal = false;
+    private Order? _detailOrder;
 
     protected override async Task OnInitializedAsync()
     {
@@ -336,36 +487,35 @@
         _orders = SalesSvc.GetRecentOrders();
     }
 
+    private async Task RecargarPedidos()
+    {
+        await SalesSvc.EnsureLoadedAsync(recargar: true);
+        _orders = SalesSvc.GetRecentOrders();
+        StateHasChanged();
+    }
+
     private static readonly Dictionary<string,int> StatusOrder = new(StringComparer.OrdinalIgnoreCase)
     {
         {"recibido",0}, {"en_proceso",1}, {"atendido",2}, {"rechazado",3}, {"cancelado",4}
     };
 
-    private static readonly HashSet<string> EstadosActivos   = new(StringComparer.OrdinalIgnoreCase) { "recibido", "en_proceso" };
-    private static readonly HashSet<string> EstadosInactivos = new(StringComparer.OrdinalIgnoreCase) { "atendido", "rechazado", "cancelado" };
-
     private IEnumerable<Order> Filtered => _orders.Where(o =>
+        o.Channel != "Presencial" &&
+        (o.Status is "atendido" or "rechazado" or "cancelado") &&
         (string.IsNullOrEmpty(_search) ||
          o.Customer.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
          o.Id.Contains(_search, StringComparison.OrdinalIgnoreCase)) &&
         (string.IsNullOrEmpty(_statusFilter) ||
          o.Status.Equals(_statusFilter, StringComparison.OrdinalIgnoreCase)) &&
-        (_actividadFilter switch {
-            "activo"   => EstadosActivos.Contains(o.Status),
-            "inactivo" => EstadosInactivos.Contains(o.Status),
-            _          => true
-        }) &&
         (!_fechaDesde.HasValue || o.Date.Date >= _fechaDesde.Value.Date) &&
-        (!_fechaHasta.HasValue || o.Date.Date <= _fechaHasta.Value.Date) &&
-        (!_montoMin.HasValue || o.Total >= _montoMin.Value) &&
-        (!_montoMax.HasValue || o.Total <= _montoMax.Value)
+        (!_fechaHasta.HasValue || o.Date.Date <= _fechaHasta.Value.Date)
     )
     .OrderBy(o => StatusOrder.TryGetValue(o.Status, out var r) ? r : 99)
-    .ThenByDescending(o => o.Date);
+    .ThenByDescending(o => o.Date)
+    .GroupBy(o => o.Id).Select(g => g.First());
 
     private bool TieneFiltrosaActivos =>
-        !string.IsNullOrEmpty(_search) || _fechaDesde.HasValue || _fechaHasta.HasValue ||
-        _montoMin.HasValue || _montoMax.HasValue;
+        !string.IsNullOrEmpty(_search) || _fechaDesde.HasValue || _fechaHasta.HasValue;
 
     private int TotalPages => Math.Max(1, (int)Math.Ceiling(Filtered.Count() / (double)_pageSize));
 
@@ -376,82 +526,22 @@
     private void GoToPage(int page) { if (page >= 1 && page <= TotalPages) _currentPage = page; }
 
     private void OnFechaChange()  { _currentPage = 1; }
-    private void OnMontoChange()  { _currentPage = 1; }
 
     private void SetHoy()    { _fechaDesde = DateTime.Today; _fechaHasta = DateTime.Today; _currentPage = 1; }
     private void Set7Dias()  { _fechaDesde = DateTime.Today.AddDays(-7); _fechaHasta = DateTime.Today; _currentPage = 1; }
     private void Set30Dias() { _fechaDesde = DateTime.Today.AddDays(-30); _fechaHasta = DateTime.Today; _currentPage = 1; }
     private void LimpiarFechas() { _fechaDesde = null; _fechaHasta = null; _currentPage = 1; }
 
-    private static readonly HashSet<string> EstadosTerminales =
-        new(StringComparer.OrdinalIgnoreCase) { "atendido", "rechazado", "cancelado" };
-
-    private static bool EsTerminal(string status) => EstadosTerminales.Contains(status);
-
-    private void AskStatusChange(string id, string newStatus)
+    private void VerDetalle(Order order)
     {
-        _pendingEditId     = id;
-        _pendingEditStatus = newStatus;
-        _pendingConfirmar  = false;
-        _showEditConfirm   = true;
+        _detailOrder = order;
+        _showDetailModal = true;
     }
 
-    private void AskConfirmar(string id)
+    private void CerrarDetalle()
     {
-        _pendingEditId    = id;
-        _pendingEditStatus = "atendido";
-        _pendingConfirmar  = true;
-        _showEditConfirm   = true;
-    }
-
-    private void CancelEdit()
-    {
-        _showEditConfirm   = false;
-        _pendingEditId     = null;
-        _pendingEditStatus = null;
-        _pendingConfirmar  = false;
-    }
-
-    private async Task ConfirmEdit()
-    {
-        if (_pendingEditId == null || _pendingEditStatus == null) return;
-
-        bool ok = true;
-        string errMsg = "";
-
-        if (_pendingConfirmar)
-        {
-            // Flujo confirmar: llama al endpoint especializado que genera la Venta
-            var (success, error) = await SalesSvc.ConfirmOrderAsync(_pendingEditId);
-            ok = success;
-            errMsg = error;
-        }
-        else
-        {
-            await SalesSvc.UpdateOrderStatusAsync(_pendingEditId, _pendingEditStatus);
-        }
-
-        _showEditConfirm   = false;
-        _pendingEditId     = null;
-        _pendingEditStatus = null;
-        _pendingConfirmar  = false;
-
-        if (ok)
-        {
-            _showEditedToast = true;
-            StateHasChanged();
-            await Task.Delay(3000);
-            _showEditedToast = false;
-        }
-        else
-        {
-            _errorToastMsg  = errMsg;
-            _showErrorToast = true;
-            StateHasChanged();
-            await Task.Delay(4000);
-            _showErrorToast = false;
-        }
-        StateHasChanged();
+        _showDetailModal = false;
+        _detailOrder = null;
     }
 
     private string GetStatusClass(string status) => status.ToLower() switch
@@ -472,5 +562,15 @@
         "rechazado"  => "Rechazado",
         "cancelado"  => "Cancelado",
         _ => status
+    };
+
+    private string GetStatusBadgeStyle(string s) => s.ToLower() switch
+    {
+        "recibido"   => "background:#fff3e0;color:#b25e00;font-weight:600;",
+        "en_proceso" => "background:#e3f2fd;color:#0d6efd;font-weight:600;",
+        "atendido"   => "background:#e8f5e9;color:#198754;font-weight:600;",
+        "rechazado"  => "background:#ffebee;color:#c62828;font-weight:600;",
+        "cancelado"  => "background:#ffebee;color:#c62828;font-weight:600;",
+        _            => "background:#f5f5f5;color:#555;font-weight:600;"
     };
 }

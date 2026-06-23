@@ -16,24 +16,24 @@ INSERT INTO metodo_pago(NOMBRE, DESCRIPCION) VALUES
 ('IZIPAY', 'Pago con tarjeta vía pasarela externa Izipay (modo pruebas)');
 
 -- Categorías raíz
-INSERT INTO categoria(NOMBRE, DESCRIPCION) VALUES
-('Abarrotes', 'Productos de primera necesidad'),
-('Bebidas', 'Bebidas con y sin alcohol'),
-('Limpieza', 'Productos de limpieza del hogar'),
-('Cuidado Personal', 'Productos de higiene y cuidado personal'),
-('Lácteos', 'Leche, yogurt, quesos'),
-('Snacks', 'Botanas, galletas, golosinas');
+INSERT INTO categoria(NOMBRE, DESCRIPCION, ICONO) VALUES
+('Abarrotes', 'Productos de primera necesidad', 'fa-bag-shopping'),
+('Bebidas', 'Bebidas con y sin alcohol', 'fa-wine-glass'),
+('Limpieza', 'Productos de limpieza del hogar', 'fa-spray-can'),
+('Cuidado Personal', 'Productos de higiene y cuidado personal', 'fa-hand-sparkles'),
+('Lácteos', 'Leche, yogurt, quesos', 'fa-cheese'),
+('Snacks', 'Botanas, galletas, golosinas', 'fa-cookie-bite');
 
 -- Subcategorías
-INSERT INTO categoria(NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID) VALUES
-('Arroz y Menestras', 'Arroz, lentejas, frejoles', 1),
-('Aceites', 'Aceites vegetales y de oliva', 1),
-('Fideos', 'Pastas y fideos', 1),
-('Gaseosas', 'Bebidas gaseosas', 2),
-('Jugos', 'Jugos y néctares', 2),
-('Agua', 'Agua mineral y de mesa', 2),
-('Detergentes', 'Detergentes y suavizantes', 3),
-('Desinfectantes', 'Limpiadores y desinfectantes', 3);
+INSERT INTO categoria(NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ICONO) VALUES
+('Arroz y Menestras', 'Arroz, lentejas, frejoles', 1, 'fa-wheat-awn'),
+('Aceites', 'Aceites vegetales y de oliva', 1, 'fa-bottle-droplet'),
+('Fideos', 'Pastas y fideos', 1, 'fa-bowl-food'),
+('Gaseosas', 'Bebidas gaseosas', 2, 'fa-wine-bottle'),
+('Jugos', 'Jugos y néctares', 2, 'fa-lemon'),
+('Agua', 'Agua mineral y de mesa', 2, 'fa-droplet'),
+('Detergentes', 'Detergentes y suavizantes', 3, 'fa-soap'),
+('Desinfectantes', 'Limpiadores y desinfectantes', 3, 'fa-broom');
 
 -- =============================================================
 -- DATOS DE PRUEBA
@@ -194,9 +194,9 @@ VALUES(2, 3, 2, 9.90,  19.80),
       (2, 7, 2, 2.00,   4.00),
       (2, 2, 1, 4.50,   4.50);  -- aprox 32.50
 
--- Pedido 3: Pedro – delivery – atendido (ya entregado)
+-- Pedido 3: Pedro – delivery – recibido
 INSERT INTO pedido(CLIENTE_ID, FECHA_HORA, MONTO_TOTAL, ESTADO_PEDIDO, DIRECCION_ENTREGA, MODALIDAD_ENTREGA)
-VALUES(6, NOW() - INTERVAL 1 DAY, 53.90, 'ATENDIDO', 'Calle Lima 220, Miraflores', 'DELIVERY');
+VALUES(6, NOW() - INTERVAL 1 DAY, 53.90, 'RECIBIDO', 'Calle Lima 220, Miraflores', 'DELIVERY');
 INSERT INTO detalle_pedido(PEDIDO_ID, PRODUCTO_ID, CANTIDAD, PRECIO_UNITARIO, SUBTOTAL)
 VALUES(3, 8, 2, 18.90, 37.80),
       (3, 4, 4, 3.80,  15.20);  -- aprox 53.00
@@ -218,7 +218,7 @@ VALUES(5, 8, 1, 18.90, 18.90);
 -- ================================================================
 --    DEVOLUCIONES DE PRUEBA
 -- ================================================================
-INSERT INTO devolucion(PRODUCTO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION, CANTIDAD, MOTIVO)
+INSERT INTO devolucion(PRODUCTO_ID, USUARIO_REGISTRA_ID, ESTADO_DEVOLUCION, CANTIDAD, MOTIVO)
 VALUES
 (1, 2, 'APROBADO',  2, 'Producto vencido, empaque roto'),
 (3, 3, 'PENDIENTE', 1, 'Botella abollada, posible contaminación'),
@@ -278,33 +278,33 @@ INSERT INTO notificacion(TITULO, MENSAJE, TIPO, LEIDA, ID_DESTINATARIO) VALUES
 -- ================================================================
 
 -- Devolución 1: Vencido - Arroz (2)
-CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 2, 'PENDIENTE', 2, 'Vencido', NOW());
+CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 2, 'PENDIENTE', 2, 'Vencido', NOW(), 'Producto vencido hace 3 días');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev1, 1, 2);
 
 -- Devolución 2: Dañado - Aceite (1)
-CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 'PENDIENTE', 1, 'Dañado', NOW());
+CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 'PENDIENTE', 1, 'Dañado', NOW(), NULL);
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev2, 3, 1);
 
 -- Devolución 3: Otro - Coca-Cola (3)
-CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 2, 'PENDIENTE', 3, 'Otro', NOW());
+CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 2, 'PENDIENTE', 3, 'Otro', NOW(), NULL);
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev3, 5, 3);
 
 -- Devolución 4: Dañado - Ariel (1)
-CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 2, 'RECHAZADO', 1, 'Dañado', NOW());
+CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 2, 'RECHAZADO', 1, 'Dañado', NOW(), 'Envase roto, no apto para venta');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev4, 8, 1);
 
 -- Devolución 5: Vencido - Leche (4)
-CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 2, 'APROBADO', 4, 'Vencido', NOW());
+CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 2, 'APROBADO', 4, 'Vencido', NOW(), NULL);
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev5, 11, 4);
 
 -- Devolución 6: Dañado - Múltiples (Arroz 1, Coca-Cola 2, Agua 1)
-CALL INSERTAR_DEVOLUCION(@dev6, 1, 4, 2, 'PENDIENTE', 4, 'Dañado', NOW());
+CALL INSERTAR_DEVOLUCION(@dev6, 1, 4, 2, 'PENDIENTE', 4, 'Dañado', NOW(), 'Producto llegó mojado');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 1, 1);
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 5, 2);
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 7, 1);
 
 -- Devolución 7: Otro - Múltiples (Lentejas 1, Fideos 2)
-CALL INSERTAR_DEVOLUCION(@dev7, 2, 4, 3, 'PENDIENTE', 3, 'Otro', NOW());
+CALL INSERTAR_DEVOLUCION(@dev7, 2, 4, 3, 'PENDIENTE', 3, 'Otro', NOW(), NULL);
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev7, 2, 1);
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev7, 4, 2);
 

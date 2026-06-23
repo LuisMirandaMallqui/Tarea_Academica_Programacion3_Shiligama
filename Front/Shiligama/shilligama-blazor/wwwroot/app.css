@@ -809,30 +809,3 @@ body {
     color: var(--muted-foreground) !important;
 }
 
-.admin-sidebar-link {
-    color: #EAF7EE !important;
-    text-decoration: none !important;
-}
-
-.admin-sidebar-link:hover {
-    color: #FFFFFF !important;
-    background-color: rgba(255, 255, 255, 0.10) !important;
-}
-
-.admin-sidebar-link.active {
-    color: #FFFFFF !important;
-    background-color: rgba(255, 255, 255, 0.18) !important;
-}
-.admin-search-icon {
-    width: 18px !important;
-    height: 18px !important;
-    left: 12px !important;
-    color: #6b7280 !important;
-    z-index: 5 !important;
-    pointer-events: none;
-}
-.admin-notification-icon {
-    width: 22px !important;
-    height: 22px !important;
-    color: #374151 !important;
-}

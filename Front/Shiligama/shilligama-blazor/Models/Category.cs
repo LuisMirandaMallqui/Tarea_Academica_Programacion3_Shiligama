@@ -21,6 +21,12 @@ public class Category
     [JsonPropertyName("descripcion")]
     public string? Descripcion { get; set; }
 
+    [JsonPropertyName("icono")]
+    public string Icono { get; set; } = "fa-folder";
+
     [JsonPropertyName("estado")]
     public bool Estado { get; set; } = true;
+
+    [JsonPropertyName("categoriaPadre")]
+    public Category? CategoriaPadre { get; set; }
 }

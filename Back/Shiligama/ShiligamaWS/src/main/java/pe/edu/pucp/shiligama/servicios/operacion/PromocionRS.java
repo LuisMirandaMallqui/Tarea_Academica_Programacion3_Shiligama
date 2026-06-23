@@ -7,6 +7,7 @@ import pe.edu.pucp.model.promocion.Promocion;
 import pe.edu.pucp.operacion.bo.PromocionBO;
 import pe.edu.pucp.operacion.impl.PromocionBoImpl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Path("/promociones")
@@ -34,7 +35,21 @@ public class PromocionRS {
     @Path("/con-productos")
     public Response listarConProductos() {
         try {
-            List<Promocion> promociones = promocionBo.listarTodasConProductos();
+            List<Promocion> promociones = promocionBo.listarTodos();
+            for (Promocion p : promociones) {
+                try {
+                    List<Integer> ids = promocionBo.listarProductosPorPromocion(p.getIdPromocion());
+                    List<pe.edu.pucp.model.producto.Producto> prods = new ArrayList<>();
+                    for (Integer id : ids) {
+                        pe.edu.pucp.model.producto.Producto prod = new pe.edu.pucp.model.producto.Producto();
+                        prod.setIdProducto(id);
+                        prods.add(prod);
+                    }
+                    p.setProductos(prods);
+                } catch (Exception e) {
+                    p.setProductos(new ArrayList<>());
+                }
+            }
             return Response.ok(promociones).build();
         } catch (Exception ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

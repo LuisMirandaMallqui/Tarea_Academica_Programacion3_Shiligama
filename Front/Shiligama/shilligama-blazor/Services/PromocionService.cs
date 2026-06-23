@@ -48,9 +48,17 @@ public class PromocionService
             if (lista != null)
                 _promociones.AddRange(lista.Select(p => p.ToPromocion()));
         }
-        catch (Exception ex)
+        catch
         {
-            Console.Error.WriteLine(ex.ToString());
+            try
+            {
+                var lista = await _http.GetFromJsonAsync<List<PromocionConProductosApi>>(
+                    "promociones", _json);
+                _promociones.Clear();
+                if (lista != null)
+                    _promociones.AddRange(lista.Select(p => p.ToPromocion()));
+            }
+            catch { }
         }
         _cargado = true;
     }

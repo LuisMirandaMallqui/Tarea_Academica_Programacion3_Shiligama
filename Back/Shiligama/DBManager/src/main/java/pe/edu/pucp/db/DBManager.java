@@ -133,9 +133,8 @@ public class DBManager {
     public int ejecutarProcedimientoTransaccion(
             String nombreProcedimiento,
             Map<Integer, Object> parametrosEntrada,
-            Map<Integer, Object> parametrosSalida) {
+            Map<Integer, Object> parametrosSalida) throws SQLException {
 
-        int resultado = 0;
         try (
                 CallableStatement cst = formarLlamadaProcedimiento(
                         conTransaccion, nombreProcedimiento, parametrosEntrada, parametrosSalida)) {
@@ -145,14 +144,12 @@ public class DBManager {
             if (parametrosSalida != null) {
                 registrarParametrosSalida(cst, parametrosSalida);
             }
-            resultado = cst.executeUpdate();
+            cst.executeUpdate();
             if (parametrosSalida != null) {
                 obtenerValoresSalida(cst, parametrosSalida);
             }
-        } catch (SQLException ex) {
-            System.out.println("Error ejecutando procedimiento en transaccion: " + ex.getMessage());
         }
-        return resultado;
+        return 1;
     }
 
     // -------------------------------------------------------------------------

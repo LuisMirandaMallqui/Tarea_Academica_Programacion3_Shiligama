@@ -21,6 +21,9 @@ public class Categoria {
     @XmlElement(name = "categoriaPadre")
     @JsonbProperty("categoriaPadre")
     private Categoria categoriaPadre;
+    @XmlElement(name = "icono")
+    @JsonbProperty("icono")
+    private String icono;
     @XmlElement(name = "estado")
     @JsonbProperty("estado")
     private boolean estado;
@@ -28,11 +31,12 @@ public class Categoria {
     public Categoria() {
     }
 
-    public Categoria(int idCategoria, String nombre, String descripcion, Categoria categoriaPadre, boolean estado) {
+    public Categoria(int idCategoria, String nombre, String descripcion, Categoria categoriaPadre, String icono, boolean estado) {
         this.idCategoria = idCategoria;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.categoriaPadre = categoriaPadre;
+        this.icono = icono;
         this.estado = estado;
     }
 
@@ -66,6 +70,14 @@ public class Categoria {
 
     public void setCategoriaPadre(Categoria categoriaPadre) {
         this.categoriaPadre = categoriaPadre;
+    }
+
+    public String getIcono() {
+        return icono;
+    }
+
+    public void setIcono(String icono) {
+        this.icono = icono;
     }
 
     public boolean isEstado() {

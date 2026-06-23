@@ -84,8 +84,8 @@ public class DevolucionBoImpl implements DevolucionBO {
                 throw new Exception("La cantidad debe ser mayor que cero.");
             }
         }
-        if (devolucion.getIdTrabajador() <= 0) {
-            throw new Exception("El ID del trabajador es obligatorio.");
+        if (devolucion.getIdUsuarioRegistra() <= 0) {
+            throw new Exception("El ID del usuario que registra es obligatorio.");
         }
         if (devolucion.getMotivo() == null || devolucion.getMotivo().trim().isEmpty()) {
             throw new Exception("El motivo de la devolucion es obligatorio.");

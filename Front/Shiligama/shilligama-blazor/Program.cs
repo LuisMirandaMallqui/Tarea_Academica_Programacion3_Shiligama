@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.SignalR;
 using shilligama_blazor.Components;
 using shilligama_blazor.Services;
 using shilligama_blazor.Shared;
@@ -7,7 +8,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 // ── Razor / Blazor Server ────────────────────────────────────────────────────
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options =>
+    {
+        // Evita que el circuito se pause durante uploads largos de imágenes.
+        options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(5);
+        options.JSInteropDefaultCallTimeout = TimeSpan.FromMinutes(2);
+    })
+    .AddHubOptions(options =>
+    {
+        // Límite de mensaje SignalR: 5 MB (necesario para InputFile subir imágenes).
+        options.MaximumReceiveMessageSize = 5L * 1024 * 1024;
+    });
 
 // ── HttpClient apuntando al API REST del back ────────────────────────────────
 // Base URL configurable en appsettings.json (clave "ApiBaseUrl").
@@ -44,6 +55,7 @@ builder.Services.AddScoped<AddressService>();
 // Los demás son Singleton: comparten caché en memoria entre peticiones
 // (correcto para un sistema single-tenant de minimarket). Si fueran Scoped, cada usuario tendría su propia instancia sin compartir datos cacheados (ej. lista de productos)
 builder.Services.AddSingleton<ProductService>();
+builder.Services.AddSingleton<CategoryService>();
 builder.Services.AddSingleton<SalesService>();
 builder.Services.AddSingleton<ReturnsService>();
 builder.Services.AddSingleton<StaffService>();

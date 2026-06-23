@@ -115,12 +115,12 @@
                             </td>
                             <td class="px-4 py-3 text-end">
                                 <div class="d-flex align-items-center justify-content-end gap-2">
-                                    <button @onclick="@(() => OpenEdit(s))" class="btn btn-sm btn-light text-muted" style="border-radius:var(--radius);" title="Editar">
+                                    <button @onclick="@(() => OpenEdit(s))" class="btn btn-sm btn-light text-muted @(esMiPerfil ? "opacity-50" : "")" style="border-radius:var(--radius);" title="@(esMiPerfil ? "No puedes editar tu propio perfil aquí" : "Editar")" disabled="@esMiPerfil">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
                                     <button @onclick="@(() => AskToggleEstado(s))"
-                                            class="btn btn-sm btn-light @(s.Estado == "activo" ? "text-warning" : "text-success")"
-                                            style="border-radius:var(--radius);" title="@(s.Estado == "activo" ? "Suspender" : "Activar")">
+                                            class="btn btn-sm btn-light @(esMiPerfil ? "opacity-50" : (s.Estado == "activo" ? "text-warning" : "text-success"))"
+                                            style="border-radius:var(--radius);" title="@(esMiPerfil ? "No puedes desactivar tu propio perfil" : (s.Estado == "activo" ? "Suspender" : "Activar"))" disabled="@esMiPerfil">
                                         <i class="fa-solid @(s.Estado == "activo" ? "fa-eye-slash" : "fa-eye")"></i>
                                     </button>
                                 </div>
@@ -138,8 +138,8 @@
 <!-- ── Modal: Confirmar toggle estado ── -->
 @if (_showToggleConfirm)
 {
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1060;">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1060;" @onclick="@(() => _showToggleConfirm = false)">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;" @onclick:stopPropagation>
             <div class="modal-content bg-card border-border">
                 <div class="modal-body p-4 text-center">
                     <div class="mb-3" style="font-size:2.5rem;">@(_toggleStaff?.Estado == "activo" ? "🔒" : "🔓")</div>
@@ -160,8 +160,8 @@
 <!-- ── Modal: Confirmar guardar ── -->
 @if (_showSaveConfirm)
 {
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);z-index:1060;">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);z-index:1060;" @onclick="@(() => _showSaveConfirm = false)">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;" @onclick:stopPropagation>
             <div class="modal-content bg-card border-border">
                 <div class="modal-body p-4 text-center">
                     <div class="mb-3" style="font-size:2.5rem;">💾</div>
@@ -180,8 +180,8 @@
 <!-- ── Modal: Salir sin guardar ── -->
 @if (_showUnsavedConfirm)
 {
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;" @onclick="@(() => _showUnsavedConfirm = false)">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;" @onclick:stopPropagation>
             <div class="modal-content bg-card border-border">
                 <div class="modal-body p-4 text-center">
                     <div class="mb-3" style="font-size:2.5rem;">⚠️</div>
@@ -200,7 +200,7 @@
 <!-- ── Modal: Crear / Editar miembro ── -->
 @if (_showModal)
 {
-    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" >
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="TryCloseModal">
         <div class="modal-dialog modal-dialog-centered modal-lg" @onclick:stopPropagation>
             <div class="modal-content bg-card border-border">
                 <div class="modal-header border-border">
@@ -482,7 +482,7 @@
     {
         _showSaveConfirm = false;
         if (_isEditing) await StaffSvc.UpdateStaffAsync(_form);
-        else            StaffSvc.AddStaff(_form);
+        else            await StaffSvc.AddStaffAsync(_form);
         _showModal = false; _formDirty = false;
         _staff = StaffSvc.GetStaff();
         _showSavedToast = true; StateHasChanged();

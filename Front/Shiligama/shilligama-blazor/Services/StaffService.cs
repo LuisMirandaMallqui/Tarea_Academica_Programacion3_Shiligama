@@ -89,21 +89,22 @@ public class StaffService
 
     public async Task<bool> AddStaffAsync(Staff member)
     {
-        // Solo creamos trabajadores desde el panel (los admins se crean por DB)
         var dto = new
         {
-            nombres    = member.Nombre.Split(' ', 2)[0],
-            apellidos  = member.Nombre.Contains(' ') ? member.Nombre.Split(' ', 2)[1] : string.Empty,
-            dni        = member.Dni,
-            correo     = member.Correo,
-            contrasena = "Shiligama2025!",  // contraseña temporal
-            telefono   = member.Telefono,
-            cargo      = member.Rol == "administrador" ? "Administrador" : "Cajero"
+            nombres      = member.Nombre.Split(' ', 2)[0],
+            apellidos    = member.Nombre.Contains(' ') ? member.Nombre.Split(' ', 2)[1] : string.Empty,
+            dni          = member.Dni,
+            correo       = member.Correo,
+            contrasena   = "Shiligama2025!",
+            telefono     = member.Telefono,
+            cargo        = member.Rol == "administrador" ? "Administrador" : "Cajero",
+            fechaIngreso = DateTime.Now.ToString("yyyy-MM-dd")
         };
 
         try
         {
-            var resp = await _http.PostAsJsonAsync("trabajadores", dto);
+            string endpoint = member.Rol == "administrador" ? "administradores" : "trabajadores";
+            var resp = await _http.PostAsJsonAsync(endpoint, dto);
             if (resp.IsSuccessStatusCode)
             {
                 int idGenerado = await resp.Content.ReadFromJsonAsync<int>();
@@ -154,7 +155,8 @@ public class StaffService
 
         try
         {
-            var resp = await _http.PutAsJsonAsync("trabajadores", dto);
+            string endpoint = member.Rol == "administrador" ? "administradores" : "trabajadores";
+            var resp = await _http.PutAsJsonAsync(endpoint, dto);
             if (resp.IsSuccessStatusCode)
             {
                 UpdateStaff(member);

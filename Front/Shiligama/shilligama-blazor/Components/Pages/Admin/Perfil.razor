@@ -1,6 +1,7 @@
 @page "/admin/perfil"
 @layout AdminLayout
 @inject AuthService Auth
+@inject IJSRuntime JS
 
 <PageTitle>Mi Perfil – Shiligama Admin</PageTitle>
 
@@ -11,15 +12,6 @@
         <p class="text-muted-foreground small mt-1 mb-0">Administra tus datos de contacto y credenciales de acceso</p>
     </div>
 
-    @if (_success)
-    {
-        <div class="alert alert-success alert-dismissible fade show p-3 d-flex align-items-center gap-2" style="border-radius: var(--radius);" role="alert">
-            <Icons Name="Check" Class="w-5 h-5 text-success" />
-            <div>Tus datos de perfil han sido actualizados con éxito.</div>
-            <button type="button" class="btn-close" @onclick="@(() => _success = false)"></button>
-        </div>
-    }
-
     <div class="row g-4">
         <!-- Main profile details -->
         <div class="col-lg-8">
@@ -29,7 +21,14 @@
                     
                     <div>
                         <label class="form-label small fw-medium text-foreground">Nombre completo</label>
-                        <input type="text" @bind="_name" required class="form-control text-foreground" />
+                        <input type="text" @bind="_name" @bind:event="oninput" @bind:after="ValidateName"
+                               maxlength="100" required class="form-control text-foreground"
+                               placeholder="Ingresa tu nombre completo"
+                               style="@(_nameError != null ? "border-color:#dc3545;" : "")" />
+                        @if (_nameError != null)
+                        {
+                            <div class="text-danger small mt-1"><i class="fas fa-exclamation-triangle me-1"></i>@_nameError</div>
+                        }
                     </div>
 
                     <div>
@@ -48,12 +47,22 @@
                     
                     <div>
                         <label class="form-label small fw-medium text-foreground">Nueva Contraseña</label>
-                        <input type="password" @bind="_password" class="form-control text-foreground" placeholder="Mínimo 8 caracteres" />
+                        <input type="password" @bind="_password" class="form-control text-foreground"
+                               placeholder="Mínimo 8 caracteres" style="height:44px;border-radius:10px;" />
                     </div>
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Confirmar Contraseña</label>
+                        <input type="password" @bind="_confirmPassword" class="form-control text-foreground"
+                               placeholder="Repite tu contraseña" style="height:44px;border-radius:10px;" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_passwordError))
+                    {
+                        <div class="text-danger small"><i class="fas fa-exclamation-triangle me-1"></i> @_passwordError</div>
+                    }
                 </div>
 
                 <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-primary px-4 py-2.5 fw-semibold" style="border-radius: var(--radius);">
+                    <button type="button" @onclick="SaveProfile" class="btn btn-primary px-4 py-2.5 fw-semibold" style="border-radius: var(--radius);">
                         Guardar Perfil
                     </button>
                 </div>
@@ -71,19 +80,64 @@
                     <span class="badge bg-primary px-2.5 py-1.5 text-uppercase tracking-wider small fw-semibold" style="border-radius: var(--radius);">Administrador</span>
                 </div>
                 <hr class="border-color-default my-1" />
-                <p class="text-xs text-muted-foreground m-0">Código ID: STF-001</p>
-                <p class="text-xs text-muted-foreground m-0">Fecha registro: Hace 2 años</p>
+                <p class="text-xs text-muted-foreground m-0">Correo: @_email</p>
             </div>
         </div>
     </div>
 </div>
+
+@* ─── Modal Confirmación ────────────────────────────────────────────── *@
+@if (_showConfirm)
+{
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.55);backdrop-filter:blur(3px);" @onclick="@(() => _showConfirm = false)">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:420px;" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border" style="border-radius:1.25rem;overflow:hidden;">
+                <div class="modal-body p-4 text-center d-flex flex-column align-items-center gap-3">
+                    <div style="width:56px;height:56px;border-radius:50%;background:color-mix(in srgb,var(--primary) 15%,transparent);display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-question" style="font-size:1.4rem;color:var(--primary);"></i>
+                    </div>
+                    <h5 class="fw-bold text-foreground mb-0">¿Guardar cambios?</h5>
+                    <p class="text-muted-foreground small mb-0">Se actualizarán tus datos de perfil.</p>
+                </div>
+                <div class="modal-footer border-top border-color-default p-3 d-flex justify-content-center gap-2">
+                    <button class="btn btn-outline-secondary fw-semibold" style="border-radius:8px;min-width:90px;" @onclick="@(() => _showConfirm = false)">Cancelar</button>
+                    <button class="btn btn-primary fw-semibold" style="border-radius:8px;min-width:110px;" @onclick="ConfirmSave">Sí, guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ─── Toast Emergente ────────────────────────────────────────────── *@
+@if (_showToast)
+{
+    <div class="position-fixed d-flex align-items-center gap-2 p-3 shadow-lg"
+         style="bottom:24px;right:24px;z-index:9999;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:var(--radius);animation:slideIn 0.3s ease;">
+        <i class="fas fa-check-circle" style="color:#2e7d32;font-size:1.2rem;"></i>
+        <span class="text-foreground fw-semibold small">Cambios guardados exitosamente</span>
+        <button class="btn btn-sm p-0 ms-2" @onclick="@(() => _showToast = false)">
+            <i class="fas fa-times text-muted" style="font-size:0.8rem;"></i>
+        </button>
+    </div>
+}
+
+<style>
+    @@keyframes slideIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+</style>
 
 @code {
     private string _name = "";
     private string _email = "";
     private string _phone = "951 236 487";
     private string _password = "";
-    private bool _success = false;
+    private string _confirmPassword = "";
+    private string? _nameError;
+    private string? _passwordError;
+    private bool _showConfirm = false;
+    private bool _showToast = false;
 
     protected override void OnInitialized()
     {
@@ -91,11 +145,61 @@
         _email = Auth.CurrentUser?.Email ?? "test1234@admin.com";
     }
 
-    private async Task SaveProfile()
+    private void ValidateName()
     {
-        _success = true;
-        await Task.Delay(2000);
-        _success = false;
+        _nameError = null;
+        if (string.IsNullOrWhiteSpace(_name))
+            _nameError = "El nombre es obligatorio.";
+        else if (_name.Length > 100)
+            _nameError = "Máximo 100 caracteres.";
+        else if (_name.Any(char.IsDigit))
+            _nameError = "El nombre no debe contener números.";
+    }
+
+    private void SaveProfile()
+    {
+        _nameError = null;
+        _passwordError = null;
+
+        ValidateName();
+        if (_nameError != null) return;
+
+        if (!string.IsNullOrEmpty(_password) || !string.IsNullOrEmpty(_confirmPassword))
+        {
+            if (_password.Length < 8)
+            {
+                _passwordError = "La contraseña debe tener al menos 8 caracteres.";
+                return;
+            }
+            if (_password != _confirmPassword)
+            {
+                _passwordError = "Las contraseñas no coinciden.";
+                return;
+            }
+        }
+
+        _showConfirm = true;
+    }
+
+    private async Task ConfirmSave()
+    {
+        _showConfirm = false;
+
+        // Recargar nombre desde el campo
+        _name = _name.Trim();
+        _email = _email.Trim();
+
+        // Resetear campos de contraseña
+        _password = "";
+        _confirmPassword = "";
+        _nameError = null;
+        _passwordError = null;
+
+        // Mostrar toast
+        _showToast = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        _showToast = false;
         StateHasChanged();
     }
 }

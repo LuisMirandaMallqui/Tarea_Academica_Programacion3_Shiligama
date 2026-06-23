@@ -312,11 +312,12 @@ CREATE PROCEDURE INSERTAR_CATEGORIA(
     OUT _categoria_id INT,
     IN  _nombre             VARCHAR(100),
     IN  _descripcion        VARCHAR(255),
-    IN  _categoria_padre_id INT
+    IN  _categoria_padre_id INT,
+    IN  _icono              VARCHAR(50)
 )
 BEGIN
-    INSERT INTO categoria(NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID)
-    VALUES(_nombre, _descripcion, _categoria_padre_id);
+    INSERT INTO categoria(NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ICONO)
+    VALUES(_nombre, _descripcion, _categoria_padre_id, _icono);
     SET _categoria_id = LAST_INSERT_ID();
 END$$
 
@@ -325,13 +326,15 @@ CREATE PROCEDURE MODIFICAR_CATEGORIA(
     IN _categoria_id        INT,
     IN _nombre              VARCHAR(100),
     IN _descripcion         VARCHAR(255),
-    IN _categoria_padre_id  INT
+    IN _categoria_padre_id  INT,
+    IN _icono               VARCHAR(50)
 )
 BEGIN
     UPDATE categoria SET
         NOMBRE             = _nombre,
         DESCRIPCION        = _descripcion,
-        CATEGORIA_PADRE_ID = _categoria_padre_id
+        CATEGORIA_PADRE_ID = _categoria_padre_id,
+        ICONO              = _icono
     WHERE CATEGORIA_ID = _categoria_id;
 END$$
 
@@ -346,7 +349,7 @@ END$$
 DROP PROCEDURE IF EXISTS LISTAR_CATEGORIAS$$
 CREATE PROCEDURE LISTAR_CATEGORIAS()
 BEGIN
-    SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO
+    SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ICONO, ACTIVO
     FROM categoria WHERE ACTIVO = 1;
 END$$
 
@@ -356,7 +359,7 @@ CREATE PROCEDURE BUSCAR_CATEGORIA_X_ID(
     IN _categoria_id INT
 )
 BEGIN
-    SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ACTIVO
+    SELECT CATEGORIA_ID, NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ICONO, ACTIVO
     FROM categoria
     WHERE CATEGORIA_ID = _categoria_id;
 END$$
@@ -877,10 +880,13 @@ END$$
 DROP PROCEDURE IF EXISTS MODIFICAR_ESTADO_PEDIDO$$
 CREATE PROCEDURE MODIFICAR_ESTADO_PEDIDO(
     IN _pedido_id     INT,
-    IN _estado_pedido VARCHAR(20)
+    IN _estado_pedido VARCHAR(20),
+    IN _observaciones VARCHAR(500)
 )
 BEGIN
-    UPDATE pedido SET ESTADO_PEDIDO = _estado_pedido
+    UPDATE pedido
+    SET ESTADO_PEDIDO = _estado_pedido,
+        OBSERVACIONES  = IFNULL(NULLIF(_observaciones, ''), OBSERVACIONES)
     WHERE PEDIDO_ID = _pedido_id;
 END$$
 
@@ -904,6 +910,7 @@ BEGIN
            p.CLIENTE_ID,
            u.NOMBRES    AS CLIENTE_NOMBRES,
            u.APELLIDOS  AS CLIENTE_APELLIDOS,
+           p.VENTA_ID,
            p.FECHA_HORA,
            p.MONTO_TOTAL,
            p.ESTADO_PEDIDO,
@@ -923,6 +930,7 @@ BEGIN
            p.CLIENTE_ID,
            u.NOMBRES    AS CLIENTE_NOMBRES,
            u.APELLIDOS  AS CLIENTE_APELLIDOS,
+           p.VENTA_ID,
            p.FECHA_HORA,
            p.MONTO_TOTAL,
            p.ESTADO_PEDIDO,
@@ -1159,7 +1167,8 @@ CREATE PROCEDURE MODIFICAR_PROMOCION(
     IN _valor_descuento   DECIMAL(10,2),
     IN _fecha_inicio      DATE,
     IN _fecha_fin         DATE,
-    IN _condiciones       VARCHAR(500)
+    IN _condiciones       VARCHAR(500),
+    IN _activo            TINYINT
 )
 BEGIN
     UPDATE promocion SET
@@ -1169,7 +1178,8 @@ BEGIN
         VALOR_DESCUENTO = _valor_descuento,
         FECHA_INICIO    = _fecha_inicio,
         FECHA_FIN       = _fecha_fin,
-        CONDICIONES     = _condiciones
+        CONDICIONES     = _condiciones,
+        ACTIVO          = _activo
     WHERE PROMOCION_ID = _promocion_id;
 END$$
 
@@ -1218,7 +1228,6 @@ BEGIN
         CONDICIONES     AS condiciones,
         ACTIVO          AS activo
     FROM promocion
-    WHERE ACTIVO = 1
     ORDER BY FECHA_INICIO DESC;
 END$$
 
@@ -1238,6 +1247,27 @@ BEGIN
         ACTIVO          AS activo
     FROM promocion
     WHERE ACTIVO = 1 AND CURDATE() BETWEEN FECHA_INICIO AND FECHA_FIN;
+END$$
+
+-- DAO: PromocionDaoImpl.listarTodasConProductos → "LISTAR_PROMOCIONES_CON_PRODUCTOS"
+-- LEFT JOIN para traer todas las promos con sus productos asociados en UNA sola query.
+DROP PROCEDURE IF EXISTS LISTAR_PROMOCIONES_CON_PRODUCTOS$$
+CREATE PROCEDURE LISTAR_PROMOCIONES_CON_PRODUCTOS()
+BEGIN
+    SELECT
+        p.PROMOCION_ID    AS id_promocion,
+        p.NOMBRE          AS nombre,
+        p.DESCRIPCION     AS descripcion,
+        p.TIPO_DESCUENTO  AS tipo_descuento,
+        p.VALOR_DESCUENTO AS valor_descuento,
+        p.FECHA_INICIO    AS fecha_inicio,
+        p.FECHA_FIN       AS fecha_fin,
+        p.CONDICIONES     AS condiciones,
+        p.ACTIVO          AS activo,
+        pp.PRODUCTO_ID
+    FROM promocion p
+    LEFT JOIN promocion_producto pp ON p.PROMOCION_ID = pp.PROMOCION_ID
+    ORDER BY p.FECHA_INICIO DESC, p.PROMOCION_ID;
 END$$
 
 -- DAO: PromocionDaoImpl.asociarProducto → "VINCULAR_PRODUCTO_PROMOCION"
@@ -1281,20 +1311,21 @@ END$$
 
 DROP PROCEDURE IF EXISTS INSERTAR_DEVOLUCION$$
 CREATE PROCEDURE INSERTAR_DEVOLUCION(
-    OUT _devolucion_id    INT,
-    IN  _producto_id      INT,
-    IN  _pedido_id        INT,
-    IN  _trabajador_id    INT,
-    IN  _estado_devolucion VARCHAR(20),
-    IN  _cantidad         INT,
-    IN  _motivo           VARCHAR(500),
-    IN  _fecha_hora       DATETIME
+    OUT _devolucion_id       INT,
+    IN  _producto_id         INT,
+    IN  _pedido_id           INT,
+    IN  _usuario_registra_id INT,
+    IN  _estado_devolucion   VARCHAR(20),
+    IN  _cantidad            INT,
+    IN  _motivo              VARCHAR(500),
+    IN  _fecha_hora          DATETIME,
+    IN  _observaciones       VARCHAR(500)
 )
 BEGIN
-    INSERT INTO devolucion(PRODUCTO_ID, PEDIDO_ID, TRABAJADOR_ID, ESTADO_DEVOLUCION,
-                             CANTIDAD, MOTIVO, FECHA_HORA, ACTIVO)
-    VALUES(_producto_id, _pedido_id, _trabajador_id, _estado_devolucion,
-           _cantidad, _motivo, _fecha_hora, 1);
+    INSERT INTO devolucion(PRODUCTO_ID, PEDIDO_ID, USUARIO_REGISTRA_ID, ESTADO_DEVOLUCION,
+                             CANTIDAD, MOTIVO, OBSERVACIONES, FECHA_HORA, ACTIVO)
+    VALUES(_producto_id, _pedido_id, _usuario_registra_id, _estado_devolucion,
+           _cantidad, _motivo, _observaciones, _fecha_hora, 1);
     SET _devolucion_id = LAST_INSERT_ID();
 END$$
 
@@ -1330,24 +1361,26 @@ END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_DEVOLUCION$$
 CREATE PROCEDURE MODIFICAR_DEVOLUCION(
-    IN _devolucion_id      INT,
-    IN _producto_id        INT,
-    IN _pedido_id          INT,
-    IN _trabajador_id      INT,
-    IN _estado_devolucion  VARCHAR(20),
-    IN _cantidad           INT,
-    IN _motivo             VARCHAR(500),
-    IN _fecha_hora         DATETIME
+    IN _devolucion_id       INT,
+    IN _producto_id         INT,
+    IN _pedido_id           INT,
+    IN _usuario_registra_id INT,
+    IN _estado_devolucion   VARCHAR(20),
+    IN _cantidad            INT,
+    IN _motivo              VARCHAR(500),
+    IN _fecha_hora          DATETIME,
+    IN _observaciones       VARCHAR(500)
 )
 BEGIN
     UPDATE devolucion SET
-        PRODUCTO_ID       = _producto_id,
-        PEDIDO_ID         = _pedido_id,
-        TRABAJADOR_ID     = _trabajador_id,
-        ESTADO_DEVOLUCION = _estado_devolucion,
-        CANTIDAD          = _cantidad,
-        MOTIVO            = _motivo,
-        FECHA_HORA        = _fecha_hora
+        PRODUCTO_ID         = _producto_id,
+        PEDIDO_ID           = _pedido_id,
+        USUARIO_REGISTRA_ID = _usuario_registra_id,
+        ESTADO_DEVOLUCION   = _estado_devolucion,
+        CANTIDAD            = _cantidad,
+        MOTIVO              = _motivo,
+        OBSERVACIONES       = _observaciones,
+        FECHA_HORA          = _fecha_hora
     WHERE DEVOLUCION_ID = _devolucion_id;
 END$$
 
@@ -1365,22 +1398,22 @@ CREATE PROCEDURE BUSCAR_DEVOLUCION_POR_ID(
     IN _devolucion_id INT
 )
 BEGIN
-    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.TRABAJADOR_ID,
-           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.FECHA_HORA, d.ACTIVO,
+    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.USUARIO_REGISTRA_ID,
+           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.OBSERVACIONES, d.FECHA_HORA, d.ACTIVO,
            CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
     FROM devolucion d
-    LEFT JOIN usuario u ON d.TRABAJADOR_ID = u.USUARIO_ID
+    LEFT JOIN usuario u ON d.USUARIO_REGISTRA_ID = u.USUARIO_ID
     WHERE d.DEVOLUCION_ID = _devolucion_id AND d.ACTIVO = 1;
 END$$
 
 DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_TODAS$$
 CREATE PROCEDURE LISTAR_DEVOLUCIONES_TODAS()
 BEGIN
-    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.TRABAJADOR_ID,
-           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.FECHA_HORA, d.ACTIVO,
+    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.USUARIO_REGISTRA_ID,
+           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.OBSERVACIONES, d.FECHA_HORA, d.ACTIVO,
            CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
     FROM devolucion d
-    LEFT JOIN usuario u ON d.TRABAJADOR_ID = u.USUARIO_ID
+    LEFT JOIN usuario u ON d.USUARIO_REGISTRA_ID = u.USUARIO_ID
     WHERE d.ACTIVO = 1
     ORDER BY d.FECHA_HORA DESC;
 END$$
@@ -1391,11 +1424,11 @@ CREATE PROCEDURE LISTAR_DEVOLUCIONES_POR_FECHAS(
     IN _fecha_fin    DATETIME
 )
 BEGIN
-    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.TRABAJADOR_ID,
-           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.FECHA_HORA, d.ACTIVO,
+    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.USUARIO_REGISTRA_ID,
+           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.OBSERVACIONES, d.FECHA_HORA, d.ACTIVO,
            CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
     FROM devolucion d
-    LEFT JOIN usuario u ON d.TRABAJADOR_ID = u.USUARIO_ID
+    LEFT JOIN usuario u ON d.USUARIO_REGISTRA_ID = u.USUARIO_ID
     WHERE d.ACTIVO = 1 AND d.FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
     ORDER BY d.FECHA_HORA DESC;
 END$$
@@ -1757,9 +1790,9 @@ BEGIN
 
         (SELECT COUNT(*)
            FROM devolucion d
-           WHERE d.TRABAJADOR_ID = _trabajador_id
-             AND d.ESTADO_DEVOLUCION = 'APROBADO'
-             AND DATE(d.FECHA_HORA) = CURDATE())        AS DEVOLUCIONES_ATENDIDAS_HOY;
+            WHERE d.USUARIO_REGISTRA_ID = _trabajador_id
+              AND d.ESTADO_DEVOLUCION = 'APROBADO'
+              AND DATE(d.FECHA_HORA) = CURDATE())        AS DEVOLUCIONES_ATENDIDAS_HOY;
 END$$
 
 -- =====================================================================

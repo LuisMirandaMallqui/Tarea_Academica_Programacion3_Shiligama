@@ -16,8 +16,8 @@ internal class DevolucionApi
     [JsonPropertyName("idPedido")]
     public int IdPedido { get; set; }
 
-    [JsonPropertyName("idTrabajador")]
-    public int IdTrabajador { get; set; }
+    [JsonPropertyName("idUsuarioRegistra")]
+    public int IdUsuarioRegistra { get; set; }
 
     [JsonPropertyName("estadoDevolucion")]
     public string EstadoDevolucion { get; set; } = "PENDIENTE";
@@ -27,6 +27,9 @@ internal class DevolucionApi
 
     [JsonPropertyName("motivo")]
     public string Motivo { get; set; } = string.Empty;
+
+    [JsonPropertyName("observaciones")]
+    public string Observaciones { get; set; } = string.Empty;
 
     [JsonPropertyName("fechaHora")]
     public DateTime? FechaHora { get; set; }
@@ -48,27 +51,30 @@ internal class DevolucionApi
             IdPedido = IdPedido,
             Quantity = Cantidad,
             Reason = Motivo,
+            Observations = Observaciones,
             RegisteredBy = NombreTrabajador,
             Date = FechaHora ?? DateTime.Now,
             Detalles = Detalles,
-
+            Product = string.Join(", ", Detalles.Select(d => d.NombreProducto)),
+            ProductCode = string.Join(", ", Detalles.Select(d => $"PROD-{d.IdProducto:D3}")),
             Amount = (decimal)Detalles.Sum(d =>
             d.Cantidad * d.PrecioUnitario)
         };
     }
 
-    public static DevolucionApi FromReturn(Return r, int idProducto, int idTrabajador) =>
+    public static DevolucionApi FromReturn(Return r, int idProducto, int idUsuarioRegistra) =>
         new DevolucionApi
         {
-            IdDevolucion = 0,
+            IdDevolucion = int.TryParse(r.Id?.Replace("DEV-", ""), out var devId) ? devId : 0,
             IdProducto = r.Detalles != null && r.Detalles.Any() ? r.Detalles.First().IdProducto : idProducto,
             IdPedido = r.IdPedido ?? 0,
-            IdTrabajador = idTrabajador,
+            IdUsuarioRegistra = idUsuarioRegistra,
             Cantidad = r.Detalles != null && r.Detalles.Any() ? r.Detalles.Sum(d => d.Cantidad) : r.Quantity,
             Motivo = r.Reason ?? "",
+            Observaciones = r.Observations ?? "",
             EstadoDevolucion = "PENDIENTE",
             Activo = true,
-            FechaHora = DateTime.Now,
+            FechaHora = new DateTime(DateTime.Now.Ticks / 10_000_000 * 10_000_000), // sin nanosegundos
             Detalles = r.Detalles?.Select(d => new DetalleDevolucionApi
             {
                 IdProducto = d.IdProducto,

@@ -219,7 +219,7 @@
                                     class="btn text-start px-3 py-2 small d-flex align-items-center gap-3
                                            @(_selectedCategory == cat.Id ? "active-category-btn" : "inactive-category-btn")"
                                     style="border-radius:var(--radius);">
-                                <i class="fa-solid @GetCategoryIcon(cat.Name)"
+                                <i class="fa-solid @(cat.Icono ?? "fa-box")"
                                    style="font-size:1rem;width:18px;text-align:center;"></i>
                                 @cat.Name
                             </button>
@@ -792,23 +792,6 @@
 
     private string GetDiscountPct(Product p) =>
         p.OriginalPrice.HasValue ? $"-{100 - (int)(p.Price / p.OriginalPrice.Value * 100)}%" : "";
-
-    // Ícono por nombre de categoría (el id ahora es numérico, no slug)
-    private string GetCategoryIcon(string categoryName)
-    {
-        var n = (categoryName ?? "").ToLowerInvariant();
-        if (n.Contains("abarrote"))                      return "fa-bag-shopping";
-        if (n.Contains("bebida"))                        return "fa-wine-glass";
-        if (n.Contains("lácteo") || n.Contains("lacteo")) return "fa-wine-bottle";
-        if (n.Contains("snack"))                         return "fa-cookie-bite";
-        if (n.Contains("limpieza"))                      return "fa-spray-can";
-        if (n.Contains("carne") || n.Contains("embutido")) return "fa-drumstick-bite";
-        if (n.Contains("fruta") || n.Contains("verdura")) return "fa-apple-whole";
-        if (n.Contains("dulce") || n.Contains("golosina")) return "fa-candy-cane";
-        if (n.Contains("congelado"))                     return "fa-snowflake";
-        if (n.Contains("bebé") || n.Contains("bebe"))   return "fa-baby-carriage";
-        return "fa-box";
-    }
 
     public async ValueTask DisposeAsync()
     {

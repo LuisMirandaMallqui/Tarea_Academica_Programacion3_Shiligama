@@ -40,6 +40,60 @@ public class NubefactService {
         this.httpClient = crearHttpClient(timeout, trustAllSsl);
     }
 
+    /**
+     * Consulta el último comprobante emitido en Nubefact para una serie dada
+     * y retorna el siguiente número disponible (último + 1).
+     * Si no hay comprobantes previos, retorna 1.
+     */
+    public int consultarUltimoNumero(String serie) throws Exception {
+        if (token == null || token.isBlank()) {
+            throw new IllegalStateException("El token de Nubefact no está configurado (nubefact.token).");
+        }
+        if (url == null || url.isBlank()) {
+            throw new IllegalStateException("La RUTA de Nubefact es inválida.");
+        }
+
+        String consultUrl = url + "?serie=" + java.net.URLEncoder.encode(serie, "UTF-8");
+        System.out.println("[NubefactService] Consultando último número: " + consultUrl);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(consultUrl))
+                .timeout(Duration.ofSeconds(timeout))
+                .header("Authorization", "Token token=\"" + token + "\"")
+                .GET()
+                .build();
+
+        HttpResponse<String> httpResponse;
+        try {
+            httpResponse = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception ex) {
+            throw new RuntimeException("No se pudo conectar con Nubefact para consulta: " + mensaje(ex), ex);
+        }
+
+        System.out.println("[NubefactService] Consulta status: " + httpResponse.statusCode());
+        System.out.println("[NubefactService] Consulta body: " + httpResponse.body());
+
+        if (httpResponse.statusCode() == 200) {
+            try {
+                JSONObject json = new JSONObject(httpResponse.body());
+                int ultimoNumero = json.optInt("numero", 0);
+                System.out.println("[NubefactService] Último número para " + serie + ": " + ultimoNumero);
+                return Math.max(ultimoNumero + 1, 1);
+            } catch (Exception ex) {
+                throw new RuntimeException("Respuesta de Nubefact no reconocida: " + httpResponse.body(), ex);
+            }
+        }
+
+        // Si la serie no tiene comprobantes, Nubefact retorna 422 o similar
+        if (httpResponse.statusCode() == 422 || httpResponse.statusCode() == 404) {
+            System.out.println("[NubefactService] Serie " + serie + " sin comprobantes previos");
+            return 1;
+        }
+
+        throw new RuntimeException("Error al consultar Nubefact. HTTP status: "
+                + httpResponse.statusCode() + ", body: " + httpResponse.body());
+    }
+
     public NubefactResponseDTO enviarComprobante(NubefactRequestDTO request) throws Exception {
         if (token == null || token.isBlank()) {
             throw new IllegalStateException("El token de Nubefact no está configurado (nubefact.token).");

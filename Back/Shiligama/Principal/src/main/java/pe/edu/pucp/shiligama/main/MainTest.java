@@ -144,7 +144,7 @@ public class MainTest {
         Devolucion d = new Devolucion();
         d.setIdDevolucion(1); // asumiendo que existe venta con id 1
         d.setIdProducto(1);
-        d.setIdTrabajador(1);
+        d.setIdUsuarioRegistra(1);
         d.setEstadoDevolucion("PENDIENTE");
         d.setCantidad(5);
         d.setMotivo("Producto dañado");

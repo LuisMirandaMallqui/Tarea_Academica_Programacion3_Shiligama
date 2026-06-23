@@ -341,18 +341,18 @@ public class SalesService
         }
     }
 
-    public async Task UpdateOrderStatusAsync(string id, string status)
+    public async Task UpdateOrderStatusAsync(string id, string status, string? observaciones = null)
     {
         // Actualizar caché local
         var order = _orders.FirstOrDefault(o => o.Id == id);
-        if (order != null) order.Status = status;
+        if (order != null) { order.Status = status; if (observaciones != null) order.Observaciones = observaciones; }
         var sale = _sales.FirstOrDefault(s => s.Id == id.Replace("PED-", "VTA-"));
         if (sale != null) sale.Estado = status == "atendido" ? "completado" : status;
 
         // Persiste en el backend
         if (int.TryParse(id.StartsWith("PED-") ? id[4..] : id, out var numId) && numId > 0)
         {
-            var dto = new { idPedido = numId, estadoPedido = ToBackendEstado(status) };
+            var dto = new { idPedido = numId, estadoPedido = ToBackendEstado(status), observaciones };
             try { await _http.PutAsJsonAsync("pedidos", dto); }
             catch { /* red no disponible */ }
         }
@@ -580,6 +580,23 @@ public class SalesService
         {
             UltimoErrorBoleta = ex.Message;
             Console.WriteLine($"Excepcion al generar boleta: {ex.Message}");
+        }
+        return null;
+    }
+
+    public async Task<BoletaResponse?> GetBoletaByVentaIdAsync(int ventaId)
+    {
+        try
+        {
+            var resp = await _http.GetAsync($"boleta/venta/{ventaId}");
+            if (resp.IsSuccessStatusCode)
+            {
+                return await resp.Content.ReadFromJsonAsync<BoletaResponse>(_json);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al buscar boleta: {ex.Message}");
         }
         return null;
     }
