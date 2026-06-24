@@ -786,7 +786,9 @@
             if (_dateFrom.HasValue && o.Date.Date < _dateFrom.Value.Date) return false;
             if (_dateTo.HasValue && o.Date.Date > _dateTo.Value.Date) return false;
             return true;
-        }).ToList();
+        })
+        .OrderByDescending(o => o.Date)
+        .ToList();
         _currentPage = 1;
     }
 
