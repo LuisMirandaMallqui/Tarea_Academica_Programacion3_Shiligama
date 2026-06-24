@@ -106,7 +106,7 @@
                         </div>
                         @if (order.DeliveryMethod?.ToLower() == "delivery")
                         {
-                            <span class="badge" style="background:#e3f2fd;color:#0d6efd;font-size:0.75rem;font-weight:600;border-radius:9999px;padding:0.3rem 0.6rem;">
+                            <span class="badge" style="background:#dcf0e8;color:#1A6B3C;font-size:0.75rem;font-weight:600;border-radius:9999px;padding:0.3rem 0.6rem;">
                                 <i class="fas fa-truck me-2"></i>Delivery
                             </span>
                         }
@@ -159,7 +159,7 @@
                                 <span class="badge bg-success-subtle text-success" style="font-size:0.7rem;padding:0.25rem 0.5rem;border:1px solid rgba(25,135,84,0.2);font-weight:600;">Pagado</span>
                                 break;
                             case "tarjeta":
-                                <span class="badge text-white" style="background:#0d6efd;font-size:0.7rem;padding:0.25rem 0.5rem;font-weight:600;">Tarjeta</span>
+                                <span class="badge text-white" style="background:#1A6B3C;font-size:0.7rem;padding:0.25rem 0.5rem;font-weight:600;">Tarjeta</span>
                                 <span class="badge bg-success-subtle text-success" style="font-size:0.7rem;padding:0.25rem 0.5rem;border:1px solid rgba(25,135,84,0.2);font-weight:600;">Pagado</span>
                                 break;
                             default:
@@ -232,7 +232,7 @@
                         {
                             <button class="btn btn-link btn-sm p-0 d-flex align-items-center gap-1 text-decoration-none"
                                     @onclick="@(() => AskRetroceder(order))"
-                                    style="color:#0d6efd;font-size:0.74rem;font-weight:600;width:fit-content;">
+                                    style="color:#1A6B3C;font-size:0.74rem;font-weight:600;width:fit-content;">
                                 <i class="fas fa-rotate-left" style="font-size:0.7rem;"></i> Volver a Recibido
                             </button>
                         }
@@ -319,7 +319,7 @@
                 <div class="detail-section">
                     <div class="detail-section-title">
                         @if (_detailOrder.DeliveryMethod?.ToLower() == "delivery")
-                        { <i class="fas fa-truck me-2" style="color:#0d6efd;"></i> }
+                        { <i class="fas fa-truck me-2" style="color:#1A6B3C;"></i> }
                         else
                         { <i class="fas fa-store me-2" style="color:#198754;"></i> }
                         Tipo de Envío
@@ -329,7 +329,7 @@
                             <span class="detail-label">Método</span>
                             @if (_detailOrder.DeliveryMethod?.ToLower() == "delivery")
                             {
-                                <span class="badge" style="background:#e3f2fd;color:#0d6efd;font-size:0.73rem;font-weight:600;border-radius:9999px;padding:4px 11px;"><i class="fas fa-truck me-1"></i>Delivery</span>
+                                <span class="badge" style="background:#dcf0e8;color:#1A6B3C;font-size:0.73rem;font-weight:600;border-radius:9999px;padding:4px 11px;"><i class="fas fa-truck me-1"></i>Delivery</span>
                             }
                             else
                             {
@@ -402,7 +402,7 @@
                                         <span class="badge" style="background:#e8f5e9;color:#198754;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-check-circle me-1"></i>Pagado</span>
                                         break;
                                     case "tarjeta":
-                                        <span class="badge text-white" style="background:#0d6efd;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-credit-card me-1"></i>Tarjeta</span>
+                                        <span class="badge text-white" style="background:#1A6B3C;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-credit-card me-1"></i>Tarjeta</span>
                                         <span class="badge" style="background:#e8f5e9;color:#198754;font-size:0.75rem;padding:5px 12px;font-weight:600;border-radius:8px;"><i class="fas fa-check-circle me-1"></i>Pagado</span>
                                         break;
                                     default:
@@ -520,7 +520,7 @@
             <div class="detail-modal-footer" style="justify-content:center;">
                 <button class="btn btn-outline-secondary fw-medium" disabled="@_cambiandoEstadoCard" @onclick="CancelCambioEstado" style="border-radius:var(--radius);min-width:90px;">Cancelar</button>
                 <button class="btn text-white fw-semibold" disabled="@_cambiandoEstadoCard" @onclick="ConfirmCambioEstado"
-                        style="background:@(_cambiandoEstadoCard ? "#0d6efd" : "#198754");border:1px solid @(_cambiandoEstadoCard ? "#0d6efd" : "#198754");border-radius:var(--radius);min-width:150px;">
+                        style="background:@(_cambiandoEstadoCard ? "#155230" : "#198754");border:1px solid @(_cambiandoEstadoCard ? "#155230" : "#198754");border-radius:var(--radius);min-width:150px;">
                     @if (_cambiandoEstadoCard)
                     {
                         <span class="spinner-border spinner-border-sm me-1"></span>
@@ -1009,7 +1009,7 @@
     private string GetStatusBadgeStyle(string s) => s switch
     {
         "recibido"   => "background:#fff3e0;color:#b25e00;font-weight:600;",
-        "en_proceso" => "background:#e3f2fd;color:#0d6efd;font-weight:600;",
+        "en_proceso" => "background:#dcf0e8;color:#1A6B3C;font-weight:600;",
         "atendido"   => "background:#e8f5e9;color:#198754;font-weight:600;",
         "rechazado"  => "background:#ffebee;color:#c62828;font-weight:600;",
         "cancelado"  => "background:#ffebee;color:#c62828;font-weight:600;",

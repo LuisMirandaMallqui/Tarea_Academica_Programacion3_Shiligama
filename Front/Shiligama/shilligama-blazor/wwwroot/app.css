@@ -78,6 +78,11 @@
             color: var(--foreground) !important;
         }
 
+        .dark .dropdown-item:active {
+            background-color: color-mix(in srgb, #1A6B3C 22%, transparent) !important;
+            color: var(--foreground) !important;
+        }
+
     /* El separador de línea dentro del dropdown */
     .dark .dropdown-divider {
         border-color: var(--border) !important;
@@ -810,13 +815,15 @@ body {
 }
 
 .btn-processing {
-    background-color: #0d6efd !important; /* azul */
+    background-color: var(--primary) !important;
     border: none !important;
+    opacity: 0.8;
 }
 
 .btn-process-blue {
-    background-color: #0d6efd !important;
+    background-color: var(--primary) !important;
     border: none !important;
+    opacity: 0.8;
 }
 
 .btn-process-green {

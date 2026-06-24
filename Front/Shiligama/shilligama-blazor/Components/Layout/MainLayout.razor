@@ -23,9 +23,19 @@
             color: var(--foreground) !important;
         }
 
+        .dropdown-item:active {
+            background-color: color-mix(in srgb, #1A6B3C 18%, transparent) !important;
+            color: var(--foreground) !important;
+        }
+
         .dropdown-item.text-danger:hover,
         .dropdown-item.text-danger:focus {
             background-color: color-mix(in srgb, var(--destructive) 12%, transparent) !important;
+            color: var(--destructive) !important;
+        }
+
+        .dropdown-item.text-danger:active {
+            background-color: color-mix(in srgb, var(--destructive) 20%, transparent) !important;
             color: var(--destructive) !important;
         }
 

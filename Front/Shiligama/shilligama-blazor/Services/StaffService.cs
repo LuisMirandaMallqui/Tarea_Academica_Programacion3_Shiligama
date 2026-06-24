@@ -175,7 +175,8 @@ public class StaffService
     {
         var existing = GetStaffById(member.Id);
         if (existing == null) return;
-        existing.Nombre   = member.Nombre;
+        existing.Nombres   = member.Nombres;
+        existing.Apellidos = member.Apellidos;
         existing.Dni      = member.Dni;
         existing.Rol      = member.Rol;
         existing.Telefono = member.Telefono;
