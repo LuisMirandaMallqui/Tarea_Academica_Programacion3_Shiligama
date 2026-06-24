@@ -48,7 +48,7 @@ public class ConfiguracionService
         {
             if (_loaded) return;  // doble check dentro del lock
             var dto = await _http.GetFromJsonAsync<ConfiguracionDto>(
-                "api/configuracion", _json);
+                "configuracion", _json);
             if (dto != null) _cache = dto;
             _loaded = true;
         }
@@ -80,7 +80,7 @@ public class ConfiguracionService
     /// </summary>
     public async Task GuardarAsync(ConfiguracionDto dto)
     {
-        var response = await _http.PutAsJsonAsync("api/configuracion", dto, _json);
+        var response = await _http.PutAsJsonAsync("configuracion", dto, _json);
         response.EnsureSuccessStatusCode();
         _cache = dto;   // actualiza caché tras éxito
     }
