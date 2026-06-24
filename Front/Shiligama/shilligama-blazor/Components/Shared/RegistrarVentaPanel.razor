@@ -1,6 +1,7 @@
 @* RegistrarVentaPanel.razor — componente compartido para Admin y Trabajador *@
 @using shilligama_blazor.Models
 @using shilligama_blazor.Services
+@implements IDisposable
 @inject ProductService ProductSvc
 @inject SalesService SalesSvc
 @inject AuthService Auth
@@ -29,11 +30,38 @@
 
             <!-- Tabla de Líneas de Venta -->
             <div class="card bg-white border border-color-default shadow-sm w-100" style="border-radius:1rem;">
+                <div class="p-4 border-bottom border-color-default">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fas fa-barcode text-primary" style="font-size:1.1rem;"></i>
+                        <h5 class="m-0 fw-bold text-foreground" style="font-size:1.05rem;">Escanear Producto</h5>
+                    </div>
+                    <div class="position-relative">
+                        <i class="fas fa-search position-absolute text-muted-foreground"
+                           style="left:14px;top:50%;transform:translateY(-50%);font-size:0.9rem;"></i>
+                        <input id="scanInput" type="text" @bind="_barcodeInput" @bind:event="oninput"
+                               @onkeydown="OnBarcodeKeydown"
+                               class="form-control text-foreground w-100"
+                               placeholder="Escanear código de barras o escribir código/nombre..."
+                               style="padding-left:40px;border-radius:0.5rem;height:44px;" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_barcodeError))
+                    {
+                        <div class="text-danger small mt-2 d-flex align-items-center gap-1">
+                            <i class="fas fa-exclamation-triangle"></i> @_barcodeError
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_barcodeSuccess))
+                    {
+                        <div class="text-success small mt-2 d-flex align-items-center gap-1">
+                            <i class="fas fa-check-circle"></i> @_barcodeSuccess
+                        </div>
+                    }
+                </div>
                 <div class="p-4 border-bottom border-color-default d-flex justify-content-between align-items-center">
                     <h5 class="m-0 fw-bold text-foreground" style="font-size:1.05rem;">Líneas de Venta</h5>
                     <button class="btn text-white px-3 py-2 d-flex align-items-center gap-2" @onclick="OpenModal"
                             style="background-color:#064420;border-radius:0.5rem;font-size:0.85rem;font-weight:600;border:none;">
-                        <i class="fas fa-plus"></i> Agregar Producto
+                        <i class="fas fa-plus"></i> Agregar Manual
                     </button>
                 </div>
                 <div class="p-0">
@@ -65,7 +93,19 @@
                                         <tr class="border-bottom border-color-default">
                                             <td class="px-4 py-3 text-muted-foreground small fw-medium">@item.Id.ToString("D4")</td>
                                             <td class="px-4 py-3 fw-bold text-foreground small">@item.Name</td>
-                                            <td class="px-4 py-3 text-center text-foreground fw-semibold small">@item.Quantity</td>
+                                             <td class="px-4 py-3 text-center">
+                                                 <div class="d-flex align-items-center justify-content-center gap-1">
+                                                     <button class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                                                             style="width:28px;height:28px;font-size:.7rem;"
+                                                             disabled="@(item.Quantity <= 1)"
+                                                             @onclick="@(() => ChangeQty(item, -1))">−</button>
+                                                     <span class="fw-semibold small text-foreground" style="min-width:24px;text-align:center;">@item.Quantity</span>
+                                                     <button class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center"
+                                                             style="width:28px;height:28px;font-size:.7rem;"
+                                                             disabled="@(item.Quantity >= GetProductStock(item.Id))"
+                                                             @onclick="@(() => ChangeQty(item, 1))">+</button>
+                                                 </div>
+                                             </td>
                                             <td class="px-4 py-3 text-end text-muted-foreground small">S/ @item.Price.ToString("0.00")</td>
                                             <td class="px-4 py-3 text-end text-foreground fw-bold small">S/ @((item.Price * item.Quantity).ToString("0.00"))</td>
                                             <td class="px-4 py-3 text-center">
@@ -400,6 +440,12 @@
     private List<Product> _products = new();
     private List<CartItem> _posCart = new();
 
+    // Barcode scanner state
+    private string _barcodeInput = "";
+    private string _barcodeError = "";
+    private string _barcodeSuccess = "";
+    private Timer? _barcodeTimer;
+
     // Modal state
     private bool _isModalOpen = false;
     private string _modalSearch = "";
@@ -421,6 +467,111 @@
     private bool _showSavedToast = false;
     private string _toastMsg = "";
 
+    // ── Barcode scanner ────────────────────────────────────────────────────
+    private void OnBarcodeInput(ChangeEventArgs e)
+    {
+        _barcodeInput = e.Value?.ToString() ?? "";
+        _barcodeError = "";
+        _barcodeSuccess = "";
+        _barcodeTimer?.Dispose();
+        _barcodeTimer = new Timer(async _ =>
+        {
+            var code = await JS.InvokeAsync<string>("posHelper.readInputValue", "scanInput");
+            _barcodeInput = "";
+            await InvokeAsync(async () => await ProcessBarcode(code?.Trim() ?? ""));
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private async Task OnBarcodeKeydown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _barcodeTimer?.Dispose();
+            var code = await JS.InvokeAsync<string>("posHelper.readInputValue", "scanInput");
+            _barcodeInput = "";
+            await ProcessBarcode(code?.Trim() ?? "");
+        }
+    }
+
+    private async Task ProcessBarcode(string code)
+    {
+        _barcodeError = "";
+        _barcodeSuccess = "";
+        if (string.IsNullOrEmpty(code)) { await FocusBarcode(); return; }
+
+        try
+        {
+            var product = await ProductSvc.GetByBarcodeAsync(code);
+            if (product == null)
+            {
+                _barcodeError = $"Codigo '{code}' no encontrado. Intenta de nuevo.";
+                StateHasChanged();
+                await FocusBarcode();
+                return;
+            }
+            if (product.Stock <= 0)
+            {
+                _barcodeError = $"{product.Name} sin stock disponible.";
+                StateHasChanged();
+                await FocusBarcode();
+                return;
+            }
+            AddProductToCart(product, 1);
+            _barcodeSuccess = $"{product.Name} agregado al carrito.";
+            StateHasChanged();
+            _ = Task.Run(async () => { await Task.Delay(2000); _barcodeSuccess = ""; await InvokeAsync(StateHasChanged); });
+        }
+        catch
+        {
+            _barcodeError = "Error de conexion con el servidor.";
+        }
+        await FocusBarcode();
+    }
+
+    private async Task FocusBarcode()
+    {
+        try { await JS.InvokeVoidAsync("posHelper.focusElement", "scanInput"); } catch { }
+    }
+
+    // ── Cart operations ────────────────────────────────────────────────────
+    private void AddProductToCart(Product product, int qty)
+    {
+        var existing = _posCart.FirstOrDefault(i => i.Id == product.Id);
+        if (existing != null)
+        {
+            existing.Quantity = Math.Min(existing.Quantity + qty, product.Stock);
+        }
+        else
+        {
+            _posCart.Add(new CartItem
+            {
+                Id       = product.Id,
+                Name     = product.Name,
+                Price    = product.Price,
+                Quantity = qty,
+                Image    = product.Image
+            });
+        }
+    }
+
+    private void ChangeQty(CartItem item, int delta)
+    {
+        int stock = GetProductStock(item.Id);
+        item.Quantity = Math.Clamp(item.Quantity + delta, 1, stock);
+        _ = FocusBarcode();
+    }
+
+    private int GetProductStock(int productId) =>
+        _products.FirstOrDefault(p => p.Id == productId)?.Stock ?? 0;
+
+    private void RemoveFromCart(int productId)
+    {
+        var item = _posCart.FirstOrDefault(i => i.Id == productId);
+        if (item != null) _posCart.Remove(item);
+        _ = FocusBarcode();
+    }
+
+    // ── Venta flow ─────────────────────────────────────────────────────────
     private async Task ConfirmarVentaPOS()
     {
         if (!_posCart.Any() || _isProcessing) return;
@@ -449,7 +600,6 @@
                 {
                     _ventaConfirmada = true;
                     _receiptId = idGenerado.ToString();
-                    // Update stock locally for immediate feedback
                     foreach (var item in _posCart)
                     {
                         var p = _products.FirstOrDefault(pr => pr.Id == item.Id);
@@ -477,6 +627,7 @@
         finally
         {
             _isProcessing = false;
+            await FocusBarcode();
         }
     }
 
@@ -517,12 +668,23 @@
     private decimal Igv            => Subtotal - SubtotalSinIgv;
     private decimal Total          => Subtotal;
 
+    // ── Lifecycle ──────────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
     {
         await ProductSvc.EnsureLoadedAsync();
         _products = ProductSvc.GetProducts();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("posHelper.keepFocus", "scanInput");
+            await FocusBarcode();
+        }
+    }
+
+    // ── Modal (manual search) ──────────────────────────────────────────────
     private IEnumerable<Product> ModalProducts => _products.Where(p =>
         string.IsNullOrEmpty(_modalSearch) ||
         p.Name.Contains(_modalSearch, StringComparison.OrdinalIgnoreCase) ||
@@ -545,33 +707,12 @@
         _selectedQuantity = 1;
     }
 
-    private void AddSelectedToCart()
+    private async Task AddSelectedToCart()
     {
         if (_selectedProduct == null || _selectedQuantity <= 0) return;
-
-        var existing = _posCart.FirstOrDefault(i => i.Id == _selectedProduct.Id);
-        if (existing != null)
-        {
-            existing.Quantity = Math.Min(existing.Quantity + _selectedQuantity, _selectedProduct.Stock);
-        }
-        else
-        {
-            _posCart.Add(new CartItem
-            {
-                Id       = _selectedProduct.Id,
-                Name     = _selectedProduct.Name,
-                Price    = _selectedProduct.Price,
-                Quantity = _selectedQuantity,
-                Image    = _selectedProduct.Image
-            });
-        }
+        AddProductToCart(_selectedProduct, _selectedQuantity);
         CloseModal();
-    }
-
-    private void RemoveFromCart(int productId)
-    {
-        var item = _posCart.FirstOrDefault(i => i.Id == productId);
-        if (item != null) _posCart.Remove(item);
+        await FocusBarcode();
     }
 
     private void ResetPOS()
@@ -586,5 +727,10 @@
         _boletaResponse = null;
         _showBoletaModal = false;
         _showSavedToast = false;
+    }
+
+    public void Dispose()
+    {
+        _barcodeTimer?.Dispose();
     }
 }
