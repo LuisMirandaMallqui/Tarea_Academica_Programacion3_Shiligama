@@ -185,5 +185,4 @@ public class ProductService
         var existente = _products.FirstOrDefault(p => p.Id == id);
         if (existente != null) _products.Remove(existente);
     }
-
 }
