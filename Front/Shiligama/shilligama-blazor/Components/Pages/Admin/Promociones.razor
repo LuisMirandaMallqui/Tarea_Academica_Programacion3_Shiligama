@@ -198,25 +198,32 @@
                                     }
                                 </td>
                                 <td class="px-4 py-3">
-                                    @if (isVigente)
-                                    {
-                                        <span class="badge bg-success px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">✓ Vigente</span>
-                                    }
-                                    else if (promo.Activo && promo.FechaInicio > DateTime.Today)
-                                    {
-                                        <span class="badge bg-primary-subtle text-primary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">⏳ Próxima</span>
-                                    }
-                                    else if (promo.FechaFin < DateTime.Today)
-                                    {
-                                        <!-- Vencida: mostrar badge rojo -->
-                                        <span class="badge px-2 py-1" style="background:#fff0f0;color:#c62828;border:1px solid #f5c6c6;border-radius:var(--radius);font-size:.75rem;">
-                                            <i class="fa-solid fa-clock-rotate-left me-1"></i>Vencida
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-secondary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">Inactiva</span>
-                                    }
+                                    <div class="d-flex flex-column gap-1">
+                                        @if (isVigente)
+                                        {
+                                            <span class="badge bg-success px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">✓ Vigente</span>
+                                        }
+                                        else if (promo.Activo && promo.FechaInicio > DateTime.Today)
+                                        {
+                                            <span class="badge bg-primary-subtle text-primary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">⏳ Próxima</span>
+                                        }
+                                        else if (promo.FechaFin < DateTime.Today)
+                                        {
+                                            <span class="badge px-2 py-1" style="background:#fff0f0;color:#c62828;border:1px solid #f5c6c6;border-radius:var(--radius);font-size:.75rem;">
+                                                <i class="fa-solid fa-clock-rotate-left me-1"></i>Vencida
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">Inactiva</span>
+                                        }
+                                        @if (promo.MostrarEnCarrusel)
+                                        {
+                                            <span class="badge bg-info-subtle text-info px-2 py-1" style="border-radius:var(--radius);font-size:.72rem;">
+                                                <i class="fa-solid fa-images me-1"></i>Carrusel
+                                            </span>
+                                        }
+                                    </div>
                                 </td>
                                 <td class="px-4 py-3 text-end">
                                     <div class="d-flex align-items-center justify-content-end gap-1">
@@ -343,6 +350,13 @@
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="promoActivo" @bind="_form.Activo" @bind:after="MarkDirty" />
                                 <label class="form-check-label small text-foreground" for="promoActivo">Promoción activa</label>
+                            </div>
+                            <div class="form-check mt-2">
+                                <input class="form-check-input" type="checkbox" id="promoCarrusel" @bind="_form.MostrarEnCarrusel" @bind:after="MarkDirty" />
+                                <label class="form-check-label small text-foreground" for="promoCarrusel">
+                                    Mostrar en carrusel
+                                    <span class="text-muted-foreground fw-normal" style="font-size:.75rem;">(visible en la portada)</span>
+                                </label>
                             </div>
                         </div>
                         <div class="col-12">
@@ -621,7 +635,9 @@
             Id = p.Id, Nombre = p.Nombre, Descripcion = p.Descripcion,
             TipoDescuento = p.TipoDescuento, ValorDescuento = p.ValorDescuento,
             FechaInicio = p.FechaInicio, FechaFin = p.FechaFin,
-            Condiciones = p.Condiciones, Activo = p.Activo, ProductoIds = new(p.ProductoIds)
+            Condiciones = p.Condiciones, Activo = p.Activo,
+            MostrarEnCarrusel = p.MostrarEnCarrusel,
+            ProductoIds = new(p.ProductoIds)
         };
         _isEditing = true; _formDirty = false; _submitted = false;
         _dateError = null; _valorError = null; _generalError = "";
@@ -697,6 +713,7 @@
                         TipoDescuento = _form.TipoDescuento, ValorDescuento = _form.ValorDescuento,
                         FechaInicio = _form.FechaInicio, FechaFin = _form.FechaFin,
                         Condiciones = _form.Condiciones, Activo = _form.Activo,
+                        MostrarEnCarrusel = _form.MostrarEnCarrusel,
                         ProductoIds = new List<int>(_form.ProductoIds)
                     };
             }
@@ -710,6 +727,7 @@
                     TipoDescuento = _form.TipoDescuento, ValorDescuento = _form.ValorDescuento,
                     FechaInicio = _form.FechaInicio, FechaFin = _form.FechaFin,
                     Condiciones = _form.Condiciones, Activo = _form.Activo,
+                    MostrarEnCarrusel = _form.MostrarEnCarrusel,
                     ProductoIds = new List<int>(_form.ProductoIds)
                 });
             }

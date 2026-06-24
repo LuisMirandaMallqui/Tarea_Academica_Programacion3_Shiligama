@@ -17,6 +17,7 @@ internal class PromocionApi
     public string FechaFin { get; set; } = string.Empty; // yyyy-MM-ddTHH:mm:ss
     public string? Condiciones { get; set; }
     public bool Activo { get; set; } = true;
+    public bool MostrarEnCarrusel { get; set; } = false;
 
     public Promocion ToPromocion() => new Promocion
     {
@@ -28,7 +29,8 @@ internal class PromocionApi
         FechaInicio = DateTime.TryParse(FechaInicio, out var fi) ? fi : DateTime.Today,
         FechaFin = DateTime.TryParse(FechaFin, out var ff) ? ff : DateTime.Today,
         Condiciones = Condiciones,
-        Activo = Activo
+        Activo = Activo,
+        MostrarEnCarrusel = MostrarEnCarrusel
     };
 
     public static PromocionApi FromPromocion(Promocion p) => new PromocionApi
@@ -42,6 +44,7 @@ internal class PromocionApi
         FechaInicio = p.FechaInicio.ToString("yyyy-MM-ddTHH:mm:ss"),
         FechaFin = p.FechaFin.ToString("yyyy-MM-ddTHH:mm:ss"),
         Condiciones = p.Condiciones,
-        Activo = p.Activo
+        Activo = p.Activo,
+        MostrarEnCarrusel = p.MostrarEnCarrusel
     };
 }

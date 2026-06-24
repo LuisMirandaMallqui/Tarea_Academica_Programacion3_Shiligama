@@ -174,6 +174,7 @@ internal class PromocionConProductosApi
     public string FechaFin { get; set; } = string.Empty;
     public string? Condiciones { get; set; }
     public bool Activo { get; set; } = true;
+    public bool MostrarEnCarrusel { get; set; } = false;
 
     // Lista de productos con solo idProducto (el back devuelve objetos mínimos)
     [JsonPropertyName("productos")]
@@ -191,7 +192,8 @@ internal class PromocionConProductosApi
             FechaInicio = DateTime.TryParse(FechaInicio, out var fi) ? fi : DateTime.Today,
             FechaFin = DateTime.TryParse(FechaFin, out var ff) ? ff : DateTime.Today,
             Condiciones = Condiciones,
-            Activo = Activo
+            Activo = Activo,
+            MostrarEnCarrusel = MostrarEnCarrusel
         };
         // Extraer solo los IDs de los productos vinculados
         if (Productos != null)

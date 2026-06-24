@@ -233,13 +233,17 @@
                         RANGO DE PRECIO
                     </h3>
                     <div class="px-1">
+                        @{
+                            var pctMin = _priceMax > 0 ? (double)_minPrice / (double)_priceMax * 100 : 0;
+                            var pctMax = _priceMax > 0 ? (double)_maxPrice / (double)_priceMax * 100 : 100;
+                        }
                         <div class="dual-range-container">
                             <div class="dual-range-track"></div>
                             <div class="dual-range-highlight"
-                                 style="left:@(_minPrice)%;width:@(_maxPrice - _minPrice)%;"></div>
-                            <input type="range" class="dual-range-slider" min="0" max="100"
+                                 style="left:@pctMin.ToString("0.##")%;width:@((pctMax - pctMin).ToString("0.##"))%;"></div>
+                            <input type="range" class="dual-range-slider" min="0" max="@_priceMax"
                                    @bind="_minPrice" @bind:event="oninput" @onchange="ApplyFiltersAsync" />
-                            <input type="range" class="dual-range-slider" min="0" max="100"
+                            <input type="range" class="dual-range-slider" min="0" max="@_priceMax"
                                    @bind="_maxPrice" @bind:event="oninput" @onchange="ApplyFiltersAsync" />
                         </div>
                     </div>
@@ -261,7 +265,7 @@
                                 <span class="position-absolute text-muted-foreground small"
                                       style="left:10px;top:50%;transform:translateY(-50%);font-size:0.85rem;">S/.</span>
                                 <input type="number" class="form-control text-center py-1"
-                                       @bind="_maxPrice" @bind:after="ApplyFiltersAsync" min="@_minPrice" max="100"
+                                       @bind="_maxPrice" @bind:after="ApplyFiltersAsync" min="@_minPrice" max="@_priceMax"
                                        style="padding-left:28px;height:36px;border-radius:8px;font-size:0.9rem;" />
                             </div>
                         </div>
@@ -603,7 +607,8 @@
 
     private string? _selectedCategory = null;
     private decimal _minPrice = 0;
-    private decimal _maxPrice = 100;    // 100 = sin tope superior
+    private decimal _maxPrice = 0;      // se inicializa con el precio máximo real
+    private decimal _priceMax = 100;    // tope real calculado de los productos cargados
 
     private bool _showMobileFilters = false;
     private bool _isLoading = true;
@@ -612,16 +617,18 @@
     private const int PageSize = 8;
 
     private int _carouselIndex = 0;
-    private const int _carouselTotal = 3;
+    private int _carouselTotal = 0;
     private DotNetObjectReference<Catalogo>? _dotNetRef;
 
     private string SearchQuery => ProductSvc.SearchQuery;
 
-    private readonly (string Icon, string Title, string Desc, string Color, string Route)[] _slides = {
-        ("fa-tags",       "Ofertas de la Semana", "Hasta 30% de descuento en productos seleccionados", "#0D4525", "/ofertas"),
-        ("fa-truck",      "Delivery Gratis",       "En compras mayores a S/. 50",                      "#1a3a5c", ""),
-        ("fa-candy-cane", "2x1 en Snacks",         "Paga 1 y lleva 2 en snacks seleccionados",        "#4a1942", "/snacks-2x1"),
-    };
+    // Paleta de colores para slides generados dinámicamente
+    private static readonly string[] _slideColors =
+        { "#0D4525", "#1a3a5c", "#4a1942", "#7c2d12", "#1e3a1e", "#2d1b69" };
+
+    // Slides generados desde promos con MostrarEnCarrusel=true (más un slide fijo de delivery)
+    private (string Icon, string Title, string Desc, string Color, string Route)[] _slides =
+        Array.Empty<(string, string, string, string, string)>();
 
     // IDs de productos con promoción 2×1 vigente
     private HashSet<int> _promo2x1Ids = new();
@@ -639,7 +646,7 @@
         StateHasChanged();
 
         decimal? min = _minPrice <= 0 ? (decimal?)null : _minPrice;
-        decimal? max = _maxPrice >= 100 ? (decimal?)null : _maxPrice;
+        decimal? max = _maxPrice >= _priceMax ? (decimal?)null : _maxPrice;
 
         _page = await ProductSvc.SearchAsync(
             categoriaId: _selectedCategory,
@@ -662,7 +669,7 @@
         await LoadAsync();
     }
     private async Task ApplyFiltersAsync() { _currentPage = 1; await LoadAsync(); }
-    private async Task ClearFiltersAsync() { _minPrice = 0; _maxPrice = 100; _currentPage = 1; await LoadAsync(); }
+    private async Task ClearFiltersAsync() { _minPrice = 0; _maxPrice = _priceMax; _currentPage = 1; await LoadAsync(); }
     private async Task ClearAllAsync() { _selectedCategory = null; ProductSvc.NotifySearch(""); }
 
     // Disparado por el buscador del navbar (evento OnSearch del ProductService).
@@ -675,11 +682,39 @@
         ProductSvc.OnSearch += OnSearchChanged;
         Cart.OnChange += RefreshCart;
 
+        // Calcular el precio máximo real de los productos para el slider
+        var todos = ProductSvc.GetProducts();
+        _priceMax = todos.Any() ? Math.Ceiling(todos.Max(p => p.Price) / 10) * 10 : 100;
+        _maxPrice = _priceMax;
+
         await PromoSvc.EnsureLoadedAsync();
-        _promo2x1Ids = PromoSvc.GetVigentes()
+        var vigentes = PromoSvc.GetVigentes();
+
+        _promo2x1Ids = vigentes
             .Where(p => p.Es2x1)
             .SelectMany(p => p.ProductoIds)
             .ToHashSet();
+
+        // Construir slides dinámicos desde promos con MostrarEnCarrusel=true
+        var slidesPromo = vigentes
+            .Where(p => p.MostrarEnCarrusel)
+            .Select((p, i) => (
+                Icon:  p.Es2x1 ? "fa-candy-cane" : (p.TipoDescuento == "PORCENTAJE" ? "fa-tags" : "fa-dollar-sign"),
+                Title: p.Nombre,
+                Desc:  string.IsNullOrWhiteSpace(p.Descripcion) ? p.DescuentoLabel : p.Descripcion,
+                Color: _slideColors[i % _slideColors.Length],
+                Route: "/ofertas"
+            ))
+            .ToList();
+
+        // Slide fijo de delivery siempre presente
+        var slideDelivery = ("fa-truck", "Delivery Gratis", "En compras mayores a S/. 50", "#1a3a5c", "");
+
+        _slides = slidesPromo.Any()
+            ? slidesPromo.Append(slideDelivery).ToArray()
+            : new[] { ("fa-tags", "Ofertas Especiales", "Descuentos en productos seleccionados", "#0D4525", "/ofertas"), slideDelivery };
+
+        _carouselTotal = _slides.Length;
 
         await LoadAsync();
     }
