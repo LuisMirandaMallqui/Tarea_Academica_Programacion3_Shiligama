@@ -104,7 +104,7 @@
                 <div class="profile-field-group">
                     <label class="profile-field-label"><i class="fas fa-lock"></i> Nueva contraseña</label>
                     <input type="password" @bind="_newPassword" class="form-control text-foreground mt-1"
-                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="Mínimo 6 caracteres" />
+                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="Mínimo 8 caracteres" />
                 </div>
                 <div class="profile-field-group">
                     <label class="profile-field-label"><i class="fas fa-lock"></i> Confirmar nueva contraseña</label>
@@ -313,8 +313,8 @@
 
         if (string.IsNullOrWhiteSpace(_currentPassword))
         { _passwordError = "Ingresa tu contraseña actual."; return; }
-        if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 6)
-        { _passwordError = "La nueva contraseña debe tener al menos 6 caracteres."; return; }
+        if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 8)
+        { _passwordError = "La nueva contraseña debe tener al menos 8 caracteres."; return; }
         if (_newPassword != _confirmPassword)
         { _passwordError = "Las contraseñas nuevas no coinciden."; return; }
 
