@@ -4,8 +4,31 @@
 
 <PageTitle>Categorías – Shiligama Admin</PageTitle>
 
-<div class="d-flex flex-column gap-4">
+<style>
+    @@keyframes cartTrip {
+        0%   { transform: translateX(-120px);                        opacity: 0; }
+        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
+        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
+        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
+        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
+        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
+        85%  { transform: translateX(120px);                        opacity: 0; }
+        100% { transform: translateX(120px);                        opacity: 0; }
+    }
+</style>
 
+<div class="d-flex flex-column gap-4">
+@if (_loading)
+{
+    <div class="d-flex flex-column align-items-center justify-content-center py-5 w-100" style="min-height:400px;">
+        <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">Cargando...</div>
+    </div>
+}
+else
+{
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
             <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Categorías</h1>
@@ -105,6 +128,7 @@
             }
         </div>
     </div>
+}
 </div>
 
 @if (_showModal)
@@ -166,13 +190,41 @@
                 </div>
                 <div class="modal-footer border-0 pt-2">
                     <button type="button" class="btn btn-secondary" @onclick="TryCloseModal" style="border-radius:var(--radius);">Cancelar</button>
-                    <button type="button" class="btn btn-primary" @onclick="Save" disabled="@_saving" style="border-radius:var(--radius);">
-                        @if (_saving)
-                        {
-                            <span class="spinner-border spinner-border-sm me-1"></span>
-                        }
+                    <button type="button" class="btn btn-primary" @onclick="AskSave" style="border-radius:var(--radius);">
                         @(_isEditing ? "Guardar Cambios" : "Crear Categoría")
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Confirmar guardar -->
+@if (_showSaveConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);z-index:1060;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;">💾</div>
+                    <h5 class="fw-bold text-foreground mb-1">¿@(_isEditing ? "Guardar cambios" : "Crear categoría")?</h5>
+                    <p class="text-muted-foreground small mb-4">
+                        @(_isEditing ? "Se actualizará" : "Se creará") la categoría <strong>@_formName</strong>.
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" disabled="@_saving" @onclick="@(() => _showSaveConfirm = false)">Cancelar</button>
+                        <button class="btn text-white" style="background:#0d6efd;border-color:#0d6efd;border-radius:var(--radius);min-width:140px;" disabled="@_saving" @onclick="Save">
+                            @if (_saving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1"></span>
+                                <span>Guardando...</span>
+                            }
+                            else
+                            {
+                                <span>Sí, guardar</span>
+                            }
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -211,9 +263,17 @@
                     </p>
                 </div>
                 <div class="modal-footer border-0 justify-content-center pt-0">
-                    <button class="btn btn-secondary" @onclick="CancelToggle" style="border-radius:var(--radius);">Cancelar</button>
-                    <button class="btn btn-primary" @onclick="ConfirmToggle" style="border-radius:var(--radius);">
-                        Sí, @(_targetToggle?.Estado == true ? "Desactivar" : "Activar")
+                    <button class="btn btn-secondary" @onclick="CancelToggle" disabled="@_togglingCategoria" style="border-radius:var(--radius);">Cancelar</button>
+                    <button class="btn text-white" @onclick="ConfirmToggle" disabled="@_togglingCategoria" style="background:#0d6efd;border-color:#0d6efd;border-radius:var(--radius);">
+                        @if (_togglingCategoria)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                            <span>@(_targetToggle?.Estado == true ? "Desactivando..." : "Activando...")</span>
+                        }
+                        else
+                        {
+                            <span>Sí, @(_targetToggle?.Estado == true ? "Desactivar" : "Activar")</span>
+                        }
                     </button>
                 </div>
             </div>
@@ -246,6 +306,7 @@
 @code {
     private List<Category> _categories = new();
     private List<Category> _filtered = new();
+    private bool _loading = true;
 
     private int _pageSize = 10;
     private int _currentPage = 1;
@@ -259,6 +320,7 @@
     private string _formIcono = "fa-folder";
     private string _nameError = "";
     private bool _saving;
+    private bool _showSaveConfirm;
     private bool _formDirty;
     private bool _showUnsavedConfirm;
     private bool _showIconPicker;
@@ -281,6 +343,7 @@
 
     private bool _showConfirmToggle;
     private Category? _targetToggle;
+    private bool _togglingCategoria;
 
     private bool _showToast;
     private string _toastMsg = "";
@@ -293,9 +356,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await CatSvc.EnsureLoadedAsync();
-        _categories = CatSvc.GetAll();
-        _filtered = [.. _categories.OrderByDescending(c => c.IdCategoria)];
+        try
+        {
+            await CatSvc.EnsureLoadedAsync();
+            _categories = CatSvc.GetAll();
+            _filtered = [.. _categories.OrderByDescending(c => c.IdCategoria)];
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private void OnNameInput(ChangeEventArgs e)
@@ -377,7 +447,7 @@
         _showModal = false;
     }
 
-    private async Task Save()
+    private void AskSave()
     {
         _nameError = "";
         if (string.IsNullOrWhiteSpace(_formName))
@@ -385,7 +455,11 @@
             _nameError = "El nombre es obligatorio.";
             return;
         }
+        _showSaveConfirm = true;
+    }
 
+    private async Task Save()
+    {
         _saving = true;
         try
         {
@@ -408,6 +482,7 @@
                     _formDirty = false;
                     _showIconPicker = false;
                     _showModal = false;
+                    _showSaveConfirm = false;
                     ShowToast(true, "Categoría actualizada correctamente.");
                 }
                 else
@@ -431,6 +506,7 @@
                     ResetPage();
                     _formDirty = false;
                     _showModal = false;
+                    _showSaveConfirm = false;
                     ShowToast(true, "Categoría creada correctamente.");
                 }
                 else
@@ -459,6 +535,7 @@
     private async Task ConfirmToggle()
     {
         if (_targetToggle == null) return;
+        _togglingCategoria = true;
         var id = _targetToggle.IdCategoria;
         if (_targetToggle.Estado)
         {
@@ -491,6 +568,7 @@
             else
                 ShowToast(false, "Error al activar la categoría.");
         }
+        _togglingCategoria = false;
         _showConfirmToggle = false;
         _targetToggle = null;
     }

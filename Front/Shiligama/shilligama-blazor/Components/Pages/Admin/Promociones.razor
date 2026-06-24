@@ -7,239 +7,266 @@
 
 <PageTitle>Promociones – Shiligama Admin</PageTitle>
 
+<style>
+    @@keyframes cartTrip {
+        0%   { transform: translateX(-120px);                        opacity: 0; }
+        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
+        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
+        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
+        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
+        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
+        85%  { transform: translateX(120px);                        opacity: 0; }
+        100% { transform: translateX(120px);                        opacity: 0; }
+    }
+</style>
+
 <div class="d-flex flex-column gap-4">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-        <div>
-            <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Promociones</h1>
-            <p class="text-muted-foreground small mt-1 mb-0">Crea y administra descuentos vinculados a productos del catálogo</p>
-        </div>
-        <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-semibold" style="border-radius:var(--radius);">
-            <i class="fa-solid fa-plus"></i> Nueva Promoción
-        </button>
-    </div>
-
-    <!-- KPI -->
-    <div class="row g-3">
-        <div class="col-6 col-md-3">
-            <div class="metric-card-kpi">
-                <div><div class="metric-kpi-value text-foreground">@_promos.Count</div><div class="metric-kpi-label">Total</div></div>
-                <div class="metric-kpi-icon kpi-icon-primary"><i class="fas fa-tags"></i></div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="metric-card-kpi">
-                <div><div class="metric-kpi-value text-success">@_promos.Count(p => IsActive(p))</div><div class="metric-kpi-label">Vigentes</div></div>
-                <div class="metric-kpi-icon kpi-icon-success"><i class="fas fa-check-circle"></i></div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="metric-card-kpi">
-                <div><div class="metric-kpi-value text-warning">@_promos.Count(p => p.TipoDescuento == "PORCENTAJE")</div><div class="metric-kpi-label">Por %</div></div>
-                <div class="metric-kpi-icon kpi-icon-warning"><i class="fas fa-percent"></i></div>
-            </div>
-        </div>
-        <div class="col-6 col-md-3">
-            <div class="metric-card-kpi">
-                <div><div class="metric-kpi-value text-primary">@_promos.Count(p => p.TipoDescuento == "MONTO_FIJO")</div><div class="metric-kpi-label">Monto Fijo</div></div>
-                <div class="metric-kpi-icon kpi-icon-info"><i class="fas fa-dollar-sign"></i></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Filtros -->
-    <div class="card p-4" style="border-radius:12px;">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-4">
-                <label class="form-label small fw-medium text-foreground mb-1">Buscar</label>
-                <div class="position-relative">
-                    <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:16px;font-size:14px;"></i>
-                    <input type="search" @bind="_search" @bind:event="oninput" @bind:after="OnFilterChange"
-                           class="form-control text-foreground" placeholder="Buscar por nombre o descripción..."
-                           style="height:44px;border-radius:10px;padding-left:42px;" />
-                </div>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-medium text-foreground mb-1">Tipo</label>
-                <select @bind="_tipoFilter" @bind:after="OnFilterChange" class="form-select text-foreground" style="height:44px;border-radius:10px;">
-                    <option value="">Todos</option>
-                    <option value="PORCENTAJE">Porcentaje</option>
-                    <option value="MONTO_FIJO">Monto Fijo</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-medium text-foreground mb-1">Estado</label>
-                <select @bind="_estadoFilter" @bind:after="OnFilterChange" class="form-select text-foreground" style="height:44px;border-radius:10px;">
-                    <option value="">Todos</option>
-                    <option value="activo">Activas</option>
-                    <option value="inactivo">Inactivas</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-medium text-foreground mb-1">Desde</label>
-                <input type="date" @bind="_fechaDesde" @bind:after="OnFilterChange"
-                       class="form-control text-foreground" style="height:44px;" />
-            </div>
-            <div class="col-md-2">
-                <label class="form-label small fw-medium text-foreground mb-1">Hasta</label>
-                <input type="date" @bind="_fechaHasta" @bind:after="OnFilterChange"
-                       class="form-control text-foreground" style="height:44px;" />
-            </div>
-
-        </div>
-    </div>
-
-    <!-- Filtros activos -->
-    @if (TieneFiltrosActivos)
+    @if (_loading)
     {
-        <div class="d-flex align-items-center gap-2 flex-wrap">
-            <span class="small text-muted-foreground">Filtros activos:</span>
-            @if (!string.IsNullOrEmpty(_search))
-            {
-                <span class="badge bg-primary-subtle text-primary">
-                    Búsqueda: "@_search"
-                    <button class="btn-close btn-close-sm ms-1" style="font-size:.6rem;" @onclick="@(() => { _search = ""; _currentPage = 1; })"></button>
-                </span>
-            }
-            @if (_fechaDesde.HasValue || _fechaHasta.HasValue)
-            {
-                <span class="badge bg-info-subtle text-info">
-                    @(_fechaDesde?.ToString("dd/MM/yy") ?? "…") → @(_fechaHasta?.ToString("dd/MM/yy") ?? "…")
-                    <button class="btn-close btn-close-sm ms-1" style="font-size:.6rem;" @onclick="LimpiarFechas"></button>
-                </span>
-            }
-            <span class="small text-muted-foreground ms-2">@Filtered.Count() resultado(s)</span>
+        <div class="d-flex flex-column align-items-center justify-content-center py-5 w-100" style="min-height:400px;">
+            <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">Cargando...</div>
         </div>
     }
+    else
+    {
+        
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Promociones</h1>
+                <p class="text-muted-foreground small mt-1 mb-0">Crea y administra descuentos vinculados a productos del catálogo</p>
+            </div>
+            <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-semibold" style="border-radius:var(--radius);">
+                <i class="fa-solid fa-plus"></i> Nueva Promoción
+            </button>
+        </div>
 
-    <!-- Tabla -->
-    <div class="card" style="overflow:visible;">
-        <div class="table-responsive" style="overflow:visible;">
-            <table class="table table-borderless mb-0 align-middle">
-                <thead class="border-bottom border-color-default">
-                    <tr>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Promoción</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Descuento</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Vigencia</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-lg-table-cell" style="letter-spacing:.05em;">Productos</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Estado</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var promo in Paged)
-                    {
-                        var isVigente = IsActive(promo);
-                        var vencida   = !promo.Activo || promo.FechaFin < DateTime.Today;
-                        <tr class="border-bottom border-color-default" style="transition:background .15s;">
-                            <td class="px-4 py-3">
-                                <div class="d-flex align-items-start gap-3">
-                                    <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
-                                         style="width:40px;height:40px;background:color-mix(in srgb,@(promo.TipoDescuento == "PORCENTAJE" ? "#f59e0b" : "#2563EB") 15%,transparent);">
-                                        <i class="fas @(promo.TipoDescuento == "PORCENTAJE" ? "fa-percent" : "fa-dollar-sign")"
-                                           style="color:@(promo.TipoDescuento == "PORCENTAJE" ? "#f59e0b" : "#2563EB");font-size:.9rem;"></i>
+        <!-- KPI -->
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="metric-card-kpi">
+                    <div><div class="metric-kpi-value text-foreground">@_promos.Count</div><div class="metric-kpi-label">Total</div></div>
+                    <div class="metric-kpi-icon kpi-icon-primary"><i class="fas fa-tags"></i></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="metric-card-kpi">
+                    <div><div class="metric-kpi-value text-success">@_promos.Count(p => IsActive(p))</div><div class="metric-kpi-label">Vigentes</div></div>
+                    <div class="metric-kpi-icon kpi-icon-success"><i class="fas fa-check-circle"></i></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="metric-card-kpi">
+                    <div><div class="metric-kpi-value text-warning">@_promos.Count(p => p.TipoDescuento == "PORCENTAJE")</div><div class="metric-kpi-label">Por %</div></div>
+                    <div class="metric-kpi-icon kpi-icon-warning"><i class="fas fa-percent"></i></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="metric-card-kpi">
+                    <div><div class="metric-kpi-value text-primary">@_promos.Count(p => p.TipoDescuento == "MONTO_FIJO")</div><div class="metric-kpi-label">Monto Fijo</div></div>
+                    <div class="metric-kpi-icon kpi-icon-info"><i class="fas fa-dollar-sign"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="card p-4" style="border-radius:12px;">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small fw-medium text-foreground mb-1">Buscar</label>
+                    <div class="position-relative">
+                        <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y text-muted" style="left:16px;font-size:14px;"></i>
+                        <input type="search" @bind="_search" @bind:event="oninput" @bind:after="OnFilterChange"
+                               class="form-control text-foreground" placeholder="Buscar por nombre o descripción..."
+                               style="height:44px;border-radius:10px;padding-left:42px;" />
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-medium text-foreground mb-1">Tipo</label>
+                    <select @bind="_tipoFilter" @bind:after="OnFilterChange" class="form-select text-foreground" style="height:44px;border-radius:10px;">
+                        <option value="">Todos</option>
+                        <option value="PORCENTAJE">Porcentaje</option>
+                        <option value="MONTO_FIJO">Monto Fijo</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-medium text-foreground mb-1">Estado</label>
+                    <select @bind="_estadoFilter" @bind:after="OnFilterChange" class="form-select text-foreground" style="height:44px;border-radius:10px;">
+                        <option value="">Todos</option>
+                        <option value="activo">Activas</option>
+                        <option value="inactivo">Inactivas</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-medium text-foreground mb-1">Desde</label>
+                    <input type="date" @bind="_fechaDesde" @bind:after="OnFilterChange"
+                           class="form-control text-foreground" style="height:44px;" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-medium text-foreground mb-1">Hasta</label>
+                    <input type="date" @bind="_fechaHasta" @bind:after="OnFilterChange"
+                           class="form-control text-foreground" style="height:44px;" />
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Filtros activos -->
+        @if (TieneFiltrosActivos)
+        {
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="small text-muted-foreground">Filtros activos:</span>
+                @if (!string.IsNullOrEmpty(_search))
+                {
+                    <span class="badge bg-primary-subtle text-primary">
+                        Búsqueda: "@_search"
+                        <button class="btn-close btn-close-sm ms-1" style="font-size:.6rem;" @onclick="@(() => { _search = ""; _currentPage = 1; })"></button>
+                    </span>
+                }
+                @if (_fechaDesde.HasValue || _fechaHasta.HasValue)
+                {
+                    <span class="badge bg-info-subtle text-info">
+                        @(_fechaDesde?.ToString("dd/MM/yy") ?? "…") → @(_fechaHasta?.ToString("dd/MM/yy") ?? "…")
+                        <button class="btn-close btn-close-sm ms-1" style="font-size:.6rem;" @onclick="LimpiarFechas"></button>
+                    </span>
+                }
+                <span class="small text-muted-foreground ms-2">@Filtered.Count() resultado(s)</span>
+            </div>
+        }
+
+        <!-- Tabla -->
+        <div class="card" style="overflow:visible;">
+            <div class="table-responsive" style="overflow:visible;">
+                <table class="table table-borderless mb-0 align-middle">
+                    <thead class="border-bottom border-color-default">
+                        <tr>
+                            <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Promoción</th>
+                            <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Descuento</th>
+                            <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Vigencia</th>
+                            <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-lg-table-cell" style="letter-spacing:.05em;">Productos</th>
+                            <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Estado</th>
+                            <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var promo in Paged)
+                        {
+                            var isVigente = IsActive(promo);
+                            var vencida   = !promo.Activo || promo.FechaFin < DateTime.Today;
+                            <tr class="border-bottom border-color-default" style="transition:background .15s;">
+                                <td class="px-4 py-3">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0"
+                                             style="width:40px;height:40px;background:color-mix(in srgb,@(promo.TipoDescuento == "PORCENTAJE" ? "#f59e0b" : "#2563EB") 15%,transparent);">
+                                            <i class="fas @(promo.TipoDescuento == "PORCENTAJE" ? "fa-percent" : "fa-dollar-sign")"
+                                               style="color:@(promo.TipoDescuento == "PORCENTAJE" ? "#f59e0b" : "#2563EB");font-size:.9rem;"></i>
+                                        </div>
+                                        <div>
+                                            <p class="fw-semibold text-foreground mb-0 small">@promo.Nombre</p>
+                                            @if (!string.IsNullOrEmpty(promo.Descripcion))
+                                            { <p class="text-xs text-muted-foreground mb-0">@promo.Descripcion</p> }
+                                            @if (!string.IsNullOrEmpty(promo.Condiciones))
+                                            { <p class="text-xs text-muted-foreground mb-0"><i class="fa-solid fa-circle-info me-1"></i>@promo.Condiciones</p> }
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p class="fw-semibold text-foreground mb-0 small">@promo.Nombre</p>
-                                        @if (!string.IsNullOrEmpty(promo.Descripcion))
-                                        { <p class="text-xs text-muted-foreground mb-0">@promo.Descripcion</p> }
-                                        @if (!string.IsNullOrEmpty(promo.Condiciones))
-                                        { <p class="text-xs text-muted-foreground mb-0"><i class="fa-solid fa-circle-info me-1"></i>@promo.Condiciones</p> }
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3 small">
-                                <span class="badge fs-6 px-3 py-2 @(promo.TipoDescuento == "PORCENTAJE" ? "bg-warning-subtle text-warning" : "bg-info-subtle text-info")" style="border-radius:var(--radius);">
-                                    @(promo.TipoDescuento == "PORCENTAJE" ? $"{promo.ValorDescuento}%" : $"S/. {promo.ValorDescuento:0.00}")
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 small text-muted-foreground d-none d-md-table-cell">
-                                <div><span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:.7rem;">Inicio</span>@promo.FechaInicio.ToString("dd/MM/yy")</div>
-                                <div class="mt-1"><span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:.7rem;">Fin</span>@promo.FechaFin.ToString("dd/MM/yy")</div>
-                            </td>
-                            <td class="px-4 py-3 small text-muted-foreground d-none d-lg-table-cell">
-                                @if (promo.ProductoIds.Count == 0)
-                                { <span class="text-muted-foreground fst-italic">Ninguno asignado</span> }
-                                else
-                                {
-                                    <div class="d-flex flex-wrap gap-1">
-                                        @foreach (var pid in promo.ProductoIds.Take(3))
-                                        {
-                                            var pNombre = _allProducts.FirstOrDefault(p => p.Id == pid)?.Name ?? $"ID {pid}";
-                                            <span class="badge bg-secondary" style="font-size:.7rem;border-radius:6px;">@pNombre</span>
-                                        }
-                                        @if (promo.ProductoIds.Count > 3)
-                                        { <span class="badge bg-secondary-subtle text-secondary" style="font-size:.7rem;border-radius:6px;">+@(promo.ProductoIds.Count - 3) más</span> }
-                                    </div>
-                                }
-                            </td>
-                            <td class="px-4 py-3">
-                                @if (isVigente)
-                                {
-                                    <span class="badge bg-success px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">✓ Vigente</span>
-                                }
-                                else if (promo.Activo && promo.FechaInicio > DateTime.Today)
-                                {
-                                    <span class="badge bg-primary-subtle text-primary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">⏳ Próxima</span>
-                                }
-                                else if (promo.FechaFin < DateTime.Today)
-                                {
-                                    <!-- Vencida: mostrar badge rojo -->
-                                    <span class="badge px-2 py-1" style="background:#fff0f0;color:#c62828;border:1px solid #f5c6c6;border-radius:var(--radius);font-size:.75rem;">
-                                        <i class="fa-solid fa-clock-rotate-left me-1"></i>Vencida
+                                </td>
+                                <td class="px-4 py-3 small">
+                                    <span class="badge fs-6 px-3 py-2 @(promo.TipoDescuento == "PORCENTAJE" ? "bg-warning-subtle text-warning" : "bg-info-subtle text-info")" style="border-radius:var(--radius);">
+                                        @(promo.TipoDescuento == "PORCENTAJE" ? $"{promo.ValorDescuento}%" : $"S/. {promo.ValorDescuento:0.00}")
                                     </span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">Inactiva</span>
-                                }
-                            </td>
-                            <td class="px-4 py-3 text-end">
-                                <div class="d-flex align-items-center justify-content-end gap-1">
-                                    <button @onclick="@(() => OpenEdit(promo))"
-                                            class="btn btn-ghost btn-sm text-muted-foreground"
-                                            style="border-radius:var(--radius);" title="Editar">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </button>
-                                    @if (!vencida)
+                                </td>
+                                <td class="px-4 py-3 small text-muted-foreground d-none d-md-table-cell">
+                                    <div><span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:.7rem;">Inicio</span>@promo.FechaInicio.ToString("dd/MM/yy")</div>
+                                    <div class="mt-1"><span class="badge bg-secondary-subtle text-secondary me-1" style="font-size:.7rem;">Fin</span>@promo.FechaFin.ToString("dd/MM/yy")</div>
+                                </td>
+                                <td class="px-4 py-3 small text-muted-foreground d-none d-lg-table-cell">
+                                    @if (promo.ProductoIds.Count == 0)
+                                    { <span class="text-muted-foreground fst-italic">Ninguno asignado</span> }
+                                    else
                                     {
-                                        <!-- Solo mostrar toggle si NO está vencida -->
-                                        <button @onclick="@(() => AskToggle(promo.Id))"
-                                                class="btn btn-ghost btn-sm @(promo.Activo ? "text-warning" : "text-success")"
-                                                style="border-radius:var(--radius);" title="@(promo.Activo ? "Desactivar" : "Activar")">
-                                            <i class="fa-solid @(promo.Activo ? "fa-eye-slash" : "fa-eye")"></i>
-                                        </button>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach (var pid in promo.ProductoIds.Take(3))
+                                            {
+                                                var pNombre = _allProducts.FirstOrDefault(p => p.Id == pid)?.Name ?? $"ID {pid}";
+                                                <span class="badge bg-secondary" style="font-size:.7rem;border-radius:6px;">@pNombre</span>
+                                            }
+                                            @if (promo.ProductoIds.Count > 3)
+                                            { <span class="badge bg-secondary-subtle text-secondary" style="font-size:.7rem;border-radius:6px;">+@(promo.ProductoIds.Count - 3) más</span> }
+                                        </div>
+                                    }
+                                </td>
+                                <td class="px-4 py-3">
+                                    @if (isVigente)
+                                    {
+                                        <span class="badge bg-success px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">✓ Vigente</span>
+                                    }
+                                    else if (promo.Activo && promo.FechaInicio > DateTime.Today)
+                                    {
+                                        <span class="badge bg-primary-subtle text-primary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">⏳ Próxima</span>
+                                    }
+                                    else if (promo.FechaFin < DateTime.Today)
+                                    {
+                                        <!-- Vencida: mostrar badge rojo -->
+                                        <span class="badge px-2 py-1" style="background:#fff0f0;color:#c62828;border:1px solid #f5c6c6;border-radius:var(--radius);font-size:.75rem;">
+                                            <i class="fa-solid fa-clock-rotate-left me-1"></i>Vencida
+                                        </span>
                                     }
                                     else
                                     {
-                                        <!-- Vencida: ojo deshabilitado con tooltip explicativo -->
-                                        <button disabled class="btn btn-ghost btn-sm text-muted-foreground" style="border-radius:var(--radius);opacity:.4;"
-                                                title="No se puede activar: la fecha de vigencia ya venció">
-                                            <i class="fa-solid fa-eye-slash"></i>
-                                        </button>
+                                        <span class="badge bg-secondary px-2 py-1" style="border-radius:var(--radius);font-size:.75rem;">Inactiva</span>
                                     }
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                    @if (!Paged.Any())
-                    {
-                        <tr><td colspan="6" class="text-center py-5 text-muted-foreground">No se encontraron promociones</td></tr>
-                    }
-                </tbody>
-            </table>
+                                </td>
+                                <td class="px-4 py-3 text-end">
+                                    <div class="d-flex align-items-center justify-content-end gap-1">
+                                        <button @onclick="@(() => OpenEdit(promo))"
+                                                class="btn btn-ghost btn-sm text-muted-foreground"
+                                                style="border-radius:var(--radius);" title="Editar">
+                                            <i class="fa-solid fa-pen-to-square"></i>
+                                        </button>
+                                        @if (!vencida)
+                                        {
+                                            <!-- Solo mostrar toggle si NO está vencida -->
+                                            <button @onclick="@(() => AskToggle(promo.Id))"
+                                                    class="btn btn-ghost btn-sm @(promo.Activo ? "text-warning" : "text-success")"
+                                                    style="border-radius:var(--radius);" title="@(promo.Activo ? "Desactivar" : "Activar")">
+                                                <i class="fa-solid @(promo.Activo ? "fa-eye-slash" : "fa-eye")"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <!-- Vencida: ojo deshabilitado con tooltip explicativo -->
+                                            <button disabled class="btn btn-ghost btn-sm text-muted-foreground" style="border-radius:var(--radius);opacity:.4;"
+                                                    title="No se puede activar: la fecha de vigencia ya venció">
+                                                <i class="fa-solid fa-eye-slash"></i>
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        @if (!Paged.Any())
+                        {
+                            <tr><td colspan="6" class="text-center py-5 text-muted-foreground">No se encontraron promociones</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
 
-    @if (TotalPages > 1)
-    {
-        <div class="d-flex justify-content-center align-items-center gap-2 py-2">
-            <button class="btn btn-sm rounded-circle pag-btn" @onclick="@(() => GoToPage(_currentPage - 1))" disabled="@(_currentPage == 1)" style="width:36px;height:36px;"><i class="fa-solid fa-chevron-left" style="font-size:.75rem;"></i></button>
-            @for (int p = 1; p <= TotalPages; p++) { var pg = p;
-                <button class="btn btn-sm rounded-circle pag-btn @(pg == _currentPage ? "pag-active" : "")" @onclick="@(() => GoToPage(pg))" style="width:36px;height:36px;font-size:.85rem;font-weight:600;">@pg</button>
-            }
-            <button class="btn btn-sm rounded-circle pag-btn" @onclick="@(() => GoToPage(_currentPage + 1))" disabled="@(_currentPage == TotalPages)" style="width:36px;height:36px;"><i class="fa-solid fa-chevron-right" style="font-size:.75rem;"></i></button>
-        </div>
+        @if (TotalPages > 1)
+        {
+            <div class="d-flex justify-content-center align-items-center gap-2 py-2">
+                <button class="btn btn-sm rounded-circle pag-btn" @onclick="@(() => GoToPage(_currentPage - 1))" disabled="@(_currentPage == 1)" style="width:36px;height:36px;"><i class="fa-solid fa-chevron-left" style="font-size:.75rem;"></i></button>
+                @for (int p = 1; p <= TotalPages; p++) { var pg = p;
+                    <button class="btn btn-sm rounded-circle pag-btn @(pg == _currentPage ? "pag-active" : "")" @onclick="@(() => GoToPage(pg))" style="width:36px;height:36px;font-size:.85rem;font-weight:600;">@pg</button>
+                }
+                <button class="btn btn-sm rounded-circle pag-btn" @onclick="@(() => GoToPage(_currentPage + 1))" disabled="@(_currentPage == TotalPages)" style="width:36px;height:36px;"><i class="fa-solid fa-chevron-right" style="font-size:.75rem;"></i></button>
+            </div>
+        }
     }
+
 </div>
 
 <!-- Modal Crear/Editar -->
@@ -482,6 +509,7 @@
 @code {
     private List<Promocion> _promos      = new();
     private List<Product>   _allProducts = new();
+    private bool _loading = true;
 
     private string    _search        = "";
     private string    _tipoFilter    = "";
@@ -511,26 +539,34 @@
     private int    _pendingToggleId;
     private string _toastMsg = "";
 
-   protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync()
     {
-        Console.WriteLine("PASO 1");
+        try
+        {
+             Console.WriteLine("PASO 1");
 
-        await ProductSvc.EnsureLoadedAsync(recargar: true);
+            await ProductSvc.EnsureLoadedAsync(recargar: true);
 
-        Console.WriteLine("PASO 2");
+            Console.WriteLine("PASO 2");
 
-        _allProducts = ProductSvc.GetProducts();
+            _allProducts = ProductSvc.GetProducts();
 
-        await PromoSvc.EnsureLoadedAsync(recargar: true);
+            await PromoSvc.EnsureLoadedAsync(recargar: true);
 
-        Console.WriteLine("PASO 3");
+            Console.WriteLine("PASO 3");
 
-        _promos = new List<Promocion>(PromoSvc.GetPromociones());
+            _promos = new List<Promocion>(PromoSvc.GetPromociones());
 
-        Console.WriteLine($"PROMOS={_promos.Count}");
+            Console.WriteLine($"PROMOS={_promos.Count}");
 
-        SyncProductBadges();
-}
+            SyncProductBadges();
+
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
 
     private IEnumerable<Promocion> Filtered => _promos.Where(p =>
         (string.IsNullOrEmpty(_search) ||

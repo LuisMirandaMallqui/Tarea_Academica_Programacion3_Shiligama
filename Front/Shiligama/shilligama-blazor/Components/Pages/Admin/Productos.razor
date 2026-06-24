@@ -11,9 +11,32 @@
 @using Microsoft.JSInterop
 <PageTitle>Productos – Shiligama Admin</PageTitle>
 
-<div class="d-flex flex-column gap-4">
+<style>
+    @@keyframes cartTrip {
+        0%   { transform: translateX(-120px);                        opacity: 0; }
+        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
+        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
+        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
+        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
+        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
+        85%  { transform: translateX(120px);                        opacity: 0; }
+        100% { transform: translateX(120px);                        opacity: 0; }
+    }
+</style>
 
-    <!-- ── Encabezado ── -->
+<div class="d-flex flex-column gap-4">
+     @if (_loading)
+    {
+        <div class="d-flex flex-column align-items-center justify-content-center py-5 w-100" style="min-height:400px;">
+            <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">Cargando...</div>
+        </div>
+    }
+    else
+    {
+            <!-- ── Encabezado ── -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
             <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Productos</h1>
@@ -248,6 +271,8 @@
             </button>
         </div>
     }
+    }
+
 </div>
 
 <!-- Modal: Confirmar guardar -->
@@ -471,6 +496,7 @@
     private List<Product>   _products   = new();
     private List<Category>  _categories = new();
     private List<Promocion> _promos     = new();
+    private bool _loading = true;
 
     private string _search = ""; private string _categoryFilter = "";
     private string _filterOption = "";
@@ -503,14 +529,24 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await ProductSvc.EnsureLoadedAsync(recargar: true);
-        // PromocionService ya carga con /con-productos — una sola llamada, sin N+1
-        await PromoSvc.EnsureLoadedAsync();
-        _products   = ProductSvc.GetProducts();
-        _categories = ProductSvc.GetCategories();
-        _promos     = new List<Promocion>(PromoSvc.GetPromociones());
-        // NO hay loop aquí de GetProductosDePromocionAsync — ya vienen incluidos
-        SyncProductBadges();
+
+          try
+        {
+            await ProductSvc.EnsureLoadedAsync(recargar: true);
+            // PromocionService ya carga con /con-productos — una sola llamada, sin N+1
+            await PromoSvc.EnsureLoadedAsync();
+            _products   = ProductSvc.GetProducts();
+            _categories = ProductSvc.GetCategories();
+            _promos     = new List<Promocion>(PromoSvc.GetPromociones());
+            // NO hay loop aquí de GetProductosDePromocionAsync — ya vienen incluidos
+            SyncProductBadges(); 
+            
+        }
+        finally
+        {
+            _loading = false;
+        }
+        
     }
 
     private void SyncProductBadges()
