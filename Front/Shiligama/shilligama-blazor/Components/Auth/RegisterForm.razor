@@ -1,5 +1,6 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
+@inject CartService Cart
 
 <div class="d-flex flex-column gap-4">
 
@@ -191,7 +192,10 @@
             _nombres.Trim(), _apellidos.Trim(), _dni.Trim(), _email.Trim(), _password);
 
         if (ok)
+        {
+            await Cart.ClearCartAsync();
             Navigation.NavigateTo(GetSafeReturnUrl() ?? "/catalogo");
+        }
         else
         {
             _error = "No se pudo crear la cuenta. Verifica los datos o intenta con otro correo/DNI.";
