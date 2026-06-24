@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Serialization;
+using static System.Net.WebRequestMethods;
 
 namespace shilligama_blazor.Models;
 
@@ -54,6 +55,12 @@ internal class DevolucionApi
             Observations = Observaciones,
             RegisteredBy = NombreTrabajador,
             Date = FechaHora ?? DateTime.Now,
+            Estado = EstadoDevolucion?.ToUpper() switch
+            {
+                "APROBADO" => "aprobado",
+                "RECHAZADO" => "rechazado",
+                _ => "pendiente"
+            },
             Detalles = Detalles,
             Product = string.Join(", ", Detalles.Select(d => d.NombreProducto)),
             ProductCode = string.Join(", ", Detalles.Select(d => $"PROD-{d.IdProducto:D3}")),
@@ -72,7 +79,7 @@ internal class DevolucionApi
             Cantidad = r.Detalles != null && r.Detalles.Any() ? r.Detalles.Sum(d => d.Cantidad) : r.Quantity,
             Motivo = r.Reason ?? "",
             Observaciones = r.Observations ?? "",
-            EstadoDevolucion = "PENDIENTE",
+            EstadoDevolucion = r.Estado?.ToUpper() ?? "PENDIENTE",
             Activo = true,
             FechaHora = new DateTime(DateTime.Now.Ticks / 10_000_000 * 10_000_000), // sin nanosegundos
             Detalles = r.Detalles?.Select(d => new DetalleDevolucionApi
@@ -83,4 +90,6 @@ internal class DevolucionApi
                 Cantidad = d.Cantidad
             }).ToList() ?? new()
         };
+
+    
 }

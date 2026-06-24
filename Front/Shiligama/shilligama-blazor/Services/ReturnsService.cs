@@ -138,6 +138,30 @@ public class ReturnsService
         if (int.TryParse(id.Replace("DEV-", ""), out var numId))
             _ = _http.DeleteAsync($"devoluciones/{numId}");
     }
+
+
+    public async Task<bool> CambiarEstadoAsync(Return returnItem, string nuevoEstado, int idUsuarioRegistra)
+    {
+        returnItem.Estado = nuevoEstado.ToLower();
+
+        // Obtener idProducto del primer detalle si existe
+        int idProducto = returnItem.Detalles != null && returnItem.Detalles.Any()
+            ? returnItem.Detalles.First().IdProducto
+            : 1; // fallback mínimo para pasar validación
+
+        var dto = DevolucionApi.FromReturn(returnItem, idProducto, idUsuarioRegistra);
+
+        try
+        {
+            var resp = await _http.PutAsJsonAsync("devoluciones", dto);
+            return resp.IsSuccessStatusCode;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            return false;
+        }
+    }   
 }
 
 // ── DevolucionApi se encuentra en Models/Api/DevolucionApi.cs ──

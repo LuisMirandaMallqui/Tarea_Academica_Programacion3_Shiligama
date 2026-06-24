@@ -144,13 +144,12 @@
                 <div class="d-flex justify-content-end gap-3 mt-3 pb-4">
                     @if (!_ventaConfirmada)
                     {
-                        <button class="btn btn-white text-foreground fw-semibold d-flex align-items-center gap-2 border shadow-sm px-4"
-                                disabled style="border-radius:0.5rem;height:44px;border-color:#dee2e6;opacity:0.6;">
-                            <i class="fas fa-receipt text-muted-foreground"></i> Generar Boleta
-                        </button>
-                        <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm"
-                                @onclick="ConfirmarVentaPOS" disabled="@_isProcessing"
-                                style="border-radius:0.5rem;height:44px;background-color:#064420;border:none;">
+                        <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm
+                            @(_isProcessing ? "btn-process-blue" : "btn-process-green")"
+                                @onclick="ConfirmarVentaPOS"
+                                disabled="@_isProcessing"
+                                style="border-radius:0.5rem;height:44px;border:none;">
+    
                             @if (_isProcessing)
                             {
                                 <span class="spinner-border spinner-border-sm"></span>
@@ -165,9 +164,12 @@
                     }
                     else
                     {
-                        <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm"
-                                @onclick="GenerarBoletaPOS" disabled="@_isProcessing"
-                                style="border-radius:0.5rem;height:44px;border:none;background-color:#198754;">
+                        <button class="btn text-white fw-semibold d-flex align-items-center gap-2 px-4 shadow-sm
+                            @(_isProcessing ? "btn-process-blue" : "btn-process-green")"
+                                @onclick="GenerarBoletaPOS"
+                                disabled="@_isProcessing"
+                                style="border-radius:0.5rem;height:44px;border:none;">
+
                             @if (_isProcessing)
                             {
                                 <span class="spinner-border spinner-border-sm"></span>

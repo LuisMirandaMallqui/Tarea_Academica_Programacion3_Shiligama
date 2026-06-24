@@ -6,6 +6,19 @@
 
 <PageTitle>Personal – Shiligama Admin</PageTitle>
 
+<style>
+    @@keyframes cartTrip {
+        0%   { transform: translateX(-120px);                        opacity: 0; }
+        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
+        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
+        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
+        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
+        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
+        85%  { transform: translateX(120px);                        opacity: 0; }
+        100% { transform: translateX(120px);                        opacity: 0; }
+    }
+</style>
+
 <div class="d-flex flex-column gap-4">
 
     <!-- ── Encabezado ── -->
@@ -69,70 +82,105 @@
         </div>
     </div>
 
-    <!-- ── Tabla ── -->
+    <!-- Tabla -->
     <div class="card overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-borderless mb-0 align-middle">
-                <thead class="border-bottom border-color-default">
-                    <tr>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Trabajador</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Rol</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">DNI</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Fecha Ingreso</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Estado</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var s in Filtered)
-                    {
-                        var esMiPerfil = Auth.CurrentUser?.Id.ToString() == s.Id;
-                        <tr class="border-bottom border-color-default">
-                            <td class="px-4 py-3 d-flex align-items-center gap-3">
-                                <img src="@s.Avatar" alt="@s.Nombre"
-                                     class="rounded-circle flex-shrink-0 object-fit-cover"
-                                     style="width:40px;height:40px;"
-                                     onerror="this.src='https://placehold.co/40/e0e0e0/555?text=U'" />
-                                <div>
-                                    <span class="fw-semibold text-foreground d-block small">
-                                        @s.Nombre
-                                        @if (esMiPerfil) { <span class="badge bg-primary ms-1" style="font-size:.6rem;">Tú</span> }
-                                    </span>
-                                    <span class="text-xs text-muted-foreground">@s.Correo</span>
-                                </div>
-                            </td>
-                            <td class="px-4 py-3 small">
-                                <span class="badge @(s.Rol == "administrador" ? "bg-primary-subtle text-primary" : "bg-secondary text-muted-foreground")" style="border-radius:var(--radius);">
-                                    @s.Rol
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">@s.Dni</td>
-                            <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">@s.FechaIngreso.ToString("dd MMM yyyy")</td>
-                            <td class="px-4 py-3">
-                                <span class="badge @(s.Estado == "activo" ? "bg-success" : "bg-danger") px-2 py-1" style="border-radius:var(--radius);">
-                                    @s.Estado
-                                </span>
-                            </td>
-                            <td class="px-4 py-3 text-end">
-                                <div class="d-flex align-items-center justify-content-end gap-2">
-                                    <button @onclick="@(() => OpenEdit(s))" class="btn btn-sm btn-light text-muted @(esMiPerfil ? "opacity-50" : "")" style="border-radius:var(--radius);" title="@(esMiPerfil ? "No puedes editar tu propio perfil aquí" : "Editar")" disabled="@esMiPerfil">
-                                        <i class="fa-solid fa-pen-to-square"></i>
-                                    </button>
-                                    <button @onclick="@(() => AskToggleEstado(s))"
-                                            class="btn btn-sm btn-light @(esMiPerfil ? "opacity-50" : (s.Estado == "activo" ? "text-warning" : "text-success"))"
-                                            style="border-radius:var(--radius);" title="@(esMiPerfil ? "No puedes desactivar tu propio perfil" : (s.Estado == "activo" ? "Suspender" : "Activar"))" disabled="@esMiPerfil">
-                                        <i class="fa-solid @(s.Estado == "activo" ? "fa-eye-slash" : "fa-eye")"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                    @if (!Filtered.Any())
-                    { <tr><td colspan="6" class="text-center py-5 text-muted-foreground">No se encontraron miembros del personal</td></tr> }
-                </tbody>
-            </table>
-        </div>
+
+        @if (_loading)
+        {
+            <div class="d-flex flex-column align-items-center justify-content-center py-5"
+                 style="min-height:350px;">
+
+                <div style="font-size:4rem;
+                    color:#1A6B3C;
+                    animation:cartTrip 3.5s ease-in-out infinite;">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+
+                <div class="mt-3"
+                     style="color:#1A6B3C;font-weight:600;">
+                    Cargando personal...
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <!-- PEGA AQUÍ TODO EL CÓDIGO DE TU TABLA -->
+                <!-- ── Tabla ── -->
+                <div class="card overflow-hidden">
+                    <div class="table-responsive">
+                        <table class="table table-borderless mb-0 align-middle">
+                            <thead class="border-bottom border-color-default">
+                                <tr>
+                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Trabajador</th>
+                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Rol</th>
+                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">DNI</th>
+                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Fecha Ingreso</th>
+                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Estado</th>
+                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var s in Filtered)
+                                {
+                                    var esMiPerfil = Auth.CurrentUser?.Id.ToString() == s.Id;
+                                    <tr class="border-bottom border-color-default">
+                                        <td class="px-4 py-3 d-flex align-items-center gap-3">
+                                            <img src="@s.Avatar" alt="@s.Nombre"
+                                                 class="rounded-circle flex-shrink-0 object-fit-cover"
+                                                 style="width:40px;height:40px;"
+                                                 onerror="this.src='https://placehold.co/40/e0e0e0/555?text=U'" />
+                                            <div>
+                                                <span class="fw-semibold text-foreground d-block small">
+                                                    @s.Nombre
+                                                    @if (esMiPerfil)
+                                                    {
+                                                        <span class="badge bg-primary ms-1" style="font-size:.6rem;">Tú</span>
+                                                    }
+                                                </span>
+                                                <span class="text-xs text-muted-foreground">@s.Correo</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 small">
+                                            <span class="badge @(s.Rol == "administrador" ? "bg-primary-subtle text-primary" : "bg-secondary text-muted-foreground")" style="border-radius:var(--radius);">
+                                                @s.Rol
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">@s.Dni</td>
+                                        <td class="px-4 py-3 text-muted-foreground small d-none d-md-table-cell">@s.FechaIngreso.ToString("dd MMM yyyy")</td>
+                                        <td class="px-4 py-3">
+                                            <span class="badge @(s.Estado == "activo" ? "bg-success" : "bg-danger") px-2 py-1" style="border-radius:var(--radius);">
+                                                @s.Estado
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3 text-end">
+                                            <div class="d-flex align-items-center justify-content-end gap-2">
+                                                <button @onclick="@(() => OpenEdit(s))" class="btn btn-sm btn-light text-muted @(esMiPerfil ? "opacity-50" : "")" style="border-radius:var(--radius);" title="@(esMiPerfil ? "No puedes editar tu propio perfil aquí" : "Editar")" disabled="@esMiPerfil">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                </button>
+                                                <button @onclick="@(() => AskToggleEstado(s))"
+                                                        class="btn btn-sm btn-light @(esMiPerfil ? "opacity-50" : (s.Estado == "activo" ? "text-warning" : "text-success"))"
+                                                        style="border-radius:var(--radius);" title="@(esMiPerfil ? "No puedes desactivar tu propio perfil" : (s.Estado == "activo" ? "Suspender" : "Activar"))" disabled="@esMiPerfil">
+                                                    <i class="fa-solid @(s.Estado == "activo" ? "fa-eye-slash" : "fa-eye")"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                @if (!Filtered.Any())
+                                {
+                                    <tr><td colspan="6" class="text-center py-5 text-muted-foreground">No se encontraron miembros del personal</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
     </div>
+
+    
 </div>
 
 <!-- ── Modal: Confirmar toggle estado ── -->
@@ -363,6 +411,8 @@
 }
 
 @code {
+    private bool _loading = true;
+
     private List<Staff> _staff = new();
     private string _search       = "";
     private string _roleFilter   = "";
@@ -387,9 +437,13 @@
 
     protected override async Task OnInitializedAsync()
     {
+        _loading = true;
         await StaffSvc.EnsureLoadedAsync();
         _staff = StaffSvc.GetStaff();
+        _loading = false;
     }
+
+  
 
     private IEnumerable<Staff> Filtered => _staff.Where(s =>
         (string.IsNullOrEmpty(_search) ||

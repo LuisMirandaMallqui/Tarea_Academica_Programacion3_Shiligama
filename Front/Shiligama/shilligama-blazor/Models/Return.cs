@@ -14,6 +14,7 @@ public class Return
     public string RegisteredBy { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public string Observations { get; set; } = string.Empty;
+    public string Estado { get; set; } = "pendiente"; // "pendiente" | "aceptado" | "rechazado"
     public int? IdPedido { get; set; }
     public List<DetalleDevolucionApi> Detalles { get; set; } = new();
 }
