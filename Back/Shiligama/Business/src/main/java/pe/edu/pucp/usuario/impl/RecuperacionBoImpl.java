@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import pe.edu.pucp.config.Config;
+import pe.edu.pucp.config.HashUtil;
 import pe.edu.pucp.correo.EnvioCorreo;
 import pe.edu.pucp.model.seguridad.TokenRecuperacion;
 import pe.edu.pucp.model.seguridad.UsuarioBasicoDto;
@@ -77,10 +78,20 @@ public class RecuperacionBoImpl implements RecuperacionBo {
             throw new Exception("El token de recuperación expiró o ya fue utilizado.");
         }
 
-        // NOTA: el sistema almacena la contraseña en texto plano (igual que el
-        // login actual). Se recomienda migrar a hash (BCrypt) en el futuro.
-        recuperacionDao.actualizarContrasena(recuperado.getIdUsuario(), nuevaContrasena);
+        recuperacionDao.actualizarContrasena(recuperado.getIdUsuario(), HashUtil.sha256(nuevaContrasena));
         recuperacionDao.marcarTokenUsado(recuperado.getIdToken());
+        return true;
+    }
+
+    @Override
+    public boolean cambiarContrasena(int idUsuario, String nuevaContrasena) throws Exception {
+        if (idUsuario <= 0) {
+            throw new Exception("El ID de usuario es inválido.");
+        }
+        if (nuevaContrasena == null || nuevaContrasena.length() < 6) {
+            throw new Exception("La nueva contraseña debe tener al menos 6 caracteres.");
+        }
+        recuperacionDao.actualizarContrasena(idUsuario, HashUtil.sha256(nuevaContrasena));
         return true;
     }
 

@@ -47,6 +47,86 @@
         </div>
     </div>
 
+    <!-- Card cambiar contraseña -->
+    <div class="card bg-white border border-color-default shadow-sm p-4 rounded-4">
+
+        <div class="d-flex align-items-start justify-content-between gap-3 mb-4 flex-wrap">
+            <div>
+                <h3 class="fw-bold text-foreground mb-1" style="font-family:'Outfit',sans-serif;font-size:1.25rem;">
+                    Cambiar Contraseña
+                </h3>
+                <p class="text-muted-foreground small mb-0">
+                    @(_isChangingPassword ? "Ingresa tu contraseña actual y la nueva" : "Actualiza tu contraseña de acceso")
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                @if (!_isChangingPassword)
+                {
+                    <button @onclick="EnablePasswordChange" class="btn btn-profile-action d-flex align-items-center gap-2">
+                        <i class="fas fa-key" style="font-size:0.8rem;"></i> Cambiar contraseña
+                    </button>
+                }
+                else
+                {
+                    <button @onclick="CancelPasswordChange" class="btn btn-profile-action d-flex align-items-center gap-2" disabled="@_savingPassword">
+                        <i class="fas fa-times" style="font-size:0.85rem;"></i> Cancelar
+                    </button>
+                    <button @onclick="SavePassword" class="btn btn-profile-save d-flex align-items-center gap-2 text-white" disabled="@_savingPassword">
+                        @if (_savingPassword)
+                        { <span class="spinner-border spinner-border-sm me-1"></span><span>Guardando…</span> }
+                        else
+                        { <i class="fas fa-save" style="font-size:0.85rem;"></i><span> Guardar</span> }
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (_isChangingPassword)
+        {
+            @if (!string.IsNullOrEmpty(_passwordError))
+            {
+                <div class="alert alert-danger p-3 border-0 mb-3" style="border-radius:0.5rem;font-size:0.88rem;">
+                    <i class="fas fa-exclamation-circle me-2"></i>@_passwordError
+                </div>
+            }
+            @if (_passwordSuccess)
+            {
+                <div class="alert p-3 border-0 mb-3" style="border-radius:0.5rem;font-size:0.88rem;background:#e8f5e9;color:#1b5e20;">
+                    <i class="fas fa-check-circle me-2"></i>Contraseña actualizada correctamente.
+                </div>
+            }
+            <div class="d-flex flex-column gap-3">
+                <div class="profile-field-group">
+                    <label class="profile-field-label"><i class="fas fa-lock"></i> Contraseña actual</label>
+                    <input type="password" @bind="_currentPassword" class="form-control text-foreground mt-1"
+                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="••••••••" />
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label"><i class="fas fa-lock"></i> Nueva contraseña</label>
+                    <input type="password" @bind="_newPassword" class="form-control text-foreground mt-1"
+                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="Mínimo 6 caracteres" />
+                </div>
+                <div class="profile-field-group">
+                    <label class="profile-field-label"><i class="fas fa-lock"></i> Confirmar nueva contraseña</label>
+                    <input type="password" @bind="_confirmPassword" class="form-control text-foreground mt-1"
+                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="Repite la nueva contraseña" />
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="profile-field-value text-muted-foreground" style="font-size:0.9rem;padding-left:0;">
+                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
+                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
+                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
+                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
+                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
+                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
+                <span class="ms-2" style="font-size:0.8rem;color:#6c757d;">Última contraseña guardada</span>
+            </div>
+        }
+    </div>
+
     <!-- Card información personal -->
     <div class="card bg-white border border-color-default shadow-sm p-4 rounded-4">
 
@@ -180,14 +260,23 @@
     private bool _success   = false;
     private string _error   = "";
 
-    // Campos editables
+    // Campos editables (perfil)
     private string _email = "";
     private string _phone = "";
 
-    // Campos de solo lectura (muestran datos del usuario logueado)
+    // Campos de solo lectura
     private string _firstName = "";
     private string _lastName  = "";
     private string _dni       = "";
+
+    // Estado cambio de contraseña
+    private bool _isChangingPassword = false;
+    private bool _savingPassword     = false;
+    private bool _passwordSuccess    = false;
+    private string _passwordError    = "";
+    private string _currentPassword  = "";
+    private string _newPassword      = "";
+    private string _confirmPassword  = "";
 
     protected override void OnInitialized()
     {
@@ -199,6 +288,60 @@
             _email     = Auth.CurrentUser.Email;
             _phone     = Auth.CurrentUser.Telefono ?? "";
         }
+    }
+
+    private void EnablePasswordChange()
+    {
+        _isChangingPassword = true;
+        _passwordSuccess    = false;
+        _passwordError      = "";
+        _currentPassword    = "";
+        _newPassword        = "";
+        _confirmPassword    = "";
+    }
+    private void CancelPasswordChange()
+    {
+        _isChangingPassword = false;
+        _passwordError      = "";
+        _passwordSuccess    = false;
+    }
+
+    private async Task SavePassword()
+    {
+        _passwordError   = "";
+        _passwordSuccess = false;
+
+        if (string.IsNullOrWhiteSpace(_currentPassword))
+        { _passwordError = "Ingresa tu contraseña actual."; return; }
+        if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 6)
+        { _passwordError = "La nueva contraseña debe tener al menos 6 caracteres."; return; }
+        if (_newPassword != _confirmPassword)
+        { _passwordError = "Las contraseñas nuevas no coinciden."; return; }
+
+        _savingPassword = true;
+        try
+        {
+            var dto = new { contrasenaActual = _currentPassword, nuevaContrasena = _newPassword };
+            var resp = await Http.PutAsJsonAsync($"trabajadores/{Auth.CurrentUser!.Id}/contrasena", dto);
+            if (resp.IsSuccessStatusCode)
+            {
+                _passwordSuccess    = true;
+                _isChangingPassword = false;
+                await Task.Delay(3000);
+                _passwordSuccess = false;
+                StateHasChanged();
+            }
+            else
+            {
+                var msg = await resp.Content.ReadAsStringAsync();
+                _passwordError = !string.IsNullOrEmpty(msg) ? msg : "No se pudo actualizar la contraseña.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _passwordError = $"Error de conexión: {ex.Message}";
+        }
+        finally { _savingPassword = false; }
     }
 
     private void EnableEditing()  { _isEditing = true;  _success = false; _error = ""; }

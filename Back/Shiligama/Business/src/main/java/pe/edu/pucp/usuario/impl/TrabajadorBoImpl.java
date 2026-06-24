@@ -1,6 +1,7 @@
 package pe.edu.pucp.usuario.impl;
 
 import java.util.List;
+import pe.edu.pucp.config.HashUtil;
 import pe.edu.pucp.model.usuario.Trabajador;
 import pe.edu.pucp.persistance.dao.usuario.impl.TrabajadorDaoImpl;
 import pe.edu.pucp.persistance.dao.usuario.dao.UsuarioDao;
@@ -16,6 +17,8 @@ public class TrabajadorBoImpl implements TrabajadorBo {
     @Override
     public int insertar(Trabajador trabajador) throws Exception {
         validar(trabajador, false);
+        // Hashear la contraseña antes de persistir
+        trabajador.setContrasena(HashUtil.sha256(trabajador.getContrasena()));
         return daoTrabajador.insertar(trabajador);
     }
 

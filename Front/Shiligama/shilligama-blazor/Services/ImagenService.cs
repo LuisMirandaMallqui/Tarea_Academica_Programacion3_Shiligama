@@ -44,7 +44,9 @@ public class ImagenService
             throw new ArgumentNullException(nameof(file));
 
         // ── Validar tipo ──────────────────────────────────────────────────────
-        var tipo = file.ContentType;
+        // Nota: IBrowserFile.ContentType depende del navegador.
+        // Firefox y Safari suelen devolver "" → inferimos el MIME desde la extensión.
+        var tipo = ResolverMime(file.ContentType, file.Name);
         if (Array.IndexOf(TIPOS_PERMITIDOS, tipo) < 0)
             throw new InvalidOperationException(
                 "Tipo de archivo no permitido. Use JPG, PNG, GIF o WebP.");
@@ -65,7 +67,7 @@ public class ImagenService
         {
             nombreArchivo = file.Name,
             datosBase64   = base64,
-            tipoContenido = tipo
+            tipoContenido = tipo   // ya normalizado, nunca vacío
         };
 
         var resp = await _http.PostAsJsonAsync("imagenes/upload", cuerpo);
@@ -83,5 +85,64 @@ public class ImagenService
                 errElem.GetString() ?? "Error desconocido al subir imagen.");
 
         throw new InvalidOperationException("Respuesta inesperada del servidor.");
+    }
+
+    /// <summary>
+    /// Alternativa sin streaming SignalR: recibe el contenido ya convertido a Base64
+    /// (leído localmente en el navegador via JS interop) y lo sube al backend.
+    /// Evita el canal SignalR para datos binarios, lo que previene cortes del circuito.
+    /// </summary>
+    public async Task<string> UploadBase64Async(string base64, string nombreArchivo, string tipoContenido)
+    {
+        if (string.IsNullOrWhiteSpace(base64))
+            throw new InvalidOperationException("No se recibieron datos de imagen.");
+
+        var tipo = ResolverMime(tipoContenido, nombreArchivo ?? "");
+        if (Array.IndexOf(TIPOS_PERMITIDOS, tipo) < 0)
+            throw new InvalidOperationException(
+                "Tipo de archivo no permitido. Use JPG, PNG, GIF o WebP.");
+
+        var cuerpo = new
+        {
+            nombreArchivo = nombreArchivo ?? "imagen",
+            datosBase64   = base64,
+            tipoContenido = tipo
+        };
+
+        var resp = await _http.PostAsJsonAsync("imagenes/upload", cuerpo);
+        resp.EnsureSuccessStatusCode();
+
+        using var doc = await JsonDocument.ParseAsync(
+                            await resp.Content.ReadAsStreamAsync());
+
+        if (doc.RootElement.TryGetProperty("url", out var urlElem))
+            return urlElem.GetString() ?? string.Empty;
+
+        if (doc.RootElement.TryGetProperty("error", out var errElem))
+            throw new InvalidOperationException(
+                errElem.GetString() ?? "Error desconocido al subir imagen.");
+
+        throw new InvalidOperationException("Respuesta inesperada del servidor.");
+    }
+
+    /// <summary>
+    /// Devuelve el MIME type a usar. Si el navegador ya lo reportó correctamente
+    /// (Edge, Chrome) lo usa directamente; si viene vacío (Firefox, Safari) lo
+    /// infiere desde la extensión del nombre de archivo.
+    /// </summary>
+    private static string ResolverMime(string? contentType, string fileName)
+    {
+        if (!string.IsNullOrWhiteSpace(contentType))
+            return contentType;
+
+        var ext = Path.GetExtension(fileName ?? "").ToLowerInvariant();
+        return ext switch
+        {
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png"            => "image/png",
+            ".gif"            => "image/gif",
+            ".webp"           => "image/webp",
+            _                 => string.Empty   // fallará validación con mensaje claro
+        };
     }
 }
