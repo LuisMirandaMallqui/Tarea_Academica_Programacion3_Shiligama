@@ -1,5 +1,16 @@
 @inject SalesService SalesSvc
 
+@if (_loading)
+{
+    <div class="d-flex flex-column align-items-center justify-content-center py-5 w-100" style="min-height:400px;">
+        <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">Cargando pedidos...</div>
+    </div>
+}
+else
+{
 <div class="d-flex flex-column gap-4">
 
     @if (ShowKpis)
@@ -51,34 +62,48 @@
         <p class="text-muted-foreground small mb-0">Visualiza y gestiona las solicitudes en tiempo real</p>
     </div>
 
-    <!-- Búsqueda + Filtros -->
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 bg-card p-3 border border-color-default shadow-sm" style="border-radius:var(--radius);">
-        <div class="filter-pills flex-grow-1">
-            @if (ActiveOnly)
-            {
-                <button class="filter-pill @(_selectedFilter=="todos"?"active":"")"      @onclick='@(()=>SetFilter("todos"))'>Todos (@TotalActiveOrders)</button>
-                <button class="filter-pill @(_selectedFilter=="recibido"?"active":"")"   @onclick='@(()=>SetFilter("recibido"))'><i class="fas fa-inbox me-1"></i>Recibidos (@CountByStatus("recibido"))</button>
-                <button class="filter-pill @(_selectedFilter=="en_proceso"?"active":"")"  @onclick='@(()=>SetFilter("en_proceso"))'><i class="fas fa-box-open me-1"></i>En proceso (@CountByStatus("en_proceso"))</button>
-            }
-            else
-            {
-                <button class="filter-pill @(_selectedFilter=="todos"?"active":"")"      @onclick='@(()=>SetFilter("todos"))'>Todos (@_allOrders.Count)</button>
-                <button class="filter-pill @(_selectedFilter=="recibido"?"active":"")"   @onclick='@(()=>SetFilter("recibido"))'><i class="fas fa-inbox me-1"></i>Recibidos (@CountByStatus("recibido"))</button>
-                <button class="filter-pill @(_selectedFilter=="en_proceso"?"active":"")" @onclick='@(()=>SetFilter("en_proceso"))'><i class="fas fa-box-open me-1"></i>En proceso (@CountByStatus("en_proceso"))</button>
-                <button class="filter-pill @(_selectedFilter=="atendido"?"active":"")"   @onclick='@(()=>SetFilter("atendido"))'><i class="fas fa-check-circle me-1"></i>Atendidos (@CountByStatus("atendido"))</button>
-                <button class="filter-pill @(_selectedFilter=="rechazado"?"active":"")"  @onclick='@(()=>SetFilter("rechazado"))'><i class="fas fa-xmark me-1"></i>Rechazados (@CountByStatus("rechazado"))</button>
-                <button class="filter-pill @(_selectedFilter=="cancelado"?"active":"")"  @onclick='@(()=>SetFilter("cancelado"))'><i class="fas fa-ban me-1"></i>Cancelados (@CountByStatus("cancelado"))</button>
-            }
-        </div>
-        <div class="d-flex align-items-center gap-2" style="max-width:420px;width:100%;">
-            <div class="position-relative flex-grow-1">
-                <i class="fas fa-search position-absolute top-50 translate-middle-y text-muted-foreground" style="left:14px;font-size:0.85rem;"></i>
-                <input type="search" @bind="_searchTerm" @bind:event="oninput" class="form-control text-foreground"
-                       placeholder="Buscar por # orden o cliente..." style="padding-left:38px;" />
+    <!-- ── Filtros ── -->
+    <div class="card p-3">
+        <div class="row g-2">
+            <div class="col-12">
+                <div class="position-relative">
+                    <i class="fas fa-search position-absolute top-50 translate-middle-y text-muted" style="left:14px;"></i>
+                    <input type="search" @bind="_searchTerm" @bind:event="oninput" class="form-control text-foreground"
+                           placeholder="Buscar por # orden o cliente..." style="padding-left:40px;" />
+                </div>
             </div>
-            <button class="btn btn-secondary btn-sm d-flex align-items-center gap-2 flex-shrink-0" @onclick="ClearSearch" style="border-radius:var(--radius);font-weight:500;">
-                <i class="fas fa-times-circle"></i> Limpiar
-            </button>
+            <div class="col-md-3">
+                <input type="date" @bind="_dateFrom" @bind:event="oninput" class="form-control text-foreground" title="Fecha desde" />
+            </div>
+            <div class="col-md-3">
+                <input type="date" @bind="_dateTo" @bind:event="oninput" class="form-control text-foreground" title="Fecha hasta" />
+            </div>
+            <div class="col-md-6 d-flex gap-2 align-items-center justify-content-end flex-wrap">
+                @if (ActiveOnly)
+                {
+                    <button class="btn btn-sm @PedidosBtnClass("todos")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("todos")'>Todos</button>
+                    <button class="btn btn-sm @PedidosBtnClass("recibido")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("recibido")'>Recibidos</button>
+                    <button class="btn btn-sm @PedidosBtnClass("en_proceso")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("en_proceso")'>En proceso</button>
+                }
+                else
+                {
+                    <button class="btn btn-sm @PedidosBtnClass("todos")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("todos")'>Todos</button>
+                    <button class="btn btn-sm @PedidosBtnClass("recibido")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("recibido")'>Recibidos</button>
+                    <button class="btn btn-sm @PedidosBtnClass("en_proceso")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("en_proceso")'>En proceso</button>
+                    <button class="btn btn-sm @PedidosBtnClass("atendido")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("atendido")'>Atendidos</button>
+                    <button class="btn btn-sm @PedidosBtnClass("rechazado")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("rechazado")'>Rechazados</button>
+                    <button class="btn btn-sm @PedidosBtnClass("cancelado")" style="border-radius:9999px;font-size:.8rem;"
+                            @onclick='()=>SetFilter("cancelado")'>Cancelados</button>
+                }
+            </div>
         </div>
     </div>
 
@@ -271,6 +296,7 @@
     }
 
 </div>
+}
 
 <!-- Modal Detalle de Pedido -->
 @if (_showDetailModal && _detailOrder != null)
@@ -602,6 +628,17 @@
 }
 
 <style>
+    @@keyframes cartTrip {
+        0%   { transform: translateX(-120px);                        opacity: 0; }
+        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
+        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
+        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
+        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
+        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
+        85%  { transform: translateX(120px);                        opacity: 0; }
+        100% { transform: translateX(120px);                        opacity: 0; }
+    }
+
     .worker-kpi-card {
         background: var(--card);
         border-radius: var(--radius);
@@ -629,15 +666,6 @@
         display: flex; align-items: center; justify-content: center;
         font-size: 1.35rem;
     }
-
-    .filter-pills { display: flex; flex-wrap: wrap; gap: 0.45rem; }
-    .filter-pill {
-        background: var(--secondary); border: 1px solid var(--border); color: var(--muted-foreground);
-        padding: 0.4rem 0.9rem; border-radius: 9999px; font-size: 0.78rem; font-weight: 500;
-        cursor: pointer; transition: all 0.2s ease;
-    }
-    .filter-pill:hover { background: var(--accent); color: var(--foreground); border-color: var(--primary); }
-    .filter-pill.active { background: #064e3b; color: #fff; border-color: #064e3b; }
 
     .orders-grid {
         display: grid;
@@ -771,9 +799,12 @@
     [Parameter] public int PageSize { get; set; } = 6;
     [Parameter] public EventCallback OnOrderStatusChanged { get; set; }
 
+    private bool _loading = true;
     private List<Order> _allOrders = new();
     private string _searchTerm = "";
     private string _selectedFilter = "todos";
+    private DateTime? _dateFrom;
+    private DateTime? _dateTo;
     private Order? _detailOrder = null;
     private bool _showDetailModal = false;
 
@@ -802,9 +833,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _pageSize = PageSize;
-        await SalesSvc.EnsureLoadedAsync();
-        RefreshList();
+        try
+        {
+            _pageSize = PageSize;
+            await SalesSvc.EnsureLoadedAsync();
+            RefreshList();
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     protected override void OnParametersSet()
@@ -851,7 +889,11 @@
                     "cancelado"  => o.Status == "cancelado",
                     _            => true
                 };
-                return matchSearch && matchFilter;
+
+                bool matchDateFrom = !_dateFrom.HasValue || o.Date >= _dateFrom.Value;
+                bool matchDateTo   = !_dateTo.HasValue   || o.Date <= _dateTo.Value.AddDays(1).AddTicks(-1);
+
+                return matchSearch && matchFilter && matchDateFrom && matchDateTo;
             }).GroupBy(o => o.Id).Select(g => g.First());
         }
     }
@@ -859,6 +901,8 @@
     private int CountByStatus(string s) => _allOrders.Count(o => o.Status == s);
 
     private void SetFilter(string f) { _selectedFilter = f; _currentPage = 1; }
+    private string PedidosBtnClass(string filter, string activeClass = "btn-dark")
+        => _selectedFilter == filter ? activeClass : "btn-outline-secondary";
 
     private async Task UpdateStatus(string id, string newStatus, string? observaciones = null)
     {
@@ -872,7 +916,7 @@
 
     private void VerDetalle(Order o) { _detailOrder = o; _showDetailModal = true; }
     private void CloseModal()        => _showDetailModal = false;
-    private void ClearSearch()       { _searchTerm = ""; _currentPage = 1; }
+    private void ClearSearch()       { _searchTerm = ""; _dateFrom = null; _dateTo = null; _currentPage = 1; }
 
     private async Task EjecutarCambioEstado(Order o, string nuevoEstado)
     {

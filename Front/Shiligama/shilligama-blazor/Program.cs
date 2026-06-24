@@ -83,6 +83,7 @@ builder.Services.AddScoped<RecuperacionService>();
 // SupplierService no tiene endpoint en el backend por lo tanto sigue siendo local.
 builder.Services.AddSingleton<SupplierService>();
 builder.Services.AddSingleton<DetalleVentaService>();
+builder.Services.AddSingleton<LotesService>();
 
 // ── Pipeline HTTP ────────────────────────────────────────────────────────────
 var app = builder.Build();

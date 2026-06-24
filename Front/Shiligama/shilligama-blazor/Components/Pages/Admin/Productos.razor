@@ -3,6 +3,8 @@
 @implements IDisposable
 @inject ProductService ProductSvc
 @inject PromocionService PromoSvc
+@inject LotesService LotesSvc
+@inject AuthService Auth
 @inject IJSRuntime JS
 @inject HttpClient Http
 @using System.Security.Cryptography
@@ -40,9 +42,14 @@
             <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Productos</h1>
             <p class="text-muted-foreground small mt-1 mb-0">@_products.Count productos registrados</p>
         </div>
-        <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-medium" style="border-radius:var(--radius);">
-            <i class="fa-solid fa-plus"></i> Nuevo Producto
-        </button>
+        <div class="d-flex align-items-center gap-2">
+            <button @onclick="OpenCreateLote" class="btn btn-outline-primary d-flex align-items-center gap-2 fw-medium" style="border-radius:var(--radius);">
+                <i class="fa-solid fa-cubes"></i> Registrar Lote
+            </button>
+            <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-medium" style="border-radius:var(--radius);">
+                <i class="fa-solid fa-plus"></i> Nuevo Producto
+            </button>
+        </div>
     </div>
 
     <!-- ── KPI ── -->
@@ -148,7 +155,6 @@
                         <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase d-none d-md-table-cell" style="letter-spacing:.05em;">Categoría</th>
                         <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Precio</th>
                         <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-center" style="letter-spacing:.05em;">Stock</th>
-                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Ajuste Rápido</th>
                         <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
                     </tr>
                 </thead>
@@ -201,19 +207,6 @@
                                 </span>
                                 @if (product.Stock > 0 && product.Stock <= product.MinStock)
                                 { <div class="text-muted-foreground" style="font-size:.68rem;margin-top:2px;">mín: @product.MinStock</div> }
-                            </td>
-                            <td class="px-4 py-3 text-end">
-                                <div class="d-flex align-items-center justify-content-end gap-1">
-                                    <button @onclick="@(() => AdjustStock(product, -1))" disabled="@(product.Stock == 0)"
-                                            class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                                            style="width:30px;height:30px;" title="Reducir 1">−</button>
-                                    <button @onclick="@(() => AdjustStock(product, 1))"
-                                            class="btn btn-outline-secondary btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                                            style="width:30px;height:30px;" title="Agregar 1">+</button>
-                                    <button @onclick="@(() => AdjustStock(product, 10))"
-                                            class="btn btn-primary btn-sm px-2 ms-1"
-                                            style="border-radius:var(--radius);font-size:.75rem;">+10</button>
-                                </div>
                             </td>
                             <td class="px-4 py-3 text-end">
                                 <div class="d-flex align-items-center justify-content-end gap-1">
@@ -398,12 +391,17 @@
                                    @oninput="@(e => { _form.UnidadMedida = e.Value?.ToString() ?? ""; _formDirty = true; })"
                                    class="form-control text-foreground" placeholder="Bolsa, Botella…" />
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label small fw-medium text-foreground">Stock *</label>
-                            <input type="number" min="0" value="@_form.Stock"
-                                   @oninput="@(e => { if(int.TryParse(e.Value?.ToString(), out var v)) _form.Stock = Math.Max(0,v); _formDirty = true; })"
-                                   class="form-control text-foreground" />
-                        </div>
+                        @if (_isEditing)
+                        {
+                            <div class="col-md-4">
+                                <label class="form-label small fw-medium text-foreground">Stock actual</label>
+                                <input type="number" value="@_form.Stock" readonly
+                                       class="form-control text-foreground bg-light" />
+                                <div class="text-muted-foreground mt-1" style="font-size:.72rem;">
+                                    <i class="fas fa-info-circle me-1"></i>El stock se gestiona vía Lotes
+                                </div>
+                            </div>
+                        }
                         <div class="col-md-4">
                             <label class="form-label small fw-medium text-foreground">Stock mínimo <span class="text-muted-foreground fw-normal">(alerta)</span></label>
                             <input type="number" min="0" value="@_form.MinStock"
@@ -483,11 +481,123 @@
     </div>
 }
 
+@if (_showLoteConfirm)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:380px;">
+            <div class="modal-content bg-card border-border">
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-3" style="font-size:2.5rem;"><i class="fas fa-exclamation-triangle text-warning"></i></div>
+                    <h5 class="fw-bold text-foreground mb-1">¿Salir sin guardar?</h5>
+                    <p class="text-muted-foreground small mb-4">Los datos del lote se perderán.</p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="@(() => _showLoteConfirm = false)">Seguir editando</button>
+                        <button class="btn btn-danger" style="border-radius:var(--radius);" @onclick="ForceCloseLoteModal">Salir sin guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showLoteModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);backdrop-filter:blur(3px);" @onclick="TryCloseLoteModal">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:500px;" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border" style="border-radius:1.25rem;overflow:hidden;">
+                <div class="modal-header border-bottom border-color-default p-4 pb-3">
+                    <h5 class="fw-bold text-foreground mb-0"><i class="fas fa-cubes me-2 text-primary"></i>Registrar Nuevo Lote</h5>
+                    <button class="btn btn-ghost p-1" @onclick="TryCloseLoteModal" style="border-radius:50%;border:none;background:transparent;">
+                        <i class="fas fa-times text-muted-foreground"></i>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="d-flex flex-column gap-3">
+                        <div style="position:relative;" @onfocusout="() => _showProductDropdown = false">
+                            <label class="form-label small fw-medium text-foreground">Producto *</label>
+                            @if (_loteForm.IdProducto > 0)
+                            {
+                                var sel = _products.FirstOrDefault(p => p.Id == _loteForm.IdProducto);
+                                <div class="d-flex align-items-center justify-content-between form-control text-foreground" style="height:44px;border-radius:10px;background:var(--card);cursor:pointer;" @onclick="@(() => { _loteForm.IdProducto = 0; _loteProductSearch = ""; _showProductDropdown = true; _loteDirty = true; })">
+                                    <span class="small">@sel?.Name</span>
+                                    <i class="fas fa-times text-muted-foreground" style="font-size:.7rem;"></i>
+                                </div>
+                            }
+                            else
+                            {
+                                <input type="search" class="form-control text-foreground" style="height:44px;border-radius:10px;"
+                                       placeholder="Buscar producto por nombre..."
+                                       value="@_loteProductSearch"
+                                       @oninput="@(e => { _loteProductSearch = e.Value?.ToString() ?? ""; _showProductDropdown = true; })"
+                                       @onfocus="@(() => _showProductDropdown = true)" />
+                            }
+                            @if (_showProductDropdown && _loteForm.IdProducto == 0)
+                            {
+                                <div class="position-absolute w-100 bg-card border border-color-default shadow-sm" style="border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:1060;top:calc(100% - 1px);">
+                                    @foreach (var p in FilterLoteProducts())
+                                    {
+                                        var product = p;
+                                        <div class="px-3 py-2 d-flex align-items-center justify-content-between cursor-pointer small text-foreground lote-product-item"
+                                             @onmousedown:preventDefault
+                                             @onmousedown="@(() => { _loteForm.IdProducto = product.Id; _loteProductSearch = ""; _showProductDropdown = false; _loteDirty = true; })">
+                                            <span>@product.Name</span>
+                                            <span class="text-muted-foreground" style="font-size:.75rem;">Stock: @product.Stock</span>
+                                        </div>
+                                    }
+                                    @if (!FilterLoteProducts().Any())
+                                    {
+                                        <div class="px-3 py-2 text-muted-foreground small">No se encontraron productos</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Cantidad *</label>
+                            <input type="number" min="1" value="@_loteForm.CantidadInicial"
+                                   @oninput="@(e => { if(int.TryParse(e.Value?.ToString(), out var v)) _loteForm.CantidadInicial = Math.Max(1,v); _loteDirty = true; })"
+                                   class="form-control text-foreground" style="height:44px;border-radius:10px;" />
+                        </div>
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Fecha de vencimiento <span class="text-muted-foreground fw-normal">(opcional)</span></label>
+                            <input type="date" value="@_loteFechaValue"
+                                   @oninput="@(e => OnLoteFechaChange(e.Value?.ToString() ?? ""))"
+                                   class="form-control text-foreground" style="height:44px;border-radius:10px;" />
+                        </div>
+                        <div>
+                            <label class="form-label small fw-medium text-foreground">Número de lote</label>
+                            <div class="d-flex align-items-center">
+                                <span class="form-control-plaintext text-foreground fw-medium pe-0" style="white-space:nowrap;">LOTE-2026-</span>
+                                <input type="text" maxlength="4" inputmode="numeric" pattern="[0-9]{4}"
+                                       value="@_loteNumeroSuffix"
+                                       @oninput="@(e => { var raw = (e.Value?.ToString() ?? "").Replace("-",""); _loteNumeroSuffix = new string(raw.Where(char.IsDigit).Take(4).ToArray()); _loteDirty = true; })"
+                                       class="form-control text-foreground" style="width:90px;height:44px;border-radius:10px;text-align:center;letter-spacing:2px;font-weight:600;" />
+                            </div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_loteError))
+                    {
+                        <div class="text-danger small mt-2"><i class="fas fa-exclamation-triangle me-1"></i>@_loteError</div>
+                    }
+                </div>
+                <div class="modal-footer border-top border-color-default p-3 d-flex justify-content-end gap-2">
+                    <button class="btn btn-secondary" @onclick="TryCloseLoteModal" style="border-radius:var(--radius);">Cancelar</button>
+                    <button class="btn btn-primary fw-medium" @onclick="SaveLote" disabled="@(_savingLote || _loteForm.IdProducto <= 0 || _loteForm.CantidadInicial <= 0 || _loteNumeroSuffix.Length != 4)" style="border-radius:var(--radius);">
+                        @if (_savingLote) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Registrar Lote
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <style>
     .pag-btn { background:var(--card); border:1px solid var(--border); color:var(--foreground); transition:all .15s; }
     .pag-btn:hover:not(:disabled) { background:var(--secondary); }
     .pag-btn:disabled { opacity:.4; }
     .pag-active { background:#1A6B3C !important; color:#fff !important; border-color:#1A6B3C !important; }
+    .lote-product-item { transition:background .12s; }
+    .lote-product-item:hover { background:var(--secondary); }
 </style>
 
 @code {
@@ -658,19 +768,6 @@
         StateHasChanged();
     }
 
-    private async Task AdjustStock(Product p, int amount)
-    {
-        var stockAnterior = p.Stock;
-        p.Stock = Math.Max(0, p.Stock + amount);
-
-        // Auto-desactivar al llegar a 0, reactivar al subir de 0
-        if (p.Stock == 0 && p.Estado)       p.Estado = false;
-        else if (stockAnterior == 0 && p.Stock > 0 && !p.Estado) p.Estado = true;
-
-        try { await ProductSvc.UpdateProductAsync(p); } catch { }
-        StateHasChanged();
-    }
-
     // Patrón fire-and-forget + callback JS→.NET:
     // UploadImage() retorna de inmediato; el JS hace el fetch() en background
     // y llama a OnUploadComplete cuando termina.
@@ -740,5 +837,104 @@
             codigoCompleto = base12 + CalcularChecksumEAN13(base12);
         } while (_products.Any(p => p.CodigoBarras == codigoCompleto));
         return codigoCompleto;
+    }
+
+    // ── Lote ──────────────────────────────────────────────────────────────
+    private bool _showLoteModal = false;
+    private bool _showLoteConfirm = false;
+    private bool _savingLote = false;
+    private bool _loteDirty = false;
+    private string _loteError = "";
+    private string _loteProductSearch = "";
+    private string _loteNumeroSuffix = "";
+    private string _loteFechaValue = "";
+    private bool _showProductDropdown = false;
+    private LoteApi _loteForm = new();
+
+    private IEnumerable<Product> FilterLoteProducts() =>
+        _products.Where(p => p.Estado && (string.IsNullOrEmpty(_loteProductSearch) || p.Name.Contains(_loteProductSearch, StringComparison.OrdinalIgnoreCase)));
+
+    private void OnLoteFechaChange(string value)
+    {
+        _loteFechaValue = value;
+        _loteForm.FechaVencimiento = string.IsNullOrEmpty(value) ? null
+            : DateTime.TryParse(value, out var d) ? d.ToString("yyyy-MM-dd") : null;
+        _loteDirty = true;
+    }
+
+    private async Task OpenCreateLote()
+    {
+        await LotesSvc.EnsureLoadedAsync();
+        var nextNum = LotesSvc.GetLotes().Count + 1;
+        _loteNumeroSuffix = nextNum.ToString("D4");
+        _loteForm = new LoteApi
+        {
+            IdTrabajador = Auth.CurrentUser?.Id ?? 0,
+            CantidadInicial = 1
+        };
+        _loteError = "";
+        _loteProductSearch = "";
+        _loteFechaValue = "";
+        _loteDirty = false;
+        _showProductDropdown = false;
+        _showLoteModal = true;
+    }
+
+    private void TryCloseLoteModal()
+    {
+        if (_loteDirty) _showLoteConfirm = true;
+        else ForceCloseLoteModal();
+    }
+
+    private void ForceCloseLoteModal()
+    {
+        _showLoteConfirm = false;
+        _showLoteModal = false;
+    }
+
+    private async Task SaveLote()
+    {
+        _loteError = "";
+        if (_loteForm.IdProducto <= 0)
+        { _loteError = "Selecciona un producto."; return; }
+        if (_loteForm.CantidadInicial <= 0)
+        { _loteError = "La cantidad debe ser mayor que cero."; return; }
+        if (_loteNumeroSuffix.Length != 4)
+        { _loteError = "El número de lote debe tener 4 dígitos."; return; }
+
+        _loteForm.NumeroLote = $"LOTE-2026-{_loteNumeroSuffix}";
+        _savingLote = true;
+        StateHasChanged();
+
+        try
+        {
+            int id = await LotesSvc.AddLoteAsync(_loteForm);
+            if (id > 0)
+            {
+                _showLoteModal = false;
+                _showLoteConfirm = false;
+                await ProductSvc.EnsureLoadedAsync(recargar: true);
+                _products = ProductSvc.GetProducts();
+                _toastMsg = $"Lote registrado. Stock actualizado.";
+                _showSavedToast = true;
+                StateHasChanged();
+                await Task.Delay(3000);
+                _showSavedToast = false;
+                StateHasChanged();
+            }
+            else
+            {
+                _loteError = "No se pudo registrar el lote. Verifica los datos.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _loteError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _savingLote = false;
+            StateHasChanged();
+        }
     }
 }

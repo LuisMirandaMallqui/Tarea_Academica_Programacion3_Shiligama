@@ -614,3 +614,35 @@ CREATE TABLE boleta_detalle (
     FOREIGN KEY (id_boleta) REFERENCES boleta(id) ON DELETE CASCADE,
     INDEX idx_boleta (id_boleta)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- -----------------------------------------------------
+-- Tabla Lote
+-- Registra lotes de productos con fecha de vencimiento.
+-- Se crea al recibir mercadería (ENTRADA en movimiento_inventario).
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `lote` (
+    `LOTE_ID`                INT          NOT NULL AUTO_INCREMENT,
+    `PRODUCTO_ID`            INT          NOT NULL,
+    `TRABAJADOR_ID`          INT          NULL DEFAULT NULL,
+    `CANTIDAD_INICIAL`       INT          NOT NULL,
+    `CANTIDAD_ACTUAL`        INT          NOT NULL,
+    `FECHA_VENCIMIENTO`      DATE         NULL DEFAULT NULL,
+    `NUMERO_LOTE`            VARCHAR(50)  NULL DEFAULT NULL,
+    `ACTIVO`                 TINYINT      NOT NULL DEFAULT 1,
+    PRIMARY KEY (`LOTE_ID`),
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL,
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL,
+    INDEX `fk_lote_producto_idx` (`PRODUCTO_ID`),
+    INDEX `fk_lote_trabajador_idx` (`TRABAJADOR_ID`),
+    INDEX `idx_lote_vencimiento` (`FECHA_VENCIMIENTO`),
+    CONSTRAINT `fk_lote_producto`
+        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
+        ON UPDATE CASCADE,
+    CONSTRAINT `fk_lote_trabajador`
+        FOREIGN KEY (`TRABAJADOR_ID`) REFERENCES `usuario` (`USUARIO_ID`)
+        ON UPDATE CASCADE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
+COMMENT = 'Lotes de productos recibidos con fecha de vencimiento (logica FEFO)';

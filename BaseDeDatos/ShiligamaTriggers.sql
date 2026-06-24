@@ -180,4 +180,19 @@ BEGIN
     SET NEW.USUARIO_MODIFICACION = USER();
 END$$
 
+-- =============================================================
+-- LOTE
+-- =============================================================
+CREATE TRIGGER trg_lote_before_insert
+BEFORE INSERT ON lote FOR EACH ROW
+BEGIN
+    SET NEW.USUARIO_CREACION = USER();
+END$$
+
+CREATE TRIGGER trg_lote_before_update
+BEFORE UPDATE ON lote FOR EACH ROW
+BEGIN
+    SET NEW.USUARIO_MODIFICACION = USER();
+END$$
+
 DELIMITER ;

@@ -4,6 +4,17 @@
 
 <PageTitle>Consulta de Productos – Shiligama</PageTitle>
 
+@if (_loading)
+{
+    <div class="d-flex flex-column align-items-center justify-content-center py-5 w-100" style="min-height:400px;">
+        <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">Cargando productos...</div>
+    </div>
+}
+else
+{
 <div class="d-flex flex-column gap-4">
     <!-- Header -->
     <div>
@@ -86,6 +97,17 @@
     </div>
 
     <style>
+        @@keyframes cartTrip {
+            0%   { transform: translateX(-120px);                        opacity: 0; }
+            12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
+            25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
+            40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
+            55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
+            68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
+            85%  { transform: translateX(120px);                        opacity: 0; }
+            100% { transform: translateX(120px);                        opacity: 0; }
+        }
+
         .worker-kpi-card {
             background: var(--card);
             border-radius: var(--radius);
@@ -241,11 +263,13 @@
         }
     </div>
 </div>
+}
 
 @code {
     private List<Product> _products = new();
     private string _search = "";
     private string _categoryFilter = "";
+    private bool _loading = true;
 
     // ── Paginación ────────────────────────────────────────────────────────────
     private int _currentPage = 1;
@@ -253,8 +277,15 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await ProductSvc.EnsureLoadedAsync();   // productos + categorías del API
-        _products = ProductSvc.GetProducts();
+        try
+        {
+            await ProductSvc.EnsureLoadedAsync();   // productos + categorías del API
+            _products = ProductSvc.GetProducts();
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private IEnumerable<Product> Filtered => _products.Where(p =>

@@ -2,407 +2,291 @@
 @layout TrabajadorLayout
 @inject AuthService Auth
 @inject HttpClient Http
+@inject IJSRuntime JS
 
 <PageTitle>Mi Perfil – Shiligama</PageTitle>
 
-<div class="profile-container d-flex flex-column gap-4 mx-auto py-3">
+<div class="container-fluid p-0 mx-auto" style="max-width: 900px;">
+    <div>
+        <h1 class="fs-4 fw-bold text-foreground mb-0">Mi Perfil de Trabajador</h1>
+        <p class="text-muted-foreground small mt-1 mb-0">Administra tus datos de contacto y credenciales de acceso</p>
+    </div>
 
-    @if (_success)
-    {
-        <div class="alert alert-dismissible show p-3 d-flex align-items-center gap-3 border-0 shadow-sm"
-             style="border-radius:1rem;background-color:#e8f5e9;color:#1b5e20;" role="alert">
-            <i class="fas fa-check-circle fs-5" style="color:#2e7d32;"></i>
-            <div class="small fw-semibold">Tus datos de perfil han sido actualizados con éxito.</div>
-            <button type="button" class="btn-close ms-auto" @onclick="@(() => _success = false)" style="font-size:0.75rem;"></button>
-        </div>
-    }
-    @if (!string.IsNullOrEmpty(_error))
-    {
-        <div class="alert alert-danger p-3 border-0 shadow-sm" style="border-radius:1rem;" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>@_error
-        </div>
-    }
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="d-flex flex-column gap-4">
+                <div class="card p-4 d-flex flex-column gap-3 rounded-4">
+                    <h2 class="fs-5 fw-bold text-foreground mb-0">Información Personal</h2>
 
-    <!-- Card top: avatar + nombre -->
-    <div class="card bg-white border border-color-default shadow-sm p-4 rounded-4">
-        <div class="d-flex align-items-center gap-4">
-            <div class="d-flex align-items-center justify-content-center rounded-circle text-white fw-bold"
-                 style="width:80px;height:80px;background-color:#064420;font-size:2.2rem;font-family:'Outfit',sans-serif;flex-shrink:0;">
-                @GetInitials($"{_firstName} {_lastName}")
-            </div>
-            <div>
-                <h2 class="fs-4 fw-bold text-foreground mb-1" style="font-family:'Outfit',sans-serif;letter-spacing:-0.01em;">
-                    @_firstName @_lastName
-                </h2>
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="badge" style="background-color:#eaf4ec;color:#2e7d32;font-size:0.72rem;padding:0.25rem 0.6rem;border-radius:6px;font-weight:600;">
-                        Trabajador
-                    </span>
-                    @if (!string.IsNullOrEmpty(Auth.CurrentUser?.Cargo))
+                    <div class="row g-3">
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-medium text-foreground">Nombres</label>
+                            <input type="text" @bind="_nombres" @bind:event="oninput" @bind:after="ValidateNombres"
+                                   maxlength="100" class="form-control text-foreground"
+                                   placeholder="Ej. Juan Carlos"
+                                   style="@(_nombresError != null ? "border-color:#dc3545;" : "")" />
+                            @if (_nombresError != null)
+                            {
+                                <div class="text-danger small mt-1"><i class="fas fa-exclamation-triangle me-1"></i>@_nombresError</div>
+                            }
+                        </div>
+                        <div class="col-sm-6">
+                            <label class="form-label small fw-medium text-foreground">Apellidos</label>
+                            <input type="text" @bind="_apellidos" @bind:event="oninput"
+                                   maxlength="100" class="form-control text-foreground"
+                                   placeholder="Ej. García López" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Correo electrónico corporativo</label>
+                        <input type="email" @bind="_email" @bind:event="oninput" class="form-control text-foreground" />
+                    </div>
+
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Teléfono móvil</label>
+                        <input type="tel" @bind="_phone" @bind:event="oninput" class="form-control text-foreground" />
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_profileError))
                     {
-                        <span class="text-muted-foreground" style="font-size:0.8rem;">@Auth.CurrentUser.Cargo</span>
+                        <div class="text-danger small"><i class="fas fa-exclamation-triangle me-1"></i> @_profileError</div>
                     }
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Card cambiar contraseña -->
-    <div class="card bg-white border border-color-default shadow-sm p-4 rounded-4">
+                <div class="card p-4 d-flex flex-column gap-3 rounded-4">
+                    <h2 class="fs-5 fw-bold text-foreground mb-0">Actualizar Contraseña</h2>
+                    <p class="text-muted-foreground small mb-0">Deja los campos vacíos si no deseas cambiar tu contraseña.</p>
 
-        <div class="d-flex align-items-start justify-content-between gap-3 mb-4 flex-wrap">
-            <div>
-                <h3 class="fw-bold text-foreground mb-1" style="font-family:'Outfit',sans-serif;font-size:1.25rem;">
-                    Cambiar Contraseña
-                </h3>
-                <p class="text-muted-foreground small mb-0">
-                    @(_isChangingPassword ? "Ingresa tu contraseña actual y la nueva" : "Actualiza tu contraseña de acceso")
-                </p>
-            </div>
-            <div class="d-flex gap-2">
-                @if (!_isChangingPassword)
-                {
-                    <button @onclick="EnablePasswordChange" class="btn btn-profile-action d-flex align-items-center gap-2">
-                        <i class="fas fa-key" style="font-size:0.8rem;"></i> Cambiar contraseña
-                    </button>
-                }
-                else
-                {
-                    <button @onclick="CancelPasswordChange" class="btn btn-profile-action d-flex align-items-center gap-2" disabled="@_savingPassword">
-                        <i class="fas fa-times" style="font-size:0.85rem;"></i> Cancelar
-                    </button>
-                    <button @onclick="SavePassword" class="btn btn-profile-save d-flex align-items-center gap-2 text-white" disabled="@_savingPassword">
-                        @if (_savingPassword)
-                        { <span class="spinner-border spinner-border-sm me-1"></span><span>Guardando…</span> }
-                        else
-                        { <i class="fas fa-save" style="font-size:0.85rem;"></i><span> Guardar</span> }
-                    </button>
-                }
-            </div>
-        </div>
-
-        @if (_isChangingPassword)
-        {
-            @if (!string.IsNullOrEmpty(_passwordError))
-            {
-                <div class="alert alert-danger p-3 border-0 mb-3" style="border-radius:0.5rem;font-size:0.88rem;">
-                    <i class="fas fa-exclamation-circle me-2"></i>@_passwordError
-                </div>
-            }
-            @if (_passwordSuccess)
-            {
-                <div class="alert p-3 border-0 mb-3" style="border-radius:0.5rem;font-size:0.88rem;background:#e8f5e9;color:#1b5e20;">
-                    <i class="fas fa-check-circle me-2"></i>Contraseña actualizada correctamente.
-                </div>
-            }
-            <div class="d-flex flex-column gap-3">
-                <div class="profile-field-group">
-                    <label class="profile-field-label"><i class="fas fa-lock"></i> Contraseña actual</label>
-                    <input type="password" @bind="_currentPassword" class="form-control text-foreground mt-1"
-                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="••••••••" />
-                </div>
-                <div class="profile-field-group">
-                    <label class="profile-field-label"><i class="fas fa-lock"></i> Nueva contraseña</label>
-                    <input type="password" @bind="_newPassword" class="form-control text-foreground mt-1"
-                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="Mínimo 8 caracteres" />
-                </div>
-                <div class="profile-field-group">
-                    <label class="profile-field-label"><i class="fas fa-lock"></i> Confirmar nueva contraseña</label>
-                    <input type="password" @bind="_confirmPassword" class="form-control text-foreground mt-1"
-                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="Repite la nueva contraseña" />
-                </div>
-            </div>
-        }
-        else
-        {
-            <div class="profile-field-value text-muted-foreground" style="font-size:0.9rem;padding-left:0;">
-                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
-                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
-                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
-                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
-                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
-                <i class="fas fa-circle" style="font-size:0.4rem;vertical-align:middle;"></i>
-                <span class="ms-2" style="font-size:0.8rem;color:#6c757d;">Última contraseña guardada</span>
-            </div>
-        }
-    </div>
-
-    <!-- Card información personal -->
-    <div class="card bg-white border border-color-default shadow-sm p-4 rounded-4">
-
-        <div class="d-flex align-items-start justify-content-between gap-3 mb-4 flex-wrap">
-            <div>
-                <h3 class="fw-bold text-foreground mb-1" style="font-family:'Outfit',sans-serif;font-size:1.25rem;">
-                    Información Personal
-                </h3>
-                <p class="text-muted-foreground small mb-0">
-                    @(_isEditing ? "Edita tu correo y teléfono de contacto" : "Tu información de contacto y datos personales")
-                </p>
-            </div>
-            <div class="d-flex gap-2">
-                @if (!_isEditing)
-                {
-                    <button @onclick="EnableEditing" class="btn btn-profile-action d-flex align-items-center gap-2">
-                        <i class="fas fa-pencil-alt" style="font-size:0.8rem;"></i> Editar perfil
-                    </button>
-                }
-                else
-                {
-                    <button @onclick="CancelEditing" class="btn btn-profile-action d-flex align-items-center gap-2" disabled="@_saving">
-                        <i class="fas fa-times" style="font-size:0.85rem;"></i> Cancelar
-                    </button>
-                    <button @onclick="SaveProfile" class="btn btn-profile-save d-flex align-items-center gap-2 text-white" disabled="@_saving">
-                        @if (_saving)
-                        { <span class="spinner-border spinner-border-sm me-1"></span><span>Guardando…</span> }
-                        else
-                        { <i class="fas fa-save" style="font-size:0.85rem;"></i><span> Guardar cambios</span> }
-                    </button>
-                }
-            </div>
-        </div>
-
-        <div class="d-flex flex-column gap-3">
-
-            <!-- Correo -->
-            <div class="profile-field-group">
-                <label class="profile-field-label"><i class="far fa-envelope"></i> Correo electrónico</label>
-                @if (_isEditing)
-                {
-                    <input type="email" @bind="_email" class="form-control text-foreground mt-1"
-                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" />
-                }
-                else
-                {
-                    <div class="profile-field-value text-foreground mt-1">@_email</div>
-                }
-            </div>
-
-            <!-- Teléfono -->
-            <div class="profile-field-group">
-                <label class="profile-field-label"><i class="fas fa-phone-alt"></i> Teléfono</label>
-                @if (_isEditing)
-                {
-                    <input type="tel" @bind="_phone" class="form-control text-foreground mt-1"
-                           style="border-radius:0.5rem;height:42px;border:1px solid #dee2e6;" placeholder="987654321" />
-                }
-                else
-                {
-                    <div class="profile-field-value text-foreground mt-1">
-                        @(string.IsNullOrEmpty(_phone) ? "—" : _phone)
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Contraseña actual</label>
+                        <input type="password" @bind="_currentPassword" @bind:event="oninput"
+                               class="form-control text-foreground"
+                               placeholder="Ingresa tu contraseña actual" style="height:44px;border-radius:10px;" />
                     </div>
-                }
-            </div>
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Nueva Contraseña</label>
+                        <input type="password" @bind="_newPassword" @bind:event="oninput"
+                               class="form-control text-foreground"
+                               placeholder="Mínimo 8 caracteres" style="height:44px;border-radius:10px;" />
+                    </div>
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Confirmar Contraseña</label>
+                        <input type="password" @bind="_confirmPassword" @bind:event="oninput"
+                               class="form-control text-foreground"
+                               placeholder="Repite tu nueva contraseña" style="height:44px;border-radius:10px;" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_passwordError))
+                    {
+                        <div class="text-danger small"><i class="fas fa-exclamation-triangle me-1"></i> @_passwordError</div>
+                    }
+                </div>
 
-            <hr class="border-color-default my-2" />
-
-            <div class="text-muted-foreground mb-1" style="font-size:0.78rem;">
-                Los siguientes campos no pueden ser editados. Contacta al administrador para cambiarlos.
-            </div>
-
-            <!-- Nombres (solo lectura) -->
-            <div class="profile-field-group">
-                <label class="profile-field-label"><i class="far fa-user"></i> Nombres</label>
-                <div class="profile-field-value text-foreground mt-1">@_firstName</div>
-            </div>
-
-            <!-- Apellidos (solo lectura) -->
-            <div class="profile-field-group">
-                <label class="profile-field-label"><i class="far fa-user"></i> Apellidos</label>
-                <div class="profile-field-value text-foreground mt-1">@_lastName</div>
-            </div>
-
-            <!-- DNI (solo lectura) -->
-            <div class="profile-field-group">
-                <label class="profile-field-label"><i class="far fa-id-card"></i> DNI</label>
-                <div class="profile-field-value text-foreground mt-1">
-                    @(string.IsNullOrEmpty(_dni) ? "—" : _dni)
+                <div class="d-flex justify-content-end">
+                    <button type="button" @onclick="SaveProfile" class="btn btn-primary px-4 fw-semibold" style="border-radius: var(--radius);">
+                        Guardar Perfil
+                    </button>
                 </div>
             </div>
+        </div>
 
+        <div class="col-lg-4">
+            <div class="card p-4 text-center rounded-4 bg-muted border-0 d-flex flex-column gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white mx-auto" style="width: 72px; height: 72px; font-size: 1.8rem;">
+                    @(DisplayName.Length > 0 ? DisplayName[0].ToString().ToUpper() : "T")
+                </div>
+                <div>
+                    <h3 class="fs-5 fw-bold text-foreground mb-1">@DisplayName</h3>
+                    <span class="badge bg-primary px-2.5 py-1.5 text-uppercase tracking-wider small fw-semibold" style="border-radius: var(--radius);">Trabajador</span>
+                </div>
+                @if (!string.IsNullOrEmpty(Auth.CurrentUser?.Cargo))
+                {
+                    <p class="text-muted-foreground small m-0"><i class="fas fa-briefcase me-1"></i>@Auth.CurrentUser.Cargo</p>
+                }
+                <hr class="border-color-default my-1" />
+                <p class="text-xs text-muted-foreground m-0">Correo: @_email</p>
+            </div>
         </div>
     </div>
-
 </div>
 
+@if (_showConfirm)
+{
+    <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.55);backdrop-filter:blur(3px);" @onclick="@(() => _showConfirm = false)">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:420px;" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border" style="border-radius:1.25rem;overflow:hidden;">
+                <div class="modal-body p-4 text-center d-flex flex-column align-items-center gap-3">
+                    <div style="width:56px;height:56px;border-radius:50%;background:color-mix(in srgb,var(--primary) 15%,transparent);display:flex;align-items:center;justify-content:center;">
+                        <i class="fas fa-question" style="font-size:1.4rem;color:var(--primary);"></i>
+                    </div>
+                    <h5 class="fw-bold text-foreground mb-0">¿Guardar cambios?</h5>
+                    <p class="text-muted-foreground small mb-0">Se actualizarán tus datos de perfil.</p>
+                </div>
+                <div class="modal-footer border-top border-color-default p-3 d-flex justify-content-center gap-2">
+                    <button class="btn btn-outline-secondary fw-semibold" style="border-radius:8px;min-width:90px;" @onclick="@(() => _showConfirm = false)" disabled="@_saving">Cancelar</button>
+                    <button class="btn btn-primary fw-semibold" style="border-radius:8px;min-width:110px;" @onclick="ConfirmSave" disabled="@_saving">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Sí, guardar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_showToast)
+{
+    <div class="position-fixed d-flex align-items-center gap-2 p-3 shadow-lg"
+         style="bottom:24px;right:24px;z-index:9999;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:var(--radius);animation:slideIn 0.3s ease;">
+        <i class="fas fa-check-circle" style="color:#2e7d32;font-size:1.2rem;"></i>
+        <span class="text-foreground fw-semibold small">@_toastMessage</span>
+        <button class="btn btn-sm p-0 ms-2" @onclick="@(() => _showToast = false)">
+            <i class="fas fa-times text-muted" style="font-size:0.8rem;"></i>
+        </button>
+    </div>
+}
+
 <style>
-    .profile-container { max-width: 720px; width: 100%; }
-
-    .btn-profile-action {
-        background-color: #f8f9fa; border: 1px solid #dee2e6; color: #333;
-        font-size: 0.85rem; border-radius: 0.5rem; font-weight: 500;
-        padding: 0.45rem 1rem; height: 38px; transition: all 0.2s ease;
+    @@keyframes slideIn {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
-    .btn-profile-action:hover { background-color: #e9ecef; border-color: #ced4da; color: #111; }
-
-    .btn-profile-save {
-        background-color: #064420; border: 1px solid #064420;
-        font-size: 0.85rem; border-radius: 0.5rem; font-weight: 600;
-        padding: 0.45rem 1rem; height: 38px; transition: all 0.2s ease;
-    }
-    .btn-profile-save:hover { background-color: #053318; border-color: #053318; }
-
-    .profile-field-group { display: flex; flex-direction: column; }
-
-    .profile-field-label {
-        font-size: 0.82rem; color: #6c757d; font-weight: 500;
-        display: flex; align-items: center; gap: 0.5rem;
-    }
-
-    .profile-field-value { font-size: 0.95rem; padding-left: 1.35rem; }
-
-    .dark .btn-profile-action { background-color: var(--secondary); border-color: var(--border); color: var(--foreground); }
-    .dark .btn-profile-action:hover { background-color: var(--border); }
 </style>
 
 @code {
-    private bool _isEditing = false;
-    private bool _saving    = false;
-    private bool _success   = false;
-    private string _error   = "";
+    private string _nombres         = "";
+    private string _apellidos       = "";
+    private string _email           = "";
+    private string _phone           = "";
+    private string _currentPassword = "";
+    private string _newPassword     = "";
+    private string _confirmPassword = "";
+    private string? _nombresError;
+    private string? _profileError;
+    private string? _passwordError;
+    private bool _showConfirm    = false;
+    private bool _showToast      = false;
+    private bool _saving         = false;
+    private string _toastMessage = "Cambios guardados exitosamente";
+    private bool _cambiarPassword = false;
 
-    // Campos editables (perfil)
-    private string _email = "";
-    private string _phone = "";
-
-    // Campos de solo lectura
-    private string _firstName = "";
-    private string _lastName  = "";
-    private string _dni       = "";
-
-    // Estado cambio de contraseña
-    private bool _isChangingPassword = false;
-    private bool _savingPassword     = false;
-    private bool _passwordSuccess    = false;
-    private string _passwordError    = "";
-    private string _currentPassword  = "";
-    private string _newPassword      = "";
-    private string _confirmPassword  = "";
+    private string DisplayName => $"{_nombres} {_apellidos}".Trim();
 
     protected override void OnInitialized()
     {
-        if (Auth.CurrentUser != null)
+        _nombres   = Auth.CurrentUser?.Nombres  ?? "";
+        _apellidos = Auth.CurrentUser?.Apellidos ?? "";
+        _email     = Auth.CurrentUser?.Email     ?? "";
+        _phone     = Auth.CurrentUser?.Telefono  ?? "";
+    }
+
+    private void ValidateNombres()
+    {
+        _nombresError = null;
+        if (string.IsNullOrWhiteSpace(_nombres))
+            _nombresError = "El nombre es obligatorio.";
+        else if (_nombres.Length > 100)
+            _nombresError = "Máximo 100 caracteres.";
+        else if (_nombres.Any(char.IsDigit))
+            _nombresError = "El nombre no debe contener números.";
+    }
+
+    private void SaveProfile()
+    {
+        _nombresError  = null;
+        _profileError  = null;
+        _passwordError = null;
+        _cambiarPassword = false;
+
+        ValidateNombres();
+        if (_nombresError != null) return;
+
+        bool quiereCambiarPassword =
+            !string.IsNullOrEmpty(_currentPassword) ||
+            !string.IsNullOrEmpty(_newPassword)     ||
+            !string.IsNullOrEmpty(_confirmPassword);
+
+        if (quiereCambiarPassword)
         {
-            _firstName = Auth.CurrentUser.Nombres;
-            _lastName  = Auth.CurrentUser.Apellidos;
-            _dni       = Auth.CurrentUser.Dni   ?? "";
-            _email     = Auth.CurrentUser.Email;
-            _phone     = Auth.CurrentUser.Telefono ?? "";
+            if (string.IsNullOrWhiteSpace(_currentPassword))
+            { _passwordError = "Ingresa tu contraseña actual."; return; }
+
+            if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 8)
+            { _passwordError = "La nueva contraseña debe tener al menos 8 caracteres."; return; }
+
+            if (_newPassword != _confirmPassword)
+            { _passwordError = "Las contraseñas nuevas no coinciden."; return; }
+
+            _cambiarPassword = true;
         }
+
+        _showConfirm = true;
     }
 
-    private void EnablePasswordChange()
+    private async Task ConfirmSave()
     {
-        _isChangingPassword = true;
-        _passwordSuccess    = false;
-        _passwordError      = "";
-        _currentPassword    = "";
-        _newPassword        = "";
-        _confirmPassword    = "";
-    }
-    private void CancelPasswordChange()
-    {
-        _isChangingPassword = false;
-        _passwordError      = "";
-        _passwordSuccess    = false;
-    }
-
-    private async Task SavePassword()
-    {
-        _passwordError   = "";
-        _passwordSuccess = false;
-
-        if (string.IsNullOrWhiteSpace(_currentPassword))
-        { _passwordError = "Ingresa tu contraseña actual."; return; }
-        if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 8)
-        { _passwordError = "La nueva contraseña debe tener al menos 8 caracteres."; return; }
-        if (_newPassword != _confirmPassword)
-        { _passwordError = "Las contraseñas nuevas no coinciden."; return; }
-
-        _savingPassword = true;
-        try
-        {
-            var dto = new { contrasenaActual = _currentPassword, nuevaContrasena = _newPassword };
-            var resp = await Http.PutAsJsonAsync($"trabajadores/{Auth.CurrentUser!.Id}/contrasena", dto);
-            if (resp.IsSuccessStatusCode)
-            {
-                _passwordSuccess    = true;
-                _isChangingPassword = false;
-                await Task.Delay(3000);
-                _passwordSuccess = false;
-                StateHasChanged();
-            }
-            else
-            {
-                var msg = await resp.Content.ReadAsStringAsync();
-                _passwordError = !string.IsNullOrEmpty(msg) ? msg : "No se pudo actualizar la contraseña.";
-            }
-        }
-        catch (Exception ex)
-        {
-            _passwordError = $"Error de conexión: {ex.Message}";
-        }
-        finally { _savingPassword = false; }
-    }
-
-    private void EnableEditing()  { _isEditing = true;  _success = false; _error = ""; }
-    private void CancelEditing()
-    {
-        _isEditing = false;
-        // Restaurar valores originales
-        _email = Auth.CurrentUser?.Email       ?? "";
-        _phone = Auth.CurrentUser?.Telefono    ?? "";
-    }
-
-    private async Task SaveProfile()
-    {
+        _showConfirm = false;
         _saving = true;
-        _error  = "";
+        StateHasChanged();
+
         try
         {
-            // PUT /api/trabajadores — actualiza MODIFICAR_USUARIO (nombres, apellidos,
-            // dni, telefono, correo). La contraseña se envía como "*" porque la
-            // validación del BO la requiere pero MODIFICAR_USUARIO no la modifica.
-            var dto = new
+            var perfilDto = new
             {
                 idUsuario  = Auth.CurrentUser!.Id,
-                nombres    = _firstName,
-                apellidos  = _lastName,
-                dni        = _dni,
-                correo     = _email,
+                nombres    = _nombres.Trim(),
+                apellidos  = _apellidos.Trim(),
+                correo     = _email.Trim(),
+                telefono   = _phone.Trim(),
+                dni        = Auth.CurrentUser!.Dni ?? "",
                 contrasena = "*",
-                telefono   = _phone,
                 cargo      = Auth.CurrentUser.Cargo ?? "Cajero"
             };
+            var perfilResp = await Http.PutAsJsonAsync("trabajadores", perfilDto);
+            if (!perfilResp.IsSuccessStatusCode)
+            {
+                var msg = await perfilResp.Content.ReadAsStringAsync();
+                _profileError = !string.IsNullOrEmpty(msg) ? msg : "No se pudo actualizar el perfil.";
+                return;
+            }
 
-            var resp = await Http.PutAsJsonAsync("trabajadores", dto);
-            if (resp.IsSuccessStatusCode)
+            Auth.CurrentUser!.Nombres   = _nombres.Trim();
+            Auth.CurrentUser!.Apellidos = _apellidos.Trim();
+            Auth.CurrentUser!.Correo    = _email.Trim();
+            Auth.CurrentUser!.Telefono  = _phone.Trim();
+            await Auth.SyncSessionAsync();
+
+            if (_cambiarPassword)
             {
-                // Actualizar objeto en sesión
-                Auth.CurrentUser.Telefono = _phone;
-                _isEditing = false;
-                _success   = true;
-                await Task.Delay(3000);
-                _success = false;
-                StateHasChanged();
+                var pwdDto = new { contrasenaActual = _currentPassword, nuevaContrasena = _newPassword };
+                var pwdResp = await Http.PutAsJsonAsync(
+                    $"trabajadores/{Auth.CurrentUser!.Id}/contrasena", pwdDto);
+
+                if (!pwdResp.IsSuccessStatusCode)
+                {
+                    var msg = await pwdResp.Content.ReadAsStringAsync();
+                    _passwordError = !string.IsNullOrEmpty(msg) ? msg : "No se pudo actualizar la contraseña.";
+                    return;
+                }
             }
-            else
-            {
-                var msg = await resp.Content.ReadAsStringAsync();
-                _error = $"No se pudo guardar: {msg}";
-            }
+
+            _currentPassword = ""; _newPassword = ""; _confirmPassword = "";
+            _passwordError = null; _cambiarPassword = false;
+
+            _toastMessage = "Cambios guardados exitosamente";
+            _showToast = true;
+            StateHasChanged();
+            await Task.Delay(3000);
+            _showToast = false;
         }
         catch (Exception ex)
         {
-            _error = $"Error de conexión: {ex.Message}";
+            _profileError = $"Error de conexión: {ex.Message}";
         }
-        finally { _saving = false; }
-    }
-
-    private string GetInitials(string name)
-    {
-        if (string.IsNullOrWhiteSpace(name)) return "T";
-        var parts = name.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
-        return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+        finally
+        {
+            _saving = false;
+            StateHasChanged();
+        }
     }
 }

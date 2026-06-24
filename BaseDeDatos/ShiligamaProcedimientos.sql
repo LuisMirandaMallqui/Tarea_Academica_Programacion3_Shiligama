@@ -2281,4 +2281,112 @@ BEGIN
     UPDATE venta SET ESTADO_VENTA = p_estado WHERE VENTA_ID = p_venta_id;
 END$$
 
+-- =============================================================
+-- LOTE
+-- =============================================================
+DROP PROCEDURE IF EXISTS INSERTAR_LOTE$$
+CREATE PROCEDURE INSERTAR_LOTE(
+    OUT _lote_id            INT,
+    IN  _producto_id        INT,
+    IN  _trabajador_id      INT,
+    IN  _cantidad_inicial   INT,
+    IN  _fecha_vencimiento  DATE,
+    IN  _numero_lote        VARCHAR(50)
+)
+BEGIN
+    INSERT INTO lote(PRODUCTO_ID, TRABAJADOR_ID, CANTIDAD_INICIAL,
+                     CANTIDAD_ACTUAL, FECHA_VENCIMIENTO, NUMERO_LOTE, ACTIVO)
+    VALUES(_producto_id, _trabajador_id, _cantidad_inicial,
+           _cantidad_inicial, _fecha_vencimiento, _numero_lote, 1);
+    SET _lote_id = LAST_INSERT_ID();
+
+    CALL REGISTRAR_MOVIMIENTO_INVENTARIO(
+        @mv_id, _producto_id, _trabajador_id, 'ENTRADA', _cantidad_inicial,
+        CONCAT('Recepcion lote #', IFNULL(_numero_lote, CAST(_lote_id AS CHAR)))
+    );
+END$$
+
+DROP PROCEDURE IF EXISTS MODIFICAR_LOTE$$
+CREATE PROCEDURE MODIFICAR_LOTE(
+    IN _lote_id            INT,
+    IN _cantidad_actual    INT,
+    IN _fecha_vencimiento  DATE,
+    IN _numero_lote        VARCHAR(50)
+)
+BEGIN
+    UPDATE lote
+    SET CANTIDAD_ACTUAL   = _cantidad_actual,
+        FECHA_VENCIMIENTO = _fecha_vencimiento,
+        NUMERO_LOTE       = _numero_lote
+    WHERE LOTE_ID = _lote_id;
+END$$
+
+DROP PROCEDURE IF EXISTS ELIMINAR_LOTE$$
+CREATE PROCEDURE ELIMINAR_LOTE(IN _lote_id INT)
+BEGIN
+    UPDATE lote SET ACTIVO = 0 WHERE LOTE_ID = _lote_id;
+END$$
+
+DROP PROCEDURE IF EXISTS BUSCAR_LOTE_POR_ID$$
+CREATE PROCEDURE BUSCAR_LOTE_POR_ID(IN _lote_id INT)
+BEGIN
+    SELECT l.LOTE_ID, l.PRODUCTO_ID, l.TRABAJADOR_ID,
+           l.CANTIDAD_INICIAL, l.CANTIDAD_ACTUAL,
+           l.FECHA_VENCIMIENTO, l.NUMERO_LOTE, l.ACTIVO,
+           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE,
+           p.NOMBRE AS PRODUCTO_NOMBRE
+    FROM lote l
+    LEFT JOIN usuario u ON l.TRABAJADOR_ID = u.USUARIO_ID
+    LEFT JOIN producto p ON l.PRODUCTO_ID = p.PRODUCTO_ID
+    WHERE l.LOTE_ID = _lote_id AND l.ACTIVO = 1;
+END$$
+
+DROP PROCEDURE IF EXISTS LISTAR_LOTES_TODOS$$
+CREATE PROCEDURE LISTAR_LOTES_TODOS()
+BEGIN
+    SELECT l.LOTE_ID, l.PRODUCTO_ID, l.TRABAJADOR_ID,
+           l.CANTIDAD_INICIAL, l.CANTIDAD_ACTUAL,
+           l.FECHA_VENCIMIENTO, l.NUMERO_LOTE, l.ACTIVO,
+           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE,
+           p.NOMBRE AS PRODUCTO_NOMBRE
+    FROM lote l
+    LEFT JOIN usuario u ON l.TRABAJADOR_ID = u.USUARIO_ID
+    LEFT JOIN producto p ON l.PRODUCTO_ID = p.PRODUCTO_ID
+    WHERE l.ACTIVO = 1
+    ORDER BY l.FECHA_CREACION DESC;
+END$$
+
+DROP PROCEDURE IF EXISTS LISTAR_LOTES_POR_PRODUCTO$$
+CREATE PROCEDURE LISTAR_LOTES_POR_PRODUCTO(IN _producto_id INT)
+BEGIN
+    SELECT l.LOTE_ID, l.PRODUCTO_ID, l.TRABAJADOR_ID,
+           l.CANTIDAD_INICIAL, l.CANTIDAD_ACTUAL,
+           l.FECHA_VENCIMIENTO, l.NUMERO_LOTE, l.ACTIVO,
+           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE,
+           p.NOMBRE AS PRODUCTO_NOMBRE
+    FROM lote l
+    LEFT JOIN usuario u ON l.TRABAJADOR_ID = u.USUARIO_ID
+    LEFT JOIN producto p ON l.PRODUCTO_ID = p.PRODUCTO_ID
+    WHERE l.PRODUCTO_ID = _producto_id AND l.ACTIVO = 1
+    ORDER BY l.FECHA_VENCIMIENTO ASC;
+END$$
+
+DROP PROCEDURE IF EXISTS LISTAR_LOTES_PROXIMOS_VENCER$$
+CREATE PROCEDURE LISTAR_LOTES_PROXIMOS_VENCER(IN _dias INT)
+BEGIN
+    SELECT l.LOTE_ID, l.PRODUCTO_ID, l.TRABAJADOR_ID,
+           l.CANTIDAD_INICIAL, l.CANTIDAD_ACTUAL,
+           l.FECHA_VENCIMIENTO, l.NUMERO_LOTE, l.ACTIVO,
+           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE,
+           p.NOMBRE AS PRODUCTO_NOMBRE
+    FROM lote l
+    LEFT JOIN usuario u ON l.TRABAJADOR_ID = u.USUARIO_ID
+    LEFT JOIN producto p ON l.PRODUCTO_ID = p.PRODUCTO_ID
+    WHERE l.ACTIVO = 1
+      AND l.CANTIDAD_ACTUAL > 0
+      AND l.FECHA_VENCIMIENTO IS NOT NULL
+      AND l.FECHA_VENCIMIENTO <= DATE_ADD(CURDATE(), INTERVAL _dias DAY)
+    ORDER BY l.FECHA_VENCIMIENTO ASC;
+END$$
+
 DELIMITER ;
