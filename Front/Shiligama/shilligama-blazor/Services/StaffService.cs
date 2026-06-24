@@ -45,7 +45,8 @@ public class StaffService
                 _staff.AddRange(trabajadores.Select(t => new Staff
                 {
                     Id          = $"{t.IdUsuario}",
-                    Nombre      = $"{t.Nombres} {t.Apellidos}".Trim(),
+                    Nombres     = t.Nombres ?? string.Empty,
+                    Apellidos   = t.Apellidos ?? string.Empty,
                     Dni         = t.Dni ?? string.Empty,
                     Rol         = "trabajador",
                     Telefono    = t.Telefono ?? string.Empty,
@@ -67,7 +68,8 @@ public class StaffService
                 _staff.AddRange(admins.Select(a => new Staff
                 {
                     Id          = $"{a.IdUsuario}",
-                    Nombre      = $"{a.Nombres} {a.Apellidos}".Trim(),
+                    Nombres     = a.Nombres ?? string.Empty,
+                    Apellidos   = a.Apellidos ?? string.Empty,
                     Dni         = a.Dni ?? string.Empty,
                     Rol         = "administrador",
                     Telefono    = a.Telefono ?? string.Empty,
@@ -91,8 +93,8 @@ public class StaffService
     {
         var dto = new
         {
-            nombres      = member.Nombre.Split(' ', 2)[0],
-            apellidos    = member.Nombre.Contains(' ') ? member.Nombre.Split(' ', 2)[1] : string.Empty,
+            nombres      = member.Nombres,
+            apellidos    = member.Apellidos,
             dni          = member.Dni,
             correo       = member.Correo,
             contrasena   = "Shiligama2025!",
@@ -145,8 +147,8 @@ public class StaffService
         var dto = new
         {
             idUsuario  = idNum,
-            nombres    = member.Nombre.Split(' ', 2)[0],
-            apellidos  = member.Nombre.Contains(' ') ? member.Nombre.Split(' ', 2)[1] : string.Empty,
+            nombres    = member.Nombres,
+            apellidos  = member.Apellidos,
             dni        = member.Dni,
             correo     = member.Correo,
             telefono   = member.Telefono,

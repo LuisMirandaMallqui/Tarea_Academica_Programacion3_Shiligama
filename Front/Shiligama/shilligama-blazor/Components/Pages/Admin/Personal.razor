@@ -257,16 +257,27 @@
                     <div class="row g-3">
 
                         <!-- Nombre: solo letras -->
-                        <div class="col-12">
-                            <label class="form-label small fw-medium text-foreground">Nombre Completo * <span class="text-muted-foreground fw-normal">(solo letras)</span></label>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-foreground">Nombres * <span class="text-muted-foreground fw-normal">(solo letras)</span></label>
                             <input type="text"
-                                   value="@_form.Nombre"
-                                   @oninput="OnNombreInput"
+                                   value="@_form.Nombres"
+                                   @oninput="OnNombresInput"
                                    onkeypress="return /[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(event.key)"
-                                   class="form-control text-foreground @(_submitted && string.IsNullOrWhiteSpace(_form.Nombre) ? "is-invalid" : "")"
-                                   placeholder="Marcos Díaz" />
-                            @if (_submitted && string.IsNullOrWhiteSpace(_form.Nombre))
-                            { <div class="invalid-feedback">El nombre es obligatorio y solo debe contener letras.</div> }
+                                   class="form-control text-foreground @(_submitted && string.IsNullOrWhiteSpace(_form.Nombres) ? "is-invalid" : "")"
+                                   placeholder="Marcos" />
+                            @if (_submitted && string.IsNullOrWhiteSpace(_form.Nombres))
+                            { <div class="invalid-feedback">El nombre es obligatorio.</div> }
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-medium text-foreground">Apellidos * <span class="text-muted-foreground fw-normal">(solo letras)</span></label>
+                            <input type="text"
+                                   value="@_form.Apellidos"
+                                   @oninput="OnApellidosInput"
+                                   onkeypress="return /[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/.test(event.key)"
+                                   class="form-control text-foreground @(_submitted && string.IsNullOrWhiteSpace(_form.Apellidos) ? "is-invalid" : "")"
+                                   placeholder="Díaz García" />
+                            @if (_submitted && string.IsNullOrWhiteSpace(_form.Apellidos))
+                            { <div class="invalid-feedback">Los apellidos son obligatorios.</div> }
                         </div>
 
                         <!-- DNI: solo dígitos, 8 -->
@@ -458,15 +469,20 @@
     );
 
     // ── Validaciones de input ─────────────────────────────────────────────────
-    // Solo letras y espacios (incluye tildes y ñ)
-    private void OnNombreInput(ChangeEventArgs e)
+    private void OnNombresInput(ChangeEventArgs e)
     {
-        var value = e.Value?.ToString() ?? "";
-
-        _form.Nombre = new string(
-            value.Where(c => char.IsLetter(c) || char.IsWhiteSpace(c))
-                 .ToArray()
+        _form.Nombres = new string(
+            (e.Value?.ToString() ?? "").Where(c => char.IsLetter(c) || char.IsWhiteSpace(c)).ToArray()
         );
+        _formDirty = true;
+    }
+
+    private void OnApellidosInput(ChangeEventArgs e)
+    {
+        _form.Apellidos = new string(
+            (e.Value?.ToString() ?? "").Where(c => char.IsLetter(c) || char.IsWhiteSpace(c)).ToArray()
+        );
+        _formDirty = true;
     }
 
     // Solo dígitos, máx 8
@@ -492,7 +508,8 @@
         !string.IsNullOrWhiteSpace(c) && c.Contains('@') && c.LastIndexOf('.') > c.IndexOf('@');
 
     private bool FormValido() =>
-        !string.IsNullOrWhiteSpace(_form.Nombre) &&
+        !string.IsNullOrWhiteSpace(_form.Nombres) &&
+        !string.IsNullOrWhiteSpace(_form.Apellidos) &&
         _form.Dni.Length == 8 &&
         _form.Telefono.Length == 9 &&
         EsCorreoValido(_form.Correo);

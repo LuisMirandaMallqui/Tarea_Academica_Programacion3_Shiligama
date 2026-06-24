@@ -44,6 +44,11 @@ INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('25f43b1486ad95a1398e3eeb3d83bc4010015fcc9bedb35b432e00298d5021f7', 'Carlos', 'García López', '12345678', '987654321', 'admin@shiligama.pe');
 INSERT INTO administrador(USUARIO_ID) VALUES(1);
 
+-- Administrador adicional (contraseña: pacoflaco123 → SHA-256)
+INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES('f68647780c2ffdc634abd31bdc567ed7866a274fc4f7f3aa575ef447d64a3a96', 'Luis', 'Miranda Mallqui', '72316555', '000000000', 'torolucho111@gmail.com');
+INSERT INTO administrador(USUARIO_ID) VALUES(2);
+
 -- Trabajadores  (contraseña: vendedor1 → SHA-256)
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('8ef6624812728dec98e81a11d1ffd3c19d21f95ccc8103a858b8e2de147a788a', 'Juan', 'Pérez Quispe', '23456789', '987654322', 'jperez@shiligama.pe');
