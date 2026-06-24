@@ -215,7 +215,7 @@ public class SalesService
             montoDescuento = 0.0,
             observaciones = string.IsNullOrWhiteSpace(customerName)
                              ? null : $"Cliente: {customerName}",
-            cliente = new { idUsuario = 9 },
+            cliente = (object?)null,   // venta presencial sin cliente identificado
             trabajador = new { idUsuario = idTrabajador },
             metodoPago = new { idMetodoPago = idMetodoPago },
             detalles = detalles
