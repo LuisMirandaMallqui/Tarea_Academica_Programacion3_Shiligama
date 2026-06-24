@@ -66,8 +66,8 @@ public class RecuperacionBoImpl implements RecuperacionBo {
         if (token == null || token.trim().isEmpty()) {
             throw new Exception("El token es obligatorio.");
         }
-        if (nuevaContrasena == null || nuevaContrasena.length() < 6) {
-            throw new Exception("La nueva contraseña debe tener al menos 6 caracteres.");
+        if (nuevaContrasena == null || nuevaContrasena.length() < 8) {
+            throw new Exception("La nueva contraseña debe tener al menos 8 caracteres.");
         }
 
         TokenRecuperacion recuperado = recuperacionDao.buscarToken(token.trim());
@@ -88,8 +88,8 @@ public class RecuperacionBoImpl implements RecuperacionBo {
         if (idUsuario <= 0) {
             throw new Exception("El ID de usuario es inválido.");
         }
-        if (nuevaContrasena == null || nuevaContrasena.length() < 6) {
-            throw new Exception("La nueva contraseña debe tener al menos 6 caracteres.");
+        if (nuevaContrasena == null || nuevaContrasena.length() < 8) {
+            throw new Exception("La nueva contraseña debe tener al menos 8 caracteres.");
         }
         recuperacionDao.actualizarContrasena(idUsuario, HashUtil.sha256(nuevaContrasena));
         return true;
