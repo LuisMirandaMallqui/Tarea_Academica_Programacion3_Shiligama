@@ -181,6 +181,14 @@ body {
   transition: all 0.2s ease;
 }
 
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+  opacity: 0.65;
+}
+
 .btn-primary:hover, .btn-primary:focus, .btn-primary:active {
   background-color: color-mix(in srgb, var(--primary) 85%, black) !important;
   border-color: color-mix(in srgb, var(--primary) 85%, black) !important;
