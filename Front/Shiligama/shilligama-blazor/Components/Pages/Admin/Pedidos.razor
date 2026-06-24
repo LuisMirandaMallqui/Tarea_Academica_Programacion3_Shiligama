@@ -30,7 +30,7 @@
 }
 else
 {
-    <PedidosCardList ActiveOnly="true" PageSize="6" OnOrderStatusChanged="RecargarPedidos" />
+    <PedidosCardList @ref="_cardListRef" ActiveOnly="true" PageSize="6" OnOrderStatusChanged="RecargarPedidos" />
 
     <!-- Historial de pedidos -->
     <div class="mt-4">
@@ -600,6 +600,9 @@ else
     private DateTime? _fechaDesde   = null;
     private DateTime? _fechaHasta   = null;
 
+    // Referencia al componente hijo (Listado de pedidos) para poder refrescarlo
+    // sin recargar la página cuando un pedido cambia de estado desde el Historial.
+    private PedidosCardList? _cardListRef;
 
     // Paginación
     private int _pageSize    = 8;
@@ -750,9 +753,16 @@ else
         if (ok)
         {
             // Recargamos desde el backend para reflejar el estado real persistido.
-            // No hace falta recargar la página: StateHasChanged() repinta la tabla al instante.
             await SalesSvc.EnsureLoadedAsync(recargar: true);
             _orders = SalesSvc.GetRecentOrders();
+
+            // Avisamos también al "Listado de pedidos" (PedidosCardList) para que
+            // se actualice al instante: si un pedido pasó de un estado terminal
+            // (atendido/rechazado/cancelado) a recibido/en_proceso, debe aparecer
+            // ahí sin que la persona tenga que recargar la página.
+            if (_cardListRef != null)
+                await _cardListRef.RefreshAsync();
+
             _showCambiarEstadoModal = false;
             _pedirConfirmacionFinal = false;
             _cambiarEstadoOrder = null;
