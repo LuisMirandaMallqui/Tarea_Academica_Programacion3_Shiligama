@@ -1,6 +1,7 @@
 @page "/admin/perfil"
 @layout AdminLayout
 @inject AuthService Auth
+@inject HttpClient Http
 @inject IJSRuntime JS
 
 <PageTitle>Mi Perfil – Shiligama Admin</PageTitle>
@@ -15,14 +16,14 @@
     <div class="row g-4">
         <!-- Main profile details -->
         <div class="col-lg-8">
-            <EditForm Model="this" OnValidSubmit="SaveProfile" class="d-flex flex-column gap-4">
+            <div class="d-flex flex-column gap-4">
                 <div class="card p-4 d-flex flex-column gap-3 rounded-4">
                     <h2 class="fs-5 fw-bold text-foreground mb-0">Información Personal</h2>
-                    
+
                     <div>
                         <label class="form-label small fw-medium text-foreground">Nombre completo</label>
                         <input type="text" @bind="_name" @bind:event="oninput" @bind:after="ValidateName"
-                               maxlength="100" required class="form-control text-foreground"
+                               maxlength="100" class="form-control text-foreground"
                                placeholder="Ingresa tu nombre completo"
                                style="@(_nameError != null ? "border-color:#dc3545;" : "")" />
                         @if (_nameError != null)
@@ -33,27 +34,36 @@
 
                     <div>
                         <label class="form-label small fw-medium text-foreground">Correo electrónico corporativo</label>
-                        <input type="email" @bind="_email" required class="form-control text-foreground" />
+                        <input type="email" @bind="_email" @bind:event="oninput" class="form-control text-foreground" />
                     </div>
 
                     <div>
                         <label class="form-label small fw-medium text-foreground">Teléfono móvil</label>
-                        <input type="tel" @bind="_phone" class="form-control text-foreground" />
+                        <input type="tel" @bind="_phone" @bind:event="oninput" class="form-control text-foreground" />
                     </div>
                 </div>
 
                 <div class="card p-4 d-flex flex-column gap-3 rounded-4">
                     <h2 class="fs-5 fw-bold text-foreground mb-0">Actualizar Contraseña</h2>
-                    
+                    <p class="text-muted-foreground small mb-0">Deja los campos vacíos si no deseas cambiar tu contraseña.</p>
+
+                    <div>
+                        <label class="form-label small fw-medium text-foreground">Contraseña actual</label>
+                        <input type="password" @bind="_currentPassword" @bind:event="oninput"
+                               class="form-control text-foreground"
+                               placeholder="Ingresa tu contraseña actual" style="height:44px;border-radius:10px;" />
+                    </div>
                     <div>
                         <label class="form-label small fw-medium text-foreground">Nueva Contraseña</label>
-                        <input type="password" @bind="_password" class="form-control text-foreground"
+                        <input type="password" @bind="_newPassword" @bind:event="oninput"
+                               class="form-control text-foreground"
                                placeholder="Mínimo 8 caracteres" style="height:44px;border-radius:10px;" />
                     </div>
                     <div>
                         <label class="form-label small fw-medium text-foreground">Confirmar Contraseña</label>
-                        <input type="password" @bind="_confirmPassword" class="form-control text-foreground"
-                               placeholder="Repite tu contraseña" style="height:44px;border-radius:10px;" />
+                        <input type="password" @bind="_confirmPassword" @bind:event="oninput"
+                               class="form-control text-foreground"
+                               placeholder="Repite tu nueva contraseña" style="height:44px;border-radius:10px;" />
                     </div>
                     @if (!string.IsNullOrEmpty(_passwordError))
                     {
@@ -62,11 +72,11 @@
                 </div>
 
                 <div class="d-flex justify-content-end">
-                    <button type="button" @onclick="SaveProfile" class="btn btn-primary px-4 py-2.5 fw-semibold" style="border-radius: var(--radius);">
+                    <button type="button" @onclick="SaveProfile" class="btn btn-primary px-4 fw-semibold" style="border-radius: var(--radius);">
                         Guardar Perfil
                     </button>
                 </div>
-            </EditForm>
+            </div>
         </div>
 
         <!-- Sidebar visual Card -->
@@ -100,8 +110,11 @@
                     <p class="text-muted-foreground small mb-0">Se actualizarán tus datos de perfil.</p>
                 </div>
                 <div class="modal-footer border-top border-color-default p-3 d-flex justify-content-center gap-2">
-                    <button class="btn btn-outline-secondary fw-semibold" style="border-radius:8px;min-width:90px;" @onclick="@(() => _showConfirm = false)">Cancelar</button>
-                    <button class="btn btn-primary fw-semibold" style="border-radius:8px;min-width:110px;" @onclick="ConfirmSave">Sí, guardar</button>
+                    <button class="btn btn-outline-secondary fw-semibold" style="border-radius:8px;min-width:90px;" @onclick="@(() => _showConfirm = false)" disabled="@_saving">Cancelar</button>
+                    <button class="btn btn-primary fw-semibold" style="border-radius:8px;min-width:110px;" @onclick="ConfirmSave" disabled="@_saving">
+                        @if (_saving) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                        Sí, guardar
+                    </button>
                 </div>
             </div>
         </div>
@@ -114,7 +127,7 @@
     <div class="position-fixed d-flex align-items-center gap-2 p-3 shadow-lg"
          style="bottom:24px;right:24px;z-index:9999;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:var(--radius);animation:slideIn 0.3s ease;">
         <i class="fas fa-check-circle" style="color:#2e7d32;font-size:1.2rem;"></i>
-        <span class="text-foreground fw-semibold small">Cambios guardados exitosamente</span>
+        <span class="text-foreground fw-semibold small">@_toastMessage</span>
         <button class="btn btn-sm p-0 ms-2" @onclick="@(() => _showToast = false)">
             <i class="fas fa-times text-muted" style="font-size:0.8rem;"></i>
         </button>
@@ -129,19 +142,25 @@
 </style>
 
 @code {
-    private string _name = "";
-    private string _email = "";
-    private string _phone = "951 236 487";
-    private string _password = "";
+    private string _name            = "";
+    private string _email           = "";
+    private string _phone           = "";
+    private string _currentPassword = "";
+    private string _newPassword     = "";
     private string _confirmPassword = "";
     private string? _nameError;
     private string? _passwordError;
     private bool _showConfirm = false;
-    private bool _showToast = false;
+    private bool _showToast   = false;
+    private bool _saving      = false;
+    private string _toastMessage = "Cambios guardados exitosamente";
+
+    // Flag interno para saber si se quiere cambiar contraseña en este guardado
+    private bool _cambiarPassword = false;
 
     protected override void OnInitialized()
     {
-        _name = Auth.CurrentUser?.Name ?? "Admin Shiligama";
+        _name  = Auth.CurrentUser?.Name  ?? "Admin Shiligama";
         _email = Auth.CurrentUser?.Email ?? "test1234@admin.com";
     }
 
@@ -158,24 +177,31 @@
 
     private void SaveProfile()
     {
-        _nameError = null;
+        _nameError     = null;
         _passwordError = null;
+        _cambiarPassword = false;
 
         ValidateName();
         if (_nameError != null) return;
 
-        if (!string.IsNullOrEmpty(_password) || !string.IsNullOrEmpty(_confirmPassword))
+        // Validar contraseña solo si el usuario llenó alguno de los campos
+        bool quiereCambiarPassword =
+            !string.IsNullOrEmpty(_currentPassword) ||
+            !string.IsNullOrEmpty(_newPassword)     ||
+            !string.IsNullOrEmpty(_confirmPassword);
+
+        if (quiereCambiarPassword)
         {
-            if (_password.Length < 8)
-            {
-                _passwordError = "La contraseña debe tener al menos 8 caracteres.";
-                return;
-            }
-            if (_password != _confirmPassword)
-            {
-                _passwordError = "Las contraseñas no coinciden.";
-                return;
-            }
+            if (string.IsNullOrWhiteSpace(_currentPassword))
+            { _passwordError = "Ingresa tu contraseña actual."; return; }
+
+            if (string.IsNullOrWhiteSpace(_newPassword) || _newPassword.Length < 8)
+            { _passwordError = "La nueva contraseña debe tener al menos 8 caracteres."; return; }
+
+            if (_newPassword != _confirmPassword)
+            { _passwordError = "Las contraseñas nuevas no coinciden."; return; }
+
+            _cambiarPassword = true;
         }
 
         _showConfirm = true;
@@ -184,22 +210,49 @@
     private async Task ConfirmSave()
     {
         _showConfirm = false;
-
-        // Recargar nombre desde el campo
-        _name = _name.Trim();
-        _email = _email.Trim();
-
-        // Resetear campos de contraseña
-        _password = "";
-        _confirmPassword = "";
-        _nameError = null;
-        _passwordError = null;
-
-        // Mostrar toast
-        _showToast = true;
+        _saving = true;
         StateHasChanged();
-        await Task.Delay(3000);
-        _showToast = false;
-        StateHasChanged();
+
+        try
+        {
+            // ── Cambiar contraseña si el usuario lo solicitó ─────────────────
+            if (_cambiarPassword)
+            {
+                var dto = new { contrasenaActual = _currentPassword, nuevaContrasena = _newPassword };
+                var resp = await Http.PutAsJsonAsync(
+                    $"administradores/{Auth.CurrentUser!.Id}/contrasena", dto);
+
+                if (!resp.IsSuccessStatusCode)
+                {
+                    var msg = await resp.Content.ReadAsStringAsync();
+                    _passwordError = !string.IsNullOrEmpty(msg)
+                        ? msg
+                        : "No se pudo actualizar la contraseña.";
+                    return; // No mostrar toast de éxito
+                }
+            }
+
+            // Limpiar campos de contraseña tras éxito
+            _currentPassword = "";
+            _newPassword     = "";
+            _confirmPassword = "";
+            _passwordError   = null;
+            _cambiarPassword = false;
+
+            _toastMessage = "Cambios guardados exitosamente";
+            _showToast = true;
+            StateHasChanged();
+            await Task.Delay(3000);
+            _showToast = false;
+        }
+        catch (Exception ex)
+        {
+            _passwordError = $"Error de conexión: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+            StateHasChanged();
+        }
     }
 }

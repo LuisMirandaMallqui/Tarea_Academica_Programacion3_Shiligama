@@ -1,9 +1,14 @@
 @page "/admin/productos"
 @layout AdminLayout
+@implements IDisposable
 @inject ProductService ProductSvc
 @inject PromocionService PromoSvc
 @inject ImagenService ImagenSvc
-@using System.Security.Cryptography;
+@inject IJSRuntime JS
+@inject HttpClient Http
+@using System.Security.Cryptography
+@using System.Text.Json
+@using Microsoft.JSInterop
 <PageTitle>Productos – Shiligama Admin</PageTitle>
 
 <style>
@@ -337,6 +342,8 @@
 <!-- Modal: Crear / Editar producto -->
 @if (_showModal)
 {
+<ErrorBoundary>
+    <ChildContent>
     <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);" @onclick="TryCloseModal">
         <div class="modal-dialog modal-lg modal-dialog-centered" @onclick:stopPropagation>
             <div class="modal-content bg-card border-border">
@@ -425,12 +432,20 @@
                             }
                             <div class="mb-2">
                                 <label class="form-label small text-muted-foreground mb-1">Subir archivo (JPG / PNG / WebP)</label>
+                                @* Input HTML puro — evita el módulo JS interno de InputFile de Blazor
+                                   que mata el circuito cuando se re-renderiza al cambiar "disabled". *@
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="flex-grow-1">
-                                        <InputFile OnChange="HandleImageSelected" accept="image/jpeg,image/png,image/gif,image/webp"
-                                                   class="form-control text-foreground" disabled="@_uploadingImage" />
+                                        <input type="file" id="productImageInput"
+                                               accept="image/jpeg,image/png,image/gif,image/webp"
+                                               class="form-control text-foreground" />
                                     </div>
-                                    <span class="badge bg-secondary text-nowrap flex-shrink-0" style="font-size:.72rem;padding:.35em .6em;">Máx. 5 MB</span>
+                                    <button type="button" @onclick="UploadImage"
+                                            class="btn btn-outline-secondary btn-sm text-nowrap flex-shrink-0"
+                                            disabled="@_uploadingImage">
+                                        @if (_uploadingImage) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                                        Máx. 5 MB
+                                    </button>
                                 </div>
                                 @if (_uploadingImage) { <div class="small text-muted-foreground mt-1"><span class="spinner-border spinner-border-sm me-1"></span>Subiendo…</div> }
                                 @if (!string.IsNullOrEmpty(_uploadError)) { <div class="small text-danger mt-1">@_uploadError</div> }
@@ -453,6 +468,11 @@
             </div>
         </div>
     </div>
+    </ChildContent>
+    <ErrorContent>
+        <div class="alert alert-danger m-3 small">Ocurrió un error al renderizar el formulario. Cierra el modal e intenta de nuevo.</div>
+    </ErrorContent>
+</ErrorBoundary>
 }
 
 @if (_showSavedToast)
@@ -492,6 +512,20 @@
     private bool    _showSavedToast = false; private string _toastMsg = "";
     private bool    _showToggleConfirm = false; private Product? _toggleProduct = null;
     private bool    _uploadingImage = false; private string _uploadError = "";
+
+    // Referencia JS para el patrón callback (JS llama a OnUploadComplete cuando termina).
+    private DotNetObjectReference<Productos>? _uploadRef;
+
+    protected override void OnInitialized()
+    {
+        // Crea la referencia .NET que el JS usará para llamar a OnUploadComplete.
+        _uploadRef = DotNetObjectReference.Create(this);
+    }
+
+    public void Dispose()
+    {
+        _uploadRef?.Dispose();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -639,26 +673,58 @@
         StateHasChanged();
     }
 
-    private async Task HandleImageSelected(InputFileChangeEventArgs e)
+    // Patrón fire-and-forget + callback JS→.NET:
+    // UploadImage() retorna de inmediato; el JS hace el fetch() en background
+    // y llama a OnUploadComplete cuando termina.
+    // Esto evita que el circuit quede en estado "esperando JS interop" durante
+    // el upload, lo cual en .NET 10 Blazor Server puede matar el circuit.
+    private async Task UploadImage()
     {
-        _uploadError = ""; _uploadingImage = true;
-        var file = e.File;
-        if (file.Size > 5L * 1024 * 1024)
+        try
         {
-            _uploadError = $"El archivo '{file.Name}' supera el límite de 5 MB.";
-            _uploadingImage = false; return;
+            _uploadError = ""; _uploadingImage = true;
+
+            // Ruta relativa al servidor Blazor. JS la resuelve contra window.location
+            // → https://localhost:7282/api/img-upload (HTTPS, mismo origen).
+            // El endpoint /api/img-upload reenvía server-to-server a GlassFish,
+            // eliminando el mixed-content y los bloqueos CORS de Brave/Edge.
+            const string uploadUrl = "/api/img-upload";
+
+            // Función JS NO-async: inicia el upload en background y retorna de inmediato.
+            // El resultado llega vía dotNetRef.invokeMethodAsync → OnUploadComplete.
+            await JS.InvokeVoidAsync("shiligamaStartUpload", _uploadRef, "productImageInput", uploadUrl);
+            // UploadImage() retorna aquí. _uploadingImage sigue true hasta que OnUploadComplete lo cambie.
         }
-        try { _form.Image = await ImagenSvc.UploadAsync(file); _formDirty = true; }
-        catch (InvalidOperationException) { throw; }
-        catch (Exception ex) when (ex.Message.Contains("circuit", StringComparison.OrdinalIgnoreCase) ||
-                                   ex.Message.Contains("SignalR", StringComparison.OrdinalIgnoreCase) ||
-                                   ex.Message.Contains("connection", StringComparison.OrdinalIgnoreCase) ||
-                                   ex.Message.Contains("transport", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex)
         {
-            _uploadError = "Error de conexión al subir la imagen. Intente con un archivo más pequeño o recargue la página.";
+            // Si InvokeVoidAsync falla (JS no cargado, circuit cerrando, etc.) mostramos el error
+            // sin matar el circuit.
+            _uploadingImage = false;
+            _uploadError = ex.Message;
         }
-        catch (Exception ex) { _uploadError = ex.Message; }
-        finally { _uploadingImage = false; }
+    }
+
+    /// <summary>
+    /// Llamado desde JavaScript (dotNetRef.invokeMethodAsync) cuando el upload termina.
+    /// </summary>
+    [JSInvokable]
+    public async Task OnUploadComplete(string? url, string? error)
+    {
+        await InvokeAsync(() =>
+        {
+            _uploadingImage = false;
+            if (!string.IsNullOrEmpty(url))
+            {
+                _form.Image = url;
+                _formDirty  = true;
+                _uploadError = "";
+            }
+            else
+            {
+                _uploadError = error ?? "Error desconocido al subir imagen.";
+            }
+            StateHasChanged();
+        });
     }
 
     private int CalcularChecksumEAN13(string code12)

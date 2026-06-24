@@ -4,6 +4,18 @@ using shilligama_blazor.Components;
 using shilligama_blazor.Services;
 using shilligama_blazor.Shared;
 
+// ── Diagnóstico: loguea excepciones no manejadas para encontrar la causa del crash ──
+// Ver salida en el panel "Output" de Visual Studio (categoría "Debug").
+AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+{
+    Console.Error.WriteLine($"[CRASH] UnhandledException (IsTerminating={e.IsTerminating}): {e.ExceptionObject}");
+};
+TaskScheduler.UnobservedTaskException += (_, e) =>
+{
+    Console.Error.WriteLine($"[WARN] UnobservedTaskException: {e.Exception?.Message}");
+    e.SetObserved(); // evita crash por tarea olvidada
+};
+
 var builder = WebApplication.CreateBuilder(args);
 
 // ── Razor / Blazor Server ────────────────────────────────────────────────────
@@ -16,8 +28,10 @@ builder.Services.AddRazorComponents()
     })
     .AddHubOptions(options =>
     {
-        // Límite de mensaje SignalR: 5 MB (necesario para InputFile subir imágenes).
-        options.MaximumReceiveMessageSize = 5L * 1024 * 1024;
+        // Límite de mensaje SignalR: 10 MB.
+        // El JS interop devuelve el archivo como Base64 (un 5 MB raw → ~7 MB Base64),
+        // por lo que necesitamos un margen mayor que el tamaño máximo del archivo.
+        options.MaximumReceiveMessageSize = 10L * 1024 * 1024;
     });
 
 // ── HttpClient apuntando al API REST del back ────────────────────────────────
@@ -86,5 +100,84 @@ app.UseAntiforgery();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// ── Proxy de imágenes: evita mixed-content y CORS en Brave/Edge ─────────────
+//
+// El browser SIEMPRE habla con https://localhost:7282 (mismo origen).
+// Blazor reenvía la petición a GlassFish server-to-server (sin restricciones).
+//
+// POST /api/img-upload  → recibe JSON, lo pasa a GlassFish, devuelve URL proxy
+// GET  /api/img/{file}  → descarga la imagen de GlassFish y la sirve en HTTPS
+
+app.MapPost("/api/img-upload", async (HttpRequest req, HttpClient glassHttp) =>
+{
+    // Leer body del browser
+    using var reader = new StreamReader(req.Body);
+    var jsonBody = await reader.ReadToEndAsync();
+
+    // Reenviar a GlassFish (server-to-server, sin restricciones de browser)
+    using var content = new StringContent(jsonBody, System.Text.Encoding.UTF8, "application/json");
+    HttpResponseMessage glassResp;
+    try
+    {
+        glassResp = await glassHttp.PostAsync("imagenes/upload", content);
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = "No se pudo conectar con el servidor: " + ex.Message },
+                            statusCode: 502);
+    }
+
+    var respStr = await glassResp.Content.ReadAsStringAsync();
+
+    if (!glassResp.IsSuccessStatusCode)
+    {
+        // Propagar error de GlassFish al browser manteniendo el formato {"error":"..."}
+        string errorMsg = "Error al subir imagen";
+        try
+        {
+            using var errDoc = JsonDocument.Parse(respStr);
+            if (errDoc.RootElement.TryGetProperty("error", out var errProp))
+                errorMsg = errProp.GetString() ?? errorMsg;
+        }
+        catch { }
+        return Results.Json(new { error = errorMsg }, statusCode: (int)glassResp.StatusCode);
+    }
+
+    // Transformar URL de GlassFish (http://localhost:8080/…/imagenes/file.jpg)
+    // → URL proxy Blazor (/api/img/file.jpg) que es HTTPS y mismo origen
+    try
+    {
+        using var doc = JsonDocument.Parse(respStr);
+        if (doc.RootElement.TryGetProperty("url", out var urlProp))
+        {
+            var glassUrl = urlProp.GetString() ?? "";
+            var filename = glassUrl[(glassUrl.LastIndexOf('/') + 1)..];
+            return Results.Json(new { url = "/api/img/" + filename });
+        }
+    }
+    catch { }
+
+    return Results.Json(new { error = "Respuesta inesperada del servidor" }, statusCode: 500);
+}).DisableAntiforgery();
+
+app.MapGet("/api/img/{filename}", async (string filename, HttpClient glassHttp) =>
+{
+    // Seguridad: prevenir path traversal
+    if (string.IsNullOrWhiteSpace(filename) ||
+        filename.Contains("..") || filename.Contains('/') || filename.Contains('\\'))
+        return Results.BadRequest();
+
+    HttpResponseMessage resp;
+    try { resp = await glassHttp.GetAsync("imagenes/" + filename); }
+    catch { return Results.StatusCode(502); }
+
+    if (!resp.IsSuccessStatusCode) return Results.NotFound();
+
+    var bytes = await resp.Content.ReadAsByteArrayAsync();
+    var ct = resp.Content.Headers.ContentType?.ToString() ?? "image/jpeg";
+    // Cache pública 24 h (igual que GlassFish)
+    return Results.File(bytes, ct, enableRangeProcessing: false);
+});
 
 app.Run();
