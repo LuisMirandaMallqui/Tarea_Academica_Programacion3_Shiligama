@@ -27,17 +27,13 @@ public class PedidoBoImpl implements PedidoBo {
         // ATENDIDO solo se puede alcanzar via confirmarPedido(); bloquear aqui.
         if (pedido.getEstadoPedido() == EstadoPedido.ATENDIDO) {
             throw new Exception(
-                "Para confirmar un pedido use el endpoint POST /pedidos/{id}/confirmar. " +
-                "El estado ATENDIDO no puede asignarse mediante modificar().");
+                    "Para confirmar un pedido use el endpoint POST /pedidos/{id}/confirmar. " +
+                            "El estado ATENDIDO no puede asignarse mediante modificar().");
         }
 
-        // Irreversibilidad: verificar que el pedido no esté ya confirmado.
-        Pedido actual = daoPedido.buscarPorId(pedido.getIdPedido());
-        if (actual != null && actual.getEstadoPedido() == EstadoPedido.ATENDIDO) {
-            throw new Exception(
-                "El pedido ya fue confirmado (ATENDIDO) y su estado no puede revertirse.");
-        }
-
+        // Permite reabrir/corregir pedidos en estado terminal (ATENDIDO, RECHAZADO,
+        // CANCELADO) hacia cualquier otro estado (excepto ATENDIDO, bloqueado arriba),
+        // para que el panel admin pueda corregir un cambio de estado erróneo.
         return daoPedido.modificar(pedido);
     }
 
@@ -53,7 +49,7 @@ public class PedidoBoImpl implements PedidoBo {
         if (estado == EstadoPedido.ATENDIDO || estado == EstadoPedido.RECHAZADO
                 || estado == EstadoPedido.CANCELADO) {
             throw new Exception(
-                "El pedido ya está en estado terminal (" + estado + ") y no puede confirmarse.");
+                    "El pedido ya está en estado terminal (" + estado + ") y no puede confirmarse.");
         }
 
         // El SP CONFIRMAR_PEDIDO_A_VENTA se encarga de: crear venta, copiar detalles,

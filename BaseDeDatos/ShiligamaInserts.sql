@@ -39,49 +39,49 @@ INSERT INTO categoria(NOMBRE, DESCRIPCION, CATEGORIA_PADRE_ID, ICONO) VALUES
 -- DATOS DE PRUEBA
 -- =============================================================
 
--- Administrador (contraseña: admin123 — en producción usar bcrypt)
+-- Administrador  (contraseña: admin1 → SHA-256)
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES( '$2a$10$placeholder_bcrypt_hash', 'Carlos', 'García López', '12345678', '987654321', 'admin@shiligama.pe');
+VALUES('25f43b1486ad95a1398e3eeb3d83bc4010015fcc9bedb35b432e00298d5021f7', 'Carlos', 'García López', '12345678', '987654321', 'admin@shiligama.pe');
 INSERT INTO administrador(USUARIO_ID) VALUES(1);
 
--- Trabajadores
+-- Trabajadores  (contraseña: vendedor1 → SHA-256)
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES('$2a$10$placeholder_bcrypt_hash', 'Juan', 'Pérez Quispe', '23456789', '987654322', 'jperez@shiligama.pe');
+VALUES('8ef6624812728dec98e81a11d1ffd3c19d21f95ccc8103a858b8e2de147a788a', 'Juan', 'Pérez Quispe', '23456789', '987654322', 'jperez@shiligama.pe');
 INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO) VALUES(2, 'Cajero', '2025-01-15');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES('$2a$10$placeholder_bcrypt_hash', 'María', 'Rodríguez Silva', '34567890', '987654323', 'mrodriguez@shiligama.pe');
+VALUES('8ef6624812728dec98e81a11d1ffd3c19d21f95ccc8103a858b8e2de147a788a', 'María', 'Rodríguez Silva', '34567890', '987654323', 'mrodriguez@shiligama.pe');
 INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO) VALUES(3, 'Almacenero', '2025-03-01');
 
--- Clientes
-INSERT INTO usuario( CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES( '$2a$10$placeholder_bcrypt_hash', 'Ana', 'Costa Medina', '45678901', '987654324', 'acosta@gmail.com');
+-- Clientes  (contraseña: cliente1 → SHA-256)
+INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Ana', 'Costa Medina', '45678901', '987654324', 'acosta@gmail.com');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
 VALUES(4, 'Av. Los Pinos 300');
 
-INSERT INTO usuario( CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES( '$2a$10$placeholder_bcrypt_hash', 'Luis', 'Huamán Torres', '56789012', '987654325', 'lhuaman@gmail.com');
+INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
+VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Luis', 'Huamán Torres', '56789012', '987654325', 'lhuaman@gmail.com');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
 VALUES(5, 'Jr. Arequipa 150');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES('shiligama123', 'Pedro', 'Ramos Vega',     '67890123', '987654326', 'pramos@gmail.com');
-INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA) 
+VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Pedro', 'Ramos Vega', '67890123', '987654326', 'pramos@gmail.com');
+INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
 VALUES(6, 'Calle Lima 220');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES('shiligama123', 'Sofía', 'Mendoza Cruz',   '78901234', '987654327', 'smendoza@gmail.com');
-INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA) 
+VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Sofía', 'Mendoza Cruz', '78901234', '987654327', 'smendoza@gmail.com');
+INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
 VALUES(7, 'Av. Bolognesi 45');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES('shiligama123', 'Jorge', 'Villanueva Ríos', '89012345', '987654328', 'jvillanueva@gmail.com');
-INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA) 
+VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Jorge', 'Villanueva Ríos', '89012345', '987654328', 'jvillanueva@gmail.com');
+INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
 VALUES(8, 'Jr. Cusco 310');
 
--- Cliente genérico para ventas POS sin identificación (Público General / consumidor final)
+-- Cliente genérico POS  (contraseña: publico1 → SHA-256)
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-VALUES('publico123', 'Publico', 'General', '00000000', '000000000', 'publico@shiligama.local');
+VALUES('da07cde80211427c879b1c0342ae23408e0964dbf7e17d40f88b06947560c14e', 'Publico', 'General', '00000000', '000000000', 'publico@shiligama.local');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
 VALUES(9, 'Sin direccion');
 
@@ -313,7 +313,7 @@ CALL INSERTAR_DETALLE_DEVOLUCION(@dev7, 4, 2);
 -- ================================================================
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-SELECT 'publico123', 'Publico', 'General', '00000000', '000000000', 'publico@shiligama.local'
+SELECT 'da07cde80211427c879b1c0342ae23408e0964dbf7e17d40f88b06947560c14e', 'Publico', 'General', '00000000', '000000000', 'publico@shiligama.local'
 WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE DNI = '00000000');
 
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)

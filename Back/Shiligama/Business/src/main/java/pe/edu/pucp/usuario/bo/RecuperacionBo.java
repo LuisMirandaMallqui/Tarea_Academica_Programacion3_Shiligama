@@ -22,4 +22,12 @@ public interface RecuperacionBo {
      * @return true si se actualizó correctamente.
      */
     boolean restablecerContrasena(String token, String nuevaContrasena) throws Exception;
+
+    /**
+     * Cambia la contraseña directamente dado el ID del usuario (flujo desde perfil).
+     * La verificación de la contraseña actual se hace en la capa de servicio (RS)
+     * usando AuthBo antes de llamar a este método.
+     * @return true si se actualizó correctamente.
+     */
+    boolean cambiarContrasena(int idUsuario, String nuevaContrasena) throws Exception;
 }

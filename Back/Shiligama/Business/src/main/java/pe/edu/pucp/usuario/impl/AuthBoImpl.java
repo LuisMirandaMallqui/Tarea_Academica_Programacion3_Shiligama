@@ -1,5 +1,6 @@
 package pe.edu.pucp.usuario.impl;
 
+import pe.edu.pucp.config.HashUtil;
 import pe.edu.pucp.model.usuario.Usuario;
 import pe.edu.pucp.persistance.dao.usuario.dao.AuthDao;
 import pe.edu.pucp.persistance.dao.usuario.impl.AuthDaoImpl;
@@ -16,7 +17,8 @@ public class AuthBoImpl implements AuthBo {
     public Usuario autenticar(String correo, String contrasena) throws Exception {
         validarTextoObligatorio(correo, "El correo es obligatorio.");
         validarTextoObligatorio(contrasena, "La contraseña es obligatoria.");
-        return authDao.autenticar(correo.trim(), contrasena);
+        // Hashear la contraseña antes de comparar con la BD
+        return authDao.autenticar(correo.trim(), HashUtil.sha256(contrasena));
     }
 
     private void validarTextoObligatorio(String texto, String mensaje) throws Exception {

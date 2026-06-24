@@ -27,7 +27,7 @@ public class SalesService
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _json;
 
-    private readonly List<Sale>  _sales  = new();
+    private readonly List<Sale> _sales = new();
     private readonly List<Order> _orders = new();
     private bool _cargado = false;
 
@@ -110,7 +110,7 @@ public class SalesService
     }
 
     // ----- Getters síncronos (sobre la caché) -----
-    public List<Sale>  GetSales()        => _sales;
+    public List<Sale> GetSales() => _sales;
     public List<Order> GetRecentOrders() => _orders;
 
 
@@ -141,11 +141,11 @@ public class SalesService
                     {
                         order.Products = detalles.Select(d => new CartItem
                         {
-                            Id       = d.Producto?.IdProducto ?? 0,
-                            Name     = d.Producto?.Nombre ?? "Producto",
-                            Price    = (decimal)(d.PrecioUnitario),
+                            Id = d.Producto?.IdProducto ?? 0,
+                            Name = d.Producto?.Nombre ?? "Producto",
+                            Price = (decimal)(d.PrecioUnitario),
                             Quantity = d.Cantidad,
-                            Image    = ""
+                            Image = ""
                         }).ToList();
                         order.Items = order.Products.Count;
 
@@ -192,33 +192,33 @@ public class SalesService
             idMetodoPago = payMethod.ToLower() switch
             {
                 "efectivo" => 1,
-                "yape"     => 2,
-                "plin"     => 3,
-                "tarjeta"  => 4,
-                _          => 1
+                "yape" => 2,
+                "plin" => 3,
+                "tarjeta" => 4,
+                _ => 1
             };
         }
 
         var detalles = items.Select(i => new
         {
-            producto        = new { idProducto = i.Id },
-            cantidad        = i.Quantity,
-            precioUnitario  = (double)i.Price,
-            subtotal        = (double)(i.Price * i.Quantity)
+            producto = new { idProducto = i.Id },
+            cantidad = i.Quantity,
+            precioUnitario = (double)i.Price,
+            subtotal = (double)(i.Price * i.Quantity)
         }).ToList();
 
         var venta = new
         {
-            canalVenta  = "PRESENCIAL",
-            estado      = "PENDIENTE",
-            montoTotal  = (double)total,
+            canalVenta = "PRESENCIAL",
+            estado = "PENDIENTE",
+            montoTotal = (double)total,
             montoDescuento = 0.0,
-            observaciones  = string.IsNullOrWhiteSpace(customerName)
+            observaciones = string.IsNullOrWhiteSpace(customerName)
                              ? null : $"Cliente: {customerName}",
-            cliente     = new { idUsuario = 9 },
-            trabajador  = new { idUsuario = idTrabajador },
-            metodoPago  = new { idMetodoPago = idMetodoPago },
-            detalles    = detalles
+            cliente = new { idUsuario = 9 },
+            trabajador = new { idUsuario = idTrabajador },
+            metodoPago = new { idMetodoPago = idMetodoPago },
+            detalles = detalles
         };
 
         try
@@ -230,15 +230,15 @@ public class SalesService
                 // Agrega a la caché local sin recargar toda la lista
                 _sales.Insert(0, new Sale
                 {
-                    Id         = $"VTA-{idGenerado:D3}",
-                    Fecha      = DateTime.Now,
-                    Cliente    = string.IsNullOrWhiteSpace(customerName) ? "Público General" : customerName,
-                    Canal      = "presencial",
-                    Productos  = items,
-                    Total      = total,
+                    Id = $"VTA-{idGenerado:D3}",
+                    Fecha = DateTime.Now,
+                    Cliente = string.IsNullOrWhiteSpace(customerName) ? "Público General" : customerName,
+                    Canal = "presencial",
+                    Productos = items,
+                    Total = total,
                     MetodoPago = payMethod,
-                    Comprobante= invoiceType,
-                    Estado     = "pendiente"
+                    Comprobante = invoiceType,
+                    Estado = "pendiente"
                 });
                 return idGenerado;
             }
@@ -249,15 +249,15 @@ public class SalesService
         var localId = _sales.Count + 1;
         _sales.Insert(0, new Sale
         {
-            Id         = $"VTA-{localId:D3}",
-            Fecha      = DateTime.Now,
-            Cliente    = string.IsNullOrWhiteSpace(customerName) ? "Público General" : customerName,
-            Canal      = "presencial",
-            Productos  = items,
-            Total      = total,
+            Id = $"VTA-{localId:D3}",
+            Fecha = DateTime.Now,
+            Cliente = string.IsNullOrWhiteSpace(customerName) ? "Público General" : customerName,
+            Canal = "presencial",
+            Productos = items,
+            Total = total,
             MetodoPago = payMethod,
-            Comprobante= invoiceType,
-            Estado     = "completado"
+            Comprobante = invoiceType,
+            Estado = "completado"
         });
         return localId;
     }
@@ -274,39 +274,39 @@ public class SalesService
         var localId = _sales.Count + 1;
         _sales.Insert(0, new Sale
         {
-            Id         = $"VTA-{localId:D3}",
-            Fecha      = DateTime.Now,
-            Cliente    = string.IsNullOrWhiteSpace(customerName) ? "Público General" : customerName,
-            Canal      = "presencial",
-            Productos  = items,
-            Total      = total,
+            Id = $"VTA-{localId:D3}",
+            Fecha = DateTime.Now,
+            Cliente = string.IsNullOrWhiteSpace(customerName) ? "Público General" : customerName,
+            Canal = "presencial",
+            Productos = items,
+            Total = total,
             MetodoPago = payMethod,
-            Comprobante= invoiceType,
-            Estado     = "completado"
+            Comprobante = invoiceType,
+            Estado = "completado"
         });
 
         // También agrega a órdenes para el dashboard
         _orders.Insert(0, new Order
         {
-            Id       = $"ORD-{_orders.Count + 1:D3}",
+            Id = $"ORD-{_orders.Count + 1:D3}",
             Customer = string.IsNullOrWhiteSpace(customerName) ? "Público General" : customerName,
-            Date     = DateTime.Now,
-            Total    = total,
-            Items    = items.Sum(i => i.Quantity),
-            Status   = "entregado",
-            Channel  = "Presencial"
+            Date = DateTime.Now,
+            Total = total,
+            Items = items.Sum(i => i.Quantity),
+            Status = "entregado",
+            Channel = "Presencial"
         });
     }
 
     // Convierte el status interno del front al valor ENUM que espera el backend.
     public static string ToBackendEstado(string status) => status.ToLower() switch
     {
-        "recibido"   => "RECIBIDO",
+        "recibido" => "RECIBIDO",
         "en_proceso" => "EN_PROCESO",
-        "atendido"   => "ATENDIDO",
-        "rechazado"  => "RECHAZADO",
-        "cancelado"  => "CANCELADO",
-        _            => status.ToUpper()
+        "atendido" => "ATENDIDO",
+        "rechazado" => "RECHAZADO",
+        "cancelado" => "CANCELADO",
+        _ => status.ToUpper()
     };
 
     /// <summary>
@@ -341,22 +341,42 @@ public class SalesService
         }
     }
 
-    public async Task UpdateOrderStatusAsync(string id, string status, string? observaciones = null)
+    public async Task<(bool ok, string error)> UpdateOrderStatusAsync(string id, string status, string? observaciones = null)
     {
-        // Actualizar caché local
+        // Persiste en el backend PRIMERO — si el backend rechaza el cambio
+        // (p.ej. pedido ya en estado terminal), no debemos tocar la caché local
+        // ni mentirle a la UI diciendo que se guardó.
+        if (!int.TryParse(id.StartsWith("PED-") ? id[4..] : id, out var numId) || numId <= 0)
+            return (false, "ID de pedido inválido.");
+
+        var dto = new { idPedido = numId, estadoPedido = ToBackendEstado(status), observaciones };
+        try
+        {
+            var resp = await _http.PutAsJsonAsync("pedidos", dto);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var body = await resp.Content.ReadAsStringAsync();
+                return (false, string.IsNullOrWhiteSpace(body) ? $"Error del servidor ({(int)resp.StatusCode})." : body);
+            }
+        }
+        catch (Exception ex)
+        {
+            return (false, $"Error de conexión: {ex.Message}");
+        }
+
+        // Solo si el backend confirmó el cambio, actualizamos la caché local.
         var order = _orders.FirstOrDefault(o => o.Id == id);
         if (order != null) { order.Status = status; if (observaciones != null) order.Observaciones = observaciones; }
         var sale = _sales.FirstOrDefault(s => s.Id == id.Replace("PED-", "VTA-"));
         if (sale != null) sale.Estado = status == "atendido" ? "completado" : status;
 
-        // Persiste en el backend
-        if (int.TryParse(id.StartsWith("PED-") ? id[4..] : id, out var numId) && numId > 0)
-        {
-            var dto = new { idPedido = numId, estadoPedido = ToBackendEstado(status), observaciones };
-            try { await _http.PutAsJsonAsync("pedidos", dto); }
-            catch { /* red no disponible */ }
-        }
+        return (true, string.Empty);
     }
+
+    // Mantener versión legacy (sin verificación) para no romper referencias existentes
+    // que no necesitan saber si la persistencia tuvo éxito.
+    public async Task UpdateOrderStatusLegacyAsync(string id, string status, string? observaciones = null)
+        => await UpdateOrderStatusAsync(id, status, observaciones);
 
     // Mantener versión síncrona legacy para no romper referencias existentes
     public void UpdateOrderStatus(string id, string status)
@@ -405,37 +425,37 @@ public class SalesService
         _ = AddOrderAsync(customerName, items, total, paymentMethod, deliveryMethod, address, idCliente);
 
         // Caché local inmediata
-        var count  = _orders.Count + 1;
+        var count = _orders.Count + 1;
         var orderId = $"SHI-{DateTime.Now.Year}-{count:D4}";
         _orders.Insert(0, new Order
         {
-            Id             = orderId,
-            Customer       = customerName,
-            Date           = DateTime.Now,
-            Subtotal       = subtotal,
-            DeliveryFee    = deliveryFee,
-            Total          = total,
-            Items          = items.Sum(i => i.Quantity),
-            Status         = "pendiente",
+            Id = orderId,
+            Customer = customerName,
+            Date = DateTime.Now,
+            Subtotal = subtotal,
+            DeliveryFee = deliveryFee,
+            Total = total,
+            Items = items.Sum(i => i.Quantity),
+            Status = "pendiente",
             DeliveryMethod = deliveryMethod,
-            PaymentMethod  = paymentMethod,
-            Address        = address,
-            Products       = new List<CartItem>(items),
+            PaymentMethod = paymentMethod,
+            Address = address,
+            Products = new List<CartItem>(items),
             TimelinePedidoRecibido = DateTime.Now,
         });
 
         var saleId = $"VTA-{_sales.Count + 1:D3}";
         _sales.Insert(0, new Sale
         {
-            Id         = saleId,
-            Fecha      = DateTime.Now,
-            Cliente    = customerName,
-            Canal      = "web",
-            Productos  = items,
-            Total      = total,
+            Id = saleId,
+            Fecha = DateTime.Now,
+            Cliente = customerName,
+            Canal = "web",
+            Productos = items,
+            Total = total,
             MetodoPago = paymentMethod,
-            Comprobante= "boleta",
-            Estado     = "pendiente"
+            Comprobante = "boleta",
+            Estado = "pendiente"
         });
     }
 
@@ -456,31 +476,31 @@ public class SalesService
         // Actualizar caché local con el ID definitivo
         _orders.Insert(0, new Order
         {
-            Id             = orderId,
-            Customer       = customerName,
-            Date           = DateTime.Now,
-            Subtotal       = subtotal,
-            DeliveryFee    = deliveryFee,
-            Total          = total,
-            Items          = items.Sum(i => i.Quantity),
-            Status         = "pendiente",
+            Id = orderId,
+            Customer = customerName,
+            Date = DateTime.Now,
+            Subtotal = subtotal,
+            DeliveryFee = deliveryFee,
+            Total = total,
+            Items = items.Sum(i => i.Quantity),
+            Status = "pendiente",
             DeliveryMethod = deliveryMethod,
-            PaymentMethod  = payMethod,
-            Address        = address,
-            Products       = new List<CartItem>(items),
+            PaymentMethod = payMethod,
+            Address = address,
+            Products = new List<CartItem>(items),
             TimelinePedidoRecibido = DateTime.Now,
         });
         _sales.Insert(0, new Sale
         {
-            Id         = $"VTA-{_sales.Count + 1:D3}",
-            Fecha      = DateTime.Now,
-            Cliente    = customerName,
-            Canal      = "web",
-            Productos  = items,
-            Total      = total,
+            Id = $"VTA-{_sales.Count + 1:D3}",
+            Fecha = DateTime.Now,
+            Cliente = customerName,
+            Canal = "web",
+            Productos = items,
+            Total = total,
             MetodoPago = payMethod,
-            Comprobante= "boleta",
-            Estado     = "pendiente"
+            Comprobante = "boleta",
+            Estado = "pendiente"
         });
 
         return orderId;
@@ -493,29 +513,29 @@ public class SalesService
         int idMetodoPago = payMethod.ToLower() switch
         {
             "efectivo" => 1,
-            "yape"     => 2,
-            "plin"     => 3,
-            "tarjeta"  => 4,
-            _          => 1
+            "yape" => 2,
+            "plin" => 3,
+            "tarjeta" => 4,
+            _ => 1
         };
 
         var detalles = items.Select(i => new
         {
-            producto       = new { idProducto = i.Id },
-            cantidad       = i.Quantity,
+            producto = new { idProducto = i.Id },
+            cantidad = i.Quantity,
             precioUnitario = (double)i.Price,
-            subtotal       = (double)(i.Price * i.Quantity)
+            subtotal = (double)(i.Price * i.Quantity)
         }).ToList();
 
         var pedido = new
         {
-            montoTotal       = (double)total,
-            estadoPedido     = "RECIBIDO",
+            montoTotal = (double)total,
+            estadoPedido = "RECIBIDO",
             direccionEntrega = address,
-            modalidadVenta   = deliveryMethod == "delivery" ? "DELIVERY" : "PRESENCIAL",
-            observaciones    = (string?)null,
-            cliente          = idCliente > 0 ? new { idUsuario = idCliente } : null,
-            detalles         = detalles
+            modalidadVenta = deliveryMethod == "delivery" ? "DELIVERY" : "PRESENCIAL",
+            observaciones = (string?)null,
+            cliente = idCliente > 0 ? new { idUsuario = idCliente } : null,
+            detalles = detalles
         };
 
         try
@@ -528,11 +548,11 @@ public class SalesService
                 {
                     var detalle = new
                     {
-                        idPadrePedido  = idPedido,
-                        producto       = new { idProducto = item.Id },
-                        cantidad       = item.Quantity,
+                        idPadrePedido = idPedido,
+                        producto = new { idProducto = item.Id },
+                        cantidad = item.Quantity,
                         precioUnitario = (double)item.Price,
-                        subtotal       = (double)(item.Price * item.Quantity)
+                        subtotal = (double)(item.Price * item.Quantity)
                     };
                     await _http.PostAsJsonAsync("detalles-pedido", detalle);
                 }

@@ -3,9 +3,15 @@ package pe.edu.pucp.shiligama.servicios.usuario;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import pe.edu.pucp.model.seguridad.CambiarContrasenaDto;
 import pe.edu.pucp.model.usuario.Administrador;
+import pe.edu.pucp.model.usuario.Usuario;
 import pe.edu.pucp.usuario.bo.AdministradorBo;
+import pe.edu.pucp.usuario.bo.AuthBo;
+import pe.edu.pucp.usuario.bo.RecuperacionBo;
 import pe.edu.pucp.usuario.impl.AdministradorBoImpl;
+import pe.edu.pucp.usuario.impl.AuthBoImpl;
+import pe.edu.pucp.usuario.impl.RecuperacionBoImpl;
 
 import java.util.List;
 
@@ -15,6 +21,8 @@ import java.util.List;
 public class AdministradorRS {
 
     private final AdministradorBo administradorBo = new AdministradorBoImpl();
+    private final AuthBo         authBo          = new AuthBoImpl();
+    private final RecuperacionBo recuperacionBo  = new RecuperacionBoImpl();
 
     // 1. LISTAR TODOS
     // GET http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/administradores
@@ -112,7 +120,48 @@ public class AdministradorRS {
         }
     }
 
-    // 7. BUSCAR POR CORREO
+    // 7. CAMBIAR CONTRASEÑA DESDE PERFIL
+    // PUT /api/administradores/{id}/contrasena
+    // Body: { "contrasenaActual": "...", "nuevaContrasena": "..." }
+    @PUT
+    @Path("/{id}/contrasena")
+    public Response cambiarContrasena(@PathParam("id") int id, CambiarContrasenaDto dto) {
+        try {
+            if (dto == null
+                    || dto.getContrasenaActual() == null || dto.getContrasenaActual().isBlank()
+                    || dto.getNuevaContrasena()  == null || dto.getNuevaContrasena().isBlank()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Debes indicar la contraseña actual y la nueva.").build();
+            }
+            if (dto.getNuevaContrasena().length() < 8) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("La nueva contraseña debe tener al menos 8 caracteres.").build();
+            }
+
+            // Verificar contraseña actual autenticando con el correo del admin
+            Administrador admin = administradorBo.buscarPorId(id);
+            if (admin == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Administrador no encontrado.").build();
+            }
+
+            Usuario verificado = authBo.autenticar(admin.getCorreo(), dto.getContrasenaActual());
+            if (verificado == null) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity("La contraseña actual es incorrecta.").build();
+            }
+
+            // Actualizar (RecuperacionBo hashea la nueva contraseña antes de guardar)
+            recuperacionBo.cambiarContrasena(id, dto.getNuevaContrasena());
+            return Response.ok("Contraseña actualizada correctamente.").build();
+
+        } catch (Exception ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(ex.getMessage()).build();
+        }
+    }
+
+    // 8. BUSCAR POR CORREO
     // GET http://localhost:8080/shiligamaws-1.0-SNAPSHOT/api/administradores/buscarPorCorreo?correo=admin@shiligama.com
     @GET
     @Path("/buscarPorCorreo")

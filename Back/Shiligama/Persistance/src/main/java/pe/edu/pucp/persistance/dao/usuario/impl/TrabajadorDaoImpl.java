@@ -227,7 +227,8 @@ public class TrabajadorDaoImpl implements TrabajadorDao {
         t.setDni(rs.getString("DNI"));
         t.setTelefono(rs.getString("TELEFONO"));
         t.setCorreo(rs.getString("CORREO"));
-        t.setContrasena(rs.getString("CONTRASENA"));
+        // La contraseña NO se expone en el JSON de respuesta por seguridad
+        t.setContrasena(null);
         return t;
     }
 }

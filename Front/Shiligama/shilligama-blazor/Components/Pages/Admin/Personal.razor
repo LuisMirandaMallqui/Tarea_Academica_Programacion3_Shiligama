@@ -1,8 +1,10 @@
 @page "/admin/personal"
 @layout AdminLayout
+@implements IDisposable
 @inject StaffService StaffSvc
 @inject AuthService Auth
-@inject ImagenService ImagenSvc
+@inject IJSRuntime JS
+@using Microsoft.JSInterop
 
 <PageTitle>Personal – Shiligama Admin</PageTitle>
 
@@ -372,8 +374,11 @@
                             }
                             <div class="mb-2">
                                 <label class="form-label small text-muted-foreground mb-1">Subir imagen (JPG / PNG / WebP, máx. 5 MB)</label>
-                                <InputFile OnChange="HandleAvatarSelected" accept="image/jpeg,image/png,image/gif,image/webp"
-                                           class="form-control text-foreground" disabled="@_uploadingAvatar" />
+                                <input type="file" id="avatarImageInput"
+                                       accept="image/jpeg,image/png,image/gif,image/webp"
+                                       class="form-control text-foreground"
+                                       disabled="@_uploadingAvatar"
+                                       @onchange="HandleAvatarSelected" />
                                 @if (_uploadingAvatar) { <div class="small text-muted-foreground mt-1"><span class="spinner-border spinner-border-sm me-1"></span>Subiendo…</div> }
                                 @if (!string.IsNullOrEmpty(_uploadError)) { <div class="small text-danger mt-1">@_uploadError</div> }
                             </div>
@@ -434,16 +439,20 @@
 
     private bool   _uploadingAvatar = false;
     private string _uploadError     = "";
+    private DotNetObjectReference<Personal>? _avatarUploadRef;
 
     protected override async Task OnInitializedAsync()
     {
         _loading = true;
+        _avatarUploadRef = DotNetObjectReference.Create(this);
+
         await StaffSvc.EnsureLoadedAsync();
         _staff = StaffSvc.GetStaff();
+
         _loading = false;
     }
 
-  
+    public void Dispose() => _avatarUploadRef?.Dispose();
 
     private IEnumerable<Staff> Filtered => _staff.Where(s =>
         (string.IsNullOrEmpty(_search) ||
@@ -552,11 +561,39 @@
         StateHasChanged();
     }
 
-    private async Task HandleAvatarSelected(InputFileChangeEventArgs e)
+    private async Task HandleAvatarSelected(ChangeEventArgs _)
     {
-        _uploadError = ""; _uploadingAvatar = true;
-        try { _form.Avatar = await ImagenSvc.UploadAsync(e.File); _formDirty = true; }
-        catch (Exception ex) { _uploadError = ex.Message; }
-        finally { _uploadingAvatar = false; }
+        _uploadError = "";
+        _uploadingAvatar = true;
+        try
+        {
+            await JS.InvokeVoidAsync(
+                "shiligamaStartUpload", _avatarUploadRef, "avatarImageInput", "/api/img-upload");
+        }
+        catch (Exception ex)
+        {
+            _uploadingAvatar = false;
+            _uploadError = ex.Message;
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnAvatarUploadComplete(string? url, string? error)
+    {
+        await InvokeAsync(() =>
+        {
+            _uploadingAvatar = false;
+            if (!string.IsNullOrEmpty(url))
+            {
+                _form.Avatar = url;
+                _formDirty   = true;
+                _uploadError = "";
+            }
+            else
+            {
+                _uploadError = error ?? "Error desconocido al subir imagen.";
+            }
+            StateHasChanged();
+        });
     }
 }

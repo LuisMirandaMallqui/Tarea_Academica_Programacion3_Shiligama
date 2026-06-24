@@ -3,8 +3,14 @@ package pe.edu.pucp.shiligama.servicios.usuario;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import pe.edu.pucp.model.seguridad.CambiarContrasenaDto;
 import pe.edu.pucp.model.usuario.Trabajador;
+import pe.edu.pucp.model.usuario.Usuario;
+import pe.edu.pucp.usuario.bo.AuthBo;
+import pe.edu.pucp.usuario.bo.RecuperacionBo;
 import pe.edu.pucp.usuario.bo.TrabajadorBo;
+import pe.edu.pucp.usuario.impl.AuthBoImpl;
+import pe.edu.pucp.usuario.impl.RecuperacionBoImpl;
 import pe.edu.pucp.usuario.impl.TrabajadorBoImpl;
 
 import java.util.List;
@@ -13,8 +19,11 @@ import java.util.List;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class TrabajadorRS {
-    // Instanciamos el BOImpl directamente, igual que en el Principal.java
-    private final TrabajadorBo trabajadorBo = new TrabajadorBoImpl();
+
+    private final TrabajadorBo trabajadorBo   = new TrabajadorBoImpl();
+    private final AuthBo       authBo         = new AuthBoImpl();
+    private final RecuperacionBo recuperacionBo = new RecuperacionBoImpl();
+
     // 1. INSERTAR TRABAJADOR
     @POST
     public Response insertar(Trabajador trabajador) {
@@ -76,7 +85,7 @@ public class TrabajadorRS {
         }
     }
 
-    // 6. BUSCAR POR DNI (Método de UsuarioBo)
+    // 6. BUSCAR POR DNI
     @GET
     @Path("/dni/{dni}")
     public Response obtenerPorDNI(@PathParam("dni") String dni) {
@@ -92,20 +101,62 @@ public class TrabajadorRS {
         }
     }
 
-    // 7. AUTENTICACIÓN / LOGIN ESPECÍFICO PARA PESTAÑA TRABAJADOR
+    // 7. LOGIN — delega a AuthBo (unified SP AUTENTICAR_USUARIO) y verifica que sea TRABAJADOR
     @POST
     @Path("/login")
     public Response login(Trabajador credenciales) {
         try {
-            // Se utiliza el método buscarPorCorreo definido en el BO [cite: 862]
-            Trabajador t = trabajadorBo.buscarPorCorreo(credenciales.getCorreo());
-
-            if (t != null && t.getContrasena().equals(credenciales.getContrasena())) {
+            Usuario usuario = authBo.autenticar(credenciales.getCorreo(), credenciales.getContrasena());
+            if (usuario instanceof Trabajador t) {
                 return Response.ok(t).build();
+            } else if (usuario != null) {
+                // El correo existe pero pertenece a otro rol (cliente/admin)
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity("Esta cuenta no corresponde a un trabajador.").build();
             } else {
                 return Response.status(Response.Status.UNAUTHORIZED)
                         .entity("Correo electrónico o contraseña incorrectos.").build();
             }
+        } catch (Exception ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex.getMessage()).build();
+        }
+    }
+
+    // 8. CAMBIAR CONTRASEÑA DESDE PERFIL
+    // PUT /api/trabajadores/{id}/contrasena
+    // Body: { "contrasenaActual": "...", "nuevaContrasena": "..." }
+    @PUT
+    @Path("/{id}/contrasena")
+    public Response cambiarContrasena(@PathParam("id") int id, CambiarContrasenaDto dto) {
+        try {
+            if (dto == null
+                    || dto.getContrasenaActual() == null || dto.getContrasenaActual().isBlank()
+                    || dto.getNuevaContrasena()  == null || dto.getNuevaContrasena().isBlank()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("Debes indicar la contraseña actual y la nueva.").build();
+            }
+            if (dto.getNuevaContrasena().length() < 8) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity("La nueva contraseña debe tener al menos 8 caracteres.").build();
+            }
+
+            // Verificar contraseña actual: obtener el correo del trabajador y autenticar
+            Trabajador trabajador = trabajadorBo.buscarPorId(id);
+            if (trabajador == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                        .entity("Trabajador no encontrado.").build();
+            }
+
+            Usuario verificado = authBo.autenticar(trabajador.getCorreo(), dto.getContrasenaActual());
+            if (verificado == null) {
+                return Response.status(Response.Status.UNAUTHORIZED)
+                        .entity("La contraseña actual es incorrecta.").build();
+            }
+
+            // Actualizar con la nueva contraseña (ya la hashea RecuperacionBo)
+            recuperacionBo.cambiarContrasena(id, dto.getNuevaContrasena());
+            return Response.ok("Contraseña actualizada correctamente.").build();
+
         } catch (Exception ex) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex.getMessage()).build();
         }
