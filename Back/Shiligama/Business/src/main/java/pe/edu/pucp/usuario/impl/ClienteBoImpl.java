@@ -1,6 +1,7 @@
 package pe.edu.pucp.usuario.impl;
 
 import java.util.List;
+import pe.edu.pucp.config.HashUtil;
 import pe.edu.pucp.correo.EnvioCorreo;
 import pe.edu.pucp.model.usuario.Cliente;
 import pe.edu.pucp.persistance.dao.usuario.impl.ClienteDaoImpl;
@@ -17,6 +18,7 @@ public class ClienteBoImpl implements ClienteBo {
     @Override
     public int insertar(Cliente cliente) throws Exception {
         validar(cliente, false);
+        cliente.setContrasena(HashUtil.sha256(cliente.getContrasena()));
         int idGenerado = daoCliente.insertar(cliente);
 
         // Enviar correo de bienvenida (fallo silencioso: no bloquea el registro)

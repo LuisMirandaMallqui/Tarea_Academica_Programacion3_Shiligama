@@ -93,7 +93,7 @@
                 <input type="@(_showPassword ? "text" : "password")" @bind="_password" required
                        class="form-control text-foreground"
                        style="height:48px;padding-left:42px;padding-right:44px;"
-                       placeholder="Mínimo 6 caracteres" />
+                       placeholder="Mínimo 8 caracteres" />
                 <button type="button" @onclick="@(() => _showPassword = !_showPassword)"
                         class="btn btn-link position-absolute top-50 translate-middle-y border-0 p-0 text-muted-foreground"
                         style="right:14px;">
@@ -121,8 +121,8 @@
         </div>
 
         <button type="submit" disabled="@_isLoading"
-                class="btn btn-primary w-100 fw-medium fs-6 d-flex align-items-center justify-content-center gap-2"
-                style="height:48px;">
+                class="btn w-100 fw-medium fs-6 d-flex align-items-center justify-content-center gap-2"
+                style="height:48px;background-color:#1A6B3C;border-color:#1A6B3C;color:#fff;">
             @if (_isLoading)
             {
                 <span class="spinner-border spinner-border-sm"></span>
@@ -181,8 +181,8 @@
             { _error = "Los apellidos son obligatorios"; return; }
         if (!System.Text.RegularExpressions.Regex.IsMatch(_dni.Trim(), @"^\d{8}$"))
             { _error = "El DNI debe tener exactamente 8 dígitos"; return; }
-        if (_password.Length < 6)
-            { _error = "La contraseña debe tener al menos 6 caracteres"; return; }
+        if (_password.Length < 8)
+            { _error = "La contraseña debe tener al menos 8 caracteres"; return; }
         if (_password != _confirmPassword)
             { _error = "Las contraseñas no coinciden"; return; }
 
