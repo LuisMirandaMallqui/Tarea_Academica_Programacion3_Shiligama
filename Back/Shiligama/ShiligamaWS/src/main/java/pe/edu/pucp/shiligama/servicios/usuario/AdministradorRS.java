@@ -133,9 +133,9 @@ public class AdministradorRS {
                 return Response.status(Response.Status.BAD_REQUEST)
                         .entity("Debes indicar la contraseña actual y la nueva.").build();
             }
-            if (dto.getNuevaContrasena().length() < 6) {
+            if (dto.getNuevaContrasena().length() < 8) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                        .entity("La nueva contraseña debe tener al menos 6 caracteres.").build();
+                        .entity("La nueva contraseña debe tener al menos 8 caracteres.").build();
             }
 
             // Verificar contraseña actual autenticando con el correo del admin
