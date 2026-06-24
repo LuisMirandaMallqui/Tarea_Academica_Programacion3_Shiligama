@@ -174,6 +174,7 @@ CREATE TABLE IF NOT EXISTS `promocion` (
     `FECHA_FIN`              DATE           NOT NULL,
     `CONDICIONES`            VARCHAR(500)   NULL DEFAULT NULL,
     `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
+    `MOSTRAR_EN_CARRUSEL`    TINYINT        NOT NULL DEFAULT 0,
 	PRIMARY KEY (`PROMOCION_ID`),
     -- Auditoría Automática
     `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',

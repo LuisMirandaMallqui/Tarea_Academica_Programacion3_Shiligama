@@ -1142,44 +1142,47 @@ END$$
 DROP PROCEDURE IF EXISTS INSERTAR_PROMOCION$$
 CREATE PROCEDURE INSERTAR_PROMOCION(
     OUT _promocion_id INT,
-    IN  _nombre           VARCHAR(100),
-    IN  _descripcion      VARCHAR(500),
-    IN  _tipo_descuento   VARCHAR(20),
-    IN  _valor_descuento  DECIMAL(10,2),
-    IN  _fecha_inicio     DATE,
-    IN  _fecha_fin        DATE,
-    IN  _condiciones      VARCHAR(500)
+    IN  _nombre               VARCHAR(100),
+    IN  _descripcion          VARCHAR(500),
+    IN  _tipo_descuento       VARCHAR(20),
+    IN  _valor_descuento      DECIMAL(10,2),
+    IN  _fecha_inicio         DATE,
+    IN  _fecha_fin            DATE,
+    IN  _condiciones          VARCHAR(500),
+    IN  _mostrar_en_carrusel  TINYINT
 )
 BEGIN
     INSERT INTO promocion(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO,
-                            FECHA_INICIO, FECHA_FIN, CONDICIONES)
+                            FECHA_INICIO, FECHA_FIN, CONDICIONES, MOSTRAR_EN_CARRUSEL)
     VALUES(_nombre, _descripcion, _tipo_descuento, _valor_descuento,
-           _fecha_inicio, _fecha_fin, _condiciones);
+           _fecha_inicio, _fecha_fin, _condiciones, _mostrar_en_carrusel);
     SET _promocion_id = LAST_INSERT_ID();
 END$$
 
 DROP PROCEDURE IF EXISTS MODIFICAR_PROMOCION$$
 CREATE PROCEDURE MODIFICAR_PROMOCION(
-    IN _promocion_id      INT,
-    IN _nombre            VARCHAR(100),
-    IN _descripcion       VARCHAR(500),
-    IN _tipo_descuento    VARCHAR(20),
-    IN _valor_descuento   DECIMAL(10,2),
-    IN _fecha_inicio      DATE,
-    IN _fecha_fin         DATE,
-    IN _condiciones       VARCHAR(500),
-    IN _activo            TINYINT
+    IN _promocion_id          INT,
+    IN _nombre                VARCHAR(100),
+    IN _descripcion           VARCHAR(500),
+    IN _tipo_descuento        VARCHAR(20),
+    IN _valor_descuento       DECIMAL(10,2),
+    IN _fecha_inicio          DATE,
+    IN _fecha_fin             DATE,
+    IN _condiciones           VARCHAR(500),
+    IN _activo                TINYINT,
+    IN _mostrar_en_carrusel   TINYINT
 )
 BEGIN
     UPDATE promocion SET
-        NOMBRE          = _nombre,
-        DESCRIPCION     = _descripcion,
-        TIPO_DESCUENTO  = _tipo_descuento,
-        VALOR_DESCUENTO = _valor_descuento,
-        FECHA_INICIO    = _fecha_inicio,
-        FECHA_FIN       = _fecha_fin,
-        CONDICIONES     = _condiciones,
-        ACTIVO          = _activo
+        NOMBRE               = _nombre,
+        DESCRIPCION          = _descripcion,
+        TIPO_DESCUENTO       = _tipo_descuento,
+        VALOR_DESCUENTO      = _valor_descuento,
+        FECHA_INICIO         = _fecha_inicio,
+        FECHA_FIN            = _fecha_fin,
+        CONDICIONES          = _condiciones,
+        ACTIVO               = _activo,
+        MOSTRAR_EN_CARRUSEL  = _mostrar_en_carrusel
     WHERE PROMOCION_ID = _promocion_id;
 END$$
 
@@ -1200,15 +1203,16 @@ CREATE PROCEDURE BUSCAR_PROMOCION_POR_ID(
 )
 BEGIN
     SELECT
-        PROMOCION_ID    AS id_promocion,
-        NOMBRE          AS nombre,
-        DESCRIPCION     AS descripcion,
-        TIPO_DESCUENTO  AS tipo_descuento,
-        VALOR_DESCUENTO AS valor_descuento,
-        FECHA_INICIO    AS fecha_inicio,
-        FECHA_FIN       AS fecha_fin,
-        CONDICIONES     AS condiciones,
-        ACTIVO          AS activo
+        PROMOCION_ID         AS id_promocion,
+        NOMBRE               AS nombre,
+        DESCRIPCION          AS descripcion,
+        TIPO_DESCUENTO       AS tipo_descuento,
+        VALOR_DESCUENTO      AS valor_descuento,
+        FECHA_INICIO         AS fecha_inicio,
+        FECHA_FIN            AS fecha_fin,
+        CONDICIONES          AS condiciones,
+        ACTIVO               AS activo,
+        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel
     FROM promocion
     WHERE PROMOCION_ID = _promocion_id AND ACTIVO = 1;
 END$$
@@ -1218,15 +1222,16 @@ DROP PROCEDURE IF EXISTS LISTAR_PROMOCIONES_TODAS$$
 CREATE PROCEDURE LISTAR_PROMOCIONES_TODAS()
 BEGIN
     SELECT
-        PROMOCION_ID    AS id_promocion,
-        NOMBRE          AS nombre,
-        DESCRIPCION     AS descripcion,
-        TIPO_DESCUENTO  AS tipo_descuento,
-        VALOR_DESCUENTO AS valor_descuento,
-        FECHA_INICIO    AS fecha_inicio,
-        FECHA_FIN       AS fecha_fin,
-        CONDICIONES     AS condiciones,
-        ACTIVO          AS activo
+        PROMOCION_ID         AS id_promocion,
+        NOMBRE               AS nombre,
+        DESCRIPCION          AS descripcion,
+        TIPO_DESCUENTO       AS tipo_descuento,
+        VALOR_DESCUENTO      AS valor_descuento,
+        FECHA_INICIO         AS fecha_inicio,
+        FECHA_FIN            AS fecha_fin,
+        CONDICIONES          AS condiciones,
+        ACTIVO               AS activo,
+        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel
     FROM promocion
     ORDER BY FECHA_INICIO DESC;
 END$$
@@ -1236,15 +1241,16 @@ DROP PROCEDURE IF EXISTS LISTAR_PROMOCIONES_VIGENTES$$
 CREATE PROCEDURE LISTAR_PROMOCIONES_VIGENTES()
 BEGIN
     SELECT
-        PROMOCION_ID    AS id_promocion,
-        NOMBRE          AS nombre,
-        DESCRIPCION     AS descripcion,
-        TIPO_DESCUENTO  AS tipo_descuento,
-        VALOR_DESCUENTO AS valor_descuento,
-        FECHA_INICIO    AS fecha_inicio,
-        FECHA_FIN       AS fecha_fin,
-        CONDICIONES     AS condiciones,
-        ACTIVO          AS activo
+        PROMOCION_ID         AS id_promocion,
+        NOMBRE               AS nombre,
+        DESCRIPCION          AS descripcion,
+        TIPO_DESCUENTO       AS tipo_descuento,
+        VALOR_DESCUENTO      AS valor_descuento,
+        FECHA_INICIO         AS fecha_inicio,
+        FECHA_FIN            AS fecha_fin,
+        CONDICIONES          AS condiciones,
+        ACTIVO               AS activo,
+        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel
     FROM promocion
     WHERE ACTIVO = 1 AND CURDATE() BETWEEN FECHA_INICIO AND FECHA_FIN;
 END$$
@@ -1255,15 +1261,16 @@ DROP PROCEDURE IF EXISTS LISTAR_PROMOCIONES_CON_PRODUCTOS$$
 CREATE PROCEDURE LISTAR_PROMOCIONES_CON_PRODUCTOS()
 BEGIN
     SELECT
-        p.PROMOCION_ID    AS id_promocion,
-        p.NOMBRE          AS nombre,
-        p.DESCRIPCION     AS descripcion,
-        p.TIPO_DESCUENTO  AS tipo_descuento,
-        p.VALOR_DESCUENTO AS valor_descuento,
-        p.FECHA_INICIO    AS fecha_inicio,
-        p.FECHA_FIN       AS fecha_fin,
-        p.CONDICIONES     AS condiciones,
-        p.ACTIVO          AS activo,
+        p.PROMOCION_ID         AS id_promocion,
+        p.NOMBRE               AS nombre,
+        p.DESCRIPCION          AS descripcion,
+        p.TIPO_DESCUENTO       AS tipo_descuento,
+        p.VALOR_DESCUENTO      AS valor_descuento,
+        p.FECHA_INICIO         AS fecha_inicio,
+        p.FECHA_FIN            AS fecha_fin,
+        p.CONDICIONES          AS condiciones,
+        p.ACTIVO               AS activo,
+        p.MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel,
         pp.PRODUCTO_ID
     FROM promocion p
     LEFT JOIN promocion_producto pp ON p.PROMOCION_ID = pp.PROMOCION_ID

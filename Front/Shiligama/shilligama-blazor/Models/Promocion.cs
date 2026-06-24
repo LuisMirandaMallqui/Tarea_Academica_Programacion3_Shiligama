@@ -12,7 +12,8 @@ public class Promocion
     public DateTime FechaInicio   { get; set; } = DateTime.Today;
     public DateTime FechaFin      { get; set; } = DateTime.Today.AddDays(7);
     public string? Condiciones    { get; set; }
-    public bool    Activo         { get; set; } = true;
+    public bool    Activo              { get; set; } = true;
+    public bool    MostrarEnCarrusel  { get; set; } = false;
 
     // IDs de productos vinculados (tabla promocion_producto). Se gestiona en el
     // cliente; la persistencia se hace vía PromocionService.Asociar/Desasociar.

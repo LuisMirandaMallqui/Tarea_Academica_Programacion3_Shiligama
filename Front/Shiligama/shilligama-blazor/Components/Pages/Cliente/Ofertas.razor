@@ -106,7 +106,18 @@
                                             <p class="text-muted-foreground small mb-2">@ProductSvc.GetCategoryName(product.Category)</p>
 
                                             <div class="mt-auto pt-2 d-flex align-items-center justify-content-between">
-                                                <span class="fw-bold text-danger fs-5">S/. @product.Price.ToString("0.00")</span>
+                                                @{
+                                                    var precioEfectivo = PromocionHelper.PrecioEfectivo(product.Price, 1, promo);
+                                                }
+                                                <div>
+                                                    <span class="fw-bold text-danger fs-5">S/. @precioEfectivo.ToString("0.00")</span>
+                                                    @if (precioEfectivo < product.Price)
+                                                    {
+                                                        <span class="text-decoration-line-through text-muted-foreground ms-2 small">
+                                                            S/. @product.Price.ToString("0.00")
+                                                        </span>
+                                                    }
+                                                </div>
                                                 <button @onclick="@(() => AddToCart(product))"
                                                         disabled="@(product.Stock == 0)"
                                                         class="btn btn-primary btn-sm d-flex align-items-center gap-1"

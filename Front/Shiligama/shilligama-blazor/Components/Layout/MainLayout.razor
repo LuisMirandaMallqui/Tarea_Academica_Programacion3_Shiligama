@@ -3,6 +3,7 @@
 @inject CartService Cart
 @inject AuthService Auth
 @inject ProductService Product
+@inject PromocionService PromoSvc
 @inject NavigationManager Navigation
 
 <style>
@@ -139,12 +140,23 @@
                                 <div class="search-results-dropdown">
                                     @foreach (var p in SearchResults)
                                     {
+                                        var promo     = PromoSvc.GetVigentes().FirstOrDefault(pr => pr.ProductoIds.Contains(p.Id));
+                                        var efectivo  = PromocionHelper.PrecioEfectivo(p.Price, 1, promo);
+                                        var tieneDesc = promo != null && efectivo < p.Price;
                                         <div class="search-result-item" @onclick="() => NavigateToProduct(p.Id)">
                                             <img src="@p.Image" alt="@p.Name"
                                                  onerror="this.src='https://placehold.co/38x38/e8f5e9/1A6B3C?text=🛒'" />
                                             <div style="overflow:hidden;flex:1;">
                                                 <div class="search-result-name">@p.Name</div>
-                                                <div class="search-result-price">S/. @p.Price.ToString("0.00")</div>
+                                                <div style="display:flex;align-items:center;gap:4px;">
+                                                    <span class="search-result-price">S/. @efectivo.ToString("0.00")</span>
+                                                    @if (tieneDesc)
+                                                    {
+                                                        <span style="font-size:.72rem;color:var(--muted-foreground);text-decoration:line-through;">
+                                                            S/. @p.Price.ToString("0.00")
+                                                        </span>
+                                                    }
+                                                </div>
                                             </div>
                                             @if (p.Stock == 0)
                                             {
@@ -282,12 +294,23 @@
                         <div class="search-results-dropdown">
                             @foreach (var p in SearchResults)
                             {
+                                var promoM    = PromoSvc.GetVigentes().FirstOrDefault(pr => pr.ProductoIds.Contains(p.Id));
+                                var efectivoM = PromocionHelper.PrecioEfectivo(p.Price, 1, promoM);
+                                var tieneDescM = promoM != null && efectivoM < p.Price;
                                 <div class="search-result-item" @onclick="() => NavigateToProduct(p.Id)">
                                     <img src="@p.Image" alt="@p.Name"
                                          onerror="this.src='https://placehold.co/38x38/e8f5e9/1A6B3C?text=🛒'" />
                                     <div style="overflow:hidden;flex:1;">
                                         <div class="search-result-name">@p.Name</div>
-                                        <div class="search-result-price">S/. @p.Price.ToString("0.00")</div>
+                                        <div style="display:flex;align-items:center;gap:4px;">
+                                            <span class="search-result-price">S/. @efectivoM.ToString("0.00")</span>
+                                            @if (tieneDescM)
+                                            {
+                                                <span style="font-size:.72rem;color:var(--muted-foreground);text-decoration:line-through;">
+                                                    S/. @p.Price.ToString("0.00")
+                                                </span>
+                                            }
+                                        </div>
                                     </div>
                                     @if (p.Stock == 0)
                                     {
