@@ -11,14 +11,16 @@ namespace shilligama_blazor.Services;
 public class CartService
 {
     private readonly IJSRuntime _jsRuntime;
+    private readonly ConfiguracionService _config;
     private List<CartItem> _cartItems = new();
     private bool _isInitialized = false;
 
     public event Action? OnChange;
 
-    public CartService(IJSRuntime jsRuntime)
+    public CartService(IJSRuntime jsRuntime, ConfiguracionService config)
     {
         _jsRuntime = jsRuntime;
+        _config    = config;
     }
 
     public List<CartItem> GetCartItems()
@@ -36,10 +38,10 @@ public class CartService
         return _cartItems.Sum(item => item.Price * item.Quantity);
     }
 
-    // ── Tarifa de delivery (regla única del negocio) ─────────────────────
-    // Tarifa base de S/ 5.00; gratis a partir de S/ 50.00 de subtotal.
-    public const decimal DeliveryFeeBase = 5.00m;
-    public const decimal FreeDeliveryThreshold = 50.00m;
+    // ── Tarifa de delivery — valores dinámicos desde ConfiguracionService ─
+    // Fallbacks en caso de que la config no haya cargado aún.
+    private decimal DeliveryFeeBase       => _config.TarifaEnvio       > 0 ? _config.TarifaEnvio       : 5.00m;
+    private decimal FreeDeliveryThreshold => _config.MinimoEnvioGratis > 0 ? _config.MinimoEnvioGratis : 50.00m;
 
     /// Tarifa de envío según la modalidad y el subtotal actual.
     /// isDelivery=false (recojo en tienda) => sin costo.
@@ -48,6 +50,10 @@ public class CartService
         if (!isDelivery) return 0m;
         return GetSubtotal() > FreeDeliveryThreshold ? 0m : DeliveryFeeBase;
     }
+
+    /// Expone los valores de config para que la UI los muestre sin inyectar otro servicio.
+    public decimal TarifaEnvioBase    => DeliveryFeeBase;
+    public decimal MinimoEnvioGratis  => FreeDeliveryThreshold;
 
     public async Task InitializeAsync()
     {

@@ -84,6 +84,7 @@ builder.Services.AddScoped<RecuperacionService>();
 builder.Services.AddSingleton<SupplierService>();
 builder.Services.AddSingleton<DetalleVentaService>();
 builder.Services.AddSingleton<LotesService>();
+builder.Services.AddSingleton<ConfiguracionService>();
 
 // ── Pipeline HTTP ────────────────────────────────────────────────────────────
 var app = builder.Build();

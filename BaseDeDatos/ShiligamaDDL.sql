@@ -647,3 +647,24 @@ CREATE TABLE IF NOT EXISTS `lote` (
         ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
 COMMENT = 'Lotes de productos recibidos con fecha de vencimiento (logica FEFO)';
+
+-- -----------------------------------------------------
+-- Tabla Configuracion (fila única CONFIG_ID=1)
+-- Parámetros globales editables por el administrador.
+-- -----------------------------------------------------
+DROP TABLE IF EXISTS `shiligama`.`configuracion`;
+CREATE TABLE IF NOT EXISTS `configuracion` (
+    `CONFIG_ID`             INT           NOT NULL DEFAULT 1,
+    `NOMBRE_TIENDA`         VARCHAR(100)  NOT NULL DEFAULT 'Shiligama Minimarket',
+    `MONEDA`                VARCHAR(20)   NOT NULL DEFAULT 'PEN (S/.)',
+    `IGV`                   DECIMAL(5,2)  NOT NULL DEFAULT 18.00,
+    `TARIFA_ENVIO`          DECIMAL(10,2) NOT NULL DEFAULT 5.00,
+    `MINIMO_ENVIO_GRATIS`   DECIMAL(10,2) NOT NULL DEFAULT 50.00,
+    PRIMARY KEY (`CONFIG_ID`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4
+COMMENT = 'Configuración global del sistema (fila única, CONFIG_ID=1)';
+
+INSERT IGNORE INTO `configuracion`
+    (`CONFIG_ID`, `NOMBRE_TIENDA`, `MONEDA`, `IGV`, `TARIFA_ENVIO`, `MINIMO_ENVIO_GRATIS`)
+VALUES
+    (1, 'Shiligama Minimarket', 'PEN (S/.)', 18.00, 5.00, 50.00);

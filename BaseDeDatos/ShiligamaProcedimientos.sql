@@ -2379,21 +2379,49 @@ BEGIN
 END$$
 
 DROP PROCEDURE IF EXISTS LISTAR_LOTES_PROXIMOS_VENCER$$
-CREATE PROCEDURE LISTAR_LOTES_PROXIMOS_VENCER(IN _dias INT)
+CREATE PROCEDURE LISTAR_LOTES_PROXIMOS_VENCER(
+    IN _dias_limite INT
+)
 BEGIN
-    SELECT l.LOTE_ID, l.PRODUCTO_ID, l.TRABAJADOR_ID,
-           l.CANTIDAD_INICIAL, l.CANTIDAD_ACTUAL,
-           l.FECHA_VENCIMIENTO, l.NUMERO_LOTE, l.ACTIVO,
-           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE,
+    SELECT l.LOTE_ID, l.PRODUCTO_ID, l.FECHA_VENCIMIENTO, l.CANTIDAD_ACTUAL,
            p.NOMBRE AS PRODUCTO_NOMBRE
     FROM lote l
-    LEFT JOIN usuario u ON l.TRABAJADOR_ID = u.USUARIO_ID
-    LEFT JOIN producto p ON l.PRODUCTO_ID = p.PRODUCTO_ID
+    JOIN producto p ON l.PRODUCTO_ID = p.PRODUCTO_ID
     WHERE l.ACTIVO = 1
       AND l.CANTIDAD_ACTUAL > 0
       AND l.FECHA_VENCIMIENTO IS NOT NULL
-      AND l.FECHA_VENCIMIENTO <= DATE_ADD(CURDATE(), INTERVAL _dias DAY)
+      AND l.FECHA_VENCIMIENTO <= DATE_ADD(CURDATE(), INTERVAL _dias_limite DAY)
     ORDER BY l.FECHA_VENCIMIENTO ASC;
+END$$
+
+-- =====================================================================
+-- MÓDULO CONFIGURACIÓN GLOBAL
+-- =====================================================================
+
+DROP PROCEDURE IF EXISTS OBTENER_CONFIGURACION$$
+CREATE PROCEDURE OBTENER_CONFIGURACION()
+BEGIN
+    SELECT CONFIG_ID, NOMBRE_TIENDA, MONEDA, IGV, TARIFA_ENVIO, MINIMO_ENVIO_GRATIS
+    FROM configuracion
+    WHERE CONFIG_ID = 1;
+END$$
+
+DROP PROCEDURE IF EXISTS ACTUALIZAR_CONFIGURACION$$
+CREATE PROCEDURE ACTUALIZAR_CONFIGURACION(
+    IN _nombre_tienda       VARCHAR(100),
+    IN _moneda              VARCHAR(20),
+    IN _igv                 DECIMAL(5,2),
+    IN _tarifa_envio        DECIMAL(10,2),
+    IN _minimo_envio_gratis DECIMAL(10,2)
+)
+BEGIN
+    UPDATE configuracion SET
+        NOMBRE_TIENDA       = _nombre_tienda,
+        MONEDA              = _moneda,
+        IGV                 = _igv,
+        TARIFA_ENVIO        = _tarifa_envio,
+        MINIMO_ENVIO_GRATIS = _minimo_envio_gratis
+    WHERE CONFIG_ID = 1;
 END$$
 
 DELIMITER ;

@@ -165,6 +165,7 @@ else
 
 @code {
     private bool _loading = true;
+    private bool _chartsRendered = false;   // evita renderizar charts dos veces
     private List<KpiItem> _kpis = new();
     private List<Sale> _recentSales = new();
 
@@ -180,91 +181,102 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender) return;
-
-        SalesService.KpiAdminDto? kpiReal = null;
-        try { kpiReal = await SalesSvc.GetKpisAdminAsync(); } catch { }
-
-        var sales = SalesSvc.GetSales();
-        var products = ProductSvc.GetProducts();
-
-        if (kpiReal != null)
+        if (firstRender)
         {
-            _kpis = new()
+            SalesService.KpiAdminDto? kpiReal = null;
+            try { kpiReal = await SalesSvc.GetKpisAdminAsync(); } catch { }
+
+            var sales = SalesSvc.GetSales();
+            var products = ProductSvc.GetProducts();
+
+            if (kpiReal != null)
             {
-                new("Ventas hoy",
-                    $"S/. {kpiReal.VentasHoy:0.00}",
-                    "Facturado hoy",
-                    "fa-wallet", "#1A6B3C", "", true),
-                new("Pedidos pendientes",
-                    $"{kpiReal.PedidosPendientes}",
-                    "Recibidos y en proceso de atención",
-                    "fa-clock", "#e67e22", "", true),
-                new("Productos bajo stock",
-                    $"{kpiReal.ProductosBajoStock}",
-                    "Con inventario bajo el mínimo",
-                    "fa-box-open", "#c62828", "", false),
-                new("Ingresos del mes",
-                    $"S/. {kpiReal.IngresosMes:0.00}",
-                    "Facturado este mes",
-                    "fa-chart-line", "#2563EB", "", true),
-            };
+                _kpis = new()
+                {
+                    new("Ventas hoy",
+                        $"S/. {kpiReal.VentasHoy:0.00}",
+                        "Facturado hoy",
+                        "fa-wallet", "#1A6B3C", "", true),
+                    new("Pedidos pendientes",
+                        $"{kpiReal.PedidosPendientes}",
+                        "Recibidos y en proceso de atención",
+                        "fa-clock", "#e67e22", "", true),
+                    new("Productos bajo stock",
+                        $"{kpiReal.ProductosBajoStock}",
+                        "Con inventario bajo el mínimo",
+                        "fa-box-open", "#c62828", "", false),
+                    new("Ingresos del mes",
+                        $"S/. {kpiReal.IngresosMes:0.00}",
+                        "Facturado este mes",
+                        "fa-chart-line", "#2563EB", "", true),
+                };
+            }
+            else
+            {
+                var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
+                _kpis = new()
+                {
+                    new("Ventas hoy",
+                        $"S/. {todaySales:0.00}",
+                        "Calculado desde caché",
+                        "fa-wallet", "#1A6B3C", "", true),
+                    new("Pedidos pendientes",
+                        $"{SalesSvc.GetRecentOrders().Count(o => o.Status is "recibido" or "en_proceso")}",
+                        "Recibidos o en proceso",
+                        "fa-clock", "#e67e22", "", true),
+                    new("Productos bajo stock",
+                        $"{products.Count(p => p.Stock <= p.MinStock)}",
+                        "Con inventario bajo el mínimo",
+                        "fa-box-open", "#c62828", "", false),
+                    new("Ingresos del mes",
+                        $"S/. {sales.Sum(s => s.Total):0.00}",
+                        "Total en caché",
+                        "fa-chart-line", "#2563EB", "", true),
+                };
+            }
+
+            _recentSales = sales.OrderByDescending(s => s.Fecha).Take(6).ToList();
+            _loading = false;
+            StateHasChanged(); // dispara segundo render → <canvas> aparece en el DOM
+            return;            // NO llamar RenderCharts aquí: canvas todavía no existe
         }
-        else
+
+        // Segundo render en adelante: los <canvas> ya están en el DOM
+        if (!_chartsRendered)
         {
-            var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
-            _kpis = new()
-            {
-                new("Ventas hoy",
-                    $"S/. {todaySales:0.00}",
-                    "Calculado desde caché",
-                    "fa-wallet", "#1A6B3C", "", true),
-                new("Pedidos pendientes",
-                    $"{SalesSvc.GetRecentOrders().Count(o => o.Status is "recibido" or "en_proceso")}",
-                    "Recibidos o en proceso",
-                    "fa-clock", "#e67e22", "", true),
-                new("Productos bajo stock",
-                    $"{products.Count(p => p.Stock <= p.MinStock)}",
-                    "Con inventario bajo el mínimo",
-                    "fa-box-open", "#c62828", "", false),
-                new("Ingresos del mes",
-                    $"S/. {sales.Sum(s => s.Total):0.00}",
-                    "Total en caché",
-                    "fa-chart-line", "#2563EB", "", true),
-            };
+            _chartsRendered = true;
+            await RenderCharts();
         }
-
-        _recentSales = sales.OrderByDescending(s => s.Fecha).Take(6).ToList();
-
-        _loading = false;
-        StateHasChanged();
-        await RenderCharts();
     }
 
     private async Task RenderCharts()
     {
-        var labels = Enumerable.Range(-6, 7).Select(d => DateTime.Today.AddDays(d).ToString("dd/MM")).ToArray();
-        var data = Enumerable.Range(-6, 7).Select(d =>
-            SalesSvc.GetSales().Where(s => s.Fecha.Date == DateTime.Today.AddDays(d)).Sum(s => s.Total)
-        ).ToArray();
-        await JS.InvokeVoidAsync("chartHelper.renderSalesChart", "salesChart", labels, data);
-
-        var presencialData = SalesSvc.GetRecentOrders()
-            .Where(o => o.Channel == "Presencial")
-            .GroupBy(o => o.Date.DayOfWeek)
-            .Select(g => g.Count())
+        var labels = Enumerable.Range(-6, 7)
+            .Select(d => DateTime.Today.AddDays(d).ToString("dd/MM"))
             .ToArray();
-        var onlineData = SalesSvc.GetRecentOrders()
-            .Where(o => o.Channel == "Online")
-            .GroupBy(o => o.Date.DayOfWeek)
-            .Select(g => g.Count())
+        var salesData = Enumerable.Range(-6, 7)
+            .Select(d => SalesSvc.GetSales()
+                .Where(s => s.Fecha.Date == DateTime.Today.AddDays(d))
+                .Sum(s => s.Total))
             .ToArray();
+        await JS.InvokeVoidAsync("chartHelper.renderSalesChart", "salesChart", labels, salesData);
 
-        if (presencialData.Length == 0) presencialData = new[] { 8, 10, 9, 12, 15, 18, 14 };
-        if (onlineData.Length == 0) onlineData = new[] { 5, 7, 6, 8, 10, 12, 9 };
+        var dayLabels = Enumerable.Range(-6, 7)
+            .Select(d => DateTime.Today.AddDays(d).ToString("ddd"))
+            .ToArray();
+        // Contar por día exacto (longitud siempre 7) — sin datos ficticios de fallback
+        var presencialData = Enumerable.Range(-6, 7)
+            .Select(d => SalesSvc.GetRecentOrders()
+                .Count(o => o.Date.Date == DateTime.Today.AddDays(d).Date
+                         && o.Channel == "Presencial"))
+            .ToArray();
+        var onlineData = Enumerable.Range(-6, 7)
+            .Select(d => SalesSvc.GetRecentOrders()
+                .Count(o => o.Date.Date == DateTime.Today.AddDays(d).Date
+                         && o.Channel != "Presencial"))
+            .ToArray();
 
         await JS.InvokeVoidAsync("chartHelper.renderChannelsChart", "channelsChart",
-            Enumerable.Range(-6, 7).Select(d => DateTime.Today.AddDays(d).ToString("ddd")).ToArray(),
-            presencialData, onlineData);
+            dayLabels, presencialData, onlineData);
     }
 }

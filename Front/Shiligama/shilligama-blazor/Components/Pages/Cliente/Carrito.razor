@@ -188,7 +188,7 @@
                             <i class="fa-solid fa-truck mb-2" style="font-size:1.5rem;"></i>
                             <div class="fw-medium small">Delivery</div>
                             <div class="text-muted-foreground text-xs mt-1">
-                                @(Subtotal > 50 ? "Gratis" : "S/. 5.00")
+                                @(Subtotal > Cart.MinimoEnvioGratis ? "Gratis" : $"S/. {Cart.TarifaEnvioBase:0.00}")
                             </div>
                         </div>
                         <div class="flex-grow-1 p-3 border text-center delivery-option @(_deliveryMethod == DeliveryMethod.Pickup ? "active" : "")"
@@ -214,10 +214,10 @@
                                 <span>Envío</span>
                                 <span>@(Envio == 0 ? "Gratis 🎉" : $"S/. {Envio:0.00}")</span>
                             </div>
-                            @if (Subtotal < 50)
+                            @if (Subtotal < Cart.MinimoEnvioGratis)
                             {
                                 <p class="small text-muted-foreground bg-muted rounded-3 p-2 mb-0">
-                                    Agrega S/. @((50 - Subtotal).ToString("0.00")) más para envío gratis
+                                    Agrega S/. @((Cart.MinimoEnvioGratis - Subtotal).ToString("0.00")) más para envío gratis
                                 </p>
                             }
                         }
