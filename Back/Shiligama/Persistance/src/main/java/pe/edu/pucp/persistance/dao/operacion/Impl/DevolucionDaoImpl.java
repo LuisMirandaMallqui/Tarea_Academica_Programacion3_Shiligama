@@ -38,14 +38,15 @@ public class DevolucionDaoImpl implements DevolucionDao {
             parametrosSalida.put(1, Types.INTEGER);
             parametrosEntrada.put(2, firstProdId > 0 ? firstProdId : null);
             parametrosEntrada.put(3, devolucion.getIdPedido() > 0 ? devolucion.getIdPedido() : null);
-            parametrosEntrada.put(4, devolucion.getIdUsuarioRegistra() > 0 ? devolucion.getIdUsuarioRegistra() : null);
-            parametrosEntrada.put(5, devolucion.getEstadoDevolucion());
-            parametrosEntrada.put(6, totalCant);
-            parametrosEntrada.put(7, devolucion.getMotivo());
-            parametrosEntrada.put(8, devolucion.getFechaHora() != null
+            parametrosEntrada.put(4, devolucion.getIdVenta() != null && devolucion.getIdVenta() > 0 ? devolucion.getIdVenta() : null);
+            parametrosEntrada.put(5, devolucion.getIdUsuarioRegistra() > 0 ? devolucion.getIdUsuarioRegistra() : null);
+            parametrosEntrada.put(6, devolucion.getEstadoDevolucion());
+            parametrosEntrada.put(7, totalCant);
+            parametrosEntrada.put(8, devolucion.getMotivo());
+            parametrosEntrada.put(9, devolucion.getFechaHora() != null
                     ? Timestamp.valueOf(devolucion.getFechaHora())
                     : Timestamp.valueOf(LocalDateTime.now()));
-            parametrosEntrada.put(9, devolucion.getObservaciones());
+            parametrosEntrada.put(10, devolucion.getObservaciones());
 
             dbManager.ejecutarProcedimientoTransaccion(
                     "INSERTAR_DEVOLUCION", parametrosEntrada, parametrosSalida);
@@ -94,13 +95,14 @@ public class DevolucionDaoImpl implements DevolucionDao {
             parametrosEntrada.put(1, devolucion.getIdDevolucion());
             parametrosEntrada.put(2, firstProdId > 0 ? firstProdId : null);
             parametrosEntrada.put(3, devolucion.getIdPedido() > 0 ? devolucion.getIdPedido() : null);
-            parametrosEntrada.put(4, devolucion.getIdUsuarioRegistra() > 0 ? devolucion.getIdUsuarioRegistra() : null);
-            parametrosEntrada.put(5, devolucion.getEstadoDevolucion());
-            parametrosEntrada.put(6, totalCant);
-            parametrosEntrada.put(7, devolucion.getMotivo());
-            parametrosEntrada.put(8, Timestamp.valueOf(devolucion.getFechaHora() != null 
+            parametrosEntrada.put(4, devolucion.getIdVenta() != null && devolucion.getIdVenta() > 0 ? devolucion.getIdVenta() : null);
+            parametrosEntrada.put(5, devolucion.getIdUsuarioRegistra() > 0 ? devolucion.getIdUsuarioRegistra() : null);
+            parametrosEntrada.put(6, devolucion.getEstadoDevolucion());
+            parametrosEntrada.put(7, totalCant);
+            parametrosEntrada.put(8, devolucion.getMotivo());
+            parametrosEntrada.put(9, Timestamp.valueOf(devolucion.getFechaHora() != null
                     ? devolucion.getFechaHora() : LocalDateTime.now()));
-            parametrosEntrada.put(9, devolucion.getObservaciones());
+            parametrosEntrada.put(10, devolucion.getObservaciones());
 
             dbManager.ejecutarProcedimientoTransaccion(
                     "MODIFICAR_DEVOLUCION", parametrosEntrada, null);
@@ -212,7 +214,10 @@ public class DevolucionDaoImpl implements DevolucionDao {
         Devolucion d = new Devolucion();
         d.setIdDevolucion(rs.getInt("DEVOLUCION_ID"));
         d.setIdProducto(rs.getInt("PRODUCTO_ID"));
-        d.setIdPedido(rs.getInt("PEDIDO_ID"));
+        int idPedido = rs.getInt("PEDIDO_ID");
+        d.setIdPedido(rs.wasNull() ? 0 : idPedido);
+        int idVenta = rs.getInt("VENTA_ID");
+        d.setIdVenta(rs.wasNull() ? null : idVenta);
         d.setIdUsuarioRegistra(rs.getInt("USUARIO_REGISTRA_ID"));
         d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
         d.setCantidad(rs.getInt("CANTIDAD"));

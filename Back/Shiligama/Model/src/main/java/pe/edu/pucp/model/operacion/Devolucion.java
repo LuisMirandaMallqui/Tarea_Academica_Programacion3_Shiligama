@@ -26,6 +26,9 @@ public class Devolucion {
     @XmlElement(name = "idPedido")
     @JsonbProperty("idPedido")
     private int idPedido;
+    @XmlElement(name = "idVenta")
+    @JsonbProperty("idVenta")
+    private int idVenta;
     @XmlElement(name = "idUsuarioRegistra")
     @JsonbProperty("idUsuarioRegistra")
     private int idUsuarioRegistra;      // ID del usuario que registra (trabajador o admin)
@@ -71,6 +74,14 @@ public class Devolucion {
     }
 
     // ================= GETTERS Y SETTERS =================
+    public Integer getIdVenta() {
+        return idVenta;
+    }
+
+    public void setIdVenta(Integer idVenta) {
+        this.idVenta = idVenta;
+    }
+
     public int getIdDevolucion() { return idDevolucion; }
     public void setIdDevolucion(int idDevolucion) { this.idDevolucion = idDevolucion; }
 
@@ -113,6 +124,7 @@ public class Devolucion {
                 "id=" + idDevolucion +
                 ", idProducto=" + idProducto +
                 ", idPedido=" + idPedido +
+                ", idVenta=" + idVenta +
                 ", estado='" + estadoDevolucion + '\'' +
                 ", cantidad=" + cantidad +
                 ", motivo='" + motivo + '\'' +

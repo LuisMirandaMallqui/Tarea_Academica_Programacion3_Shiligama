@@ -9,6 +9,7 @@ using shilligama_blazor.Models;
 
 namespace shilligama_blazor.Services;
 
+
 // ============================================================================
 // ReturnsService — lee y gestiona devoluciones desde /api/devoluciones.
 //
@@ -18,6 +19,7 @@ namespace shilligama_blazor.Services;
 // ============================================================================
 public class ReturnsService
 {
+    public string? UltimoErrorDevolucion { get; private set; }
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _json;
     private readonly List<Return> _returns = new();
@@ -52,26 +54,45 @@ public class ReturnsService
     // Crea devolución en el backend.
     public async Task<bool> AddReturnAsync(Return returnItem, int idProducto, int idUsuarioRegistra)
     {
+        UltimoErrorDevolucion = null;
+
         var dto = DevolucionApi.FromReturn(returnItem, idProducto, idUsuarioRegistra);
+
         try
         {
-            var resp = await _http.PostAsJsonAsync("devoluciones", dto);
+            Console.WriteLine("JSON DEVOLUCIÓN ENVIADO:");
+            Console.WriteLine(JsonSerializer.Serialize(dto, _json));
+
+            var resp = await _http.PostAsJsonAsync("devoluciones", dto, _json);
+
             if (resp.IsSuccessStatusCode)
             {
                 int idGenerado = await resp.Content.ReadFromJsonAsync<int>();
-                returnItem.Id   = $"DEV-{idGenerado:D3}";
+                returnItem.Id = $"DEV-{idGenerado:D3}";
                 returnItem.Date = DateTime.Now;
                 _returns.Insert(0, returnItem);
                 return true;
             }
-        }
-        catch { /* error de red */ }
 
-        // Fallback local
-        var localId = _returns.Count + 1;
-        returnItem.Id   = $"DEV-{localId:D3}";
-        returnItem.Date = DateTime.Now;
-        _returns.Insert(0, returnItem);
+            string errorBody = await resp.Content.ReadAsStringAsync();
+
+            UltimoErrorDevolucion =
+                $"HTTP {(int)resp.StatusCode}: {errorBody}";
+
+            Console.WriteLine("ERROR AL REGISTRAR DEVOLUCIÓN");
+            Console.WriteLine(UltimoErrorDevolucion);
+            Console.WriteLine($"IdProducto enviado: {idProducto}");
+            Console.WriteLine($"IdUsuario enviado: {idUsuarioRegistra}");
+            Console.WriteLine($"IdPedido enviado: {returnItem.IdPedido}");
+            Console.WriteLine($"IdVenta enviado: {returnItem.IdVenta}");
+            Console.WriteLine($"Estado enviado: {returnItem.Estado}");
+        }
+        catch (Exception ex)
+        {
+            UltimoErrorDevolucion = $"Error de red: {ex.Message}";
+            Console.WriteLine($"Error de red al registrar devolución: {ex.Message}");
+        }
+
         return false;
     }
 
@@ -150,7 +171,7 @@ public class ReturnsService
             : 1; // fallback mínimo para pasar validación
 
         var dto = DevolucionApi.FromReturn(returnItem, idProducto, idUsuarioRegistra);
-
+            
         try
         {
             var resp = await _http.PutAsJsonAsync("devoluciones", dto);

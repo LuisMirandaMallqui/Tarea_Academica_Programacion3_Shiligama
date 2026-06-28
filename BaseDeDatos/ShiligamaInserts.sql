@@ -223,13 +223,6 @@ VALUES(5, 8, 1, 18.90, 18.90);
 -- ================================================================
 --    DEVOLUCIONES DE PRUEBA
 -- ================================================================
-INSERT INTO devolucion(PRODUCTO_ID, USUARIO_REGISTRA_ID, ESTADO_DEVOLUCION, CANTIDAD, MOTIVO)
-VALUES
-(1, 2, 'APROBADO',  2, 'Producto vencido, empaque roto'),
-(3, 3, 'PENDIENTE', 1, 'Botella abollada, posible contaminación'),
-(5, 2, 'APROBADO',  3, 'Error de pedido: se entregó producto incorrecto'),
-(8, 3, 'RECHAZADO', 1, 'Uso incorrecto por parte del cliente'),
-(11,2, 'PENDIENTE', 4, 'Fecha de vencimiento próxima');
 
 -- ================================================================
 --    MOVIMIENTOS DE INVENTARIO
@@ -279,39 +272,23 @@ INSERT INTO notificacion(TITULO, MENSAJE, TIPO, LEIDA, ID_DESTINATARIO) VALUES
 
 
 -- ================================================================
--- INSERTS DE PRUEBA - DEVOLUCIONES
+--    DEVOLUCIONES PRESENCIALES DE PRUEBA
 -- ================================================================
 
--- Devolución 1: Vencido - Arroz (2)
-CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 2, 'PENDIENTE', 2, 'Vencido', NOW(), 'Producto vencido hace 3 días');
+CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 1, 2, 'PENDIENTE', 2, 'Vencido', NOW(), 'Producto vencido hace 3 días');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev1, 1, 2);
 
--- Devolución 2: Dañado - Aceite (1)
-CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 'PENDIENTE', 1, 'Dañado', NOW(), NULL);
+CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 2, 'PENDIENTE', 1, 'Dañado', NOW(), 'Producto con empaque deteriorado');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev2, 3, 1);
 
--- Devolución 3: Otro - Coca-Cola (3)
-CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 2, 'PENDIENTE', 3, 'Otro', NOW(), NULL);
+CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 4, 2, 'APROBADO', 3, 'Error de pedido', NOW(), 'Cliente indicó que se registró un producto incorrecto');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev3, 5, 3);
 
--- Devolución 4: Dañado - Ariel (1)
-CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 2, 'RECHAZADO', 1, 'Dañado', NOW(), 'Envase roto, no apto para venta');
+CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 5, 2, 'RECHAZADO', 1, 'Dañado', NOW(), 'El daño no corresponde a responsabilidad de la tienda');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev4, 8, 1);
 
--- Devolución 5: Vencido - Leche (4)
-CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 2, 'APROBADO', 4, 'Vencido', NOW(), NULL);
+CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 1, 2, 'APROBADO', 4, 'Vencido', NOW(), 'Producto retirado por fecha vencida');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev5, 11, 4);
-
--- Devolución 6: Dañado - Múltiples (Arroz 1, Coca-Cola 2, Agua 1)
-CALL INSERTAR_DEVOLUCION(@dev6, 1, 4, 2, 'PENDIENTE', 4, 'Dañado', NOW(), 'Producto llegó mojado');
-CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 1, 1);
-CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 5, 2);
-CALL INSERTAR_DETALLE_DEVOLUCION(@dev6, 7, 1);
-
--- Devolución 7: Otro - Múltiples (Lentejas 1, Fideos 2)
-CALL INSERTAR_DEVOLUCION(@dev7, 2, 4, 3, 'PENDIENTE', 3, 'Otro', NOW(), NULL);
-CALL INSERTAR_DETALLE_DEVOLUCION(@dev7, 2, 1);
-CALL INSERTAR_DETALLE_DEVOLUCION(@dev7, 4, 2);
 
 -- ================================================================
 -- INSERTS DE DE USUARIO GENERAL PARA LA BOLETA

@@ -17,6 +17,9 @@ internal class DevolucionApi
     [JsonPropertyName("idPedido")]
     public int IdPedido { get; set; }
 
+    [JsonPropertyName("idVenta")]
+    public int? IdVenta { get; set; }
+
     [JsonPropertyName("idUsuarioRegistra")]
     public int IdUsuarioRegistra { get; set; }
 
@@ -50,6 +53,7 @@ internal class DevolucionApi
         {
             Id = $"DEV-{IdDevolucion:D3}",
             IdPedido = IdPedido,
+            IdVenta = IdVenta,
             Quantity = Cantidad,
             Reason = Motivo,
             Observations = Observaciones,
@@ -75,6 +79,7 @@ internal class DevolucionApi
             IdDevolucion = int.TryParse(r.Id?.Replace("DEV-", ""), out var devId) ? devId : 0,
             IdProducto = r.Detalles != null && r.Detalles.Any() ? r.Detalles.First().IdProducto : idProducto,
             IdPedido = r.IdPedido ?? 0,
+            IdVenta = r.IdVenta,
             IdUsuarioRegistra = idUsuarioRegistra,
             Cantidad = r.Detalles != null && r.Detalles.Any() ? r.Detalles.Sum(d => d.Cantidad) : r.Quantity,
             Motivo = r.Reason ?? "",

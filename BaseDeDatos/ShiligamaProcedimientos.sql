@@ -1321,6 +1321,7 @@ CREATE PROCEDURE INSERTAR_DEVOLUCION(
     OUT _devolucion_id       INT,
     IN  _producto_id         INT,
     IN  _pedido_id           INT,
+    IN  _venta_id            INT,
     IN  _usuario_registra_id INT,
     IN  _estado_devolucion   VARCHAR(20),
     IN  _cantidad            INT,
@@ -1329,10 +1330,61 @@ CREATE PROCEDURE INSERTAR_DEVOLUCION(
     IN  _observaciones       VARCHAR(500)
 )
 BEGIN
-    INSERT INTO devolucion(PRODUCTO_ID, PEDIDO_ID, USUARIO_REGISTRA_ID, ESTADO_DEVOLUCION,
-                             CANTIDAD, MOTIVO, OBSERVACIONES, FECHA_HORA, ACTIVO)
-    VALUES(_producto_id, _pedido_id, _usuario_registra_id, _estado_devolucion,
-           _cantidad, _motivo, _observaciones, _fecha_hora, 1);
+    DECLARE v_venta_id INT DEFAULT NULL;
+
+    -- Si la devolución viene de un pedido online, obtenemos la venta asociada al pedido.
+    IF _pedido_id IS NOT NULL THEN
+        SELECT p.VENTA_ID
+        INTO v_venta_id
+        FROM pedido p
+        WHERE p.PEDIDO_ID = _pedido_id;
+
+        IF v_venta_id IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El pedido indicado todavía no tiene una venta asociada.';
+        END IF;
+
+        -- Si también mandaron VENTA_ID, validamos que coincida con la venta del pedido.
+        IF _venta_id IS NOT NULL AND _venta_id <> v_venta_id THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El VENTA_ID enviado no coincide con la venta asociada al pedido.';
+        END IF;
+    ELSE
+        -- Si no hay pedido, asumimos devolución presencial.
+        SET v_venta_id = _venta_id;
+    END IF;
+
+    -- Para una devolución presencial, VENTA_ID es obligatorio.
+    IF v_venta_id IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Debe indicar una venta para registrar la devolución.';
+    END IF;
+
+    INSERT INTO devolucion(
+        PRODUCTO_ID,
+        PEDIDO_ID,
+        VENTA_ID,
+        USUARIO_REGISTRA_ID,
+        ESTADO_DEVOLUCION,
+        CANTIDAD,
+        MOTIVO,
+        OBSERVACIONES,
+        FECHA_HORA,
+        ACTIVO
+    )
+    VALUES(
+        _producto_id,
+        _pedido_id,
+        v_venta_id,
+        _usuario_registra_id,
+        _estado_devolucion,
+        _cantidad,
+        _motivo,
+        _observaciones,
+        _fecha_hora,
+        1
+    );
+
     SET _devolucion_id = LAST_INSERT_ID();
 END$$
 
@@ -1371,6 +1423,7 @@ CREATE PROCEDURE MODIFICAR_DEVOLUCION(
     IN _devolucion_id       INT,
     IN _producto_id         INT,
     IN _pedido_id           INT,
+    IN _venta_id            INT,
     IN _usuario_registra_id INT,
     IN _estado_devolucion   VARCHAR(20),
     IN _cantidad            INT,
@@ -1379,9 +1432,36 @@ CREATE PROCEDURE MODIFICAR_DEVOLUCION(
     IN _observaciones       VARCHAR(500)
 )
 BEGIN
+    DECLARE v_venta_id INT DEFAULT NULL;
+
+    IF _pedido_id IS NOT NULL THEN
+        SELECT p.VENTA_ID
+        INTO v_venta_id
+        FROM pedido p
+        WHERE p.PEDIDO_ID = _pedido_id;
+
+        IF v_venta_id IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El pedido indicado todavía no tiene una venta asociada.';
+        END IF;
+
+        IF _venta_id IS NOT NULL AND _venta_id <> v_venta_id THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'El VENTA_ID enviado no coincide con la venta asociada al pedido.';
+        END IF;
+    ELSE
+        SET v_venta_id = _venta_id;
+    END IF;
+
+    IF v_venta_id IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Debe indicar una venta para modificar la devolución.';
+    END IF;
+
     UPDATE devolucion SET
         PRODUCTO_ID         = _producto_id,
         PEDIDO_ID           = _pedido_id,
+        VENTA_ID            = v_venta_id,
         USUARIO_REGISTRA_ID = _usuario_registra_id,
         ESTADO_DEVOLUCION   = _estado_devolucion,
         CANTIDAD            = _cantidad,
@@ -1405,40 +1485,106 @@ CREATE PROCEDURE BUSCAR_DEVOLUCION_POR_ID(
     IN _devolucion_id INT
 )
 BEGIN
-    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.USUARIO_REGISTRA_ID,
-           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.OBSERVACIONES, d.FECHA_HORA, d.ACTIVO,
-           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+    SELECT 
+        d.DEVOLUCION_ID,
+        d.PRODUCTO_ID,
+        d.PEDIDO_ID,
+        d.VENTA_ID,
+        d.USUARIO_REGISTRA_ID,
+        d.ESTADO_DEVOLUCION,
+        d.CANTIDAD,
+        d.MOTIVO,
+        d.OBSERVACIONES,
+        d.FECHA_HORA,
+        d.ACTIVO,
+
+        v.CANAL_VENTA,
+
+        CASE 
+            WHEN v.CANAL_VENTA = 'WEB' THEN 'ONLINE'
+            WHEN v.CANAL_VENTA = 'PRESENCIAL' THEN 'PRESENCIAL'
+            ELSE 'SIN_CANAL'
+        END AS CANAL_DEVOLUCION,
+
+        CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+
     FROM devolucion d
+    LEFT JOIN venta v ON d.VENTA_ID = v.VENTA_ID
     LEFT JOIN usuario u ON d.USUARIO_REGISTRA_ID = u.USUARIO_ID
-    WHERE d.DEVOLUCION_ID = _devolucion_id AND d.ACTIVO = 1;
+    WHERE d.DEVOLUCION_ID = _devolucion_id 
+      AND d.ACTIVO = 1;
 END$$
 
 DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_TODAS$$
 CREATE PROCEDURE LISTAR_DEVOLUCIONES_TODAS()
 BEGIN
-    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.USUARIO_REGISTRA_ID,
-           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.OBSERVACIONES, d.FECHA_HORA, d.ACTIVO,
-           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+    SELECT 
+        d.DEVOLUCION_ID,
+        d.PRODUCTO_ID,
+        d.PEDIDO_ID,
+        d.VENTA_ID,
+        d.USUARIO_REGISTRA_ID,
+        d.ESTADO_DEVOLUCION,
+        d.CANTIDAD,
+        d.MOTIVO,
+        d.OBSERVACIONES,
+        d.FECHA_HORA,
+        d.ACTIVO,
+
+        v.CANAL_VENTA,
+
+        CASE 
+            WHEN v.CANAL_VENTA = 'WEB' THEN 'ONLINE'
+            WHEN v.CANAL_VENTA = 'PRESENCIAL' THEN 'PRESENCIAL'
+            ELSE 'SIN_CANAL'
+        END AS CANAL_DEVOLUCION,
+
+        CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+
     FROM devolucion d
+    LEFT JOIN venta v ON d.VENTA_ID = v.VENTA_ID
     LEFT JOIN usuario u ON d.USUARIO_REGISTRA_ID = u.USUARIO_ID
     WHERE d.ACTIVO = 1
     ORDER BY d.FECHA_HORA DESC;
 END$$
 
+DELIMITER $$
+
 DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_POR_FECHAS$$
+
 CREATE PROCEDURE LISTAR_DEVOLUCIONES_POR_FECHAS(
     IN _fecha_inicio DATETIME,
     IN _fecha_fin    DATETIME
 )
 BEGIN
-    SELECT d.DEVOLUCION_ID, d.PRODUCTO_ID, d.PEDIDO_ID, d.USUARIO_REGISTRA_ID,
-           d.ESTADO_DEVOLUCION, d.CANTIDAD, d.MOTIVO, d.OBSERVACIONES, d.FECHA_HORA, d.ACTIVO,
-           CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+    SELECT 
+        d.DEVOLUCION_ID,
+        d.PRODUCTO_ID,
+        d.PEDIDO_ID,
+        d.VENTA_ID,
+        d.USUARIO_REGISTRA_ID,
+        d.ESTADO_DEVOLUCION,
+        d.CANTIDAD,
+        d.MOTIVO,
+        d.OBSERVACIONES,
+        d.FECHA_HORA,
+        d.ACTIVO,
+        v.CANAL_VENTA,
+        CASE 
+            WHEN v.CANAL_VENTA = 'WEB' THEN 'ONLINE'
+            WHEN v.CANAL_VENTA = 'PRESENCIAL' THEN 'PRESENCIAL'
+            ELSE 'SIN_CANAL'
+        END AS CANAL_DEVOLUCION,
+        CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
     FROM devolucion d
+    LEFT JOIN venta v ON d.VENTA_ID = v.VENTA_ID
     LEFT JOIN usuario u ON d.USUARIO_REGISTRA_ID = u.USUARIO_ID
-    WHERE d.ACTIVO = 1 AND d.FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
+    WHERE d.ACTIVO = 1
+      AND d.FECHA_HORA BETWEEN _fecha_inicio AND _fecha_fin
     ORDER BY d.FECHA_HORA DESC;
 END$$
+
+
 
 
 -- =============================================================
@@ -1641,6 +1787,39 @@ BEGIN
     LIMIT 1;
 END$$
 
+DROP PROCEDURE IF EXISTS LISTAR_DEVOLUCIONES_ONLINE$$
+CREATE PROCEDURE LISTAR_DEVOLUCIONES_ONLINE()
+BEGIN
+    SELECT 
+        d.DEVOLUCION_ID,
+        d.PRODUCTO_ID,
+        d.PEDIDO_ID,
+        d.VENTA_ID,
+        d.USUARIO_REGISTRA_ID,
+        d.ESTADO_DEVOLUCION,
+        d.CANTIDAD,
+        d.MOTIVO,
+        d.OBSERVACIONES,
+        d.FECHA_HORA,
+        d.ACTIVO,
+
+        v.CANAL_VENTA,
+
+        CASE 
+            WHEN v.CANAL_VENTA = 'WEB' THEN 'ONLINE'
+            WHEN v.CANAL_VENTA = 'PRESENCIAL' THEN 'PRESENCIAL'
+            ELSE 'SIN_CANAL'
+        END AS CANAL_DEVOLUCION,
+
+        CONCAT(u.NOMBRES, ' ', u.APELLIDOS) AS TRABAJADOR_NOMBRE
+
+    FROM devolucion d
+    INNER JOIN venta v ON d.VENTA_ID = v.VENTA_ID
+    LEFT JOIN usuario u ON d.USUARIO_REGISTRA_ID = u.USUARIO_ID
+    WHERE d.ACTIVO = 1
+      AND v.CANAL_VENTA = 'WEB'
+    ORDER BY d.FECHA_HORA DESC;
+END$$
 -- DAO: ProductoDaoImpl.listarBajoStock (panel inventario admin)
 DROP PROCEDURE IF EXISTS LISTAR_PRODUCTOS_BAJO_STOCK$$
 CREATE PROCEDURE LISTAR_PRODUCTOS_BAJO_STOCK()

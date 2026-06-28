@@ -66,6 +66,7 @@
                class="sidebar-link-formal @(IsActive("/admin/devoluciones") ? "active" : "")">
                 <i class="fas fa-undo"></i> Devoluciones
             </a>
+            
         </nav>
 
         <div class="sidebar-footer-container">
@@ -100,7 +101,7 @@
 
         <nav class="flex-grow-1 sidebar-nav-container overflow-y-auto">
             <a href="/admin" @onclick="ToggleMobileSidebar"
-               class="sidebar-link-formal @(IsActive("/admin") && !IsActive("/admin/categorias") && !IsActive("/admin/pedidos") && !IsActive("/admin/productos") && !IsActive("/admin/promociones") && !IsActive("/admin/ventas") && !IsActive("/admin/registrar-venta") && !IsActive("/admin/personal") && !IsActive("/admin/reportes") && !IsActive("/admin/devoluciones") && !IsActive("/admin/perfil") ? "active" : "")">
+               class="sidebar-link-formal @(IsActive("/admin") && !IsActive("/admin/categorias") && !IsActive("/admin/pedidos") && !IsActive("/admin/productos") && !IsActive("/admin/promociones") && !IsActive("/admin/ventas") && !IsActive("/admin/registrar-venta") && !IsActive("/admin/personal") && !IsActive("/admin/reportes") && !IsActive("/admin/devoluciones") && !IsActive("/admin/perfil")? "active" : "")">
                 <i class="fas fa-store-alt"></i> Dashboard
             </a>
             <a href="/admin/pedidos" @onclick="ToggleMobileSidebar"
@@ -139,6 +140,7 @@
                class="sidebar-link-formal @(IsActive("/admin/devoluciones") ? "active" : "")">
                 <i class="fas fa-undo"></i> Devoluciones
             </a>
+            
         </nav>
 
         <div class="sidebar-footer-container">

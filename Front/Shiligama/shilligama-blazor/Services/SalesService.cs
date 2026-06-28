@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using shilligama_blazor.Models;
+using System.Threading;
 
 namespace shilligama_blazor.Services;
 
@@ -24,12 +25,14 @@ namespace shilligama_blazor.Services;
 // ============================================================================
 public class SalesService
 {
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
     private readonly HttpClient _http;
     private readonly JsonSerializerOptions _json;
 
     private readonly List<Sale> _sales = new();
     private readonly List<Order> _orders = new();
     private bool _cargado = false;
+    private bool _detallesVentasCargados = false;
 
     // Diagnóstico: último error al cargar pedidos (null = sin error)
     public string? UltimoErrorPedidos { get; private set; }
@@ -41,72 +44,149 @@ public class SalesService
         _json = json;
     }
 
+    private async Task CargarDetallesVentasAsync()
+    {
+        var ventasSnapshot = _sales.ToList();
+
+        foreach (var sale in ventasSnapshot)
+        {
+            int idVenta = int.TryParse(sale.Id.Replace("VTA-", ""), out var id)
+                ? id
+                : 0;
+
+            if (idVenta <= 0)
+                continue;
+
+            sale.Productos = await GetProductosPorVentaAsync(idVenta);
+
+            Console.WriteLine($"Venta {sale.Id} cargó {sale.Productos.Count} productos.");
+        }
+
+        _detallesVentasCargados = true;
+    }
+
+    public async Task<List<CartItem>> GetProductosPorVentaAsync(int idVenta)
+    {
+        try
+        {
+            var detalles = await _http.GetFromJsonAsync<List<DetalleVentaApi>>(
+                $"detalles-venta/por-venta/{idVenta}", _json);
+
+            if (detalles == null)
+                return new List<CartItem>();
+
+            return detalles.Select(d => new CartItem
+            {
+                Id = d.Producto?.IdProducto ?? d.IdProducto,
+                Name = d.Producto?.Nombre ?? d.NombreProducto ?? "Producto",
+                Price = (decimal)d.PrecioUnitario,
+                Quantity = d.Cantidad,
+                Image = ""
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando detalles de venta {idVenta}: {ex.Message}");
+            return new List<CartItem>();
+        }
+    }
     // Llama al API y llena la caché. Las páginas deben hacer await antes de
     // leer GetSales() / GetRecentOrders() si quieren datos reales.
     public async Task EnsureLoadedAsync(bool recargar = false, bool cargarDetalles = true)
     {
-        if (_cargado && !recargar) return;
+        await _loadLock.WaitAsync();
 
         try
         {
-            var ventas = await _http.GetFromJsonAsync<List<VentaApi>>("ventas", _json);
-            _sales.Clear();
-            if (ventas != null)
-                _sales.AddRange(ventas.Select(v => v.ToSale()));
-        }
-        catch { }
-
-        try
-        {
-            var response = await _http.GetAsync("pedidos");
-            if (response.IsSuccessStatusCode)
+            if (_cargado && !recargar)
             {
-                var pedidos = await response.Content.ReadFromJsonAsync<List<PedidoApi>>(_json);
-                _orders.Clear();
-                if (pedidos != null)
+                if (cargarDetalles && !_detallesVentasCargados)
                 {
-                    if (cargarDetalles)
+                    await CargarDetallesVentasAsync();
+                }
+
+                return;
+            }
+
+            try
+            {
+                var ventas = await _http.GetFromJsonAsync<List<VentaApi>>("ventas", _json);
+                _sales.Clear();
+
+                if (ventas != null)
+                    _sales.AddRange(ventas.Select(v => v.ToSale()));
+
+                _detallesVentasCargados = false;
+
+                if (cargarDetalles)
+                {
+                    await CargarDetallesVentasAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error cargando ventas: {ex.Message}");
+            }
+
+            try
+            {
+                var response = await _http.GetAsync("pedidos");
+                if (response.IsSuccessStatusCode)
+                {
+                    var pedidos = await response.Content.ReadFromJsonAsync<List<PedidoApi>>(_json);
+                    _orders.Clear();
+
+                    if (pedidos != null)
                     {
-                        // Carga completa con detalles — solo cuando se necesita
-                        var tareas = pedidos.Select(async p =>
+                        if (cargarDetalles)
                         {
-                            var order = p.ToOrder();
-                            try
+                            var tareas = pedidos.Select(async p =>
                             {
-                                var detalles = await _http.GetFromJsonAsync<List<DetallePedidoApi>>(
-                                    $"detalles-pedido/por-pedido/{p.IdPedido}", _json);
-                                if (detalles != null && detalles.Count > 0)
+                                var order = p.ToOrder();
+
+                                try
                                 {
-                                    order.Items = detalles.Count;
-                                    order.Products = detalles.Select(d => new CartItem
+                                    var detalles = await _http.GetFromJsonAsync<List<DetallePedidoApi>>(
+                                        $"detalles-pedido/por-pedido/{p.IdPedido}", _json);
+
+                                    if (detalles != null && detalles.Count > 0)
                                     {
-                                        Id = d.Producto?.IdProducto ?? 0,
-                                        Name = d.Producto?.Nombre ?? "Producto",
-                                        Price = (decimal)d.PrecioUnitario,
-                                        Quantity = d.Cantidad,
-                                        Image = ""
-                                    }).ToList();
+                                        order.Items = detalles.Count;
+                                        order.Products = detalles.Select(d => new CartItem
+                                        {
+                                            Id = d.Producto?.IdProducto ?? 0,
+                                            Name = d.Producto?.Nombre ?? "Producto",
+                                            Price = (decimal)d.PrecioUnitario,
+                                            Quantity = d.Cantidad,
+                                            Image = ""
+                                        }).ToList();
+                                    }
                                 }
-                            }
-                            catch { }
-                            return order;
-                        });
-                        _orders.AddRange(await Task.WhenAll(tareas));
-                    }
-                    else
-                    {
-                        // Carga rápida sin detalles
-                        _orders.AddRange(pedidos.Select(p => p.ToOrder()));
+                                catch { }
+
+                                return order;
+                            });
+
+                            _orders.AddRange(await Task.WhenAll(tareas));
+                        }
+                        else
+                        {
+                            _orders.AddRange(pedidos.Select(p => p.ToOrder()));
+                        }
                     }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            UltimoErrorPedidos = ex.Message;
-        }
+            catch (Exception ex)
+            {
+                UltimoErrorPedidos = ex.Message;
+            }
 
-        _cargado = true;
+            _cargado = true;
+        }
+        finally
+        {
+            _loadLock.Release();
+        }
     }
 
     // ----- Getters síncronos (sobre la caché) -----

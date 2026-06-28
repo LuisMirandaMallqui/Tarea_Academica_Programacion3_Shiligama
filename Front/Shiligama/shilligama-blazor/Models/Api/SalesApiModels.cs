@@ -36,14 +36,15 @@ internal class VentaApi
     public MetodoPagoRef? MetodoPago { get; set; }
     public List<DetalleVentaApi>? Detalles { get; set; }
 
+
     public Sale ToSale() => new Sale
     {
         Id = $"VTA-{IdVenta:D3}",
         Fecha = FechaHora ?? DateTime.Now,
         Cliente = string.IsNullOrWhiteSpace($"{Cliente?.Nombres} {Cliente?.Apellidos}".Trim())
-                     ? "Público General"
-                     : $"{Cliente!.Nombres} {Cliente!.Apellidos}".Trim(),
-        // El enum Java llega en mayúsculas (PRESENCIAL, WEB); .ToLower() normaliza.
+                 ? "Público General"
+                 : $"{Cliente!.Nombres} {Cliente!.Apellidos}".Trim(),
+
         Canal = CanalVenta.ToLower() switch
         {
             "presencial" => "presencial",
@@ -51,17 +52,29 @@ internal class VentaApi
             "whatsapp" => "whatsapp",
             _ => "presencial"
         },
+
         Total = (decimal)MontoTotal,
         MetodoPago = MetodoPago?.Nombre?.ToLower() ?? "efectivo",
         Comprobante = "boleta",
-        // estado viene como texto libre del SP (ej. "COMPLETADA", "ANULADA")
+
         Estado = EstadoVenta.ToLower() switch
         {
             "completada" => "completado",
+            "completado" => "completado",
             "anulada" => "cancelado",
             _ => "completado"
         },
-        NumeroBoleta = NumeroBoleta
+
+        NumeroBoleta = NumeroBoleta,
+
+        Productos = Detalles?.Select(d => new CartItem
+        {
+            Id = d.Producto?.IdProducto ?? d.IdProducto,
+            Name = d.Producto?.Nombre ?? d.NombreProducto ?? "Producto",
+            Price = (decimal)(d.PrecioUnitario > 0 ? d.PrecioUnitario : d.Producto?.PrecioUnitario ?? 0),
+            Quantity = d.Cantidad,
+            Image = ""
+        }).ToList() ?? new List<CartItem>()
     };
 }
 
@@ -139,9 +152,19 @@ internal class UserRef
 internal class DetalleVentaApi
 {
     public int IdDetalleVenta { get; set; }
+
+    public int IdVenta { get; set; }
+
+    public int IdProducto { get; set; }
+
+    public string? NombreProducto { get; set; }
+
     public int Cantidad { get; set; }
+
     public double PrecioUnitario { get; set; }
+
     public double Subtotal { get; set; }
+
     public ProductoRef? Producto { get; set; }
 }
 

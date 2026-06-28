@@ -382,63 +382,105 @@ CREATE TABLE IF NOT EXISTS `detalle_pedido` (
 -- -----------------------------------------------------
 -- Tabla Devolucion
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `shiligama`.`devolucion` ;
+-- -----------------------------------------------------
+-- Tabla Devolucion
+-- -----------------------------------------------------
+
+DROP TABLE IF EXISTS `shiligama`.`detalle_devolucion`;
+DROP TABLE IF EXISTS `shiligama`.`devolucion`;
+
 CREATE TABLE IF NOT EXISTS `devolucion` (
     -- Primary Key
     `DEVOLUCION_ID`          INT            NOT NULL AUTO_INCREMENT,
+
     -- Atributos
     `PRODUCTO_ID`            INT            NULL DEFAULT NULL,
     `PEDIDO_ID`              INT            NULL DEFAULT NULL,
+    `VENTA_ID`               INT            NULL DEFAULT NULL,
     `USUARIO_REGISTRA_ID`    INT            NULL DEFAULT NULL,
-    `ESTADO_DEVOLUCION`      ENUM('PENDIENTE','APROBADO','RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
+
+    `ESTADO_DEVOLUCION`      ENUM('PENDIENTE','APROBADO','RECHAZADO') 
+                              NOT NULL DEFAULT 'PENDIENTE',
+
     `CANTIDAD`               INT            NULL DEFAULT 0,
     `MOTIVO`                 VARCHAR(500)   NULL DEFAULT NULL,
     `OBSERVACIONES`          VARCHAR(500)   NULL DEFAULT NULL,
     `FECHA_HORA`             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `ACTIVO`                 TINYINT        NOT NULL DEFAULT 1,
-	PRIMARY KEY (`DEVOLUCION_ID`),
+
+    PRIMARY KEY (`DEVOLUCION_ID`),
+
     -- Auditoría Automática
-    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Fecha automática de creación',
-    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT 'Fecha automática de última modificación',
+    `FECHA_CREACION`         DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP 
+                                          COMMENT 'Fecha automática de creación',
+    `FECHA_MODIFICACION`     DATETIME     NULL DEFAULT NULL 
+                                          ON UPDATE CURRENT_TIMESTAMP 
+                                          COMMENT 'Fecha automática de última modificación',
+
     -- Auditoría de Usuario
-    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que creó',
-    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL COMMENT 'Nombre del usuario que modificó',
+    `USUARIO_CREACION`       VARCHAR(100) NULL DEFAULT NULL 
+                                          COMMENT 'Nombre del usuario que creó',
+    `USUARIO_MODIFICACION`   VARCHAR(100) NULL DEFAULT NULL 
+                                          COMMENT 'Nombre del usuario que modificó',
+
     INDEX `fk_devolucion_producto_idx` (`PRODUCTO_ID`),
     INDEX `fk_devolucion_pedido_idx` (`PEDIDO_ID`),
+    INDEX `fk_devolucion_venta_idx` (`VENTA_ID`),
     INDEX `fk_devolucion_usuario_registra_idx` (`USUARIO_REGISTRA_ID`),
+
     CONSTRAINT `fk_devolucion_producto`
-        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
+        FOREIGN KEY (`PRODUCTO_ID`) 
+        REFERENCES `producto` (`PRODUCTO_ID`)
         ON UPDATE CASCADE,
+
     CONSTRAINT `fk_devolucion_pedido`
-        FOREIGN KEY (`PEDIDO_ID`) REFERENCES `pedido` (`PEDIDO_ID`)
+        FOREIGN KEY (`PEDIDO_ID`) 
+        REFERENCES `pedido` (`PEDIDO_ID`)
         ON UPDATE CASCADE,
+
+    CONSTRAINT `fk_devolucion_venta`
+        FOREIGN KEY (`VENTA_ID`) 
+        REFERENCES `venta` (`VENTA_ID`)
+        ON UPDATE CASCADE,
+
     CONSTRAINT `fk_devolucion_usuario_registra`
-        FOREIGN KEY (`USUARIO_REGISTRA_ID`) REFERENCES `usuario` (`USUARIO_ID`)
+        FOREIGN KEY (`USUARIO_REGISTRA_ID`) 
+        REFERENCES `usuario` (`USUARIO_ID`)
         ON UPDATE CASCADE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 DEFAULT CHARSET = utf8mb4
-COMMENT = 'Tabla de Devolucion, baja de stock';
+COMMENT = 'Tabla de devoluciones asociadas a ventas presenciales u online';
 
 
 -- -----------------------------------------------------
 -- Tabla Detalle_Devolucion
 -- -----------------------------------------------------
-DROP TABLE IF EXISTS `shiligama`.`detalle_devolucion` ;
+-- -----------------------------------------------------
+-- Tabla Detalle_Devolucion
+-- -----------------------------------------------------
+
 CREATE TABLE IF NOT EXISTS `detalle_devolucion` (
     `DEVOLUCION_ID`          INT            NOT NULL,
     `PRODUCTO_ID`            INT            NOT NULL,
     `CANTIDAD`               INT            NOT NULL,
+
     PRIMARY KEY (`DEVOLUCION_ID`, `PRODUCTO_ID`),
+
     INDEX `fk_dd_devolucion_idx` (`DEVOLUCION_ID`),
     INDEX `fk_dd_producto_idx` (`PRODUCTO_ID`),
+
     CONSTRAINT `fk_dd_devolucion`
-        FOREIGN KEY (`DEVOLUCION_ID`) REFERENCES `devolucion` (`DEVOLUCION_ID`)
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT `fk_dd_producto`
-        FOREIGN KEY (`PRODUCTO_ID`) REFERENCES `producto` (`PRODUCTO_ID`)
+        FOREIGN KEY (`DEVOLUCION_ID`) 
+        REFERENCES `devolucion` (`DEVOLUCION_ID`)
+        ON DELETE CASCADE 
         ON UPDATE CASCADE,
-        
-	INDEX idx_detalle_devolucion (devolucion_id),
-    INDEX idx_detalle_producto (producto_id)
+
+    CONSTRAINT `fk_dd_producto`
+        FOREIGN KEY (`PRODUCTO_ID`) 
+        REFERENCES `producto` (`PRODUCTO_ID`)
+        ON UPDATE CASCADE,
+
+    INDEX `idx_detalle_devolucion` (`DEVOLUCION_ID`),
+    INDEX `idx_detalle_producto` (`PRODUCTO_ID`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4;
 
 -- -----------------------------------------------------

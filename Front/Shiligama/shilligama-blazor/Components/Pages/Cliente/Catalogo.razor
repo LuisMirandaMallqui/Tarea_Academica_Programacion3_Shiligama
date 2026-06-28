@@ -733,8 +733,11 @@
     [JSInvokable]
     public void NextSlideAuto()
     {
+        if (_carouselTotal <= 0)
+            return;
+
         _carouselIndex = (_carouselIndex + 1) % _carouselTotal;
-        InvokeAsync(StateHasChanged);
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void NextSlide()      => _carouselIndex = (_carouselIndex + 1) % _carouselTotal;

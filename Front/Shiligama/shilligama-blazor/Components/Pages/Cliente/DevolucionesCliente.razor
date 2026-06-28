@@ -1,0 +1,559 @@
+﻿@page "/cliente/devoluciones"
+@using shilligama_blazor.Models
+@using shilligama_blazor.Services
+@inject SalesService SalesSvc
+@inject ReturnsService ReturnsSvc
+@inject AuthService Auth
+
+<PageTitle>Mis Devoluciones - Shiligama</PageTitle>
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h1 class="fs-3 fw-bold mb-1">Mis devoluciones</h1>
+            <p class="text-muted mb-0">
+                Solicita devoluciones de tus pedidos online atendidos.
+            </p>
+        </div>
+
+        <button class="btn btn-success fw-semibold"
+                style="border-radius:10px;"
+                @onclick="OpenCreate"
+                disabled="@(!_ordersDisponibles.Any())">
+            <i class="fas fa-plus me-2"></i> Solicitar devolución
+        </button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="card p-5 text-center">
+            <div class="spinner-border text-success mx-auto mb-3"></div>
+            <strong>Cargando tus pedidos y devoluciones...</strong>
+        </div>
+    }
+    else
+    {
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="alert alert-danger">
+                @_errorMessage
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_successMessage))
+        {
+            <div class="alert alert-success">
+                @_successMessage
+            </div>
+        }
+
+        @if (!_ordersDisponibles.Any())
+        {
+            <div class="card p-4 text-center text-muted">
+                <i class="fas fa-box-open mb-3" style="font-size:2rem;"></i>
+                <strong>No tienes pedidos disponibles para devolución.</strong>
+                <p class="mb-0 small">
+                    Solo puedes solicitar devoluciones de pedidos online que ya fueron atendidos.
+                </p>
+            </div>
+        }
+
+        <div class="card overflow-hidden mt-3">
+            <div class="table-responsive">
+                <table class="table table-borderless align-middle mb-0">
+                    <thead class="border-bottom">
+                        <tr>
+                            <th class="px-4 py-3 small text-uppercase text-muted">Fecha</th>
+                            <th class="px-4 py-3 small text-uppercase text-muted">Pedido</th>
+                            <th class="px-4 py-3 small text-uppercase text-muted">Productos</th>
+                            <th class="px-4 py-3 small text-uppercase text-muted">Motivo</th>
+                            <th class="px-4 py-3 small text-uppercase text-muted">Estado</th>
+                            <th class="px-4 py-3 small text-uppercase text-muted text-end">Monto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!_misDevoluciones.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    Todavía no has registrado solicitudes de devolución.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var dev in _misDevoluciones)
+                            {
+                                <tr class="border-bottom">
+                                    <td class="px-4 py-3 small">@dev.Date.ToString("dd/MM/yyyy")</td>
+                                    <td class="px-4 py-3 fw-semibold">
+                                        SHI-2024-@dev.IdPedido.GetValueOrDefault().ToString("D4")
+                                    </td>
+                                    <td class="px-4 py-3 small">@dev.Product</td>
+                                    <td class="px-4 py-3 small">@dev.Reason</td>
+                                    <td class="px-4 py-3">
+                                        @if ((dev.Estado ?? "pendiente").Equals("pendiente", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="badge bg-warning text-dark">Pendiente</span>
+                                        }
+                                        else if ((dev.Estado ?? "").Equals("aprobado", StringComparison.OrdinalIgnoreCase))
+                                        {
+                                            <span class="badge bg-success">Aprobado</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Rechazado</span>
+                                        }
+                                    </td>
+                                    <td class="px-4 py-3 text-end fw-bold text-danger">
+                                        -S/. @dev.Amount.ToString("0.00")
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@if (_showModal)
+{
+    <div class="modal show d-block" tabindex="-1"
+         style="background:rgba(0,0,0,.55);"
+         @onclick="CloseModal">
+        <div class="modal-dialog modal-dialog-centered" style="max-width:620px;" @onclick:stopPropagation>
+            <div class="modal-content" style="border-radius:1.25rem;overflow:hidden;">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title fw-bold">Solicitar devolución</h5>
+                        <p class="small text-muted mb-0">
+                            Selecciona un pedido y los productos que deseas devolver.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    @if (!string.IsNullOrEmpty(_modalError))
+                    {
+                        <div class="alert alert-danger small">
+                            @_modalError
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">
+                            Pedido <span class="text-danger">*</span>
+                        </label>
+
+                        <select class="form-select"
+                                @onchange="OnOrderChanged">
+                            <option value="">Seleccione un pedido</option>
+                            @foreach (var order in _ordersDisponibles)
+                            {
+                                <option value="@order.Id">
+                                    @order.Id - @order.Date.ToString("dd/MM/yyyy") - S/. @order.Total.ToString("0.00")
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (_selectedOrder != null)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">
+                                Productos del pedido
+                            </label>
+
+                            <div class="d-flex flex-column gap-2"
+                                 style="max-height:230px;overflow-y:auto;">
+                                @foreach (var item in _selectedOrder.Products)
+                                {
+                                    <div class="border rounded-3 p-3 d-flex justify-content-between align-items-center"
+                                         style="cursor:pointer;"
+                                         @onclick="@(() => ToggleProduct(item.Id))">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="checkbox"
+                                                   class="form-check-input"
+                                                   checked="@IsProductSelected(item.Id)"
+                                                   @onclick:stopPropagation
+                                                   @onchange="@((e) => SetProductSelected(item.Id, (bool)(e.Value ?? false)))" />
+
+                                            <div>
+                                                <div class="fw-semibold small">@item.Name</div>
+                                                <div class="text-muted small">
+                                                    Comprado: @item.Quantity uds. · S/. @item.Price.ToString("0.00")
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="small text-muted">Cant.</span>
+                                            <input type="number"
+                                                   class="form-control text-center"
+                                                   style="width:70px;"
+                                                   min="1"
+                                                   max="@item.Quantity"
+                                                   value="@GetReturnQty(item.Id)"
+                                                   disabled="@(!IsProductSelected(item.Id))"
+                                                   @onclick:stopPropagation
+                                                   @onchange="@((e) => SetReturnQty(item.Id, int.Parse(e.Value?.ToString() ?? "1")))" />
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">
+                            Motivo <span class="text-danger">*</span>
+                        </label>
+                        <select class="form-select" @bind="_selectedMotivo">
+                            <option value="Dañado">Dañado</option>
+                            <option value="Vencido">Vencido</option>
+                            <option value="Error de pedido">Error de pedido</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+
+                    @if (_selectedMotivo == "Otro")
+                    {
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">
+                                Especificar motivo <span class="text-danger">*</span>
+                            </label>
+                            <input class="form-control"
+                                   @bind="_customMotivo"
+                                   placeholder="Escribe el motivo de la devolución" />
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Observaciones</label>
+                        <textarea class="form-control"
+                                  rows="3"
+                                  @bind="_observaciones"
+                                  placeholder="Agrega más detalles sobre el problema..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" @onclick="CloseModal">
+                        Cancelar
+                    </button>
+                    <button class="btn btn-success fw-semibold"
+                            @onclick="RegistrarDevolucionOnline"
+                            disabled="@_saving">
+                        @if (_saving)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>Registrando...</span>
+                        }
+                        else
+                        {
+                            <span>Registrar solicitud</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _loading = true;
+    private bool _saving = false;
+    private bool _showModal = false;
+
+    private string _errorMessage = "";
+    private string _successMessage = "";
+    private string _modalError = "";
+
+    private List<Order> _orders = new();
+    private List<Order> _ordersDisponibles = new();
+    private List<Return> _misDevoluciones = new();
+
+    private Order? _selectedOrder;
+
+    private Dictionary<int, bool> _productSelected = new();
+    private Dictionary<int, int> _productReturnQty = new();
+
+    private string _selectedMotivo = "Dañado";
+    private string _customMotivo = "";
+    private string _observaciones = "";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await Auth.InitializeAsync();
+            Console.WriteLine($"AUTH USER: {Auth.CurrentUser?.Name}");
+            Console.WriteLine($"AUTH ID: {Auth.CurrentUser?.IdUsuario}");
+            Console.WriteLine($"AUTH EMAIL: {Auth.CurrentUser?.Email}");
+            await LoadDataAsync();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        _loading = true;
+        _errorMessage = "";
+
+        try
+        {
+            int idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
+
+            if (idCliente <= 0)
+            {
+                _errorMessage = "No se pudo cargar la sesión del cliente. Vuelve a iniciar sesión.";
+                return;
+            }
+
+            _orders = await SalesSvc.GetClientOrdersAsync(idCliente);
+
+            _ordersDisponibles = _orders
+                .Where(o =>
+                    IsOrderAvailableForReturn(o) &&
+                    o.Products != null &&
+                    o.Products.Any())
+                .OrderByDescending(o => o.Date)
+                .ToList();
+
+            await ReturnsSvc.EnsureLoadedAsync(recargar: true);
+
+            var idsPedidosCliente = _orders
+                .Select(o => ParsePedidoId(o.Id))
+                .Where(id => id > 0)
+                .ToHashSet();
+
+            _misDevoluciones = ReturnsSvc.GetReturns()
+                .Where(r =>
+                    r.IdPedido.HasValue &&
+                    idsPedidosCliente.Contains(r.IdPedido.Value))
+                .OrderByDescending(r => r.Date)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando devoluciones cliente: {ex.Message}");
+            _errorMessage = "No se pudieron cargar tus devoluciones.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private bool IsOrderAvailableForReturn(Order order)
+    {
+        var status = order.Status?.Trim().ToLower() ?? "";
+
+        return status == "atendido"
+            || status == "entregado"
+            || status == "completado"
+            || status == "completada";
+    }
+
+    private void OpenCreate()
+    {
+        _modalError = "";
+        _successMessage = "";
+
+        if (!_ordersDisponibles.Any())
+        {
+            _modalError = "No tienes pedidos atendidos disponibles para devolución.";
+        }
+
+        _selectedOrder = null;
+        _productSelected.Clear();
+        _productReturnQty.Clear();
+
+        _selectedMotivo = "Dañado";
+        _customMotivo = "";
+        _observaciones = "";
+
+        _showModal = true;
+    }
+
+    private void CloseModal()
+    {
+        if (!_saving)
+            _showModal = false;
+    }
+
+    private void OnOrderChanged(ChangeEventArgs e)
+    {
+        var orderId = e.Value?.ToString();
+
+        _selectedOrder = _ordersDisponibles
+            .FirstOrDefault(o => o.Id == orderId);
+
+        _productSelected.Clear();
+        _productReturnQty.Clear();
+
+        if (_selectedOrder?.Products != null)
+        {
+            foreach (var item in _selectedOrder.Products)
+            {
+                _productSelected[item.Id] = false;
+                _productReturnQty[item.Id] = 1;
+            }
+        }
+    }
+
+    private bool IsProductSelected(int productId)
+        => _productSelected.ContainsKey(productId) && _productSelected[productId];
+
+    private void SetProductSelected(int productId, bool selected)
+    {
+        _productSelected[productId] = selected;
+
+        if (!_productReturnQty.ContainsKey(productId))
+            _productReturnQty[productId] = 1;
+    }
+
+    private void ToggleProduct(int productId)
+    {
+        SetProductSelected(productId, !IsProductSelected(productId));
+    }
+
+    private int GetReturnQty(int productId)
+        => _productReturnQty.ContainsKey(productId) ? _productReturnQty[productId] : 1;
+
+    private void SetReturnQty(int productId, int qty)
+    {
+        var product = _selectedOrder?.Products.FirstOrDefault(p => p.Id == productId);
+
+        if (product == null)
+        {
+            _productReturnQty[productId] = 1;
+            return;
+        }
+
+        if (qty < 1) qty = 1;
+        if (qty > product.Quantity) qty = product.Quantity;
+
+        _productReturnQty[productId] = qty;
+    }
+
+    private async Task RegistrarDevolucionOnline()
+    {
+        _modalError = "";
+        _successMessage = "";
+
+        if (Auth.CurrentUser == null || Auth.CurrentUser.IdUsuario <= 0)
+        {
+            _modalError = "Debe iniciar sesión para registrar una devolución.";
+            return;
+        }
+
+        if (_selectedOrder == null)
+        {
+            _modalError = "Debe seleccionar un pedido.";
+            return;
+        }
+
+        var productosSeleccionados = _selectedOrder.Products
+            .Where(p => IsProductSelected(p.Id))
+            .ToList();
+
+        if (!productosSeleccionados.Any())
+        {
+            _modalError = "Debe seleccionar al menos un producto.";
+            return;
+        }
+
+        if (_selectedMotivo == "Otro" && string.IsNullOrWhiteSpace(_customMotivo))
+        {
+            _modalError = "Debe especificar el motivo.";
+            return;
+        }
+
+        int idPedido = ParsePedidoId(_selectedOrder.Id);
+
+        if (idPedido <= 0)
+        {
+            _modalError = "No se pudo identificar el pedido seleccionado.";
+            return;
+        }
+
+        var detalles = productosSeleccionados.Select(p => new DetalleDevolucionApi
+        {
+            IdProducto = p.Id,
+            NombreProducto = p.Name,
+            PrecioUnitario = (double)p.Price,
+            Cantidad = GetReturnQty(p.Id)
+        }).ToList();
+
+        var solicitud = new Return
+        {
+            IdPedido = idPedido,
+            IdVenta = 0,
+            Date = DateTime.Now,
+            Estado = "PENDIENTE",
+            Reason = _selectedMotivo == "Otro" ? _customMotivo : _selectedMotivo,
+            Observations = _observaciones,
+            RegisteredBy = Auth.CurrentUser.Name ?? "Cliente",
+
+            Detalles = detalles,
+
+            Product = string.Join(", ", detalles.Select(d => d.NombreProducto)),
+            ProductCode = string.Join(", ", detalles.Select(d => $"PROD-{d.IdProducto:D3}")),
+            Quantity = detalles.Sum(d => d.Cantidad),
+            Amount = (decimal)detalles.Sum(d => d.Cantidad * d.PrecioUnitario)
+        };
+
+        _saving = true;
+
+        try
+        {
+            int idProductoPrincipal = detalles.First().IdProducto;
+
+            bool ok = await ReturnsSvc.AddReturnAsync(
+                solicitud,
+                idProductoPrincipal,
+                Auth.CurrentUser.IdUsuario);
+
+            if (!ok)
+            {
+                _modalError = ReturnsSvc.UltimoErrorDevolucion
+                    ?? "No se pudo registrar la solicitud. Intente nuevamente.";
+                return;
+            }
+
+            _showModal = false;
+            _successMessage = "Solicitud de devolución registrada correctamente.";
+
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error registrando devolución online: {ex.Message}");
+            _modalError = "Ocurrió un error al registrar la solicitud.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+
+    private int ParsePedidoId(string orderId)
+    {
+        if (string.IsNullOrWhiteSpace(orderId))
+            return 0;
+
+        var digits = new string(orderId.Where(char.IsDigit).ToArray());
+
+        if (string.IsNullOrWhiteSpace(digits))
+            return 0;
+
+        if (digits.Length > 4)
+            digits = digits[^4..];
+
+        return int.TryParse(digits, out var id) ? id : 0;
+    }
+}
