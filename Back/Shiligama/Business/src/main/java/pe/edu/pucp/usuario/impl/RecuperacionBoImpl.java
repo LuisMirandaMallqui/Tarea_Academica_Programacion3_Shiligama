@@ -59,13 +59,20 @@ public class RecuperacionBoImpl implements RecuperacionBo {
         final String correoDestino = usuario.getCorreo();
 
         Runnable tareaCorreo = () -> {
-            System.out.println("[" + Thread.currentThread().getName()
-                    + "] Enviando correo de recuperacion a: " + correoDestino);
-            boolean ok = EnvioCorreo.getInstance()
-                    .enviarEmail(List.of(correoDestino), asunto, html);
-            if (!ok) {
+            // Runnable.run() no puede propagar checked exceptions;
+            // se captura aqui para que el hilo no muera silenciosamente.
+            try {
+                System.out.println("[" + Thread.currentThread().getName()
+                        + "] Enviando correo de recuperacion a: " + correoDestino);
+                boolean ok = EnvioCorreo.getInstance()
+                        .enviarEmail(List.of(correoDestino), asunto, html);
+                if (!ok) {
+                    System.err.println("[" + Thread.currentThread().getName()
+                            + "] Fallo al enviar correo de recuperacion a: " + correoDestino);
+                }
+            } catch (Exception ex) {
                 System.err.println("[" + Thread.currentThread().getName()
-                        + "] Fallo al enviar correo de recuperacion a: " + correoDestino);
+                        + "] Error en hilo de correo de recuperacion: " + ex.getMessage());
             }
         };
         Thread hiloCorreo = new Thread(tareaCorreo,
