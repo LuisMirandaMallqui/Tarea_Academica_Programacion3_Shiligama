@@ -165,84 +165,94 @@ else
 
 @code {
     private bool _loading = true;
-    private bool _chartsRendered = false;   // evita renderizar charts dos veces
+    private bool _chartsRendered = false;
     private List<KpiItem> _kpis = new();
     private List<Sale> _recentSales = new();
 
     private record KpiItem(string Title, string Value, string Subtitle, string FaIcon, string Color, string Trend, bool TrendUp);
 
+    // ── Toda la carga de datos ocurre aquí, ANTES del primer render con contenido ──
+    //
+    // Problema raíz del bug "primera vez no carga":
+    //   EnsureLoadedAsync() hace muchas llamadas HTTP (ventas + pedidos + N×detalles)
+    //   y cede el hilo varias veces. Blazor aprovecha esos yields para hacer renders
+    //   preliminares (spinner) y dispara OnAfterRenderAsync MIENTRAS OnInitializedAsync
+    //   aún está corriendo. Si la lectura de GetSales() ocurría en OnAfterRenderAsync,
+    //   llegaba antes de que EnsureLoadedAsync terminase → lista vacía → datos vacíos.
+    //
+    //   Al mover TODO aquí, Blazor espera a que OnInitializedAsync complete antes de
+    //   hacer el primer render con _loading=false, garantizando que GetSales() ya tiene
+    //   los datos cargados cuando los lee.
     protected override async Task OnInitializedAsync()
     {
         await Task.WhenAll(
             ProductSvc.EnsureLoadedAsync(),
             SalesSvc.EnsureLoadedAsync()
         );
-    }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
+        SalesService.KpiAdminDto? kpiReal = null;
+        try { kpiReal = await SalesSvc.GetKpisAdminAsync(); } catch { }
+
+        var sales    = SalesSvc.GetSales();
+        var products = ProductSvc.GetProducts();
+
+        if (kpiReal != null)
         {
-            SalesService.KpiAdminDto? kpiReal = null;
-            try { kpiReal = await SalesSvc.GetKpisAdminAsync(); } catch { }
-
-            var sales = SalesSvc.GetSales();
-            var products = ProductSvc.GetProducts();
-
-            if (kpiReal != null)
+            _kpis = new()
             {
-                _kpis = new()
-                {
-                    new("Ventas hoy",
-                        $"S/. {kpiReal.VentasHoy:0.00}",
-                        "Facturado hoy",
-                        "fa-wallet", "#1A6B3C", "", true),
-                    new("Pedidos pendientes",
-                        $"{kpiReal.PedidosPendientes}",
-                        "Recibidos y en proceso de atención",
-                        "fa-clock", "#e67e22", "", true),
-                    new("Productos bajo stock",
-                        $"{kpiReal.ProductosBajoStock}",
-                        "Con inventario bajo el mínimo",
-                        "fa-box-open", "#c62828", "", false),
-                    new("Ingresos del mes",
-                        $"S/. {kpiReal.IngresosMes:0.00}",
-                        "Facturado este mes",
-                        "fa-chart-line", "#2563EB", "", true),
-                };
-            }
-            else
+                new("Ventas hoy",
+                    $"S/. {kpiReal.VentasHoy:0.00}",
+                    "Facturado hoy",
+                    "fa-wallet", "#1A6B3C", "", true),
+                new("Pedidos pendientes",
+                    $"{kpiReal.PedidosPendientes}",
+                    "Recibidos y en proceso de atención",
+                    "fa-clock", "#e67e22", "", true),
+                new("Productos bajo stock",
+                    $"{kpiReal.ProductosBajoStock}",
+                    "Con inventario bajo el mínimo",
+                    "fa-box-open", "#c62828", "", false),
+                new("Ingresos del mes",
+                    $"S/. {kpiReal.IngresosMes:0.00}",
+                    "Facturado este mes",
+                    "fa-chart-line", "#2563EB", "", true),
+            };
+        }
+        else
+        {
+            var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
+            _kpis = new()
             {
-                var todaySales = sales.Where(s => s.Fecha.Date == DateTime.Today).Sum(s => s.Total);
-                _kpis = new()
-                {
-                    new("Ventas hoy",
-                        $"S/. {todaySales:0.00}",
-                        "Calculado desde caché",
-                        "fa-wallet", "#1A6B3C", "", true),
-                    new("Pedidos pendientes",
-                        $"{SalesSvc.GetRecentOrders().Count(o => o.Status is "recibido" or "en_proceso")}",
-                        "Recibidos o en proceso",
-                        "fa-clock", "#e67e22", "", true),
-                    new("Productos bajo stock",
-                        $"{products.Count(p => p.Stock <= p.MinStock)}",
-                        "Con inventario bajo el mínimo",
-                        "fa-box-open", "#c62828", "", false),
-                    new("Ingresos del mes",
-                        $"S/. {sales.Sum(s => s.Total):0.00}",
-                        "Total en caché",
-                        "fa-chart-line", "#2563EB", "", true),
-                };
-            }
-
-            _recentSales = sales.OrderByDescending(s => s.Fecha).Take(6).ToList();
-            _loading = false;
-            StateHasChanged(); // dispara segundo render → <canvas> aparece en el DOM
-            return;            // NO llamar RenderCharts aquí: canvas todavía no existe
+                new("Ventas hoy",
+                    $"S/. {todaySales:0.00}",
+                    "Calculado desde caché",
+                    "fa-wallet", "#1A6B3C", "", true),
+                new("Pedidos pendientes",
+                    $"{SalesSvc.GetRecentOrders().Count(o => o.Status is "recibido" or "en_proceso")}",
+                    "Recibidos o en proceso",
+                    "fa-clock", "#e67e22", "", true),
+                new("Productos bajo stock",
+                    $"{products.Count(p => p.Stock <= p.MinStock)}",
+                    "Con inventario bajo el mínimo",
+                    "fa-box-open", "#c62828", "", false),
+                new("Ingresos del mes",
+                    $"S/. {sales.Sum(s => s.Total):0.00}",
+                    "Total en caché",
+                    "fa-chart-line", "#2563EB", "", true),
+            };
         }
 
-        // Segundo render en adelante: los <canvas> ya están en el DOM
-        if (!_chartsRendered)
+        _recentSales = sales.OrderByDescending(s => s.Fecha).Take(6).ToList();
+        _loading = false;
+        // No se necesita StateHasChanged(): Blazor re-renderiza automáticamente
+        // cuando OnInitializedAsync completa con cambios de estado.
+    }
+
+    // OnAfterRenderAsync solo maneja los charts. Los renders con _loading=true
+    // (spinner, sin <canvas>) son ignorados gracias al guard !_loading.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_loading && !_chartsRendered)
         {
             _chartsRendered = true;
             await RenderCharts();

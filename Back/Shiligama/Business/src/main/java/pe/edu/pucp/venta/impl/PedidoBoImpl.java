@@ -1,8 +1,13 @@
 package pe.edu.pucp.venta.impl;
 
 import java.util.List;
+import pe.edu.pucp.concurrente.GestorPostConfirmacion;
+import pe.edu.pucp.concurrente.GestorStock;
 import pe.edu.pucp.model.enums.EstadoPedido;
+import pe.edu.pucp.model.operacion.Lote;
+import pe.edu.pucp.model.venta.DetallePedido;
 import pe.edu.pucp.model.venta.Pedido;
+import pe.edu.pucp.operacion.impl.LoteBoImpl;
 import pe.edu.pucp.persistance.dao.venta.Impl.PedidoDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.dao.PedidoDao;
 import pe.edu.pucp.venta.bo.PedidoBo;
@@ -52,10 +57,34 @@ public class PedidoBoImpl implements PedidoBo {
                     "El pedido ya está en estado terminal (" + estado + ") y no puede confirmarse.");
         }
 
+        // Gestion concurrente de stock: reservar antes de ejecutar el SP.
+        // Cada request HTTP de confirmacion es un hilo distinto (Tomcat).
+        // GestorStock.reservarStock() es synchronized -> area critica:
+        // solo un hilo a la vez puede decrementar; los demas esperan (wait)
+        // si no hay stock, hasta que llegue una reposicion (notifyAll).
+        GestorStock gestorStock = GestorStock.getInstance();
+        LoteBoImpl loteBO = new LoteBoImpl();
+        for (DetallePedido detalle : actual.getDetalles()) {
+            int idProducto = detalle.getProducto().getIdProducto();
+            int cantidad   = detalle.getCantidad();
+            // Cargar stock real desde BD solo la primera vez que se ve el producto
+            List<Lote> lotes = loteBO.listarPorProducto(idProducto);
+            int stockTotal = lotes.stream().mapToInt(Lote::getCantidadActual).sum();
+            gestorStock.inicializarSiNecesario(idProducto, stockTotal);
+            // Si no hay stock suficiente, el hilo queda en wait() hasta reposicion
+            gestorStock.reservarStock(Thread.currentThread().getName(), idProducto, cantidad);
+        }
+
         // El SP CONFIRMAR_PEDIDO_A_VENTA se encarga de: crear venta, copiar detalles,
         // decrementar stock y marcar el pedido como ATENDIDO de forma atómica.
         int idVenta = daoPedido.confirmarPedidoAVenta(idPedido, idTrabajador, idMetodoPago);
         if (idVenta <= 0) throw new Exception("Error al crear la venta para el pedido " + idPedido + ".");
+
+        // Lanzar tareas post-confirmacion de forma concurrente (no bloquean la respuesta al cliente).
+        // Hilo-Notificacion: registra notificacion en BD.
+        // Hilo-Correo: envia email de confirmacion al cliente.
+        GestorPostConfirmacion.lanzarTareasPostConfirmacion(actual, idVenta);
+
         return idVenta;
     }
 

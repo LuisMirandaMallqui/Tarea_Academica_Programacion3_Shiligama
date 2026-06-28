@@ -1,5 +1,6 @@
 package pe.edu.pucp.operacion.impl;
 
+import pe.edu.pucp.concurrente.GestorStock;
 import pe.edu.pucp.model.operacion.Lote;
 import pe.edu.pucp.operacion.bo.LoteBo;
 import pe.edu.pucp.persistance.dao.operacion.Impl.LoteDaoImpl;
@@ -17,7 +18,18 @@ public class LoteBoImpl implements LoteBo {
     @Override
     public int insertar(Lote lote) throws Exception {
         validar(lote, false);
-        return daoLote.insertar(lote);
+        int idGenerado = daoLote.insertar(lote);
+
+        // Notificar al GestorStock que hay nuevo stock disponible.
+        // Esto llama a notifyAll() -> despierta los hilos de pedidos
+        // que estaban en wait() por falta de stock de este producto.
+        GestorStock.getInstance().reponerStock(
+                Thread.currentThread().getName(),
+                lote.getIdProducto(),
+                lote.getCantidadInicial()
+        );
+
+        return idGenerado;
     }
 
     @Override
