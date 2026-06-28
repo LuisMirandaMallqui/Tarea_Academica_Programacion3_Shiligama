@@ -49,14 +49,28 @@ public class RecuperacionBoImpl implements RecuperacionBo {
         String baseUrl = Config.get("app.frontend.url", "http://localhost:3000");
         String enlace = baseUrl + "/restablecer-password?token=" + tokenValor;
 
-        // 3) Enviar el correo HTML. Propagar excepción para que el WS la muestre.
+        // 3) Construir el correo y lanzarlo en un hilo background (fire-and-forget).
+        //    MISMA LOGICA que GestorPostConfirmacion: el hilo HTTP de Tomcat no espera
+        //    al servidor SMTP; responde "true" de inmediato y el email se envía en paralelo.
+        //    EnvioCorreo.getInstance() es synchronized (area critica): solo un hilo a la vez
+        //    puede enviar correo (igual que en TareaCorreo de la confirmacion de pedidos).
         String asunto = "Shiligama — Recuperación de contraseña";
         String html = construirHtml(usuario.getNombres(), enlace, minutos);
-        boolean enviado = EnvioCorreo.getInstance()
-                .enviarEmail(List.of(usuario.getCorreo()), asunto, html);
-        if (!enviado) {
-            throw new Exception("No se pudo enviar el correo de recuperación.");
-        }
+        final String correoDestino = usuario.getCorreo();
+
+        Runnable tareaCorreo = () -> {
+            System.out.println("[" + Thread.currentThread().getName()
+                    + "] Enviando correo de recuperacion a: " + correoDestino);
+            boolean ok = EnvioCorreo.getInstance()
+                    .enviarEmail(List.of(correoDestino), asunto, html);
+            if (!ok) {
+                System.err.println("[" + Thread.currentThread().getName()
+                        + "] Fallo al enviar correo de recuperacion a: " + correoDestino);
+            }
+        };
+        Thread hiloCorreo = new Thread(tareaCorreo,
+                "Hilo-Correo-Recuperacion-" + usuario.getIdUsuario());
+        hiloCorreo.start(); // no join() -> responde sin esperar al SMTP
 
         return true;
     }
