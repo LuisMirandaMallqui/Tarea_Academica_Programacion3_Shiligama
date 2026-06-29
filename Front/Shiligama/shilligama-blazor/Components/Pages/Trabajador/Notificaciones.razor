@@ -1,36 +1,24 @@
-@page "/admin/notificaciones"
-@layout AdminLayout
+﻿@page "/trabajador/notificaciones"
+@layout TrabajadorLayout
 @inject NotificacionService NotifSvc
+@inject AuthService Auth
 @inject NavigationManager Navigation
 
-<PageTitle>Notificaciones – Shiligama Admin</PageTitle>
+<PageTitle>Notificaciones – Shiligama Trabajador</PageTitle>
 
 <div class="d-flex flex-column gap-4 mx-auto" style="max-width: 900px; width: 100%;">
     <!-- Header -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
             <h1 class="fs-4 fw-bold text-foreground mb-0">Centro de Notificaciones</h1>
-            <p class="text-muted-foreground small mt-1 mb-0">Todo lo relevante para el equipo: inventario, pedidos, devoluciones y promociones</p>
+            <p class="text-muted-foreground small mt-1 mb-0">Pedidos nuevos y devoluciones pendientes de revisar</p>
         </div>
-        <div class="d-flex align-items-center gap-2">
-            <button @onclick="RevisarPromociones" disabled="@_revisando" class="btn btn-outline-primary btn-sm" style="border-radius: var(--radius);" title="Revisa ahora promociones por vencer o vencidas, sin esperar el job automático">
-                @if (_revisando)
-                {
-                    <span class="spinner-border spinner-border-sm me-1"></span>
-                }
-                else
-                {
-                    <i class="fa-solid fa-rotate me-1"></i>
-                }
-                Revisar promociones
+        @if (_notifications.Any())
+        {
+            <button @onclick="ClearAll" class="btn btn-secondary btn-sm" style="border-radius: var(--radius);">
+                Limpiar todas
             </button>
-            @if (_notifications.Any())
-            {
-                <button @onclick="ClearAll" class="btn btn-secondary btn-sm" style="border-radius: var(--radius);">
-                    Limpiar todas
-                </button>
-            }
-        </div>
+        }
     </div>
 
     @if (_loading)
@@ -45,7 +33,7 @@
         <div class="card p-5 text-center bg-card rounded-4 border">
             <div class="fs-1 mb-3"><i class="fa-regular fa-bell-slash"></i></div>
             <h3 class="text-foreground fw-semibold fs-5">No tienes notificaciones</h3>
-            <p class="text-muted-foreground small m-0">¡Buen trabajo! Todo está bajo control en tu minimarket.</p>
+            <p class="text-muted-foreground small m-0">No hay pedidos ni devoluciones pendientes por revisar.</p>
         </div>
     }
     else
@@ -71,7 +59,7 @@
                         <p class="small text-muted-foreground mb-2">@n.Mensaje</p>
 
                         <div class="d-flex align-items-center gap-1">
-                            @if (!string.IsNullOrEmpty(n.RutaVerPara("admin")))
+                            @if (!string.IsNullOrEmpty(n.RutaVerPara("trabajador")))
                             {
                                 <button @onclick="@(() => Ver(n))"
                                         class="btn btn-ghost btn-sm text-foreground d-flex align-items-center justify-content-center p-2"
@@ -106,25 +94,16 @@
 @code {
     private List<NotificacionItem> _notifications = new();
     private bool _loading = true;
-    private bool _revisando = false;
 
     protected override async Task OnInitializedAsync()
     {
-        // Admin ve todo menos lo dirigido específicamente a un CLIENTE.
-        _notifications = await NotifSvc.GetParaAdminAsync();
+        // Trabajador ve lo dirigido a su USUARIO_ID + los broadcasts
+        // (NUEVO_PEDIDO, DEVOLUCION_PENDIENTE, STOCK_BAJO, etc.).
+        var idUsuario = Auth.CurrentUser?.Id ?? 0;
+        _notifications = idUsuario > 0
+            ? await NotifSvc.GetByUsuarioAsync(idUsuario)
+            : new();
         _loading = false;
-    }
-
-    // Dispara la revisión de promociones (por vencer/vencidas) al instante
-    // y recarga la lista para mostrar las notificaciones nuevas sin esperar
-    // el job automático de 24h ni reiniciar el servidor.
-    private async Task RevisarPromociones()
-    {
-        _revisando = true;
-        StateHasChanged();
-        await NotifSvc.RevisarPromocionesAsync();
-        _notifications = await NotifSvc.GetParaAdminAsync();
-        _revisando = false;
     }
 
     private async Task MarkAsRead(int id)
@@ -150,14 +129,14 @@
     }
 
     // "Ver": marca como revisado (si no lo estaba) y navega exactamente al
-    // pedido/producto/devolución/promoción referenciado por la notificación.
+    // pedido/producto/devolución referenciado por la notificación.
     private async Task Ver(NotificacionItem n)
     {
         if (!n.Leida)
         {
             await NotifSvc.MarcarLeidaAsync(n.IdNotificacion);
         }
-        var ruta = n.RutaVerPara("admin");
+        var ruta = n.RutaVerPara("trabajador");
         if (!string.IsNullOrEmpty(ruta))
         {
             Navigation.NavigateTo(ruta);

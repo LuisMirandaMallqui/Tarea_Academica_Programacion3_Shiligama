@@ -56,6 +56,11 @@ public class NotificacionBoImpl implements NotificacionBo {
     }
 
     @Override
+    public List<Notificacion> listarParaAdmin() throws Exception {
+        return notifDao.listarParaAdmin();
+    }
+
+    @Override
     public int marcarLeida(int idNotificacion) throws Exception {
         if (idNotificacion <= 0) {
             throw new Exception("El ID de la notificación debe ser mayor que cero.");
@@ -86,6 +91,12 @@ public class NotificacionBoImpl implements NotificacionBo {
         }
         if (notif.getTipo() == null) {
             throw new Exception("El tipo de notificación es obligatorio.");
+        }
+        // REFERENCIA_TIPO y REFERENCIA_ID deben ir juntos o ninguno.
+        boolean tieneTipo = notif.getReferenciaTipo() != null;
+        boolean tieneId = notif.getReferenciaId() != null && notif.getReferenciaId() > 0;
+        if (tieneTipo != tieneId) {
+            throw new Exception("Si se especifica referenciaTipo o referenciaId, ambos son obligatorios.");
         }
     }
 }
