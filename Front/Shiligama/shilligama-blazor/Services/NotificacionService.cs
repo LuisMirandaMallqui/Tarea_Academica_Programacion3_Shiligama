@@ -15,7 +15,8 @@ namespace shilligama_blazor.Services;
 //
 // Endpoints:
 //   GET  /api/notificaciones                     → todas las notificaciones
-//   GET  /api/notificaciones/por-usuario/{id}    → notificaciones del usuario
+//   GET  /api/notificaciones/para-admin           → admin: todo menos lo de CLIENTE
+//   GET  /api/notificaciones/por-usuario/{id}    → notificaciones del usuario (cliente/trabajador)
 //   GET  /api/notificaciones/contar-no-leidas/{id}
 //   PUT  /api/notificaciones/{id}/marcar-leida
 //   DELETE /api/notificaciones/{id}
@@ -31,7 +32,7 @@ public class NotificacionService
         _json = json;
     }
 
-    // Trae todas las notificaciones (panel admin).
+    // Trae todas las notificaciones sin filtrar (uso interno/diagnóstico).
     public async Task<List<NotificacionItem>> GetAllAsync()
     {
         try
@@ -42,7 +43,19 @@ public class NotificacionService
         catch { return new(); }
     }
 
-    // Trae notificaciones de un usuario específico (incluye broadcasts).
+    // Panel Admin: todo menos lo dirigido específicamente a un CLIENTE
+    // (incluye broadcasts, lo de trabajadores y lo de otros administradores).
+    public async Task<List<NotificacionItem>> GetParaAdminAsync()
+    {
+        try
+        {
+            var lista = await _http.GetFromJsonAsync<List<NotificacionItem>>("notificaciones/para-admin", _json);
+            return lista ?? new();
+        }
+        catch { return new(); }
+    }
+
+    // Trae notificaciones de un usuario específico (incluye broadcasts). Usado por Cliente/Trabajador.
     public async Task<List<NotificacionItem>> GetByUsuarioAsync(int idUsuario)
     {
         try
@@ -83,6 +96,18 @@ public class NotificacionService
         try
         {
             var resp = await _http.DeleteAsync($"notificaciones/{idNotificacion}");
+            return resp.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
+    // Dispara AHORA MISMO la revisión de promociones por vencer/vencidas,
+    // sin esperar el ciclo de 24h del scheduler. Útil para pruebas/demos.
+    public async Task<bool> RevisarPromocionesAsync()
+    {
+        try
+        {
+            var resp = await _http.PostAsync("notificaciones/revisar-promociones", null);
             return resp.IsSuccessStatusCode;
         }
         catch { return false; }

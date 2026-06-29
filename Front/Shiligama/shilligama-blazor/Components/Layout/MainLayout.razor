@@ -5,6 +5,7 @@
 @inject ProductService Product
 @inject PromocionService PromoSvc
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
 
 <style>
     .dropdown-menu {
@@ -115,7 +116,7 @@
                     <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white" style="width: 40px; height: 40px;">
                         <Icons Name="ShoppingCart" Class="w-5 h-5" />
                     </div>
-                    <span class="d-none d-sm-block text-xl font-bold text-foreground" style="font-family: 'Outfit', sans-serif; font-size: 1.25rem;">
+                    <span class="d-none d-sm-block text-xl font-bold text-foreground" style="font-size: 1.25rem;">
                         Shiligama
                     </span>
                 </a>
@@ -209,8 +210,8 @@
                         <i class="fa-solid fa-cart-shopping text-foreground" style="font-size: 1.1rem;"></i>
                         @if (Cart.GetCartCount() > 0)
                         {
-                            <span class="position-absolute badge bg-primary border border-light rounded-circle d-flex align-items-center justify-content-center text-xs" style="width: 20px; height: 20px; font-size: 0.7rem; top: -6px; right: -6px; padding: 0;">
-                                @Cart.GetCartCount()
+                            <span class="position-absolute badge bg-primary rounded-circle d-flex align-items-center justify-content-center notification-badge" style="width: 22px; height: 22px; font-size: 0.7rem; font-weight: 700; top: -6px; right: -6px; padding: 0; border: 2px solid var(--card);">
+                                @(Cart.GetCartCount() > 99 ? "99+" : Cart.GetCartCount().ToString())
                             </span>
                         }
                     </a>
@@ -236,16 +237,15 @@
                                     </a>
                                 </li>
                                 <li>
+                                    <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/cliente/devoluciones" style="border-radius: var(--radius);">
+                                        <Icons Name="RotateCcw" Class="w-4 h-4 me-2 text-muted-foreground" />
+                                        Mis Devoluciones
+                                    </a>
+                                </li>
+                                <li>
                                     <a class="dropdown-item d-flex align-items-center text-foreground py-2" href="/configuracion" style="border-radius: var(--radius);">
                                         <Icons Name="Settings" Class="w-4 h-4 me-2 text-muted-foreground" />
                                         Configuración
-                                    </a>
-                                </li>
-
-                                <li>
-                                    <a href="/cliente/devoluciones" class="nav-link">
-                                        <i class="fas fa-undo-alt me-1"></i>
-                                        Mis devoluciones
                                     </a>
                                 </li>
 
@@ -340,7 +340,7 @@
         <div class="sheet-panel show p-4 d-flex flex-column justify-between bg-card text-foreground" style="width: 280px; max-width: 85%;">
             <div>
                 <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-color-default">
-                    <h5 class="m-0 font-bold" style="font-family: 'Outfit', sans-serif;">Menú</h5>
+                    <h5 class="m-0 font-bold">Menú</h5>
                     <button type="button" class="btn-close" @onclick="ToggleMobileMenu"></button>
                 </div>
                 <nav class="d-flex flex-column gap-2">
@@ -356,13 +356,13 @@
                         <Icons Name="Package" Class="w-5 h-5" style="color:#1A6B3C;" />
                         Mis Pedidos
                     </a>
+                    <a href="/cliente/devoluciones" @onclick="ToggleMobileMenu" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-foreground hover:bg-muted" style="border-radius: var(--radius); font-weight: 500;">
+                        <Icons Name="RotateCcw" Class="w-5 h-5" style="color:#1A6B3C;" />
+                        Mis Devoluciones
+                    </a>
                     <a href="/configuracion" @onclick="ToggleMobileMenu" class="d-flex align-items-center gap-3 px-3 py-2.5 rounded text-decoration-none text-foreground hover:bg-muted" style="border-radius: var(--radius); font-weight: 500;">
                         <Icons Name="Settings" Class="w-5 h-5" style="color:#1A6B3C;" />
                         Configuración
-                    </a>
-                    <a href="/cliente/devoluciones" class="nav-link">
-                        <i class="fas fa-undo-alt me-1"></i>
-                        Mis devoluciones
                     </a>
 
                 </nav>
@@ -381,6 +381,11 @@
     <main class="flex-grow-1">
         @Body
     </main>
+
+    <!-- Scroll to Top Button -->
+    <button type="button" class="scroll-to-top @(_showScrollToTop ? "" : "hidden")" @onclick="ScrollToTop" title="Volver arriba">
+        <i class="fas fa-arrow-up"></i>
+    </button>
 
     <!-- Footer -->
     <footer class="border-top bg-card py-4 mt-auto border-color-default">
@@ -407,6 +412,7 @@
     private bool _isMobileSearchOpen  = false;
     private bool _isUserDropdownOpen  = false;
     private bool _isSearchDropdownOpen = false;
+    private bool _showScrollToTop = false;
 
     private bool ShouldShowSearchBar =>
         !new[] { "/checkout", "/configuracion", "/mis-pedidos", "/carrito" }
@@ -446,6 +452,20 @@
             Cart.OnChange += StateHasChanged;
             Auth.OnChange += StateHasChanged;
             Navigation.LocationChanged += OnLocationChanged;
+            try
+            {
+                var dotNetRef = DotNetObjectReference.Create(this);
+                await JSRuntime.InvokeVoidAsync("eval", $@"
+                    window.__scrollDotNet = {dotNetRef};
+                    window.__scrollHandler = function() {{
+                        if (window.__scrollDotNet) {{
+                            window.__scrollDotNet.invokeMethodAsync('HandleScroll');
+                        }}
+                    }};
+                    window.addEventListener('scroll', window.__scrollHandler);
+                ");
+            }
+            catch { }
             StateHasChanged();
         }
     }
@@ -484,6 +504,29 @@
     {
         Auth.Logout();
         Navigation.NavigateTo("/");
+    }
+
+    private async Task ScrollToTop()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "window.scrollTo({ top: 0, behavior: 'smooth' })");
+        _showScrollToTop = false;
+    }
+
+    private async Task OnScroll()
+    {
+        var scrollY = await JSRuntime.InvokeAsync<double>("eval", "window.scrollY");
+        var newVal = scrollY > 300;
+        if (newVal != _showScrollToTop)
+        {
+            _showScrollToTop = newVal;
+            StateHasChanged();
+        }
+    }
+
+    [JSInvokable]
+    public async Task HandleScroll()
+    {
+        await OnScroll();
     }
 
     public void Dispose()

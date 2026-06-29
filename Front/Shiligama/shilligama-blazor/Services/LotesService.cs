@@ -65,7 +65,17 @@ public class LotesService
         try
         {
             var resp = await _http.PutAsJsonAsync("lotes", lote);
-            return resp.IsSuccessStatusCode;
+            if (resp.IsSuccessStatusCode)
+            {
+                var existing = _lotes.FirstOrDefault(l => l.IdLote == lote.IdLote);
+                if (existing != null)
+                {
+                    existing.CantidadActual = lote.CantidadActual;
+                    existing.FechaVencimiento = lote.FechaVencimiento;
+                    existing.NumeroLote = lote.NumeroLote;
+                }
+                return true;
+            }
         }
         catch { /* error de red */ }
         return false;

@@ -1,6 +1,7 @@
 package pe.edu.pucp.model.notificacion;
 
 import pe.edu.pucp.model.enums.TipoNotificacion;
+import pe.edu.pucp.model.enums.ReferenciaNotificacion;
 
 import java.time.LocalDateTime;
 import jakarta.xml.bind.annotation.XmlAccessType;
@@ -36,6 +37,16 @@ public class Notificacion {
     @JsonbProperty("idDestinatario")
     private Integer idDestinatario; // null = broadcast a todos los admins/trabajadores
 
+    // ── Referencia a la entidad de la que habla la notificacion ──────────
+    // Permite que el front navegue exactamente al pedido/producto/devolucion/
+    // promocion del que se trata, en vez de a un listado generico.
+    @XmlElement(name = "referenciaTipo")
+    @JsonbProperty("referenciaTipo")
+    private ReferenciaNotificacion referenciaTipo; // null si no aplica
+    @XmlElement(name = "referenciaId")
+    @JsonbProperty("referenciaId")
+    private Integer referenciaId; // PK de la entidad referenciada, null si no aplica
+
     public Notificacion() {
     }
 
@@ -49,6 +60,15 @@ public class Notificacion {
         this.leida = leida;
         this.fechaCreacion = fechaCreacion;
         this.idDestinatario = idDestinatario;
+    }
+
+    public Notificacion(int idNotificacion, String titulo, String mensaje,
+                        TipoNotificacion tipo, boolean leida,
+                        LocalDateTime fechaCreacion, Integer idDestinatario,
+                        ReferenciaNotificacion referenciaTipo, Integer referenciaId) {
+        this(idNotificacion, titulo, mensaje, tipo, leida, fechaCreacion, idDestinatario);
+        this.referenciaTipo = referenciaTipo;
+        this.referenciaId = referenciaId;
     }
 
     public int getIdNotificacion() { return idNotificacion; }
@@ -71,4 +91,10 @@ public class Notificacion {
 
     public Integer getIdDestinatario() { return idDestinatario; }
     public void setIdDestinatario(Integer idDestinatario) { this.idDestinatario = idDestinatario; }
+
+    public ReferenciaNotificacion getReferenciaTipo() { return referenciaTipo; }
+    public void setReferenciaTipo(ReferenciaNotificacion referenciaTipo) { this.referenciaTipo = referenciaTipo; }
+
+    public Integer getReferenciaId() { return referenciaId; }
+    public void setReferenciaId(Integer referenciaId) { this.referenciaId = referenciaId; }
 }

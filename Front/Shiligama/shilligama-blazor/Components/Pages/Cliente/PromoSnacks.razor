@@ -20,7 +20,7 @@
             <div class="position-absolute rounded-circle" style="width: 250px; height: 250px; background: rgba(255, 255, 255, 0.05); top: -80px; right: -50px;"></div>
             <div class="position-relative z-1 max-w-lg">
                 <span class="badge bg-danger mb-2 px-3 py-1.5 uppercase tracking-wider font-semibold" style="border-radius: var(--radius); background-color: #f59e0b !important; color: #4a1942 !important;">Duplica tu antojo</span>
-                <h1 class="fw-bold mb-2 fs-2" style="font-family: 'Outfit', sans-serif;">2x1 en Snacks Seleccionados</h1>
+                <h1 class="fw-bold mb-2 fs-2">2x1 en Snacks Seleccionados</h1>
                 <p class="mb-0 opacity-90 small">Paga 1 y lleva 2 en galletas, papas y piqueos seleccionados. ¡Ideal para tus reuniones o antojos!</p>
             </div>
             <div class="d-none d-md-block fs-1 position-relative z-1" style="font-size: 4.5rem !important;">🍿</div>
@@ -30,7 +30,7 @@
     <div class="container-xl px-3 px-sm-4 py-5">
         <h2 class="fs-4 fw-bold text-foreground mb-4">Snacks en Promoción 2x1</h2>
 
-        @if (_isLoading)
+        @if (_loading)
         {
             <div class="row g-3">
                 @for (int i = 0; i < 4; i++)
@@ -83,7 +83,7 @@
                                 {
                                     <!-- Agotado Overlay on Image -->
                                     <div class="position-absolute top-0 start-0 end-0 bottom-0 d-flex align-items-center justify-content-center z-1" style="background: rgba(255,255,255,0.15);">
-                                        <span class="fw-bold text-secondary" style="font-size: 1.15rem; color: #4b5563 !important; font-family: 'Outfit', sans-serif;">Agotado</span>
+                                        <span class="fw-bold text-secondary" style="font-size: 1.15rem; color: #4b5563 !important;">Agotado</span>
                                     </div>
                                 }
                             </div>
@@ -104,14 +104,14 @@
 
                                 <!-- Title -->
                                 <a href="/catalogo/@product.Id" class="text-decoration-none text-foreground mb-2">
-                                    <p class="fw-bold text-foreground mb-0 lh-sm" style="font-family: 'Outfit', sans-serif; font-size: 0.95rem; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; height: 36px; color: #1f2937 !important;">
+                                    <p class="fw-bold text-foreground mb-0 lh-sm" style="font-size: 0.95rem; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; height: 36px; color: #1f2937 !important;">
                                         @product.Name
                                     </p>
                                 </a>
 
                                 <!-- Price -->
                                 <div class="mb-3">
-                                    <span class="fw-bold" style="font-size: 1.2rem; color: #0D4525;">S/. @product.Price.ToString("0.00")</span>
+                                    <span class="fw-bold" style="font-size: 1.2rem; color: #1A6B3C;">S/. @product.Price.ToString("0.00")</span>
                                     @if (product.OriginalPrice.HasValue)
                                     {
                                         <span class="text-decoration-line-through text-muted-foreground ms-1 small" style="font-size:.8rem;">
@@ -126,7 +126,7 @@
                                     {
                                         <button @onclick="@(() => AddToCart(product))"
                                                 class="btn text-white w-100 py-2 d-flex align-items-center justify-content-center gap-2"
-                                                style="background-color: #0D4525; border: none; border-radius: 8px; font-weight: 500; font-size: 0.9rem; transition: background-color 0.2s;"
+                                                style="background-color: #1A6B3C; border: none; border-radius: 8px; font-weight: 500; font-size: 0.9rem; transition: background-color 0.2s;"
                                                 title="Agregar al carrito">
                                             <i class="fa-solid fa-plus" style="font-size: 0.85rem;"></i> Agregar
                                         </button>
@@ -152,7 +152,7 @@
 
 @code {
     private List<Product> _snacksProducts = new();
-    private bool _isLoading = true;
+    private bool _loading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -161,7 +161,7 @@
         _snacksProducts = ProductSvc.GetProducts()
             .Where(p => ProductSvc.GetCategoryName(p.Category).ToLower().Contains("snack"))
             .ToList();
-        _isLoading = false;
+        _loading = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

@@ -3,10 +3,14 @@ package pe.edu.pucp.venta.impl;
 import java.util.List;
 import pe.edu.pucp.concurrente.GestorPostConfirmacion;
 import pe.edu.pucp.concurrente.GestorStock;
+import pe.edu.pucp.concurrente.TareaNotificacionCambioEstadoPedido;
 import pe.edu.pucp.model.enums.EstadoPedido;
+import pe.edu.pucp.model.enums.ReferenciaNotificacion;
+import pe.edu.pucp.model.enums.TipoNotificacion;
 import pe.edu.pucp.model.operacion.Lote;
 import pe.edu.pucp.model.venta.DetallePedido;
 import pe.edu.pucp.model.venta.Pedido;
+import pe.edu.pucp.notificacion.impl.NotificacionHelper;
 import pe.edu.pucp.operacion.impl.LoteBoImpl;
 import pe.edu.pucp.persistance.dao.venta.Impl.PedidoDaoImpl;
 import pe.edu.pucp.persistance.dao.venta.dao.PedidoDao;
@@ -22,7 +26,17 @@ public class PedidoBoImpl implements PedidoBo {
     @Override
     public int insertar(Pedido pedido) throws Exception {
         validar(pedido, false);
-        return daoPedido.insertar(pedido);
+        int idPedido = daoPedido.insertar(pedido);
+
+        // Notificacion broadcast a trabajadores: nuevo pedido recibido.
+        // No bloquea la respuesta del checkout al cliente.
+        NotificacionHelper.notificarBroadcast(
+                "Nuevo pedido #" + idPedido,
+                "Se recibió un nuevo pedido por S/ " + String.format("%.2f", pedido.getMontoTotal()) + ".",
+                TipoNotificacion.NUEVO_PEDIDO,
+                ReferenciaNotificacion.PEDIDO, idPedido);
+
+        return idPedido;
     }
 
     @Override
@@ -39,7 +53,26 @@ public class PedidoBoImpl implements PedidoBo {
         // Permite reabrir/corregir pedidos en estado terminal (ATENDIDO, RECHAZADO,
         // CANCELADO) hacia cualquier otro estado (excepto ATENDIDO, bloqueado arriba),
         // para que el panel admin pueda corregir un cambio de estado erróneo.
-        return daoPedido.modificar(pedido);
+        int filas = daoPedido.modificar(pedido);
+
+        // Notificar al cliente el cambio de estado (EN_PROCESO, RECHAZADO, CANCELADO).
+        // Se busca el pedido completo porque el objeto recibido del front solo trae
+        // idPedido/estadoPedido/observaciones (ver PedidoDaoImpl.modificar).
+        try {
+            Pedido completo = daoPedido.buscarPorId(pedido.getIdPedido());
+            if (completo != null && completo.getCliente() != null) {
+                Runnable tarea = new TareaNotificacionCambioEstadoPedido(
+                        completo.getCliente().getIdUsuario(),
+                        completo.getIdPedido(),
+                        pedido.getEstadoPedido(),
+                        completo.getModalidadVenta());
+                new Thread(tarea, "Hilo-Notificacion-CambioEstado-Pedido" + pedido.getIdPedido()).start();
+            }
+        } catch (Exception ex) {
+            System.err.println("[PedidoBoImpl] Error al notificar cambio de estado: " + ex.getMessage());
+        }
+
+        return filas;
     }
 
     @Override
@@ -81,9 +114,17 @@ public class PedidoBoImpl implements PedidoBo {
         if (idVenta <= 0) throw new Exception("Error al crear la venta para el pedido " + idPedido + ".");
 
         // Lanzar tareas post-confirmacion de forma concurrente (no bloquean la respuesta al cliente).
-        // Hilo-Notificacion: registra notificacion en BD.
+        // Hilo-Notificacion: registra notificacion VENTA_REGISTRADA en BD.
         // Hilo-Correo: envia email de confirmacion al cliente.
         GestorPostConfirmacion.lanzarTareasPostConfirmacion(actual, idVenta);
+
+        // Notificacion adicional de PEDIDO_ATENDIDO (distinta de VENTA_REGISTRADA):
+        // confirma al cliente que su pedido especifico fue atendido, con referencia
+        // directa al pedido para que "ver" navegue al item exacto en Mis Pedidos.
+        Runnable tareaEstado = new TareaNotificacionCambioEstadoPedido(
+                actual.getCliente().getIdUsuario(), idPedido,
+                EstadoPedido.ATENDIDO, actual.getModalidadVenta());
+        new Thread(tareaEstado, "Hilo-Notificacion-Atendido-Pedido" + idPedido).start();
 
         return idVenta;
     }

@@ -1,28 +1,28 @@
 @page "/trabajador/productos"
 @layout TrabajadorLayout
 @inject ProductService ProductSvc
+@inject IJSRuntime JS
+@inject NavigationManager Nav
 
 <PageTitle>Consulta de Productos – Shiligama</PageTitle>
 
+<div class="d-flex flex-column gap-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">
+                <i class="fas fa-box me-2 text-primary"></i>Catálogo de Productos
+            </h1>
+            <p class="text-muted-foreground small mt-1 mb-0">Consulta el inventario y disponibilidad de productos</p>
+        </div>
+    </div>
+
 @if (_loading)
 {
-    <div class="d-flex flex-column align-items-center justify-content-center py-5 w-100" style="min-height:400px;">
-        <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
-            <i class="fas fa-shopping-cart"></i>
-        </div>
-        <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">Cargando productos...</div>
-    </div>
+    <LoadingIndicator Text="Cargando productos..." />
 }
 else
 {
-<div class="d-flex flex-column gap-4">
-    <!-- Header -->
-    <div>
-        <h1 class="fs-4 fw-bold text-foreground mb-0">
-            <i class="fas fa-box me-2 text-primary"></i>Catálogo de Productos
-        </h1>
-        <p class="text-muted-foreground small mt-1 mb-0">Consulta el inventario y disponibilidad de productos</p>
-    </div>
 
     <!-- KPI Cards -->
     <div class="row g-3">
@@ -32,7 +32,7 @@ else
                     <div class="metric-kpi-value text-foreground" style="font-size:1.6rem;font-weight:700;">@_products.Count</div>
                     <div class="metric-kpi-label" style="font-size:0.8rem;color:var(--muted-foreground);">Total Productos</div>
                 </div>
-                <div class="metric-kpi-icon-custom" style="background:#dcf0e8;color:#1A6B3C;">
+                <div class="metric-kpi-icon-custom" style="background:#e8f5e9;color:#1A6B3C;">
                     <i class="fas fa-boxes"></i>
                 </div>
             </div>
@@ -97,17 +97,6 @@ else
     </div>
 
     <style>
-        @@keyframes cartTrip {
-            0%   { transform: translateX(-120px);                        opacity: 0; }
-            12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
-            25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
-            40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
-            55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
-            68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
-            85%  { transform: translateX(120px);                        opacity: 0; }
-            100% { transform: translateX(120px);                        opacity: 0; }
-        }
-
         .worker-kpi-card {
             background: var(--card);
             border-radius: var(--radius);
@@ -189,7 +178,7 @@ else
                 <tbody>
                     @foreach (var product in PaginatedProducts)
                     {
-                        <tr class="border-bottom border-color-default">
+                        <tr class="border-bottom border-color-default" id="row-@product.Id">
                             <td class="px-4 py-3 fw-medium text-muted-foreground small">PROD-@product.Id.ToString("D3")</td>
                             <td class="px-4 py-3 d-flex align-items-center gap-3">
                                 <img src="@product.Image" alt="@product.Name" class="rounded-3 flex-shrink-0 object-fit-cover" style="width:40px;height:40px;" onerror="this.src='https://placehold.co/40x40/e8f5e9/1A6B3C?text=🛒'" />
@@ -262,8 +251,8 @@ else
             </div>
         }
     </div>
-</div>
 }
+</div>
 
 @code {
     private List<Product> _products = new();
@@ -274,6 +263,14 @@ else
     // ── Paginación ────────────────────────────────────────────────────────────
     private int _currentPage = 1;
     private const int PAGE_SIZE = 20;
+
+    private string? _resaltarId;
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        _resaltarId = System.Web.HttpUtility.ParseQueryString(uri.Query)["resaltar"];
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -286,6 +283,12 @@ else
         {
             _loading = false;
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !string.IsNullOrEmpty(_resaltarId))
+            await JS.InvokeVoidAsync("scrollToElement", $"row-{_resaltarId}");
     }
 
     private IEnumerable<Product> Filtered => _products.Where(p =>

@@ -36,7 +36,8 @@
                            MostrarEditar="false"
                            MostrarKpis="true"
                            PermitirEvaluar="true"
-                           EmptyMessage="No hay solicitudes online registradas"
+                           FiltrarEstados="PENDIENTE"
+                           EmptyMessage="No hay solicitudes online pendientes"
                            LoadingText="Cargando solicitudes online..." />
     </section>
 
@@ -45,17 +46,18 @@
         <div>
             <h2 class="fs-5 fw-bold text-foreground mb-1">Historial de devoluciones</h2>
             <p class="text-muted-foreground small mb-0">
-                Historial completo de devoluciones online y presenciales. Esta tabla es solo informativa.
+                Devoluciones resueltas (aprobadas o rechazadas). Puedes modificar el motivo y observaciones.
             </p>
         </div>
 
         <DevolucionesPanel Rol="admin"
                            TipoVista="todas"
                            MostrarCanal="true"
-                           MostrarEditar="false"
+                           MostrarEditar="true"
                            MostrarKpis="true"
                            PermitirEvaluar="false"
-                           EmptyMessage="No se encontraron devoluciones registradas"
+                           FiltrarEstados="APROBADO,RECHAZADO"
+                           EmptyMessage="No se encontraron devoluciones resueltas"
                            LoadingText="Cargando historial de devoluciones..."
                            @ref="_panelHistorial" />
     </section>

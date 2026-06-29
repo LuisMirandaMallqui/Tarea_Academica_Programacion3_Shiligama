@@ -1,10 +1,8 @@
 package pe.edu.pucp.concurrente;
 
+import pe.edu.pucp.model.enums.ReferenciaNotificacion;
 import pe.edu.pucp.model.enums.TipoNotificacion;
-import pe.edu.pucp.model.notificacion.Notificacion;
-import pe.edu.pucp.notificacion.impl.NotificacionBoImpl;
-
-import java.time.LocalDateTime;
+import pe.edu.pucp.notificacion.impl.NotificacionHelper;
 
 /**
  * Tarea concurrente que registra una Notificacion en BD
@@ -35,19 +33,16 @@ public class TareaNotificacion implements Runnable {
         System.out.println("[" + nombreHilo + "] Iniciando registro de notificacion para cliente " + idCliente);
 
         try {
-            Notificacion notif = new Notificacion();
-            notif.setTitulo("Pedido #" + idPedido + " confirmado");
-            notif.setMensaje("Tu pedido #" + idPedido + " fue confirmado. "
-                    + "Venta generada: #" + idVenta
-                    + ". Monto: S/ " + String.format("%.2f", montoTotal));
-            notif.setTipo(TipoNotificacion.VENTA_REGISTRADA);
-            notif.setLeida(false);
-            notif.setFechaCreacion(LocalDateTime.now());
-            notif.setIdDestinatario(idCliente);
-
-            NotificacionBoImpl notifBo = new NotificacionBoImpl();
-            int idGenerado = notifBo.insertar(notif);
-            System.out.println("[" + nombreHilo + "] Notificacion registrada con ID " + idGenerado);
+            NotificacionHelper.notificar(
+                    "Pedido #" + idPedido + " confirmado",
+                    "Tu pedido #" + idPedido + " fue confirmado. "
+                            + "Venta generada: #" + idVenta
+                            + ". Monto: S/ " + String.format("%.2f", montoTotal),
+                    TipoNotificacion.VENTA_REGISTRADA,
+                    idCliente,
+                    ReferenciaNotificacion.PEDIDO,
+                    idPedido);
+            System.out.println("[" + nombreHilo + "] Notificacion registrada para pedido " + idPedido);
 
         } catch (Exception ex) {
             // Los errores de notificacion NO deben abortar la confirmacion del pedido

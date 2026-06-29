@@ -2,6 +2,7 @@ package pe.edu.pucp.persistance.dao.notificacion.impl;
 
 import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.enums.TipoNotificacion;
+import pe.edu.pucp.model.enums.ReferenciaNotificacion;
 import pe.edu.pucp.model.notificacion.Notificacion;
 import pe.edu.pucp.persistance.dao.notificacion.dao.NotificacionDao;
 
@@ -13,7 +14,8 @@ import java.util.Map;
 
 public class NotificacionDaoImpl implements NotificacionDao {
 
-    // SP: INSERTAR_NOTIFICACION(OUT _notif_id, IN _titulo, _mensaje, _tipo, _id_destinatario)
+    // SP: INSERTAR_NOTIFICACION(OUT _notif_id, IN _titulo, _mensaje, _tipo,
+    //     _id_destinatario, _referencia_tipo, _referencia_id)
     @Override
     public int insertar(Notificacion notif) {
         Map<Integer, Object> parametrosEntrada = new HashMap<>();
@@ -24,6 +26,8 @@ public class NotificacionDaoImpl implements NotificacionDao {
         parametrosEntrada.put(3, notif.getMensaje());
         parametrosEntrada.put(4, notif.getTipo().name());
         parametrosEntrada.put(5, notif.getIdDestinatario());
+        parametrosEntrada.put(6, notif.getReferenciaTipo() != null ? notif.getReferenciaTipo().name() : null);
+        parametrosEntrada.put(7, notif.getReferenciaId());
 
         DBManager.getInstance().ejecutarProcedimiento(
                 "INSERTAR_NOTIFICACION", parametrosEntrada, parametrosSalida);
@@ -113,6 +117,24 @@ public class NotificacionDaoImpl implements NotificacionDao {
         return lista;
     }
 
+    // SP: LISTAR_NOTIFICACIONES_ADMIN() — todo menos lo dirigido a un CLIENTE
+    @Override
+    public List<Notificacion> listarParaAdmin() {
+        List<Notificacion> lista = new ArrayList<>();
+        try (DBManager.ResultadoConsulta resultado = DBManager.getInstance()
+                .ejecutarProcedimientoLectura("LISTAR_NOTIFICACIONES_ADMIN", null)) {
+            if (resultado != null) {
+                ResultSet rs = resultado.getRs();
+                while (rs.next()) {
+                    lista.add(mapearNotificacion(rs));
+                }
+            }
+        } catch (SQLException ex) {
+            System.out.println("Error en listarParaAdmin (notificaciones): " + ex.getMessage());
+        }
+        return lista;
+    }
+
     // SP: MARCAR_NOTIFICACION_LEIDA(IN _notif_id)
     @Override
     public int marcarLeida(int idNotificacion) {
@@ -156,6 +178,20 @@ public class NotificacionDaoImpl implements NotificacionDao {
         }
         int destinatario = rs.getInt("ID_DESTINATARIO");
         n.setIdDestinatario(rs.wasNull() ? null : destinatario);
+
+        // REFERENCIA_TIPO / REFERENCIA_ID — protegidos contra null y valores
+        // desconocidos (por si se agrega un tipo nuevo en BD antes que en el enum).
+        String refTipoStr = rs.getString("REFERENCIA_TIPO");
+        if (refTipoStr != null) {
+            try {
+                n.setReferenciaTipo(ReferenciaNotificacion.valueOf(refTipoStr));
+            } catch (IllegalArgumentException ignored) {
+                n.setReferenciaTipo(null);
+            }
+        }
+        int refId = rs.getInt("REFERENCIA_ID");
+        n.setReferenciaId(rs.wasNull() ? null : refId);
+
         return n;
     }
 }

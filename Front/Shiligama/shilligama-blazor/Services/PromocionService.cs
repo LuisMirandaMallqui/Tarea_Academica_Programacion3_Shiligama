@@ -105,6 +105,8 @@ public class PromocionService
                     existing.Condiciones = promo.Condiciones;
                     existing.Activo = promo.Activo;
                     existing.ProductoIds = new List<int>(promo.ProductoIds);
+                    existing.MostrarEnCarrusel = promo.MostrarEnCarrusel;
+                    existing.ColorCarrusel = promo.ColorCarrusel;
                 }
                 return true;
             }
@@ -175,6 +177,7 @@ internal class PromocionConProductosApi
     public string? Condiciones { get; set; }
     public bool Activo { get; set; } = true;
     public bool MostrarEnCarrusel { get; set; } = false;
+    public string ColorCarrusel { get; set; } = "#1A6B3C";
 
     // Lista de productos con solo idProducto (el back devuelve objetos mínimos)
     [JsonPropertyName("productos")]
@@ -193,7 +196,8 @@ internal class PromocionConProductosApi
             FechaFin = DateTime.TryParse(FechaFin, out var ff) ? ff : DateTime.Today,
             Condiciones = Condiciones,
             Activo = Activo,
-            MostrarEnCarrusel = MostrarEnCarrusel
+            MostrarEnCarrusel = MostrarEnCarrusel,
+            ColorCarrusel = ColorCarrusel
         };
         // Extraer solo los IDs de los productos vinculados
         if (Productos != null)

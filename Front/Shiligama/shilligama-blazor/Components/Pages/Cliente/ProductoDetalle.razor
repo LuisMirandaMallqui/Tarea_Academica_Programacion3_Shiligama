@@ -62,12 +62,12 @@ else
             <!-- Info -->
             <div class="col-md-7 d-flex flex-column gap-3">
                 <span class="text-uppercase fw-semibold text-muted-foreground"
-                      style="font-size:0.825rem;letter-spacing:0.08em;font-family:'Outfit',sans-serif;">
+                      style="font-size:0.825rem;letter-spacing:0.08em;">
                     @ProductSvc.GetCategoryName(_product.Category)
                 </span>
 
                 <h1 class="fw-bold text-foreground mb-1"
-                    style="font-family:'Outfit',sans-serif;font-size:2rem;margin-top:-8px;">
+                    style="font-size:2rem;margin-top:-8px;">
                     @_product.Name
                 </h1>
 
@@ -90,7 +90,7 @@ else
 
                 <div class="d-flex align-items-baseline gap-3 my-1">
                     <span class="fw-bold"
-                          style="font-size:2.25rem;color:var(--primary);font-family:'Outfit',sans-serif;">
+                          style="font-size:2.25rem;color:var(--primary);">
                         S/. @_precioEfectivo.ToString("0.00")
                     </span>
                     @if (_promo != null && _promo.EsVigente && _precioEfectivo < _product.Price)
@@ -113,7 +113,7 @@ else
 
                 <div>
                     <h3 class="fw-bold text-foreground mb-1"
-                        style="font-size:0.85rem;letter-spacing:0.06em;font-family:'Outfit',sans-serif;">
+                        style="font-size:0.85rem;letter-spacing:0.06em;">
                         DESCRIPCIÓN
                     </h3>
                     <p class="text-muted-foreground lh-relaxed mb-0" style="font-size:0.95rem;">
@@ -128,7 +128,7 @@ else
                 {
                     <div class="d-flex flex-column gap-2">
                         <h3 class="fw-bold text-foreground m-0"
-                            style="font-size:0.85rem;letter-spacing:0.06em;font-family:'Outfit',sans-serif;">
+                            style="font-size:0.85rem;letter-spacing:0.06em;">
                             CANTIDAD
                         </h3>
                         <div class="d-flex align-items-center gap-3">

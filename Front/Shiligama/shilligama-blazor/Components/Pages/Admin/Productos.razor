@@ -6,37 +6,14 @@
 @inject LotesService LotesSvc
 @inject AuthService Auth
 @inject IJSRuntime JS
+@inject NavigationManager Nav
 @inject HttpClient Http
 @using System.Security.Cryptography
 @using Microsoft.JSInterop
 <PageTitle>Productos – Shiligama Admin</PageTitle>
 
-<style>
-    @@keyframes cartTrip {
-        0%   { transform: translateX(-120px);                        opacity: 0; }
-        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
-        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
-        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
-        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
-        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
-        85%  { transform: translateX(120px);                        opacity: 0; }
-        100% { transform: translateX(120px);                        opacity: 0; }
-    }
-</style>
-
 <div class="d-flex flex-column gap-4">
-     @if (_loading)
-    {
-        <div class="d-flex flex-column align-items-center justify-content-center py-5 w-100" style="min-height:400px;">
-            <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
-                <i class="fas fa-shopping-cart"></i>
-            </div>
-            <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">Cargando...</div>
-        </div>
-    }
-    else
-    {
-            <!-- ── Encabezado ── -->
+        <!-- ── Encabezado ── -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
             <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Productos</h1>
@@ -51,6 +28,13 @@
             </button>
         </div>
     </div>
+
+     @if (_loading)
+    {
+        <LoadingIndicator />
+    }
+    else
+    {
 
     <!-- ── KPI ── -->
     <div class="row g-3">
@@ -176,7 +160,7 @@
                         // si stock == 0 porque volvería a desactivarse al instante.
                         var puedeToggleEstado = product.Stock > 0;
 
-                        <tr class="border-bottom border-color-default align-middle" style="transition:background .15s;">
+                        <tr class="border-bottom border-color-default align-middle" style="transition:background .15s;" id="row-@product.Id">
                             <td class="px-4 py-3 fw-medium text-muted-foreground small d-none d-md-table-cell">PROD-@product.Id.ToString("D3")</td>
                             <td class="px-4 py-3 d-flex align-items-center gap-3">
                                 <img src="@product.Image" alt="@product.Name" class="rounded-3 flex-shrink-0 object-fit-cover" style="width:44px;height:44px;"
@@ -214,6 +198,12 @@
                                             class="btn btn-ghost btn-sm text-muted-foreground"
                                             style="border-radius:var(--radius);" title="Editar">
                                         <Icons Name="Edit2" Class="w-4 h-4" />
+                                    </button>
+
+                                    <button @onclick="@(() => OpenLotesModal(product))"
+                                            class="btn btn-ghost btn-sm text-info"
+                                            style="border-radius:var(--radius);" title="Gestionar lotes">
+                                        <i class="fa-solid fa-cubes" style="font-size:0.9rem;"></i>
                                     </button>
 
                                     @if (puedeToggleEstado)
@@ -513,6 +503,24 @@
                 </div>
                 <div class="modal-body p-4">
                     <div class="d-flex flex-column gap-3">
+                        <!-- Barcode Scanner -->
+                        <div>
+                            <label class="form-label small fw-medium text-foreground"><i class="fas fa-barcode me-1 text-primary"></i>Código de barras <span class="text-muted-foreground fw-normal">(escanea o escribe)</span></label>
+                            <input type="text" class="form-control text-foreground" style="height:44px;border-radius:10px;font-family:monospace;letter-spacing:1px;"
+                                   placeholder="Escanear o ingresar código..."
+                                   value="@_loteBarcodeInput"
+                                   @oninput="OnLoteBarcodeInput"
+                                   disabled="@(_loteForm.IdProducto > 0)" />
+                            @if (!string.IsNullOrEmpty(_loteBarcodeError))
+                            {
+                                <div class="text-danger small mt-1"><i class="fas fa-exclamation-triangle me-1"></i>@_loteBarcodeError</div>
+                            }
+                            @if (!string.IsNullOrEmpty(_loteBarcodeSuccess))
+                            {
+                                <div class="text-success small mt-1"><i class="fas fa-check-circle me-1"></i>@_loteBarcodeSuccess</div>
+                            }
+                        </div>
+                        <div class="text-center text-muted-foreground small" style="margin:-0.5rem 0;">— o selecciona manualmente —</div>
                         <div style="position:relative;" @onfocusout="() => _showProductDropdown = false">
                             <label class="form-label small fw-medium text-foreground">Producto *</label>
                             @if (_loteForm.IdProducto > 0)
@@ -591,11 +599,129 @@
     </div>
 }
 
+<!-- Modal: Gestionar Lotes del Producto -->
+@if (_showLotesModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.55);backdrop-filter:blur(3px);" @onclick="() => _showLotesModal = false">
+        <div class="modal-dialog modal-dialog-centered modal-lg" style="max-width:700px;" @onclick:stopPropagation>
+            <div class="modal-content bg-card border-border" style="border-radius:1.25rem;overflow:hidden;">
+                <div class="modal-header border-bottom border-color-default p-4 pb-3">
+                    <h5 class="fw-bold text-foreground mb-0">
+                        <i class="fas fa-cubes me-2 text-info"></i>Lotes de <strong>@_lotesProductName</strong>
+                    </h5>
+                    <button class="btn btn-ghost p-1" @onclick="() => _showLotesModal = false" style="border-radius:50%;border:none;background:transparent;">
+                        <i class="fas fa-times text-muted-foreground"></i>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    @if (_lotesLoading)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            <span class="ms-2 small text-muted-foreground">Cargando lotes...</span>
+                        </div>
+                    }
+                    else if (!_lotesDelProducto.Any())
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox text-muted-foreground mb-2" style="font-size:2rem;"></i>
+                            <p class="text-muted-foreground small m-0">Este producto no tiene lotes registrados.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr class="border-bottom border-color-default">
+                                        <th class="px-3 py-2 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.04em;">N° Lote</th>
+                                        <th class="px-3 py-2 small fw-semibold text-muted-foreground text-uppercase text-center">Cant. Inicial</th>
+                                        <th class="px-3 py-2 small fw-semibold text-muted-foreground text-uppercase text-center">Cant. Actual</th>
+                                        <th class="px-3 py-2 small fw-semibold text-muted-foreground text-uppercase">Vencimiento</th>
+                                        <th class="px-3 py-2 small fw-semibold text-muted-foreground text-uppercase text-end">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var lote in _lotesDelProducto)
+                                    {
+                                        var editing = _editingLoteId == lote.IdLote;
+                                        <tr class="border-bottom border-color-default @(editing ? "bg-primary bg-opacity-5" : "")">
+                                            <td class="px-3 py-2 small fw-medium text-foreground">
+                                                @if (editing)
+                                                {
+                                                    <input type="text" class="form-control form-control-sm" style="max-width:150px;"
+                                                           value="@_loteEditForm.NumeroLote"
+                                                           @oninput="e => _loteEditForm.NumeroLote = e.Value?.ToString()" />
+                                                }
+                                                else
+                                                {
+                                                    @lote.NumeroLote
+                                                }
+                                            </td>
+                                            <td class="px-3 py-2 small text-center text-muted-foreground">@lote.CantidadInicial</td>
+                                            <td class="px-3 py-2 small text-center">
+                                                @if (editing)
+                                                {
+                                                    <input type="number" min="0" class="form-control form-control-sm text-center" style="max-width:80px;"
+                                                           value="@_loteEditForm.CantidadActual"
+                                                           @oninput="e => { if(int.TryParse(e.Value?.ToString(), out var v)) _loteEditForm.CantidadActual = Math.Max(0,v); }" />
+                                                }
+                                                else
+                                                {
+                                                    <span class="fw-medium text-foreground">@lote.CantidadActual</span>
+                                                }
+                                            </td>
+                                            <td class="px-3 py-2 small">
+                                                @if (editing)
+                                                {
+                                                    <input type="date" class="form-control form-control-sm" style="max-width:160px;"
+                                                           value="@_loteEditForm.FechaVencimiento"
+                                                           @oninput="e => _loteEditForm.FechaVencimiento = string.IsNullOrEmpty(e.Value?.ToString()) ? null : e.Value?.ToString()" />
+                                                }
+                                                else
+                                                {
+                                                    @(lote.FechaVencimiento ?? "Sin fecha")
+                                                }
+                                            </td>
+                                            <td class="px-3 py-2 text-end">
+                                                @if (editing)
+                                                {
+                                                    <div class="d-flex align-items-center justify-content-end gap-1">
+                                                        <button class="btn btn-ghost btn-sm text-success" title="Guardar"
+                                                                @onclick="SaveLoteEdit" disabled="@_savingLoteEdit">
+                                                            <i class="fa-solid fa-check"></i>
+                                                        </button>
+                                                        <button class="btn btn-ghost btn-sm text-danger" title="Cancelar"
+                                                                @onclick="CancelLoteEdit">
+                                                            <i class="fa-solid fa-xmark"></i>
+                                                        </button>
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <button class="btn btn-ghost btn-sm text-muted-foreground" title="Editar lote"
+                                                            @onclick="() => StartLoteEdit(lote)">
+                                                        <Icons Name="Edit2" Class="w-4 h-4" />
+                                                    </button>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(_lotesError))
+                    {
+                        <div class="alert alert-danger small mt-3 mb-0 py-2">@_lotesError</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <style>
-    .pag-btn { background:var(--card); border:1px solid var(--border); color:var(--foreground); transition:all .15s; }
-    .pag-btn:hover:not(:disabled) { background:var(--secondary); }
-    .pag-btn:disabled { opacity:.4; }
-    .pag-active { background:#1A6B3C !important; color:#fff !important; border-color:#1A6B3C !important; }
     .lote-product-item { transition:background .12s; }
     .lote-product-item:hover { background:var(--secondary); }
 </style>
@@ -624,10 +750,21 @@
     // Referencia JS para el patrón callback (JS llama a OnUploadComplete cuando termina).
     private DotNetObjectReference<Productos>? _uploadRef;
 
+    private string? _resaltarId;
+
     protected override void OnInitialized()
     {
         // Crea la referencia .NET que el JS usará para llamar a OnUploadComplete.
         _uploadRef = DotNetObjectReference.Create(this);
+
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        _resaltarId = System.Web.HttpUtility.ParseQueryString(uri.Query)["resaltar"];
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !string.IsNullOrEmpty(_resaltarId))
+            await JS.InvokeVoidAsync("scrollToElement", $"row-{_resaltarId}");
     }
 
     public void Dispose()
@@ -765,7 +902,9 @@
         _toggleProduct.Estado = !_toggleProduct.Estado;
         try { await ProductSvc.UpdateProductAsync(_toggleProduct); } catch { }
         _showToggleConfirm = false;
-        StateHasChanged();
+        _toastMsg = $"Producto {(_toggleProduct.Estado ? "activado" : "desactivado")} correctamente";
+        _showSavedToast = true; StateHasChanged();
+        await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
     }
 
     // Patrón fire-and-forget + callback JS→.NET:
@@ -848,11 +987,55 @@
     private string _loteProductSearch = "";
     private string _loteNumeroSuffix = "";
     private string _loteFechaValue = "";
+    private string _loteBarcodeInput = "";
+    private string _loteBarcodeError = "";
+    private string _loteBarcodeSuccess = "";
+    private System.Threading.Timer? _loteBarcodeTimer;
     private bool _showProductDropdown = false;
     private LoteApi _loteForm = new();
 
     private IEnumerable<Product> FilterLoteProducts() =>
         _products.Where(p => p.Estado && (string.IsNullOrEmpty(_loteProductSearch) || p.Name.Contains(_loteProductSearch, StringComparison.OrdinalIgnoreCase)));
+
+    private void OnLoteBarcodeInput(ChangeEventArgs e)
+    {
+        _loteBarcodeInput = e.Value?.ToString() ?? "";
+        _loteBarcodeError = "";
+        _loteBarcodeSuccess = "";
+        _loteBarcodeTimer?.Dispose();
+
+        if (string.IsNullOrWhiteSpace(_loteBarcodeInput)) return;
+
+        _loteBarcodeTimer = new System.Threading.Timer(async _ =>
+        {
+            var code = _loteBarcodeInput;
+            _loteBarcodeInput = "";
+            await InvokeAsync(async () =>
+            {
+                var found = _products.FirstOrDefault(p =>
+                    !string.IsNullOrEmpty(p.CodigoBarras) &&
+                    p.CodigoBarras.Equals(code.Trim(), StringComparison.OrdinalIgnoreCase));
+                if (found != null)
+                {
+                    _loteForm.IdProducto = found.Id;
+                    _loteBarcodeSuccess = $"{found.Name} seleccionado.";
+                    _loteDirty = true;
+                    StateHasChanged();
+                    await Task.Delay(2000);
+                    _loteBarcodeSuccess = "";
+                    StateHasChanged();
+                }
+                else
+                {
+                    _loteBarcodeError = $"Código '{code}' no encontrado.";
+                    StateHasChanged();
+                    await Task.Delay(3000);
+                    _loteBarcodeError = "";
+                    StateHasChanged();
+                }
+            });
+        }, null, 1500, System.Threading.Timeout.Infinite);
+    }
 
     private void OnLoteFechaChange(string value)
     {
@@ -875,6 +1058,10 @@
         _loteError = "";
         _loteProductSearch = "";
         _loteFechaValue = "";
+        _loteBarcodeInput = "";
+        _loteBarcodeError = "";
+        _loteBarcodeSuccess = "";
+        _loteBarcodeTimer?.Dispose();
         _loteDirty = false;
         _showProductDropdown = false;
         _showLoteModal = true;
@@ -936,5 +1123,90 @@
             _savingLote = false;
             StateHasChanged();
         }
+    }
+
+    // ── Gestionar Lotes del Producto (inline edit) ──────────────────────────
+    private bool   _showLotesModal   = false;
+    private bool   _lotesLoading     = false;
+    private string _lotesProductName = "";
+    private string _lotesError       = "";
+    private int    _editingLoteId    = -1;
+    private bool   _savingLoteEdit   = false;
+    private LoteApi _loteEditForm    = new();
+    private List<LoteApi> _lotesDelProducto = new();
+
+    private async Task OpenLotesModal(Product product)
+    {
+        _lotesProductName = product.Name;
+        _lotesError       = "";
+        _editingLoteId    = -1;
+        _lotesLoading     = true;
+        _showLotesModal   = true;
+        StateHasChanged();
+
+        _lotesDelProducto = await LotesSvc.GetLotesByProductoAsync(product.Id);
+        _lotesLoading = false;
+        StateHasChanged();
+    }
+
+    private void StartLoteEdit(LoteApi lote)
+    {
+        _editingLoteId = lote.IdLote;
+        _loteEditForm  = new LoteApi
+        {
+            IdLote          = lote.IdLote,
+            IdProducto      = lote.IdProducto,
+            IdTrabajador    = lote.IdTrabajador,
+            NumeroLote      = lote.NumeroLote,
+            CantidadInicial = lote.CantidadInicial,
+            CantidadActual  = lote.CantidadActual,
+            FechaVencimiento= lote.FechaVencimiento,
+            Activo          = lote.Activo,
+            NombreTrabajador= lote.NombreTrabajador,
+            NombreProducto  = lote.NombreProducto
+        };
+    }
+
+    private async Task SaveLoteEdit()
+    {
+        if (_editingLoteId < 0) return;
+        _savingLoteEdit = true;
+        _lotesError = "";
+        StateHasChanged();
+
+        try
+        {
+            var ok = await LotesSvc.UpdateLoteAsync(_loteEditForm);
+            if (ok)
+            {
+                var idx = _lotesDelProducto.FindIndex(l => l.IdLote == _editingLoteId);
+                if (idx >= 0) _lotesDelProducto[idx] = _loteEditForm;
+                _editingLoteId = -1;
+                await ProductSvc.EnsureLoadedAsync(recargar: true);
+                _products = ProductSvc.GetProducts();
+                _toastMsg = "Lote actualizado correctamente";
+                _showSavedToast = true; StateHasChanged();
+                await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
+            }
+            else
+            {
+                _lotesError = "No se pudo actualizar el lote.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _lotesError = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            _savingLoteEdit = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelLoteEdit()
+    {
+        _editingLoteId = -1;
+        _lotesError    = "";
     }
 }

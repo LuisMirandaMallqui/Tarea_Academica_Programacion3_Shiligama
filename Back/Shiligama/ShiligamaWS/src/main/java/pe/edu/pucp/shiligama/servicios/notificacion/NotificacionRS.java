@@ -3,6 +3,7 @@ package pe.edu.pucp.shiligama.servicios.notificacion;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import pe.edu.pucp.concurrente.TareaPromocionesPorVencer;
 import pe.edu.pucp.model.notificacion.Notificacion;
 import pe.edu.pucp.notificacion.bo.NotificacionBo;
 import pe.edu.pucp.notificacion.impl.NotificacionBoImpl;
@@ -89,6 +90,7 @@ public class NotificacionRS {
     }
 
     // GET /api/notificaciones/por-usuario/7  — incluye también las broadcast (destinatario null)
+    // Usado por Cliente y Trabajador.
     @GET
     @Path("/por-usuario/{idUsuario}")
     public Response listarPorUsuario(@PathParam("idUsuario") int idUsuario) {
@@ -98,6 +100,20 @@ public class NotificacionRS {
         } catch (Exception ex) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Error al listar notificaciones por usuario: " + ex.getMessage()).build();
+        }
+    }
+
+    // GET /api/notificaciones/para-admin — todo menos lo dirigido a un CLIENTE.
+    // Incluye lo de trabajadores, lo de otros administradores y los broadcasts.
+    @GET
+    @Path("/para-admin")
+    public Response listarParaAdmin() {
+        try {
+            List<Notificacion> lista = notificacionBo.listarParaAdmin();
+            return Response.ok(lista).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Error al listar notificaciones para admin: " + ex.getMessage()).build();
         }
     }
 
@@ -124,6 +140,23 @@ public class NotificacionRS {
         } catch (Exception ex) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity("Error al contar notificaciones no leídas: " + ex.getMessage()).build();
+        }
+    }
+
+    // POST /api/notificaciones/revisar-promociones
+    // Dispara AHORA MISMO la revision de promociones por vencer/vencidas,
+    // sin esperar el ciclo de 24h del scheduler. Pensado para pruebas y
+    // demos en clase: util cuando se acaba de cambiar una FECHA_FIN y se
+    // quiere ver la notificacion al instante.
+    @POST
+    @Path("/revisar-promociones")
+    public Response revisarPromociones() {
+        try {
+            int generadas = TareaPromocionesPorVencer.ejecutarAhora();
+            return Response.ok("Revisión completada. Notificaciones generadas: " + generadas).build();
+        } catch (Exception ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity("Error al revisar promociones: " + ex.getMessage()).build();
         }
     }
 }

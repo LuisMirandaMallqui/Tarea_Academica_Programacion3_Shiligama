@@ -56,6 +56,10 @@ public class Promocion {
     @JsonbProperty("mostrarEnCarrusel")
     private boolean mostrarEnCarrusel;
 
+    @XmlElement(name = "colorCarrusel")
+    @JsonbProperty("colorCarrusel")
+    private String colorCarrusel;
+
     @XmlElement(name = "productos")
     @JsonbProperty("productos")
     private List<Producto> productos; //CORREGIR ESTO, VER EL TEMA SOLO USAR LA ID
@@ -99,6 +103,8 @@ public class Promocion {
     public void setActivo(boolean activo) { this.activo = activo; }
     public boolean isMostrarEnCarrusel() { return mostrarEnCarrusel; }
     public void setMostrarEnCarrusel(boolean mostrarEnCarrusel) { this.mostrarEnCarrusel = mostrarEnCarrusel; }
+    public String getColorCarrusel() { return colorCarrusel; }
+    public void setColorCarrusel(String colorCarrusel) { this.colorCarrusel = colorCarrusel; }
     public List<Producto> getProductos() { return productos; }
     public void setProductos(List<Producto> productos) { this.productos = productos; }
 
