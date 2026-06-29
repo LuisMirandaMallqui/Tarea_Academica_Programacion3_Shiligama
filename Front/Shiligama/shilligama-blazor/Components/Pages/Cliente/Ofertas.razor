@@ -21,7 +21,7 @@
             <div class="position-absolute rounded-circle" style="width:250px;height:250px;background:rgba(255,255,255,0.05);top:-80px;right:-50px;"></div>
             <div class="position-relative z-1">
                 <span class="badge bg-danger mb-2 px-3 py-1" style="border-radius:var(--radius);">Descuentos de Locura</span>
-                <h1 class="fw-bold mb-2 fs-2" style="font-family:'Outfit',sans-serif;">Ahorra en Grande Hoy</h1>
+                <h1 class="fw-bold mb-2 fs-2">Ahorra en Grande Hoy</h1>
                 <p class="mb-0 opacity-90 small">Explora las mejores promociones y precios rebajados en productos seleccionados.</p>
             </div>
             <div class="d-none d-md-block position-relative z-1" style="font-size:4.5rem;">🔥</div>
@@ -30,7 +30,7 @@
 
     <div class="container-xl px-3 px-sm-4 py-5">
 
-        @if (_isLoading)
+        @if (_loading)
         {
             <div class="text-center py-5">
                 <div class="spinner-border text-primary" role="status"></div>
@@ -145,7 +145,7 @@
 @code {
     // Lista de (Promocion, sus productos)
     private List<(Promocion Promo, List<Product> Products)> _sections = new();
-    private bool _isLoading = true;
+    private bool _loading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -169,7 +169,7 @@
             _sections.Add((promo, products));
         }
 
-        _isLoading = false;
+        _loading = false;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

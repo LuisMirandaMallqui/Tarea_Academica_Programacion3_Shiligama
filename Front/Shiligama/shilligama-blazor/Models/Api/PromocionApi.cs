@@ -18,6 +18,7 @@ internal class PromocionApi
     public string? Condiciones { get; set; }
     public bool Activo { get; set; } = true;
     public bool MostrarEnCarrusel { get; set; } = false;
+    public string ColorCarrusel { get; set; } = "#1A6B3C";
 
     public Promocion ToPromocion() => new Promocion
     {
@@ -30,7 +31,8 @@ internal class PromocionApi
         FechaFin = DateTime.TryParse(FechaFin, out var ff) ? ff : DateTime.Today,
         Condiciones = Condiciones,
         Activo = Activo,
-        MostrarEnCarrusel = MostrarEnCarrusel
+        MostrarEnCarrusel = MostrarEnCarrusel,
+        ColorCarrusel = ColorCarrusel
     };
 
     public static PromocionApi FromPromocion(Promocion p) => new PromocionApi
@@ -40,11 +42,11 @@ internal class PromocionApi
         Descripcion = p.Descripcion,
         TipoDescuento = p.TipoDescuento,
         ValorDescuento = p.ValorDescuento,
-        // FIX: formato completo con hora para que Yasson lo deserialice en LocalDateTime
         FechaInicio = p.FechaInicio.ToString("yyyy-MM-ddTHH:mm:ss"),
         FechaFin = p.FechaFin.ToString("yyyy-MM-ddTHH:mm:ss"),
         Condiciones = p.Condiciones,
         Activo = p.Activo,
-        MostrarEnCarrusel = p.MostrarEnCarrusel
+        MostrarEnCarrusel = p.MostrarEnCarrusel,
+        ColorCarrusel = p.ColorCarrusel
     };
 }

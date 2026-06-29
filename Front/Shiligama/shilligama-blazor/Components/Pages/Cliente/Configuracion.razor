@@ -16,7 +16,7 @@
         </a>
     </nav>
 
-    <h1 class="fs-2 fw-bold text-foreground mb-1" style="font-family: 'Outfit', sans-serif;">Configuración</h1>
+    <h1 class="fs-2 fw-bold text-foreground mb-1">Configuración</h1>
     <p class="text-muted-foreground small mt-1 mb-4">Administra tu información personal y preferencias de entrega</p>
 
     @if (_success)
@@ -38,7 +38,7 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="d-flex align-items-center justify-content-center rounded-circle"
                      style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
-                    <i class="fa-regular fa-user" style="color:#0D4525;font-size:1.1rem;"></i>
+                    <i class="fa-regular fa-user" style="color:#1A6B3C;font-size:1.1rem;"></i>
                 </div>
                 <div>
                     <h3 class="fw-bold text-foreground mb-0" style="font-size:1.05rem;">Información Personal</h3>
@@ -83,7 +83,7 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="d-flex align-items-center justify-content-center rounded-circle"
                      style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
-                    <i class="fa-solid fa-phone" style="color:#0D4525;font-size:1.1rem;"></i>
+                    <i class="fa-solid fa-phone" style="color:#1A6B3C;font-size:1.1rem;"></i>
                 </div>
                 <div>
                     <h3 class="fw-bold text-foreground mb-0" style="font-size:1.05rem;">Contacto</h3>
@@ -110,7 +110,7 @@
             <div class="d-flex align-items-center gap-3">
                 <div class="d-flex align-items-center justify-content-center rounded-circle"
                      style="width:40px;height:40px;background:#E8F5E9;flex-shrink:0;">
-                    <i class="fa-solid fa-location-dot" style="color:#0D4525;font-size:1.1rem;"></i>
+                    <i class="fa-solid fa-location-dot" style="color:#1A6B3C;font-size:1.1rem;"></i>
                 </div>
                 <div>
                     <h3 class="fw-bold text-foreground mb-0" style="font-size:1.05rem;">Direcciones de Entrega</h3>
@@ -126,7 +126,7 @@
                         {
                             <div class="d-flex align-items-start gap-2 p-3"
                                  style="background:#f0fdf4;border-radius:10px;border:1px solid #bbf7d0;">
-                                <i class="fa-solid fa-location-dot mt-1 flex-shrink-0" style="color:#0D4525;"></i>
+                                <i class="fa-solid fa-location-dot mt-1 flex-shrink-0" style="color:#1A6B3C;"></i>
                                 <span class="flex-grow-1" style="font-size:0.88rem;color:#374151;word-break:break-word;">@addr</span>
                                 <button type="button" class="btn btn-link p-0 text-danger flex-shrink-0"
                                         style="font-size:.75rem;"
@@ -150,8 +150,8 @@
                 @* Botón para abrir el mapa y agregar dirección *@
                 <button type="button" @onclick="OpenMapModal"
                         class="btn d-flex align-items-center gap-2 px-3 py-2"
-                        style="border:2px dashed #0D4525;border-radius:10px;background:transparent;
-                               color:#0D4525;font-weight:600;font-size:0.9rem;transition:all 0.2s;"
+                        style="border:2px dashed #1A6B3C;border-radius:10px;background:transparent;
+                               color:#1A6B3C;font-weight:600;font-size:0.9rem;transition:all 0.2s;"
                         onmouseover="this.style.backgroundColor='#f0fdf4';"
                         onmouseout="this.style.backgroundColor='transparent';">
                     <i class="fa-solid fa-plus"></i>
@@ -169,7 +169,7 @@
             <span class="text-muted-foreground small">Los cambios se guardarán automáticamente en tu perfil.</span>
             <button type="submit" disabled="@_saving"
                     class="btn text-white px-4 py-2 fw-semibold d-flex align-items-center gap-2"
-                    style="background-color:#0D4525;border-radius:8px;border:none;">
+                    style="background-color:#1A6B3C;border-radius:8px;border:none;">
                 @if (_saving)
                 {
                     <span class="spinner-border spinner-border-sm me-1"></span><span>Guardando…</span>
@@ -204,7 +204,7 @@
                             Cancelar
                         </button>
                         <button type="button" class="btn text-white px-3 fw-semibold"
-                                style="background-color:#0D4525;border-radius:8px;border:none;"
+                                style="background-color:#1A6B3C;border-radius:8px;border:none;"
                                 @onclick="SaveChanges">
                             Sí, guardar
                         </button>

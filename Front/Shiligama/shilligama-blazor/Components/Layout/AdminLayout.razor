@@ -168,17 +168,9 @@
                 <!-- Mobile Spacer left (for float button) -->
                 <div class="d-lg-none" style="width: 48px;"></div>
                 
-                <!-- Search bar filter mock -->
-                <div class="flex-grow-1 max-w-md" style="max-width: 400px;">
-                    <div class="position-relative w-100">
-                       @*  <Icons Name="Search" Class="admin-search-icon position-absolute start-3 top-50 translate-middle-y mt-2 pt-1 w-4 h-4 text-muted-foreground" style="left: 12px;" />
-                        <input
-                            type="search"
-                            placeholder="Buscar productos, pedidos, personal..."
-                            class="form-control pl-9 border-0 bg-muted text-foreground py-2"
-                            style="padding-left: 36px; background-color: var(--secondary) !important; font-size: 0.9rem;"
-                        /> *@
-                    </div>
+                <!-- Page Title -->
+                <div class="flex-grow-1 ms-2">
+                    <span class="h5 m-0 fw-bold text-foreground topbar-title">@HeaderTitle</span>
                 </div>
 
                 <!-- Right items -->
@@ -189,11 +181,11 @@
 
                     <!-- Notifications Link -->
                     <a href="/admin/notificaciones" class="btn btn-ghost p-2 position-relative text-foreground" style="border-radius: var(--radius);" title="Notificaciones">
-                        <i class="fas fa-bell" style="font-size:1.1rem;"></i>
+                        <i class="fas fa-bell @(_unreadCount > 0 ? "bell-unread" : "")" style="font-size:1.1rem;"></i>
                         @if (_unreadCount > 0)
                         {
-                            <span class="position-absolute top-1 start-100 translate-middle badge bg-danger border border-light rounded-circle d-flex align-items-center justify-content-center" style="width: 18px; height: 18px; font-size: 0.65rem; left: 80%;">
-                                @(_unreadCount > 9 ? "9+" : _unreadCount.ToString())
+                            <span class="position-absolute badge bg-danger rounded-circle d-flex align-items-center justify-content-center notification-badge" style="width: 22px; height: 22px; font-size: 0.7rem; font-weight: 700; top: -4px; right: -8px; padding: 0; border: 2px solid var(--card);">
+                                @(_unreadCount > 99 ? "99+" : _unreadCount.ToString())
                             </span>
                         }
                     </a>
@@ -249,14 +241,17 @@
     .sidebar-brand-container { padding: 1.75rem 1.5rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar-logo-box { width: 48px; height: 48px; background: rgba(255,255,255,0.08); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .sidebar-logo-icon { font-size: 1.35rem; color: #fff; }
-    .sidebar-brand-title { font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0; line-height: 1.2; }
+    .sidebar-brand-title { font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0; line-height: 1.2; }
     .sidebar-brand-subtitle { font-size: 0.78rem; color: rgba(255,255,255,0.6); margin: 0; }
 
     .sidebar-nav-container { padding: 1.5rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
-    .sidebar-link-formal { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1.25rem; border-radius: 0.75rem; text-decoration: none; color: rgba(255,255,255,0.75); font-weight: 500; font-size: 0.95rem; transition: all 0.2s ease; }
-    .sidebar-link-formal i { font-size: 1.1rem; width: 22px; text-align: center; }
-    .sidebar-link-formal:hover { background-color: rgba(255,255,255,0.06); color: #fff; }
-    .sidebar-link-formal.active { background-color: rgba(255,255,255,0.1) !important; color: #fff !important; font-weight: 600; }
+    .sidebar-link-formal { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1.25rem; border-radius: 0.75rem; text-decoration: none; color: rgba(255,255,255,0.75); font-weight: 500; font-size: 0.95rem; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; overflow: hidden; }
+    .sidebar-link-formal i { font-size: 1.1rem; width: 22px; text-align: center; transition: transform 0.25s ease; }
+    .sidebar-link-formal:hover { background-color: rgba(255,255,255,0.12); color: #fff; transform: translateX(4px); }
+    .sidebar-link-formal:hover i { transform: scale(1.15); }
+    .sidebar-link-formal.active { background-color: rgba(255,255,255,0.15) !important; color: #fff !important; font-weight: 600; }
+    .sidebar-link-formal::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #fff; border-radius: 0 2px 2px 0; transform: scaleY(0); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 8px rgba(255,255,255,0.3); }
+    .sidebar-link-formal.active::before { transform: scaleY(1); }
 
     .sidebar-footer-container { padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 1.25rem; }
     .sidebar-profile-info { display: flex; align-items: center; gap: 1rem; color: #fff; }
@@ -318,5 +313,26 @@
         }
         
         return relative.StartsWith(target, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string HeaderTitle
+    {
+        get
+        {
+            var rel = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
+            if (rel.Contains("categorias"))      return "Categorías";
+            if (rel.Contains("pedidos"))         return "Pedidos";
+            if (rel.Contains("productos"))       return "Productos";
+            if (rel.Contains("promociones"))     return "Promociones";
+            if (rel.Contains("registrar-venta")) return "Registrar Venta";
+            if (rel.Contains("ventas"))          return "Historial de Ventas";
+            if (rel.Contains("personal"))        return "Personal";
+            if (rel.Contains("reportes"))        return "Reportes";
+            if (rel.Contains("devoluciones"))    return "Devoluciones";
+            if (rel.Contains("notificaciones"))  return "Notificaciones";
+            if (rel.Contains("perfil"))          return "Mi Perfil";
+            if (rel.Contains("configuracion"))   return "Configuración";
+            return "Dashboard";
+        }
     }
 }

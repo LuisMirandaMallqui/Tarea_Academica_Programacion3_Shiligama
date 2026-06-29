@@ -147,7 +147,8 @@ public class MainTest {
         d.setIdUsuarioRegistra(1);
         d.setEstadoDevolucion("PENDIENTE");
         d.setCantidad(5);
-        d.setMotivo("Producto dañado");
+        d.setMotivo(TipoDevolucion.DAÑADO);
+        d.setMotivoDetalle(null);
         d.setFechaHora(LocalDateTime.now());
         d.setActivo(true);
 

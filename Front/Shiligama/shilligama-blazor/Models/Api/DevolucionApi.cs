@@ -32,6 +32,9 @@ internal class DevolucionApi
     [JsonPropertyName("motivo")]
     public string Motivo { get; set; } = string.Empty;
 
+    [JsonPropertyName("motivoDetalle")]
+    public string MotivoDetalle { get; set; } = string.Empty;
+
     [JsonPropertyName("observaciones")]
     public string Observaciones { get; set; } = string.Empty;
 
@@ -55,7 +58,8 @@ internal class DevolucionApi
             IdPedido = IdPedido,
             IdVenta = IdVenta,
             Quantity = Cantidad,
-            Reason = Motivo,
+            Reason = Motivo?.ToUpper() ?? "OTRO",
+            MotivoDetalle = MotivoDetalle ?? string.Empty,
             Observations = Observaciones,
             RegisteredBy = NombreTrabajador,
             Date = FechaHora ?? DateTime.Now,
@@ -82,7 +86,8 @@ internal class DevolucionApi
             IdVenta = r.IdVenta,
             IdUsuarioRegistra = idUsuarioRegistra,
             Cantidad = r.Detalles != null && r.Detalles.Any() ? r.Detalles.Sum(d => d.Cantidad) : r.Quantity,
-            Motivo = r.Reason ?? "",
+            Motivo = r.Reason?.ToUpper() ?? "OTRO",
+            MotivoDetalle = r.Reason?.ToUpper() == "OTRO" ? (r.MotivoDetalle ?? "") : "",
             Observaciones = r.Observations ?? "",
             EstadoDevolucion = r.Estado?.ToUpper() ?? "PENDIENTE",
             Activo = true,

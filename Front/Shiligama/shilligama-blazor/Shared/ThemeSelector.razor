@@ -1,7 +1,8 @@
 @using Microsoft.JSInterop
 @inject IJSRuntime JSRuntime
 
-<button type="button" @onclick="ToggleTheme" class="btn btn-secondary p-0 d-flex align-items-center justify-content-center border-0 shadow-sm" style="width: 40px; height: 40px; border-radius: var(--radius); background-color: var(--secondary);" title="Cambiar Tema">
+<button type="button" @onclick="ToggleTheme" class="btn btn-secondary p-0 d-flex align-items-center justify-content-center border-0 shadow-sm" style="width: 40px; height: 40px; border-radius: var(--radius); background-color: var(--secondary); transition: box-shadow 0.3s ease;" title="Cambiar Tema" @onmouseenter="() => _isHovering = true" @onmouseleave="() => _isHovering = false">
+    <span class="@(_isSpinning ? "theme-toggle-spin" : "")" style="display:flex;align-items:center;justify-content:center;transition:filter 0.3s ease;@(_isHovering ? "filter:drop-shadow(0 0 6px color-mix(in srgb, var(--primary) 40%, transparent));" : "")">
     @if (_isDarkMode)
     {
         <!-- Sun Icon -->
@@ -17,10 +18,13 @@
             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
         </svg>
     }
+    </span>
 </button>
 
 @code {
     private bool _isDarkMode = false;
+    private bool _isSpinning = false;
+    private bool _isHovering = false;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -43,12 +47,17 @@
     private async Task ToggleTheme()
     {
         _isDarkMode = !_isDarkMode;
+        _isSpinning = true;
+        StateHasChanged();
         try
         {
             await JSRuntime.InvokeVoidAsync("localStorageHelper.setItem", "theme", _isDarkMode ? "dark" : "light");
             await ApplyTheme();
         }
         catch { }
+        await Task.Delay(500);
+        _isSpinning = false;
+        StateHasChanged();
     }
 
     private async Task ApplyTheme()
@@ -57,11 +66,11 @@
         {
             if (_isDarkMode)
             {
-                await JSRuntime.InvokeVoidAsync("eval", "document.documentElement.classList.add('dark')");
+                await JSRuntime.InvokeVoidAsync("eval", "document.documentElement.classList.add('dark'); document.documentElement.setAttribute('data-bs-theme','dark')");
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("eval", "document.documentElement.classList.remove('dark')");
+                await JSRuntime.InvokeVoidAsync("eval", "document.documentElement.classList.remove('dark'); document.documentElement.removeAttribute('data-bs-theme')");
             }
         }
         catch { }

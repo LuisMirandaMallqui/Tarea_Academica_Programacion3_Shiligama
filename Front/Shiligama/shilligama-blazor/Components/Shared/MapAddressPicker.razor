@@ -13,8 +13,8 @@
             <!-- Cabecera -->
             <div class="d-flex align-items-center justify-content-between px-4 py-3"
                  style="border-bottom:1px solid #e5e7eb;">
-                <h5 class="fw-bold mb-0" style="font-family:'Outfit',sans-serif;font-size:1.1rem;color:#111827;">
-                    <i class="fa-solid fa-map-location-dot me-2" style="color:#0D4525;"></i>Seleccionar dirección
+                <h5 class="fw-bold mb-0" style="font-size:1.1rem;color:#111827;">
+                    <i class="fa-solid fa-map-location-dot me-2" style="color:#1A6B3C;"></i>Seleccionar dirección
                 </h5>
                 <button type="button" @onclick="CloseAsync"
                         style="background:none;border:none;font-size:1.3rem;color:#6b7280;cursor:pointer;line-height:1;">
@@ -44,7 +44,7 @@
                 {
                     <div class="d-flex align-items-start gap-2 mb-3 p-2"
                          style="background:#f0fdf4;border-radius:8px;border:1px solid #bbf7d0;">
-                        <i class="fa-solid fa-location-dot mt-1" style="color:#0D4525;flex-shrink:0;"></i>
+                        <i class="fa-solid fa-location-dot mt-1" style="color:#1A6B3C;flex-shrink:0;"></i>
                         <span style="font-size:0.85rem;color:#374151;word-break:break-word;">@_pendingAddress</span>
                     </div>
                 }
@@ -62,7 +62,7 @@
                     </button>
                     <button type="button" @onclick="ConfirmAsync"
                             class="btn text-white px-3 py-2 fw-semibold d-flex align-items-center gap-2"
-                            style="background-color:#0D4525;border-radius:8px;font-size:0.9rem;border:none;"
+                            style="background-color:#1A6B3C;border-radius:8px;font-size:0.9rem;border:none;"
                             disabled="@(string.IsNullOrWhiteSpace(_pendingAddress))">
                         <i class="fa-solid fa-check"></i> Confirmar
                     </button>

@@ -1,24 +1,51 @@
 package pe.edu.pucp.operacion.impl;
 
+import pe.edu.pucp.model.enums.ReferenciaNotificacion;
+import pe.edu.pucp.model.enums.TipoNotificacion;
 import pe.edu.pucp.model.operacion.MovimientoInventario;
+import pe.edu.pucp.model.producto.Producto;
+import pe.edu.pucp.notificacion.impl.NotificacionHelper;
 import pe.edu.pucp.operacion.bo.MovimientoInventarioBO;
 import pe.edu.pucp.persistance.dao.operacion.Impl.MovimientoInventarioDaoImpl;
 import pe.edu.pucp.persistance.dao.operacion.dao.MovimientoInventarioDao;
+import pe.edu.pucp.persistance.dao.producto.Impl.ProductoDaoImpl;
+import pe.edu.pucp.persistance.dao.producto.dao.ProductoDao;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class MovimientoInventarioBoImpl implements MovimientoInventarioBO {
     private final MovimientoInventarioDao daoMovimiento;
+    private final ProductoDao daoProducto;
 
     public MovimientoInventarioBoImpl() {
         this.daoMovimiento = new MovimientoInventarioDaoImpl();
+        this.daoProducto = new ProductoDaoImpl();
     }
 
     @Override
     public int insertar(MovimientoInventario mov) throws Exception {
         validar(mov, false);
-        return daoMovimiento.insertar(mov);
+        int idMovimiento = daoMovimiento.insertar(mov);
+
+        // Despues de registrar el movimiento, el SP ya actualizo producto.STOCK.
+        // Si el stock resultante quedo en o por debajo del minimo, se notifica
+        // a los administradores (broadcast: ID_DESTINATARIO = NULL).
+        try {
+            Producto producto = daoProducto.buscarPorId(mov.getIdProducto());
+            if (producto != null && producto.getStock() <= producto.getStockMinimo()) {
+                NotificacionHelper.notificarBroadcast(
+                        "Stock bajo: " + producto.getNombre(),
+                        "El producto \"" + producto.getNombre() + "\" tiene " + producto.getStock()
+                                + " unidades (mínimo " + producto.getStockMinimo() + ").",
+                        TipoNotificacion.STOCK_BAJO,
+                        ReferenciaNotificacion.PRODUCTO, producto.getIdProducto());
+            }
+        } catch (Exception ex) {
+            System.err.println("[MovimientoInventarioBoImpl] Error al evaluar stock bajo: " + ex.getMessage());
+        }
+
+        return idMovimiento;
     }
 
     @Override

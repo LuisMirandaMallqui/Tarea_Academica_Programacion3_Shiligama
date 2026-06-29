@@ -5,7 +5,7 @@
 <PageTitle>Resultado del pago – Shiligama</PageTitle>
 
 <div class="container py-5 text-center" style="max-width:480px;">
-    @if (_cargando)
+    @if (_loading)
     {
         <div class="spinner-border text-primary mb-3" role="status"></div>
         <p class="text-muted-foreground">Verificando el estado de tu pago...</p>
@@ -43,7 +43,7 @@
         </p>
     }
 
-    @if (!_cargando)
+    @if (!_loading)
     {
         <div class="d-flex gap-2 justify-content-center mt-4">
             <a href="/mis-pedidos" class="btn btn-primary px-4" style="border-radius:var(--radius);">Mis pedidos</a>
@@ -61,7 +61,7 @@
     [SupplyParameterFromQuery(Name = "status")]
     public string? StatusParam { get; set; }
 
-    private bool _cargando = true;
+    private bool _loading = true;
     private string? _estado;   // AUTORIZADO | RECHAZADO | CANCELADO | null
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -91,7 +91,7 @@
             _estado = info?.Estado;
         }
 
-        _cargando = false;
+        _loading = false;
         StateHasChanged();
     }
 }

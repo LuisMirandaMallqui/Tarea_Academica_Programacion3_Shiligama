@@ -13,7 +13,7 @@ window.chartHelper = {
     const ctx = canvas.getContext('2d');
     
     // Forest green theme colors
-    const primaryColor = '#0D4525';
+    const primaryColor = '#1A6B3C';
     
     this.charts[canvasId] = new Chart(ctx, {
       type: 'line',
@@ -23,7 +23,7 @@ window.chartHelper = {
           label: 'Ventas',
           data: data,
           borderColor: primaryColor,
-          backgroundColor: 'rgba(13, 69, 37, 0.08)',
+          backgroundColor: 'rgba(26, 107, 60, 0.08)',
           borderWidth: 3,
           pointBackgroundColor: primaryColor,
           pointBorderColor: '#ffffff',
@@ -105,7 +105,7 @@ window.chartHelper = {
           {
             label: 'Presencial',
             data: presencialData,
-            backgroundColor: '#0D4525',
+            backgroundColor: '#1A6B3C',
             borderRadius: 4,
             borderSkipped: false
           },

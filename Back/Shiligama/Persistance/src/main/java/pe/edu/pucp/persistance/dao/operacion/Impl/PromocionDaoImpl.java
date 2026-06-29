@@ -28,6 +28,7 @@ public class PromocionDaoImpl implements PromocionDao {
         parametrosEntrada.put(7, Timestamp.valueOf(promocion.getFechaFin()));
         parametrosEntrada.put(8, promocion.getCondiciones());
         parametrosEntrada.put(9, promocion.isMostrarEnCarrusel() ? 1 : 0);
+        parametrosEntrada.put(10, promocion.getColorCarrusel() != null ? promocion.getColorCarrusel() : "#0D4525");
 
         DBManager.getInstance().ejecutarProcedimiento(
                 "INSERTAR_PROMOCION", parametrosEntrada, parametrosSalida);
@@ -49,6 +50,7 @@ public class PromocionDaoImpl implements PromocionDao {
         parametrosEntrada.put(8, promocion.getCondiciones());
         parametrosEntrada.put(9, promocion.isActivo() ? 1 : 0);
         parametrosEntrada.put(10, promocion.isMostrarEnCarrusel() ? 1 : 0);
+        parametrosEntrada.put(11, promocion.getColorCarrusel() != null ? promocion.getColorCarrusel() : "#0D4525");
 
         return DBManager.getInstance().ejecutarProcedimiento(
                 "MODIFICAR_PROMOCION", parametrosEntrada, null);
@@ -210,6 +212,7 @@ public class PromocionDaoImpl implements PromocionDao {
         p.setCondiciones(rs.getString("condiciones"));
         p.setActivo(rs.getBoolean("activo"));
         p.setMostrarEnCarrusel(rs.getBoolean("mostrar_en_carrusel"));
+        p.setColorCarrusel(rs.getString("color_carrusel"));
         return p;
     }
 }

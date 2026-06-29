@@ -14,6 +14,7 @@ public class Promocion
     public string? Condiciones    { get; set; }
     public bool    Activo              { get; set; } = true;
     public bool    MostrarEnCarrusel  { get; set; } = false;
+    public string  ColorCarrusel      { get; set; } = "#1A6B3C";
 
     // IDs de productos vinculados (tabla promocion_producto). Se gestiona en el
     // cliente; la persistencia se hace vía PromocionService.Asociar/Desasociar.

@@ -12,7 +12,7 @@
         <!-- Header -->
         <div class="d-flex align-items-center justify-content-between mb-4">
             <div>
-                <h1 class="fs-3 fw-bold text-foreground mb-0" style="font-family:'Outfit',sans-serif;">Registrar Venta</h1>
+                <h1 class="fs-3 fw-bold text-foreground mb-0">Registrar Venta</h1>
                 <p class="text-muted-foreground small mt-1 mb-0">Registra una nueva venta presencial</p>
             </div>
             <div class="bg-white border border-color-default px-4 py-2 fw-bold text-foreground d-flex align-items-center"
@@ -241,7 +241,7 @@
                     <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mb-3 shadow-sm" style="width:60px;height:60px;color:#064420;">
                         <Icons Name="Check" style="width:30px;height:30px;" />
                     </div>
-                    <h4 class="fw-bold mb-1" style="font-family:'Outfit',sans-serif;">¡Comprobante Generado!</h4>
+                    <h4 class="fw-bold mb-1">¡Comprobante Generado!</h4>
                     <p class="mb-0 opacity-75 small">La boleta electrónica ha sido aceptada por SUNAT</p>
                 </div>
                 
@@ -428,9 +428,15 @@
         color: #ffffff;
     }
     .payment-method-btn:hover:not(.active) {
-        background-color: #f0f8f3;
+        background-color: #e8f5e9;
         border-color: #064420;
         color: #064420;
+    }
+    :root.dark .payment-method-btn,
+    .dark .payment-method-btn {
+        background-color: var(--card);
+        border-color: var(--border);
+        color: var(--foreground);
     }
 </style>
 

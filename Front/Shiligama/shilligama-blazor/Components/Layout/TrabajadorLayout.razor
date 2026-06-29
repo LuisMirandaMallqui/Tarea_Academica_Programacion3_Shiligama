@@ -1,6 +1,7 @@
 @inherits LayoutComponentBase
 @inject AuthService Auth
 @inject NavigationManager Navigation
+@inject NotificacionService NotificacionSvc
 
 <RoleGate RequiredRole="trabajador">
 <div class="d-flex flex-column min-vh-100 bg-background text-foreground">
@@ -26,7 +27,7 @@
 
         <nav class="flex-grow-1 sidebar-nav-container overflow-y-auto">
             <a href="/trabajador"
-               class="sidebar-link-formal @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/perfil") ? "active" : "")">
+               class="sidebar-link-formal @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/perfil") && !IsActive("/trabajador/notificaciones") ? "active" : "")">
                 <i class="fas fa-clipboard-list"></i> Pedidos Clientes
             </a>
             <a href="/trabajador/registrar-venta"
@@ -78,7 +79,7 @@
             </div>
             <nav class="sidebar-nav-container overflow-y-auto flex-grow-1">
                 <a href="/trabajador" @onclick="ToggleMobileSidebar"
-                   class="sidebar-link-formal @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/perfil") ? "active" : "")">
+                   class="sidebar-link-formal @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/perfil") && !IsActive("/trabajador/notificaciones") ? "active" : "")">
                     <i class="fas fa-clipboard-list"></i> Pedidos Clientes
                 </a>
                 <a href="/trabajador/registrar-venta" @onclick="ToggleMobileSidebar"
@@ -116,10 +117,21 @@
             <div class="d-flex align-items-center justify-content-between gap-3">
                 <div class="d-lg-none" style="width:48px;"></div>
                 <div class="flex-grow-1 ms-2">
-                    <span class="h5 m-0 fw-bold text-foreground" style="font-family:'Outfit',sans-serif;">@HeaderTitle</span>
+                    <span class="h5 m-0 fw-bold text-foreground topbar-title">@HeaderTitle</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <ThemeSelector />
+
+                    <!-- Notifications Link -->
+                    <a href="/trabajador/notificaciones" class="btn btn-ghost p-2 position-relative text-foreground" style="border-radius: var(--radius);" title="Notificaciones">
+                        <i class="fas fa-bell @(_unreadCount > 0 ? "bell-unread" : "")" style="font-size:1.1rem;"></i>
+                        @if (_unreadCount > 0)
+                        {
+                            <span class="position-absolute badge bg-danger rounded-circle d-flex align-items-center justify-content-center notification-badge" style="width: 22px; height: 22px; font-size: 0.7rem; font-weight: 700; top: -4px; right: -8px; padding: 0; border: 2px solid var(--card);">
+                                @(_unreadCount > 99 ? "99+" : _unreadCount.ToString())
+                            </span>
+                        }
+                    </a>
 
                     <!-- Dropdown usuario -->
                     <div class="position-relative">
@@ -169,14 +181,17 @@
     .sidebar-brand-container { padding: 1.75rem 1.5rem 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
     .sidebar-logo-box { width: 48px; height: 48px; background: rgba(255,255,255,0.08); border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .sidebar-logo-icon { font-size: 1.35rem; color: #fff; }
-    .sidebar-brand-title { font-family: 'Outfit', sans-serif; font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0; line-height: 1.2; }
+    .sidebar-brand-title { font-size: 1.35rem; font-weight: 700; color: #fff; margin: 0; line-height: 1.2; }
     .sidebar-brand-subtitle { font-size: 0.78rem; color: rgba(255,255,255,0.6); margin: 0; }
 
     .sidebar-nav-container { padding: 1.5rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
-    .sidebar-link-formal { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1.25rem; border-radius: 0.75rem; text-decoration: none; color: rgba(255,255,255,0.75); font-weight: 500; font-size: 0.95rem; transition: all 0.2s ease; }
-    .sidebar-link-formal i { font-size: 1.1rem; width: 22px; text-align: center; }
-    .sidebar-link-formal:hover { background-color: rgba(255,255,255,0.06); color: #fff; }
-    .sidebar-link-formal.active { background-color: rgba(255,255,255,0.1) !important; color: #fff !important; font-weight: 600; }
+    .sidebar-link-formal { display: flex; align-items: center; gap: 1rem; padding: 0.85rem 1.25rem; border-radius: 0.75rem; text-decoration: none; color: rgba(255,255,255,0.75); font-weight: 500; font-size: 0.95rem; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; overflow: hidden; }
+    .sidebar-link-formal i { font-size: 1.1rem; width: 22px; text-align: center; transition: transform 0.25s ease; }
+    .sidebar-link-formal:hover { background-color: rgba(255,255,255,0.12); color: #fff; transform: translateX(4px); }
+    .sidebar-link-formal:hover i { transform: scale(1.15); }
+    .sidebar-link-formal.active { background-color: rgba(255,255,255,0.15) !important; color: #fff !important; font-weight: 600; }
+    .sidebar-link-formal::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: #fff; border-radius: 0 2px 2px 0; transform: scaleY(0); transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 0 8px rgba(255,255,255,0.3); }
+    .sidebar-link-formal.active::before { transform: scaleY(1); }
 
     .sidebar-footer-container { padding: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; flex-direction: column; gap: 1.25rem; }
     .sidebar-profile-info { display: flex; align-items: center; gap: 1rem; color: #fff; }
@@ -198,6 +213,19 @@
 @code {
     private bool _isMobileSidebarOpen = false;
     private bool _isDropdownOpen = false;
+    private int _unreadCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _unreadCount = await NotificacionSvc.ContarNoLeidasAsync(Auth.CurrentUser?.Id ?? 0);
+        }
+        catch
+        {
+            _unreadCount = 0;
+        }
+    }
 
     private void ToggleMobileSidebar() => _isMobileSidebarOpen = !_isMobileSidebarOpen;
     private void ToggleDropdown()      => _isDropdownOpen = !_isDropdownOpen;
@@ -226,6 +254,7 @@
             if (rel.Contains("productos"))        return "Catálogo de Productos";
             if (rel.Contains("registrar-venta"))  return "Registrar Venta (POS)";
             if (rel.Contains("devoluciones"))      return "Mis Devoluciones";
+            if (rel.Contains("notificaciones"))    return "Notificaciones";
             if (rel.Contains("perfil"))            return "Mi Perfil";
             return "Pedidos Clientes";
         }

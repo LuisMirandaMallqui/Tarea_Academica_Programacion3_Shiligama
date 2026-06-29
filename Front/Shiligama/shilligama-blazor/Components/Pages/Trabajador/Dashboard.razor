@@ -1,4 +1,14 @@
 @page "/trabajador"
 @layout TrabajadorLayout
 
-<PedidosCardList ShowKpis="true" ActiveOnly="true" />
+<!-- Header -->
+<div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+    <div>
+        <h1 class="fs-4 fw-bold text-foreground mb-0">Mi Panel</h1>
+        <p class="text-muted-foreground small mt-1 mb-0">Vista general de tu día</p>
+    </div>
+</div>
+
+<div class="mt-4">
+    <PedidosCardList ShowKpis="true" ActiveOnly="true" />
+</div>

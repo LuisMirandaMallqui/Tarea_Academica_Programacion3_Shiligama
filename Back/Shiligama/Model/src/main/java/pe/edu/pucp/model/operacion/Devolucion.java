@@ -9,6 +9,7 @@ import jakarta.xml.bind.annotation.XmlElement;
 import jakarta.xml.bind.annotation.XmlType;
 import jakarta.json.bind.annotation.JsonbProperty;
 import jakarta.json.bind.annotation.JsonbDateFormat;
+import pe.edu.pucp.model.enums.TipoDevolucion;
 
 /**
  * Clase que representa una Devolución en el sistema.
@@ -40,7 +41,10 @@ public class Devolucion {
     private int cantidad;
     @XmlElement(name = "motivo")
     @JsonbProperty("motivo")
-    private String motivo;
+    private TipoDevolucion motivo;
+    @XmlElement(name = "motivoDetalle")
+    @JsonbProperty("motivoDetalle")
+    private String motivoDetalle;
     @XmlElement(name = "observaciones")
     @JsonbProperty("observaciones")
     private String observaciones;
@@ -61,14 +65,15 @@ public class Devolucion {
     public Devolucion() {}
 
     public Devolucion(int idDevolucion, int idProducto, int idUsuarioRegistra,
-                      String estadoDevolucion, int cantidad, String motivo,
-                      LocalDateTime fechaHora, boolean activo) {
+                      String estadoDevolucion, int cantidad, TipoDevolucion motivo,
+                      String motivoDetalle, LocalDateTime fechaHora, boolean activo) {
         this.idDevolucion = idDevolucion;
         this.idProducto = idProducto;
         this.idUsuarioRegistra = idUsuarioRegistra;
         this.estadoDevolucion = estadoDevolucion;
         this.cantidad = cantidad;
         this.motivo = motivo;
+        this.motivoDetalle = motivoDetalle;
         this.fechaHora = fechaHora;
         this.activo = activo;
     }
@@ -100,8 +105,11 @@ public class Devolucion {
     public int getCantidad() { return cantidad; }
     public void setCantidad(int cantidad) { this.cantidad = cantidad; }
 
-    public String getMotivo() { return motivo; }
-    public void setMotivo(String motivo) { this.motivo = motivo; }
+    public TipoDevolucion getMotivo() { return motivo; }
+    public void setMotivo(TipoDevolucion motivo) { this.motivo = motivo; }
+
+    public String getMotivoDetalle() { return motivoDetalle; }
+    public void setMotivoDetalle(String motivoDetalle) { this.motivoDetalle = motivoDetalle; }
 
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
@@ -128,6 +136,7 @@ public class Devolucion {
                 ", estado='" + estadoDevolucion + '\'' +
                 ", cantidad=" + cantidad +
                 ", motivo='" + motivo + '\'' +
+                ", motivoDetalle='" + motivoDetalle + '\'' +
                 ", activo=" + activo +
                 ", detallesCount=" + (detalles != null ? detalles.size() : 0) +
                 '}';
