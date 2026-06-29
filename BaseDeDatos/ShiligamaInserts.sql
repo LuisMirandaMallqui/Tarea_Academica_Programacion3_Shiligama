@@ -52,43 +52,43 @@ INSERT INTO administrador(USUARIO_ID) VALUES(2);
 -- Trabajadores  (contraseña: vendedor1 → SHA-256)
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('8ef6624812728dec98e81a11d1ffd3c19d21f95ccc8103a858b8e2de147a788a', 'Juan', 'Pérez Quispe', '23456789', '987654322', 'jperez@shiligama.pe');
-INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO) VALUES(2, 'Cajero', '2025-01-15');
+INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO) VALUES(3, 'Cajero', '2025-01-15');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('8ef6624812728dec98e81a11d1ffd3c19d21f95ccc8103a858b8e2de147a788a', 'María', 'Rodríguez Silva', '34567890', '987654323', 'mrodriguez@shiligama.pe');
-INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO) VALUES(3, 'Almacenero', '2025-03-01');
+INSERT INTO trabajador(USUARIO_ID, CARGO, FECHA_INGRESO) VALUES(4, 'Almacenero', '2025-03-01');
 
 -- Clientes  (contraseña: cliente1 → SHA-256)
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Ana', 'Costa Medina', '45678901', '987654324', 'acosta@gmail.com');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
-VALUES(4, 'Av. Los Pinos 300');
+VALUES(5, 'Av. Los Pinos 300');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Luis', 'Huamán Torres', '56789012', '987654325', 'lhuaman@gmail.com');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
-VALUES(5, 'Jr. Arequipa 150');
+VALUES(6, 'Jr. Arequipa 150');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Pedro', 'Ramos Vega', '67890123', '987654326', 'pramos@gmail.com');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
-VALUES(6, 'Calle Lima 220');
+VALUES(7, 'Calle Lima 220');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Sofía', 'Mendoza Cruz', '78901234', '987654327', 'smendoza@gmail.com');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
-VALUES(7, 'Av. Bolognesi 45');
+VALUES(8, 'Av. Bolognesi 45');
 
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('caae655b2617405e721d27d433331d27adb871354ce6c9be45acc90866df24f4', 'Jorge', 'Villanueva Ríos', '89012345', '987654328', 'jvillanueva@gmail.com');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
-VALUES(8, 'Jr. Cusco 310');
+VALUES(9, 'Jr. Cusco 310');
 
 -- Cliente genérico POS  (contraseña: publico1 → SHA-256)
 INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
 VALUES('da07cde80211427c879b1c0342ae23408e0964dbf7e17d40f88b06947560c14e', 'Publico', 'General', '00000000', '000000000', 'publico@shiligama.local');
 INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
-VALUES(9, 'Sin direccion');
+VALUES(10, 'Sin direccion');
 
 -- Productos de ejemplo (con IMAGEN_URL incluida)
 INSERT INTO producto(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO, STOCK, STOCK_MINIMO, UNIDAD_MEDIDA, CODIGO_BARRAS, IMAGEN_URL) VALUES
@@ -133,13 +133,13 @@ INSERT INTO promocion(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO, FECH
 VALUES('Descuento Lácteos', '15% en productos lácteos', 'PORCENTAJE', 15.00, CURDATE(), CURDATE() + INTERVAL 60 DAY, 'Aplica en leche y yogurt');
 INSERT INTO promocion_producto(PROMOCION_ID, PRODUCTO_ID) VALUES (3, 11), (3, 12);
 -- ================================================================
---    VENTAS DE PRUEBA (trabajador 2 = Juan, trabajador 3 = María)
---    Clientes: 4=Ana, 5=Luis, 6=Pedro
+--    VENTAS DE PRUEBA (trabajador 3 = Juan, trabajador 4 = María)
+--    Clientes: 5=Ana, 6=Luis, 7=Pedro
 -- ================================================================
 
 -- Venta 1: Presencial, Ana, Juan cajero, Yape
 INSERT INTO venta(CLIENTE_ID, TRABAJADOR_ID, METODO_PAGO_ID, FECHA_HORA, MONTO_TOTAL, CANAL_VENTA, ESTADO_VENTA)
-VALUES(4, 2, 2, NOW() - INTERVAL 3 DAY, 39.60, 'PRESENCIAL', 'COMPLETADA');
+VALUES(5, 3, 2, NOW() - INTERVAL 3 DAY, 39.60, 'PRESENCIAL', 'COMPLETADA');
 INSERT INTO detalle_venta(VENTA_ID, PRODUCTO_ID, PRECIO_UNITARIO, CANTIDAD, SUBTOTAL)
 VALUES(1, 1, 22.50, 1, 22.50),
       (1, 5, 7.50,  1, 7.50),
@@ -148,7 +148,7 @@ VALUES(1, 1, 22.50, 1, 22.50),
 
 -- Venta 2: Presencial, Luis, Juan cajero, Efectivo
 INSERT INTO venta(CLIENTE_ID, TRABAJADOR_ID, METODO_PAGO_ID, FECHA_HORA, MONTO_TOTAL, CANAL_VENTA, ESTADO_VENTA)
-VALUES(5, 2, 1, NOW() - INTERVAL 2 DAY, 56.40, 'PRESENCIAL', 'COMPLETADA');
+VALUES(6, 3, 1, NOW() - INTERVAL 2 DAY, 56.40, 'PRESENCIAL', 'COMPLETADA');
 INSERT INTO detalle_venta(VENTA_ID, PRODUCTO_ID, PRECIO_UNITARIO, CANTIDAD, SUBTOTAL)
 VALUES(2, 8, 18.90, 1, 18.90),
       (2, 3, 9.90,  2, 19.80),
@@ -156,7 +156,7 @@ VALUES(2, 8, 18.90, 1, 18.90),
 
 -- Venta 3: Web, Pedro, María almacenera, Tarjeta
 INSERT INTO venta(CLIENTE_ID, TRABAJADOR_ID, METODO_PAGO_ID, FECHA_HORA, MONTO_TOTAL, CANAL_VENTA, ESTADO_VENTA)
-VALUES(6, 3, 4, NOW() - INTERVAL 1 DAY, 34.00, 'WEB', 'COMPLETADA');
+VALUES(7, 4, 4, NOW() - INTERVAL 1 DAY, 34.00, 'WEB', 'COMPLETADA');
 INSERT INTO detalle_venta(VENTA_ID, PRODUCTO_ID, PRECIO_UNITARIO, CANTIDAD, SUBTOTAL)
 VALUES(3, 11, 4.80,  2, 9.60),
       (3, 12, 8.50,  1, 8.50),
@@ -164,7 +164,7 @@ VALUES(3, 11, 4.80,  2, 9.60),
 
 -- Venta 4: Presencial, sin cliente asignado (público general), Efectivo
 INSERT INTO venta(CLIENTE_ID, TRABAJADOR_ID, METODO_PAGO_ID, FECHA_HORA, MONTO_TOTAL, CANAL_VENTA, ESTADO_VENTA)
-VALUES(NULL, 2, 1, NOW() - INTERVAL 5 HOUR, 18.50, 'PRESENCIAL', 'COMPLETADA');
+VALUES(NULL, 3, 1, NOW() - INTERVAL 5 HOUR, 18.50, 'PRESENCIAL', 'COMPLETADA');
 INSERT INTO detalle_venta(VENTA_ID, PRODUCTO_ID, PRECIO_UNITARIO, CANTIDAD, SUBTOTAL)
 VALUES(4, 14, 6.50, 2, 13.00),
       (4, 5,  2.20, 2,  4.40),
@@ -172,7 +172,7 @@ VALUES(4, 14, 6.50, 2, 13.00),
 
 -- Venta 5: Presencial hoy, Yape
 INSERT INTO venta(CLIENTE_ID, TRABAJADOR_ID, METODO_PAGO_ID, FECHA_HORA, MONTO_TOTAL, CANAL_VENTA, ESTADO_VENTA)
-VALUES(4, 2, 3, NOW() - INTERVAL 2 HOUR, 46.70, 'PRESENCIAL', 'COMPLETADA');
+VALUES(5, 3, 3, NOW() - INTERVAL 2 HOUR, 46.70, 'PRESENCIAL', 'COMPLETADA');
 INSERT INTO detalle_venta(VENTA_ID, PRODUCTO_ID, PRECIO_UNITARIO, CANTIDAD, SUBTOTAL)
 VALUES(5, 1, 22.50, 1, 22.50),
       (5, 4, 3.80,  3, 11.40),
@@ -184,7 +184,7 @@ VALUES(5, 1, 22.50, 1, 22.50),
 
 -- Pedido 1: Ana – delivery – pendiente
 INSERT INTO pedido(CLIENTE_ID, FECHA_HORA, MONTO_TOTAL, ESTADO_PEDIDO, DIRECCION_ENTREGA, MODALIDAD_ENTREGA)
-VALUES(4, NOW() - INTERVAL 45 MINUTE, 44.40, 'RECIBIDO', 'Av. Los Pinos 300, San Isidro', 'DELIVERY');
+VALUES(5, NOW() - INTERVAL 45 MINUTE, 44.40, 'RECIBIDO', 'Av. Los Pinos 300, San Isidro', 'DELIVERY');
 INSERT INTO detalle_pedido(PEDIDO_ID, PRODUCTO_ID, CANTIDAD, PRECIO_UNITARIO, SUBTOTAL)
 VALUES(1, 1, 1, 22.50, 22.50),
       (1, 5, 2, 7.50,  15.00),
@@ -192,7 +192,7 @@ VALUES(1, 1, 1, 22.50, 22.50),
 
 -- Pedido 2: Luis – recojo – en proceso
 INSERT INTO pedido(CLIENTE_ID, FECHA_HORA, MONTO_TOTAL, ESTADO_PEDIDO, MODALIDAD_ENTREGA)
-VALUES(5, NOW() - INTERVAL 2 HOUR, 29.60, 'EN_PROCESO', 'RECOJO_TIENDA');
+VALUES(6, NOW() - INTERVAL 2 HOUR, 29.60, 'EN_PROCESO', 'RECOJO_TIENDA');
 INSERT INTO detalle_pedido(PEDIDO_ID, PRODUCTO_ID, CANTIDAD, PRECIO_UNITARIO, SUBTOTAL)
 VALUES(2, 3, 2, 9.90,  19.80),
       (2, 6, 1, 4.20,   4.20),
@@ -201,41 +201,37 @@ VALUES(2, 3, 2, 9.90,  19.80),
 
 -- Pedido 3: Pedro – delivery – recibido
 INSERT INTO pedido(CLIENTE_ID, FECHA_HORA, MONTO_TOTAL, ESTADO_PEDIDO, DIRECCION_ENTREGA, MODALIDAD_ENTREGA)
-VALUES(6, NOW() - INTERVAL 1 DAY, 53.90, 'RECIBIDO', 'Calle Lima 220, Miraflores', 'DELIVERY');
+VALUES(7, NOW() - INTERVAL 1 DAY, 53.90, 'RECIBIDO', 'Calle Lima 220, Miraflores', 'DELIVERY');
 INSERT INTO detalle_pedido(PEDIDO_ID, PRODUCTO_ID, CANTIDAD, PRECIO_UNITARIO, SUBTOTAL)
 VALUES(3, 8, 2, 18.90, 37.80),
       (3, 4, 4, 3.80,  15.20);  -- aprox 53.00
 
 -- Pedido 4: Ana – delivery – recibido hoy (reciente)
 INSERT INTO pedido(CLIENTE_ID, FECHA_HORA, MONTO_TOTAL, ESTADO_PEDIDO, DIRECCION_ENTREGA, MODALIDAD_ENTREGA)
-VALUES(4, NOW() - INTERVAL 15 MINUTE, 25.10, 'RECIBIDO', 'Av. Los Pinos 300, San Isidro', 'DELIVERY');
+VALUES(5, NOW() - INTERVAL 15 MINUTE, 25.10, 'RECIBIDO', 'Av. Los Pinos 300, San Isidro', 'DELIVERY');
 INSERT INTO detalle_pedido(PEDIDO_ID, PRODUCTO_ID, CANTIDAD, PRECIO_UNITARIO, SUBTOTAL)
 VALUES(4, 11, 3, 4.80, 14.40),
       (4, 17, 1, 7.50,  7.50),
       (4, 7,  1, 2.00,  2.00);  -- aprox 23.90
 
--- Pedido 5: Jorge (cliente 8) – recojo – cancelado
+-- Pedido 5: Jorge (cliente 9) – recojo – cancelado
 INSERT INTO pedido(CLIENTE_ID, FECHA_HORA, MONTO_TOTAL, ESTADO_PEDIDO, MODALIDAD_ENTREGA, OBSERVACIONES)
-VALUES(8, NOW() - INTERVAL 3 HOUR, 18.90, 'CANCELADO', 'RECOJO_TIENDA', 'Cliente no recogió en plazo');
+VALUES(9, NOW() - INTERVAL 3 HOUR, 18.90, 'CANCELADO', 'RECOJO_TIENDA', 'Cliente no recogió en plazo');
 INSERT INTO detalle_pedido(PEDIDO_ID, PRODUCTO_ID, CANTIDAD, PRECIO_UNITARIO, SUBTOTAL)
 VALUES(5, 8, 1, 18.90, 18.90);
-
--- ================================================================
---    DEVOLUCIONES DE PRUEBA
--- ================================================================
 
 -- ================================================================
 --    MOVIMIENTOS DE INVENTARIO
 -- ================================================================
 INSERT INTO movimiento_inventario(PRODUCTO_ID, TRABAJADOR_ID, TIPO_MOVIMIENTO, CANTIDAD, STOCK_ANTERIOR, STOCK_RESULTANTE, MOTIVO)
 VALUES
-(1, 2, 'ENTRADA',    20, 30, 50, 'Reabastecimiento semanal'),
-(5, 3, 'ENTRADA',    50, 50, 100,'Compra proveedor Inca Kola'),
-(8, 2, 'SALIDA',     5,  30, 25, 'Venta presencial'),
-(3, 3, 'AJUSTE',     2,  38, 40, 'Corrección de inventario físico'),
-(1, 2, 'DEVOLUCION', 2,  48, 50, 'Producto vencido devuelto al proveedor'),
-(11,3, 'ENTRADA',    20, 40, 60, 'Reabastecimiento leche'),
-(13,2, 'SALIDA',     3,  53, 50, 'Venta online procesada');
+(1, 3, 'ENTRADA',    20, 30, 50, 'Reabastecimiento semanal'),
+(5, 4, 'ENTRADA',    50, 50, 100,'Compra proveedor Inca Kola'),
+(8, 3, 'SALIDA',     5,  30, 25, 'Venta presencial'),
+(3, 4, 'AJUSTE',     2,  38, 40, 'Corrección de inventario físico'),
+(1, 3, 'DEVOLUCION', 2,  48, 50, 'Producto vencido devuelto al proveedor'),
+(11,4, 'ENTRADA',    20, 40, 60, 'Reabastecimiento leche'),
+(13,3, 'SALIDA',     3,  53, 50, 'Venta online procesada');
 
 -- ================================================================
 --    NOTIFICACIONES DE PRUEBA
@@ -275,31 +271,18 @@ INSERT INTO notificacion(TITULO, MENSAJE, TIPO, LEIDA, ID_DESTINATARIO) VALUES
 --    DEVOLUCIONES PRESENCIALES DE PRUEBA
 -- ================================================================
 
-CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 1, 2, 'PENDIENTE', 2, 'Vencido', NOW(), 'Producto vencido hace 3 días');
+CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 1, 3, 'PENDIENTE', 2, 'Vencido', NOW(), 'Producto vencido hace 3 días');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev1, 1, 2);
 
-CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 2, 'PENDIENTE', 1, 'Dañado', NOW(), 'Producto con empaque deteriorado');
+CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 3, 'PENDIENTE', 1, 'Dañado', NOW(), 'Producto con empaque deteriorado');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev2, 3, 1);
 
-CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 4, 2, 'APROBADO', 3, 'Error de pedido', NOW(), 'Cliente indicó que se registró un producto incorrecto');
+CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 4, 3, 'APROBADO', 3, 'Error de pedido', NOW(), 'Cliente indicó que se registró un producto incorrecto');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev3, 5, 3);
 
-CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 5, 2, 'RECHAZADO', 1, 'Dañado', NOW(), 'El daño no corresponde a responsabilidad de la tienda');
+CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 5, 3, 'RECHAZADO', 1, 'Dañado', NOW(), 'El daño no corresponde a responsabilidad de la tienda');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev4, 8, 1);
 
-CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 1, 2, 'APROBADO', 4, 'Vencido', NOW(), 'Producto retirado por fecha vencida');
+CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 1, 3, 'APROBADO', 4, 'Vencido', NOW(), 'Producto retirado por fecha vencida');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev5, 11, 4);
 
--- ================================================================
--- INSERTS DE DE USUARIO GENERAL PARA LA BOLETA
--- ================================================================
-
-INSERT INTO usuario(CONTRASENA, NOMBRES, APELLIDOS, DNI, TELEFONO, CORREO)
-SELECT 'da07cde80211427c879b1c0342ae23408e0964dbf7e17d40f88b06947560c14e', 'Publico', 'General', '00000000', '000000000', 'publico@shiligama.local'
-WHERE NOT EXISTS (SELECT 1 FROM usuario WHERE DNI = '00000000');
-
-INSERT INTO cliente(USUARIO_ID, DIRECCION_ENTREGA)
-SELECT u.USUARIO_ID, 'Sin direccion'
-FROM usuario u
-WHERE u.DNI = '00000000'
-  AND NOT EXISTS (SELECT 1 FROM cliente c WHERE c.USUARIO_ID = u.USUARIO_ID);
