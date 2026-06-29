@@ -1,0 +1,454 @@
+<!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
+<jasperReport name="TopProductos" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="ced95029-b569-4027-895c-af2843a4e088" ignorePagination="true" floatColumnFooter="true" summaryWithPageHeaderAndFooter="true" summaryNewPage="true" titleNewPage="true">
+	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Conexion MySQL"/>
+	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+	<property name="net.sf.jasperreports.print.create.bookmarks" value="true"/>
+	<style name="Title" fontName="Times New Roman" fontSize="50.0" bold="true"/>
+	<style name="SubTitle" forecolor="#016836" fontName="Arial" fontSize="18.0"/>
+	<style name="Column header" forecolor="#02B35D" fontName="Arial" fontSize="12.0" bold="true"/>
+	<style name="Detail" fontName="Arial" fontSize="12.0"/>
+	<style name="Row" mode="Transparent">
+		<conditionalStyle backcolor="#016A38">
+			<conditionExpression><![CDATA[$V{REPORT_COUNT}%2 == 0]]></conditionExpression>
+		</conditionalStyle>
+	</style>
+	<style name="Table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_CH" mode="Opaque" backcolor="#016B38">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="Table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.5" lineColor="#000000"/>
+			<leftPen lineWidth="0.5" lineColor="#000000"/>
+			<bottomPen lineWidth="0.5" lineColor="#000000"/>
+			<rightPen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<dataset name="Dataset1" uuid="4e5436d0-6c00-45ac-925d-7ce28f61f8b1">
+		<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Conexion MySQL"/>
+		<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
+		<parameter name="limite" class="java.lang.Integer"/>
+		<parameter name="fechaFin" class="java.lang.String"/>
+		<parameter name="fechaInicio" class="java.lang.String"/>
+		<query language="sql"><![CDATA[SELECT
+    p.NOMBRE                                        AS productoNombre,
+    cat.NOMBRE                                      AS categoriaNombre,
+    p.CODIGO_BARRAS                                 AS codigoBarras,
+    SUM(CASE WHEN v.CANAL_VENTA = 'PRESENCIAL'
+        THEN dv.CANTIDAD ELSE 0 END)                AS unidadesPresencial,
+    SUM(CASE WHEN v.CANAL_VENTA = 'PRESENCIAL'
+        THEN dv.SUBTOTAL ELSE 0 END)                AS ingresosPresencial,
+    SUM(CASE WHEN v.CANAL_VENTA = 'WEB'
+        THEN dv.CANTIDAD ELSE 0 END)                AS unidadesWeb,
+    SUM(CASE WHEN v.CANAL_VENTA = 'WEB'
+        THEN dv.SUBTOTAL ELSE 0 END)                AS ingresosWeb,
+    SUM(dv.CANTIDAD)                                AS totalUnidades,
+    SUM(dv.SUBTOTAL)                                AS totalIngresos,
+    ROUND(
+        SUM(dv.SUBTOTAL) * 100.0 /
+        NULLIF((
+            SELECT SUM(MONTO_TOTAL)
+            FROM venta
+            WHERE FECHA_HORA BETWEEN STR_TO_DATE($P{fechaInicio}, '%Y-%m-%d') 
+                                 AND STR_TO_DATE($P{fechaFin}, '%Y-%m-%d')
+              AND ESTADO_VENTA = 'COMPLETADA'
+              AND ACTIVO = 1
+        ), 0)
+    , 2)                                            AS porcentajeVentas,
+    p.STOCK                                         AS stockActual
+FROM detalle_venta dv
+JOIN venta v        ON dv.VENTA_ID    = v.VENTA_ID
+JOIN producto p     ON dv.PRODUCTO_ID = p.PRODUCTO_ID
+JOIN categoria cat  ON p.CATEGORIA_ID = cat.CATEGORIA_ID
+WHERE v.FECHA_HORA BETWEEN STR_TO_DATE($P{fechaInicio}, '%Y-%m-%d') 
+                       AND STR_TO_DATE($P{fechaFin}, '%Y-%m-%d')
+  AND v.ESTADO_VENTA = 'COMPLETADA'
+  AND v.ACTIVO = 1
+GROUP BY p.PRODUCTO_ID, p.NOMBRE, cat.NOMBRE, p.CODIGO_BARRAS, p.STOCK
+ORDER BY totalIngresos DESC
+LIMIT 10;]]></query>
+		<field name="productoNombre" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="NOMBRE"/>
+			<property name="com.jaspersoft.studio.field.label" value="productoNombre"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="producto"/>
+		</field>
+		<field name="categoriaNombre" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="NOMBRE"/>
+			<property name="com.jaspersoft.studio.field.label" value="categoriaNombre"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="categoria"/>
+		</field>
+		<field name="codigoBarras" class="java.lang.String">
+			<property name="com.jaspersoft.studio.field.name" value="CODIGO_BARRAS"/>
+			<property name="com.jaspersoft.studio.field.label" value="codigoBarras"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="producto"/>
+		</field>
+		<field name="unidadesPresencial" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="unidadesPresencial"/>
+			<property name="com.jaspersoft.studio.field.label" value="unidadesPresencial"/>
+		</field>
+		<field name="ingresosPresencial" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="ingresosPresencial"/>
+			<property name="com.jaspersoft.studio.field.label" value="ingresosPresencial"/>
+		</field>
+		<field name="unidadesWeb" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="unidadesWeb"/>
+			<property name="com.jaspersoft.studio.field.label" value="unidadesWeb"/>
+		</field>
+		<field name="ingresosWeb" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="ingresosWeb"/>
+			<property name="com.jaspersoft.studio.field.label" value="ingresosWeb"/>
+		</field>
+		<field name="totalUnidades" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="totalUnidades"/>
+			<property name="com.jaspersoft.studio.field.label" value="totalUnidades"/>
+		</field>
+		<field name="totalIngresos" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="totalIngresos"/>
+			<property name="com.jaspersoft.studio.field.label" value="totalIngresos"/>
+		</field>
+		<field name="porcentajeVentas" class="java.math.BigDecimal">
+			<property name="com.jaspersoft.studio.field.name" value="porcentajeVentas"/>
+			<property name="com.jaspersoft.studio.field.label" value="porcentajeVentas"/>
+		</field>
+		<field name="stockActual" class="java.lang.Integer">
+			<property name="com.jaspersoft.studio.field.name" value="STOCK"/>
+			<property name="com.jaspersoft.studio.field.label" value="stockActual"/>
+			<property name="com.jaspersoft.studio.field.tree.path" value="producto"/>
+		</field>
+	</dataset>
+	<parameter name="SumaPresencial" class="java.lang.Double">
+		<description><![CDATA[Total venta presencial]]></description>
+	</parameter>
+	<parameter name="SumaWeb" class="java.lang.Double">
+		<description><![CDATA[Total venta web]]></description>
+	</parameter>
+	<parameter name="VentaTotal" class="java.lang.Double"/>
+	<parameter name="Logo" class="java.awt.Image"/>
+	<parameter name="fechaInicio" class="java.lang.String"/>
+	<parameter name="fechaFin" class="java.lang.String"/>
+	<parameter name="limite" class="java.lang.Integer">
+		<defaultValueExpression><![CDATA[10]]></defaultValueExpression>
+	</parameter>
+	<query language="sql"><![CDATA[SELECT
+    p.NOMBRE                                        AS productoNombre,
+    cat.NOMBRE                                      AS categoriaNombre,
+    p.CODIGO_BARRAS                                 AS codigoBarras,
+    SUM(CASE WHEN v.CANAL_VENTA = 'PRESENCIAL'
+        THEN dv.CANTIDAD ELSE 0 END)                AS unidadesPresencial,
+    SUM(CASE WHEN v.CANAL_VENTA = 'PRESENCIAL'
+        THEN dv.SUBTOTAL ELSE 0 END)                AS ingresosPresencial,
+    SUM(CASE WHEN v.CANAL_VENTA = 'WEB'
+        THEN dv.CANTIDAD ELSE 0 END)                AS unidadesWeb,
+    SUM(CASE WHEN v.CANAL_VENTA = 'WEB'
+        THEN dv.SUBTOTAL ELSE 0 END)                AS ingresosWeb,
+    SUM(dv.CANTIDAD)                                AS totalUnidades,
+    SUM(dv.SUBTOTAL)                                AS totalIngresos,
+    ROUND(
+        SUM(dv.SUBTOTAL) * 100.0 /
+        NULLIF((
+            SELECT SUM(MONTO_TOTAL)
+            FROM venta
+            WHERE FECHA_HORA BETWEEN STR_TO_DATE($P{fechaInicio}, '%Y-%m-%d') 
+                                 AND STR_TO_DATE($P{fechaFin}, '%Y-%m-%d')
+              AND ESTADO_VENTA = 'COMPLETADA'
+              AND ACTIVO = 1
+        ), 0)
+    , 2)                                            AS porcentajeVentas,
+    p.STOCK                                         AS stockActual
+FROM detalle_venta dv
+JOIN venta v        ON dv.VENTA_ID    = v.VENTA_ID
+JOIN producto p     ON dv.PRODUCTO_ID = p.PRODUCTO_ID
+JOIN categoria cat  ON p.CATEGORIA_ID = cat.CATEGORIA_ID
+WHERE v.FECHA_HORA BETWEEN STR_TO_DATE($P{fechaInicio}, '%Y-%m-%d') 
+                       AND STR_TO_DATE($P{fechaFin}, '%Y-%m-%d')
+  AND v.ESTADO_VENTA = 'COMPLETADA'
+  AND v.ACTIVO = 1
+GROUP BY p.PRODUCTO_ID, p.NOMBRE, cat.NOMBRE, p.CODIGO_BARRAS, p.STOCK
+ORDER BY totalIngresos DESC
+LIMIT 10;]]></query>
+	<field name="productoNombre" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NOMBRE"/>
+		<property name="com.jaspersoft.studio.field.label" value="productoNombre"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="producto"/>
+	</field>
+	<field name="categoriaNombre" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="NOMBRE"/>
+		<property name="com.jaspersoft.studio.field.label" value="categoriaNombre"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="categoria"/>
+	</field>
+	<field name="codigoBarras" class="java.lang.String">
+		<property name="com.jaspersoft.studio.field.name" value="CODIGO_BARRAS"/>
+		<property name="com.jaspersoft.studio.field.label" value="codigoBarras"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="producto"/>
+	</field>
+	<field name="unidadesPresencial" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="unidadesPresencial"/>
+		<property name="com.jaspersoft.studio.field.label" value="unidadesPresencial"/>
+	</field>
+	<field name="ingresosPresencial" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="ingresosPresencial"/>
+		<property name="com.jaspersoft.studio.field.label" value="ingresosPresencial"/>
+	</field>
+	<field name="unidadesWeb" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="unidadesWeb"/>
+		<property name="com.jaspersoft.studio.field.label" value="unidadesWeb"/>
+	</field>
+	<field name="ingresosWeb" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="ingresosWeb"/>
+		<property name="com.jaspersoft.studio.field.label" value="ingresosWeb"/>
+	</field>
+	<field name="totalUnidades" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="totalUnidades"/>
+		<property name="com.jaspersoft.studio.field.label" value="totalUnidades"/>
+	</field>
+	<field name="totalIngresos" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="totalIngresos"/>
+		<property name="com.jaspersoft.studio.field.label" value="totalIngresos"/>
+	</field>
+	<field name="porcentajeVentas" class="java.math.BigDecimal">
+		<property name="com.jaspersoft.studio.field.name" value="porcentajeVentas"/>
+		<property name="com.jaspersoft.studio.field.label" value="porcentajeVentas"/>
+	</field>
+	<field name="stockActual" class="java.lang.Integer">
+		<property name="com.jaspersoft.studio.field.name" value="STOCK"/>
+		<property name="com.jaspersoft.studio.field.label" value="stockActual"/>
+		<property name="com.jaspersoft.studio.field.tree.path" value="producto"/>
+	</field>
+	<background splitType="Stretch"/>
+	<title height="360" splitType="Stretch">
+		<element kind="staticText" uuid="1a652692-054a-40f3-ade5-68d8da36626d" x="110" y="0" width="190" height="62" fontSize="26.0" vTextAlign="Middle" style="Title">
+			<text><![CDATA[SHILIGAMA]]></text>
+		</element>
+		<element kind="staticText" uuid="88d4231e-f014-4b0d-b871-1737ba63a1ae" x="108" y="62" width="192" height="22" fontName="Times New Roman" fontSize="13.0" style="SubTitle">
+			<text><![CDATA[Sistema de Gestión y Venta Online]]></text>
+		</element>
+		<element kind="staticText" uuid="5442ed4d-f014-4bc0-8a8e-e6a4972e32e4" x="300" y="0" width="232" height="62" fontSize="16.0" vTextAlign="Middle" style="Title">
+			<text><![CDATA[PRODUCTOS MÁS VENDIDOS]]></text>
+		</element>
+		<element kind="staticText" uuid="d30946bd-48f0-41f5-ba4b-9192d7ab4856" x="300" y="58" width="70" height="30" fontSize="16.0">
+			<text><![CDATA[Periodo: ]]></text>
+		</element>
+		<element kind="line" uuid="e822f38e-be31-4078-8f04-21f8a297d8d0" x="-18" y="94" width="595" height="1" backcolor="#DE413E">
+			<pen lineWidth="3.0"/>
+		</element>
+		<element kind="staticText" uuid="499f41ae-924e-4fb2-b681-fb4dff6a0c28" x="1" y="103" width="196" height="30" fontSize="16.0" bold="true">
+			<text><![CDATA[RESUMEN DE VENTA: ]]></text>
+		</element>
+		<element kind="staticText" uuid="8e2f0e98-fb56-4557-9264-747d5a03ff4c" x="70" y="139" width="86" height="30" fontSize="16.0">
+			<text><![CDATA[Presencial: ]]></text>
+		</element>
+		<element kind="staticText" uuid="37ff177d-05df-456c-a41b-ab551eaea576" x="270" y="139" width="50" height="30" fontSize="16.0">
+			<text><![CDATA[Web: ]]></text>
+		</element>
+		<element kind="staticText" uuid="030c58fa-2d99-4699-af2c-4a152a5439f6" x="410" y="139" width="50" height="30" fontSize="16.0">
+			<text><![CDATA[Total:]]></text>
+		</element>
+		<element kind="textField" uuid="12f2b0ce-7dcf-4b9a-91e9-d41f5e5f8930" x="160" y="139" width="90" height="30" fontSize="16.0">
+			<expression><![CDATA["S/. "+$P{SumaPresencial}]]></expression>
+		</element>
+		<element kind="textField" uuid="1bd385a1-9f76-4c24-bfd7-ef481f6c7460" x="320" y="139" width="90" height="30" fontSize="16.0">
+			<expression><![CDATA["S/. "+$P{SumaWeb}]]></expression>
+		</element>
+		<element kind="textField" uuid="1f13aa2e-9de7-4da8-8928-bbf82de286c7" x="461" y="139" width="100" height="30" fontSize="16.0">
+			<expression><![CDATA["S/. "+$P{VentaTotal}]]></expression>
+		</element>
+		<element kind="image" uuid="43704dc3-98ea-4c58-98d3-98798d41f781" x="8" y="0" width="100" height="80" linkTarget="Self">
+			<expression><![CDATA[$P{Logo}]]></expression>
+		</element>
+		<element kind="textField" uuid="d4a2a159-e563-4177-9a89-6eb09919faa2" x="370" y="58" width="100" height="30" fontSize="16.0">
+			<expression><![CDATA[$P{fechaInicio}]]></expression>
+		</element>
+		<element kind="textField" uuid="2cccbbc2-5eef-492a-b650-5210754e4021" x="473" y="58" width="100" height="30" fontSize="16.0">
+			<expression><![CDATA[$P{fechaFin}]]></expression>
+		</element>
+		<element kind="line" uuid="bc07293f-2c1f-4763-a5c2-766c5957c06e" x="-18" y="170" width="595" height="1">
+			<pen lineWidth="3.0"/>
+		</element>
+		<element kind="component" uuid="5bede376-a816-4dc9-9b2d-89083e386e8c" x="-20" y="176" width="594" height="184">
+			<component kind="table" whenNoDataType="AllSectionsNoDetail">
+				<datasetRun uuid="6f733c61-87ed-41a4-ac34-40b62d056b37" subDataset="Dataset1">
+					<connectionExpression><![CDATA[$P{REPORT_CONNECTION}]]></connectionExpression>
+					<parameter name="fechaFin">
+						<expression><![CDATA[$P{fechaFin}]]></expression>
+					</parameter>
+					<parameter name="fechaInicio">
+						<expression><![CDATA[$P{fechaInicio}]]></expression>
+					</parameter>
+					<parameter name="limite">
+						<expression><![CDATA[$P{limite}]]></expression>
+					</parameter>
+				</datasetRun>
+				<tableHeader/>
+				<column kind="single" uuid="2bfe9676-508a-4829-a7aa-1f2e685a3e4b" width="134">
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="856fc8b6-d98b-4c7b-b8b7-fc7e185cca93" x="0" y="0" width="134" height="30" forecolor="#FFFFFF" fontSize="12.0" removeLineWhenBlank="true" hTextAlign="Center" style="Detail">
+							<text><![CDATA[PRODUCTO]]></text>
+							<box style="Detail">
+								<pen lineWidth="3.0"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+						</element>
+					</columnHeader>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="aabd4fcb-a52a-4dfe-ad6d-447a53135721" x="0" y="0" width="134" height="30" hTextAlign="Left">
+							<expression><![CDATA[$F{productoNombre}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column1"/>
+				</column>
+				<column kind="single" uuid="f27222dc-2dca-43de-a7a6-4a59d03dc768" width="99">
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="1dcca9eb-08b3-4b1c-bdb5-707e8502da2a" x="0" y="0" width="99" height="30" forecolor="#FFFFFF" fontSize="12.0" removeLineWhenBlank="true" hTextAlign="Center" style="Detail">
+							<text><![CDATA[CATEGORIA]]></text>
+							<box leftPadding="0" style="Detail">
+								<pen lineWidth="3.0"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+						</element>
+					</columnHeader>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="e97e7d95-d226-49cf-95c9-18da0c4f1c2c" x="0" y="0" width="99" height="30" hTextAlign="Left">
+							<expression><![CDATA[$F{categoriaNombre}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column2"/>
+				</column>
+				<column kind="single" uuid="074003fd-d442-4393-83da-383e9e9db449" width="106">
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="09387700-1f66-4ea9-b5bf-ea23670e5420" positionType="FixRelativeToBottom" stretchType="NoStretch" x="0" y="0" width="106" height="30" forecolor="#FFFFFF" fontSize="12.0" removeLineWhenBlank="true" hTextAlign="Center" style="Detail">
+							<text><![CDATA[PRESENCIAL]]></text>
+							<box leftPadding="0" style="Detail">
+								<pen lineWidth="3.0"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+						</element>
+					</columnHeader>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="a4947f10-0936-49e2-87b1-56c7666f138b" x="0" y="0" width="106" height="30" hTextAlign="Center">
+							<expression><![CDATA[$F{unidadesPresencial}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column3"/>
+				</column>
+				<column kind="single" uuid="4b6f761f-df3f-47a5-8c6a-c7c37e648240" width="121">
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="05a9b4fc-e527-4ca8-acbe-8cafc46f5049" positionType="FixRelativeToBottom" stretchType="NoStretch" x="0" y="0" width="121" height="30" forecolor="#FFFFFF" fontSize="12.0" removeLineWhenBlank="true" hTextAlign="Center" style="Detail">
+							<text><![CDATA[ONLINE]]></text>
+							<box style="Detail">
+								<pen lineWidth="3.0"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+						</element>
+					</columnHeader>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="83dbc272-d772-4ddd-83d1-659fc24c4059" x="0" y="0" width="121" height="30" hTextAlign="Center">
+							<expression><![CDATA[$F{unidadesWeb}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column4"/>
+				</column>
+				<column kind="single" uuid="fe998013-38d6-4bfa-94b2-b846f40fd68f" width="52">
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="6d964a80-db06-4aff-9af2-5aa05772999f" positionType="FixRelativeToBottom" stretchType="NoStretch" x="0" y="0" width="52" height="30" forecolor="#FFFFFF" fontSize="12.0" removeLineWhenBlank="true" hTextAlign="Center" style="Detail">
+							<text><![CDATA[%]]></text>
+							<box style="Detail">
+								<pen lineWidth="3.0"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+						</element>
+					</columnHeader>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="eecf43c3-61ce-41ef-9350-1adcdecb2107" x="0" y="0" width="52" height="30" hTextAlign="Center">
+							<expression><![CDATA[$F{porcentajeVentas}+" %"]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column5"/>
+				</column>
+				<column kind="single" uuid="98784bd6-dbe8-45c9-a557-4b3fa720984a" width="83">
+					<columnHeader height="30" rowSpan="1" style="Table_CH">
+						<element kind="staticText" uuid="e4d1790d-c6d6-40ec-805a-27d51ff615ec" positionType="FixRelativeToBottom" stretchType="NoStretch" x="0" y="0" width="83" height="30" forecolor="#FFFFFF" fontSize="12.0" removeLineWhenBlank="true" hTextAlign="Center" style="Detail">
+							<text><![CDATA[INGRESO]]></text>
+							<box style="Detail">
+								<pen lineWidth="3.0"/>
+								<topPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<leftPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<bottomPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+								<rightPen lineWidth="1.0" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+						</element>
+					</columnHeader>
+					<detailCell height="30" style="Table_TD">
+						<element kind="textField" uuid="2fd6ee05-11ea-4135-9c4d-c8993c40397e" x="0" y="0" width="83" height="30" hTextAlign="Center">
+							<expression><![CDATA["S/."+$F{totalIngresos}]]></expression>
+						</element>
+					</detailCell>
+					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column6"/>
+				</column>
+			</component>
+			<property name="com.jaspersoft.studio.layout" value="com.jaspersoft.studio.editor.layout.VerticalRowLayout"/>
+			<property name="com.jaspersoft.studio.table.style.table_header" value="Table_TH"/>
+			<property name="com.jaspersoft.studio.table.style.column_header" value="Table_CH"/>
+			<property name="com.jaspersoft.studio.table.style.detail" value="Table_TD"/>
+		</element>
+	</title>
+	<pageHeader splitType="Stretch"/>
+	<columnHeader height="218" splitType="Stretch"/>
+	<columnFooter height="56" splitType="Stretch">
+		<element kind="staticText" uuid="8998e161-f408-4a2f-8807-8a48168fca04" x="276" y="26" width="179" height="30" fontSize="16.0">
+			<text><![CDATA[TOTAL GENERAL: ]]></text>
+		</element>
+		<element kind="textField" uuid="cb87cfd8-379d-4430-954e-0665754708d3" x="470" y="26" width="100" height="30" fontSize="16.0">
+			<expression><![CDATA["S/. "+$P{VentaTotal}]]></expression>
+		</element>
+		<element kind="line" uuid="340e7007-2326-4926-9cef-9f61f06b1e13" x="-20" y="20" width="593" height="1">
+			<pen lineWidth="3.0"/>
+		</element>
+	</columnFooter>
+	<pageFooter height="25" splitType="Stretch">
+		<element kind="frame" uuid="183682bc-d976-4756-83e0-6625a3f98ed1" mode="Opaque" x="-21" y="1" width="597" height="24" forecolor="#D0B48E" backcolor="#016B38">
+			<element kind="textField" uuid="0193f9b3-1559-491a-8580-b6988863b6a1" x="533" y="0" width="40" height="20" forecolor="#FFFFFF" fontSize="10.0" evaluationTime="Report" bold="false" vTextAlign="Middle" style="Column header">
+				<expression><![CDATA[" " + $V{PAGE_NUMBER}]]></expression>
+			</element>
+			<element kind="textField" uuid="d00b105e-494b-418b-8ac9-8b1b4824f4f0" x="453" y="0" width="80" height="20" forecolor="#FFFFFF" fontSize="10.0" bold="false" hTextAlign="Right" vTextAlign="Middle" style="Column header">
+				<expression><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></expression>
+			</element>
+			<element kind="textField" uuid="0616f3fe-0354-456f-8911-ec30ec51a5ae" x="22" y="1" width="197" height="20" forecolor="#FFFFFF" fontSize="10.0" pattern="EEEEE dd MMMMM yyyy" bold="false" vTextAlign="Middle" style="Column header">
+				<expression><![CDATA[new java.util.Date()]]></expression>
+			</element>
+			<element kind="line" uuid="ed22bcdb-5cfd-49a9-aaae-b50a872adf6d" x="0" y="1" width="595" height="1">
+				<pen lineWidth="3.0"/>
+			</element>
+		</element>
+	</pageFooter>
+	<summary splitType="Stretch"/>
+</jasperReport>
