@@ -35,10 +35,7 @@
 
     @if (_loading)
     {
-        <div class="text-center py-5 text-muted-foreground">
-            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-            Cargando notificaciones...
-        </div>
+        <LoadingIndicator Text="Cargando notificaciones..." />
     }
     else if (!_notifications.Any())
     {
@@ -63,38 +60,42 @@
 
                     <div class="flex-grow-1">
                         <div class="d-flex align-items-center justify-content-between gap-3">
-                            <h2 class="fs-6 fw-bold text-foreground mb-1">@n.Titulo</h2>
+                            <h2 class="fs-6 fw-bold text-foreground mb-1 notif-title-link"
+                                @onclick="@(() => Ver(n))">
+                                @n.Titulo
+                            </h2>
                             <span class="text-xs text-muted-foreground small flex-shrink-0">
                                 @(n.FechaCreacion?.ToString("dd/MM/yyyy HH:mm") ?? "")
                             </span>
                         </div>
-                        <p class="small text-muted-foreground mb-2">@n.Mensaje</p>
-
-                        <div class="d-flex align-items-center gap-1">
-                            @if (!string.IsNullOrEmpty(n.RutaVerPara("admin")))
-                            {
-                                <button @onclick="@(() => Ver(n))"
-                                        class="btn btn-ghost btn-sm text-foreground d-flex align-items-center justify-content-center p-2"
+                        <div class="d-flex align-items-center justify-content-between gap-3">
+                            <p class="small text-muted-foreground mb-0">@n.Mensaje</p>
+                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                @if (!string.IsNullOrEmpty(n.RutaVerPara("admin")))
+                                {
+                                    <button @onclick="@(() => Ver(n))"
+                                            class="btn btn-ghost btn-sm text-foreground d-flex align-items-center justify-content-center p-2"
+                                            style="border-radius: var(--radius); width: 32px; height: 32px;"
+                                            title="Ver" aria-label="Ver">
+                                        <i class="fa-solid fa-eye" style="font-size: 0.85rem;"></i>
+                                    </button>
+                                }
+                                @if (!n.Leida)
+                                {
+                                    <button @onclick="@(() => MarkAsRead(n.IdNotificacion))"
+                                            class="btn btn-ghost btn-sm text-primary d-flex align-items-center justify-content-center p-2"
+                                            style="border-radius: var(--radius); width: 32px; height: 32px;"
+                                            title="Marcar como revisado" aria-label="Marcar como revisado">
+                                        <i class="fa-solid fa-eye" style="font-size: 0.85rem;"></i>
+                                    </button>
+                                }
+                                <button @onclick="@(() => Delete(n.IdNotificacion))"
+                                        class="btn btn-ghost btn-sm text-danger d-flex align-items-center justify-content-center p-2"
                                         style="border-radius: var(--radius); width: 32px; height: 32px;"
-                                        title="Ver" aria-label="Ver">
-                                    <i class="fa-solid fa-eye" style="font-size: 0.85rem;"></i>
+                                        title="Eliminar" aria-label="Eliminar">
+                                    <i class="fa-solid fa-trash" style="font-size: 0.85rem;"></i>
                                 </button>
-                            }
-                            @if (!n.Leida)
-                            {
-                                <button @onclick="@(() => MarkAsRead(n.IdNotificacion))"
-                                        class="btn btn-ghost btn-sm text-primary d-flex align-items-center justify-content-center p-2"
-                                        style="border-radius: var(--radius); width: 32px; height: 32px;"
-                                        title="Marcar como revisado" aria-label="Marcar como revisado">
-                                    <i class="fa-solid fa-check" style="font-size: 0.85rem;"></i>
-                                </button>
-                            }
-                            <button @onclick="@(() => Delete(n.IdNotificacion))"
-                                    class="btn btn-ghost btn-sm text-danger d-flex align-items-center justify-content-center p-2"
-                                    style="border-radius: var(--radius); width: 32px; height: 32px;"
-                                    title="Eliminar" aria-label="Eliminar">
-                                <i class="fa-solid fa-trash" style="font-size: 0.85rem;"></i>
-                            </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -153,14 +154,14 @@
     // pedido/producto/devolución/promoción referenciado por la notificación.
     private async Task Ver(NotificacionItem n)
     {
-        if (!n.Leida)
-        {
-            await NotifSvc.MarcarLeidaAsync(n.IdNotificacion);
-        }
         var ruta = n.RutaVerPara("admin");
         if (!string.IsNullOrEmpty(ruta))
         {
             Navigation.NavigateTo(ruta);
+        }
+        if (!n.Leida)
+        {
+            await NotifSvc.MarcarLeidaAsync(n.IdNotificacion);
         }
     }
 }

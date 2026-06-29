@@ -2,6 +2,7 @@ package pe.edu.pucp.operacion.impl;
 
 import pe.edu.pucp.model.enums.ReferenciaNotificacion;
 import pe.edu.pucp.model.enums.TipoNotificacion;
+import pe.edu.pucp.model.enums.TipoDevolucion;
 import pe.edu.pucp.model.operacion.Devolucion;
 import pe.edu.pucp.notificacion.impl.NotificacionHelper;
 import pe.edu.pucp.operacion.bo.DevolucionBO;
@@ -139,8 +140,13 @@ public class DevolucionBoImpl implements DevolucionBO {
         if (devolucion.getIdUsuarioRegistra() <= 0) {
             throw new Exception("El ID del usuario que registra es obligatorio.");
         }
-        if (devolucion.getMotivo() == null || devolucion.getMotivo().trim().isEmpty()) {
+        if (devolucion.getMotivo() == null) {
             throw new Exception("El motivo de la devolucion es obligatorio.");
+        }
+        if (devolucion.getMotivo() == TipoDevolucion.OTRO) {
+            if (devolucion.getMotivoDetalle() == null || devolucion.getMotivoDetalle().trim().isEmpty()) {
+                throw new Exception("Cuando el motivo es 'OTRO', debe especificar el detalle del motivo.");
+            }
         }
     }
 }

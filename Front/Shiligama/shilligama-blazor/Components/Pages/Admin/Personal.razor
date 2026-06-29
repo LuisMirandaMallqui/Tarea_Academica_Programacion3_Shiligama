@@ -8,19 +8,6 @@
 
 <PageTitle>Personal – Shiligama Admin</PageTitle>
 
-<style>
-    @@keyframes cartTrip {
-        0%   { transform: translateX(-120px);                        opacity: 0; }
-        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
-        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
-        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
-        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
-        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
-        85%  { transform: translateX(120px);                        opacity: 0; }
-        100% { transform: translateX(120px);                        opacity: 0; }
-    }
-</style>
-
 <div class="d-flex flex-column gap-4">
 
     <!-- ── Encabezado ── -->
@@ -89,20 +76,7 @@
 
         @if (_loading)
         {
-            <div class="d-flex flex-column align-items-center justify-content-center py-5"
-                 style="min-height:350px;">
-
-                <div style="font-size:4rem;
-                    color:#1A6B3C;
-                    animation:cartTrip 3.5s ease-in-out infinite;">
-                    <i class="fas fa-shopping-cart"></i>
-                </div>
-
-                <div class="mt-3"
-                     style="color:#1A6B3C;font-weight:600;">
-                    Cargando personal...
-                </div>
-            </div>
+            <LoadingIndicator Text="Cargando personal..." MinHeight="350px" />
         }
         else
         {
@@ -415,7 +389,7 @@
     <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
         <div class="toast show text-white border-0 px-3 py-2" style="background:#1A6B3C;border-radius:var(--radius);min-width:260px;">
             <i class="fa-solid fa-circle-check me-2"></i>
-            <span class="small">Miembro @(_isEditing ? "actualizado" : "registrado") correctamente</span>
+            <span class="small">@_toastMessage</span>
         </div>
     </div>
 }
@@ -440,6 +414,7 @@
     private bool   _showUnsavedConfirm = false;
     private bool   _showToggleConfirm  = false;
     private bool   _showSavedToast     = false;
+    private string _toastMessage       = "";
     private Staff? _toggleStaff        = null;
 
     private bool   _uploadingAvatar = false;
@@ -559,17 +534,20 @@
         else            await StaffSvc.AddStaffAsync(_form);
         _showModal = false; _formDirty = false;
         _staff = StaffSvc.GetStaff();
+        _toastMessage = $"Miembro {(_isEditing ? "actualizado" : "registrado")} correctamente";
         _showSavedToast = true; StateHasChanged();
         await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
     }
 
     private void AskToggleEstado(Staff s) { _toggleStaff = s; _showToggleConfirm = true; }
-    private void ConfirmToggleEstado()
+    private async Task ConfirmToggleEstado()
     {
         if (_toggleStaff != null) StaffSvc.ToggleStatus(_toggleStaff.Id);
         _showToggleConfirm = false;
         _staff = StaffSvc.GetStaff();
-        StateHasChanged();
+        _toastMessage = $"Miembro {(_toggleStaff?.Estado == "activo" ? "activado" : "desactivado")} correctamente";
+        _showSavedToast = true; StateHasChanged();
+        await Task.Delay(3000); _showSavedToast = false; StateHasChanged();
     }
 
     private async Task HandleAvatarSelected(ChangeEventArgs _)

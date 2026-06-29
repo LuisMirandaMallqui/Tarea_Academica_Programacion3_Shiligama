@@ -2,12 +2,7 @@
 
 @if (_loading)
 {
-    <div class="d-flex flex-column align-items-center justify-content-center py-5 w-100" style="min-height:400px;">
-        <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
-            <i class="fas fa-shopping-cart"></i>
-        </div>
-        <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">Cargando pedidos...</div>
-    </div>
+    <LoadingIndicator Text="Cargando pedidos..." />
 }
 else
 {
@@ -58,7 +53,7 @@ else
 
     <!-- Encabezado -->
     <div class="mt-2 mb-1">
-        <h2 class="fw-bold text-foreground mb-0" style="font-family:'Outfit',sans-serif;font-size:1.9rem;letter-spacing:-0.01em;">Listado de pedidos</h2>
+        <h2 class="fw-bold text-foreground mb-0" style="font-size:1.9rem;letter-spacing:-0.01em;">Listado de pedidos</h2>
         <p class="text-muted-foreground small mb-0">Visualiza y gestiona las solicitudes en tiempo real</p>
     </div>
 
@@ -131,7 +126,7 @@ else
                         </div>
                         @if (order.DeliveryMethod?.ToLower() == "delivery")
                         {
-                            <span class="badge" style="background:#dcf0e8;color:#1A6B3C;font-size:0.75rem;font-weight:600;border-radius:9999px;padding:0.3rem 0.6rem;">
+                            <span class="badge" style="background:#e8f5e9;color:#1A6B3C;font-size:0.75rem;font-weight:600;border-radius:9999px;padding:0.3rem 0.6rem;">
                                 <i class="fas fa-truck me-2"></i>Delivery
                             </span>
                         }
@@ -168,7 +163,7 @@ else
                     <!-- Fila 4: Resumen -->
                     <div class="d-flex justify-content-between align-items-center py-1">
                         <span class="text-muted-foreground" style="font-size:0.78rem;">@order.Items @(order.Items == 1 ? "producto" : "productos")</span>
-                        <span class="fw-bold text-primary" style="font-size:1.22rem;font-family:'Outfit',sans-serif;">S/. @order.Total.ToString("0.00")</span>
+                        <span class="fw-bold text-primary" style="font-size:1.22rem;">S/. @order.Total.ToString("0.00")</span>
                     </div>
 
                     <!-- Fila 5: Método de pago -->
@@ -307,7 +302,7 @@ else
             <div class="detail-modal-header">
                 <div class="d-flex flex-column gap-1">
                     <div class="d-flex align-items-center gap-2">
-                        <span class="fw-bold text-foreground" style="font-size:1.1rem;font-family:'Outfit',sans-serif;">@_detailOrder.Id</span>
+                        <span class="fw-bold text-foreground" style="font-size:1.1rem;">@_detailOrder.Id</span>
                         <span class="badge" style="@GetStatusBadgeStyle(_detailOrder.Status) font-size:0.73rem;border-radius:9999px;padding:4px 11px;">@GetStatusLabel(_detailOrder.Status)</span>
                     </div>
                     <span class="text-muted-foreground" style="font-size:0.78rem;">
@@ -355,7 +350,7 @@ else
                             <span class="detail-label">Método</span>
                             @if (_detailOrder.DeliveryMethod?.ToLower() == "delivery")
                             {
-                                <span class="badge" style="background:#dcf0e8;color:#1A6B3C;font-size:0.73rem;font-weight:600;border-radius:9999px;padding:4px 11px;"><i class="fas fa-truck me-1"></i>Delivery</span>
+                                <span class="badge" style="background:#e8f5e9;color:#1A6B3C;font-size:0.73rem;font-weight:600;border-radius:9999px;padding:4px 11px;"><i class="fas fa-truck me-1"></i>Delivery</span>
                             }
                             else
                             {
@@ -569,7 +564,7 @@ else
         <div class="detail-modal-container" @onclick:stopPropagation>
             <div class="detail-modal-header">
                 <div class="d-flex flex-column gap-1">
-                    <span class="fw-bold text-foreground" style="font-size:1.1rem;font-family:'Outfit',sans-serif;">
+                    <span class="fw-bold text-foreground" style="font-size:1.1rem;">
                         @((_pendingMotivoStatus == "rechazado" ? "Rechazar" : "Cancelar") + " pedido")
                     </span>
                     <span class="text-muted-foreground" style="font-size:0.78rem;">
@@ -628,17 +623,6 @@ else
 }
 
 <style>
-    @@keyframes cartTrip {
-        0%   { transform: translateX(-120px);                        opacity: 0; }
-        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
-        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
-        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
-        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
-        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
-        85%  { transform: translateX(120px);                        opacity: 0; }
-        100% { transform: translateX(120px);                        opacity: 0; }
-    }
-
     .worker-kpi-card {
         background: var(--card);
         border-radius: var(--radius);
@@ -768,6 +752,11 @@ else
     .timeline-step::before { content: ''; position: absolute; left: 7px; top: 18px; bottom: 0; width: 2px; background: #e9ecef; }
     .timeline-step:last-child::before { display: none; }
     .timeline-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #dee2e6; background: #fff; flex-shrink: 0; margin-top: 2px; transition: all 0.2s ease; }
+    :root.dark .timeline-dot,
+    .dark .timeline-dot {
+        background: var(--card);
+        border-color: var(--border);
+    }
     .timeline-step.done .timeline-dot { background: #064e3b; border-color: #064e3b; box-shadow: 0 0 0 3px rgba(6,78,59,0.15); }
     .timeline-step.done::before { background: #064e3b; opacity: 0.4; }
     .timeline-step.success .timeline-dot { background: #28a745; border-color: #28a745; box-shadow: 0 0 0 3px rgba(40,167,69,0.18); }
@@ -789,7 +778,7 @@ else
     .dark .detail-totals-divider { background: var(--border); }
     .dark .detail-modal-footer { background: var(--card); border-color: var(--border); border-radius: 0 0 1.5rem 1.5rem; }
 
-    .metric-kpi-value { font-size: 2.2rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; font-family: 'Outfit',sans-serif; }
+    .metric-kpi-value { font-size: 2.2rem; font-weight: 800; line-height: 1; letter-spacing: -0.02em; }
     .metric-kpi-label { font-size: 0.82rem; color: var(--muted-foreground); font-weight: 500; margin-top: 0.2rem; }
 </style>
 
@@ -1053,7 +1042,7 @@ else
     private string GetStatusBadgeStyle(string s) => s switch
     {
         "recibido"   => "background:#fff3e0;color:#b25e00;font-weight:600;",
-        "en_proceso" => "background:#dcf0e8;color:#1A6B3C;font-weight:600;",
+        "en_proceso" => "background:#e8f5e9;color:#1A6B3C;font-weight:600;",
         "atendido"   => "background:#e8f5e9;color:#198754;font-weight:600;",
         "rechazado"  => "background:#ffebee;color:#c62828;font-weight:600;",
         "cancelado"  => "background:#ffebee;color:#c62828;font-weight:600;",

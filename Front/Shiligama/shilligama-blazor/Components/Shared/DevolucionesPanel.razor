@@ -5,6 +5,8 @@
 @inject ProductService ProductSvc
 @inject AuthService Auth
 @inject SalesService SalesSvc
+@inject IJSRuntime JS
+@inject NavigationManager Nav
 
 
 @* ─── KPIs ──────────────────────────────────────────────────────────────────── *@
@@ -94,9 +96,10 @@
             <label class="form-label small fw-medium text-foreground mb-1">Motivo</label>
             <select @bind="_motivoFilter" class="form-select text-foreground" style="height:44px;border-radius:10px;">
                 <option value="">Todos</option>
-                <option value="Vencido">Vencido</option>
-                <option value="Dañado">Dañado</option>
-                <option value="Error de pedido">Error de pedido</option>
+                <option value="VENCIDO">Vencido</option>
+                <option value="DAÑADO">Dañado</option>
+                <option value="ERROR_PEDIDO">Error de pedido</option>
+                <option value="OTRO">Otro</option>
             </select>
         </div>
         <div class="col-md-2">
@@ -113,19 +116,6 @@
 </div>
 
 
-<style>
-    @@keyframes cartTrip {
-        0%   { transform: translateX(-120px);                        opacity: 0; }
-        12%  { transform: translateX(-30px)  translateY(0);         opacity: 1; }
-        25%  { transform: translateX(20px)   translateY(-18px)   rotate(90deg); }
-        40%  { transform: translateX(0)      translateY(-38px)   rotate(180deg); }
-        55%  { transform: translateX(-20px)  translateY(-18px)   rotate(270deg); }
-        68%  { transform: translateX(30px)   translateY(0)       rotate(360deg); }
-        85%  { transform: translateX(120px);                        opacity: 0; }
-        100% { transform: translateX(120px);                        opacity: 0; }
-    }
-</style>
-
 @* ─── Tabla ──────────────────────────────────────────────────────────────────── *@
 
 <!-- Tabla -->
@@ -133,45 +123,127 @@
 
         @if (_loading)
         {
-            <div class="d-flex flex-column align-items-center justify-content-center py-5"
-                 style="min-height:350px;">
-
-                <div style="font-size:4rem;
-                    color:#1A6B3C;
-                    animation:cartTrip 3.5s ease-in-out infinite;">
-                    <i class="fas fa-shopping-cart"></i>
-                </div>
-
-                <div class="mt-3"
-                     style="color:#1A6B3C;font-weight:600;">
-                    @LoadingText
-                </div>
-            </div>
+            <LoadingIndicator Text="@LoadingText" MinHeight="350px" />
         }
         else
         {
-            <div class="table-responsive">
-                <!-- PEGA AQUÍ TODO EL CÓDIGO DE TU TABLA -->
-                <div class="card overflow-hidden">
-                    <div class="table-responsive">
-                        <table class="table table-borderless mb-0 align-middle return-table">
-                            <thead class="border-bottom border-color-default">
-                                <tr>
-                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Fecha</th>
-                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Origen</th>
-                                    @if (MostrarCanal)
+            @if (TipoVista == "todas")
+            {
+                @* ─── Vista agrupada por venta (historial) ─── *@
+                <div class="p-3">
+                    @{ var grupos = GroupedByVenta.ToList(); }
+                    @if (!grupos.Any())
+                    {
+                        <div class="text-center py-5 text-muted-foreground">
+                            @EmptyMessage
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var grupo in grupos)
+                        {
+                            var primeraDev = grupo.First();
+                            var totalGrupo = grupo.Sum(r => r.Amount);
+                            var estadoGrupo = grupo.All(r => r.Estado == primeraDev.Estado) ? primeraDev.Estado : "mixto";
+                            var isOnline = IsOnlineReturn(primeraDev);
+
+                            <div class="card mb-3" style="border-radius:14px; border:1px solid #e5e7eb; overflow:hidden;" id="row-dev-@primeraDev.Id">
+                                @* ── Header ── *@
+                                <div class="d-flex align-items-center justify-content-between px-4 py-3" style="background:var(--muted); border-bottom:1px solid #e5e7eb;">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <span class="fw-bold text-success" style="font-size:0.95rem;">@GetOrigenText(primeraDev)</span>
+                                        <span class="text-muted-foreground small">@GetCustomerNameForReturn(primeraDev)</span>
+                                        @if (MostrarCanal)
+                                        {
+                                            <span class="badge @(isOnline ? "bg-primary" : "bg-success") text-white"
+                                                  style="font-size:0.7rem;padding:3px 9px;font-weight:600;border-radius:8px;">
+                                                @(isOnline ? "Online" : "Presencial")
+                                            </span>
+                                        }
+                                    </div>
+                                    <span class="text-muted-foreground small">@primeraDev.Date.ToString("dd MMM yyyy")</span>
+                                </div>
+
+                                @* ── Body: Productos ── *@
+                                <div class="px-4 py-3">
+                                    @foreach (var dev in grupo)
                                     {
-                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Canal</th>
+                                        <div class="d-flex align-items-center justify-content-between py-2 @(dev != grupo.Last() ? "border-bottom" : "")" style="border-color:#f0f0f0 !important;">
+                                            <div class="d-flex align-items-center gap-3 flex-grow-1">
+                                                <i class="fas fa-circle text-muted-foreground" style="font-size:5px;"></i>
+                                                <div>
+                                                    <span class="fw-semibold text-foreground small d-block">@dev.Product</span>
+                                                    <span class="text-muted-foreground" style="font-size:0.75rem;">
+                                                        @dev.Quantity uds. · @GetReasonText(dev.Reason, dev.MotivoDetalle)
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                @if (string.IsNullOrEmpty(dev.Observations))
+                                                {
+                                                    <span class="text-muted-foreground small" style="font-size:0.75rem;">@dev.RegisteredBy</span>
+                                                }
+                                                <span class="fw-bold text-danger small">-S/. @dev.Amount.ToString("0.00")</span>
+                                                <div class="d-flex gap-1">
+                                                    <button class="btn btn-sm" @onclick="@(() => VerDetalle(dev))" title="Ver detalle"
+                                                            style="width:28px;height:28px;border-radius:6px;">
+                                                        <i class="fas fa-eye text-success" style="font-size:0.75rem;"></i>
+                                                    </button>
+                                                    @if (MostrarEditar)
+                                                    {
+                                                        <button class="btn btn-sm" @onclick="async () => await OpenEdit(dev)" title="Editar"
+                                                                style="width:28px;height:28px;border-radius:6px;">
+                                                            <i class="fas fa-edit text-warning" style="font-size:0.75rem;"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(dev.Observations))
+                                        {
+                                            <div class="ms-4 mb-2 small text-muted-foreground" style="font-size:0.78rem; font-style:italic;">
+                                                <i class="fas fa-sticky-note me-1 text-warning"></i>@dev.Observations
+                                            </div>
+                                        }
                                     }
-                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Motivo</th>
-                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Registrado Por</th>
-                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Estado</th>
-                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Monto Total</th>
-                                    <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @{var devList = Filtered.ToList();}
+                                </div>
+
+                                @* ── Footer ── *@
+                                <div class="d-flex align-items-center justify-content-between px-4 py-2.5" style="background:var(--muted); border-top:1px solid #e5e7eb;">
+                                    <span class="text-muted-foreground small">
+                                        @grupo.Count() devolucione@(grupo.Count() > 1 ? "s" : "") · @primeraDev.RegisteredBy
+                                    </span>
+                                    <span class="fw-bold text-danger" style="font-size:0.95rem;">-S/. @totalGrupo.ToString("0.00")</span>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                @* ─── Vista tabla (online / presencial) ─── *@
+                <div class="table-responsive">
+                    <div class="card overflow-hidden">
+                        <div class="table-responsive">
+                            <table class="table table-borderless mb-0 align-middle return-table">
+                                <thead class="border-bottom border-color-default">
+                                    <tr>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Fecha</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Origen</th>
+                                        @if (MostrarCanal)
+                                        {
+                                            <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Canal</th>
+                                        }
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Motivo</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Registrado Por</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Estado</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase" style="letter-spacing:.05em;">Monto Total</th>
+                                        <th class="px-4 py-3 small fw-semibold text-muted-foreground text-uppercase text-end" style="letter-spacing:.05em;">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{var devList = Filtered.ToList();}
                                     @for (int i = 0; i < devList.Count; i++)
                                     {
                                         var dev = devList[i];
@@ -183,7 +255,7 @@
                                             </tr>
                                         }
 
-                                        <tr class="return-group-start return-row">
+                                        <tr class="return-group-start return-row" id="row-dev-@dev.Id">
                                             <td class="px-4 py-3 text-muted-foreground small">@dev.Date.ToString("dd MMM yyyy")</td>
                                             <td class="px-4 py-3 small">
                                                 <span class="fw-bold text-success d-block">@GetOrigenText(dev)</span>
@@ -198,16 +270,21 @@
                                                         @(IsOnlineReturn(dev) ? "Online" : "Presencial")
                                                     </span>
                                                 </td>
-}
+                                            }
                                             <td class="px-4 py-3 small">
-                                                @switch (dev.Reason?.ToLower())
+                                                @switch (dev.Reason)
                                                 {
-                                                    case "vencido":
+                                                    case "VENCIDO":
                                                         <span class="badge text-white" style="background:#dc3545;font-size:0.75rem;padding:4px 11px;font-weight:600;border-radius:8px;"><i class="fas fa-hourglass-end me-1"></i>Vencido</span>
                                                         break;
-                                                    case "dañado":
-                                                    case "dañado / roto":
+                                                    case "DAÑADO":
                                                         <span class="badge text-white" style="background:#fd7e14;font-size:0.75rem;padding:4px 11px;font-weight:600;border-radius:8px;"><i class="fas fa-exclamation-triangle me-1"></i>Dañado</span>
+                                                        break;
+                                                    case "ERROR_PEDIDO":
+                                                        <span class="badge text-white" style="background:#0d6efd;font-size:0.75rem;padding:4px 11px;font-weight:600;border-radius:8px;"><i class="fas fa-shopping-cart me-1"></i>Error de pedido</span>
+                                                        break;
+                                                    case "OTRO":
+                                                        <span class="badge text-white" style="background:#6c757d;font-size:0.75rem;padding:4px 11px;font-weight:600;border-radius:8px;"><i class="fas fa-tag me-1"></i>Otro</span>
                                                         break;
                                                     default:
                                                         <span class="badge text-white" style="background:#6c757d;font-size:0.75rem;padding:4px 11px;font-weight:600;border-radius:8px;"><i class="fas fa-tag me-1"></i>Motivo personalizado</span>
@@ -222,15 +299,15 @@
 
                                                 @if (estado == "pendiente")
                                                 {
-                                                    <span class="badge badge-pendiente">⏳ Pendiente</span>
+                                                    <span class="badge badge-pendiente">Pendiente</span>
                                                 }
                                                 else if (estado == "aprobado")
                                                 {
-                                                    <span class="badge badge-entregado">✅ Aprobado</span>
+                                                    <span class="badge badge-entregado">Aprobado</span>
                                                 }
                                                 else if (estado == "rechazado")
                                                 {
-                                                    <span class="badge badge-cancelado">❌ Rechazado</span>
+                                                    <span class="badge badge-cancelado">Rechazado</span>
                                                 }
                                             </td>
                                             <td class="px-4 py-3 fw-bold text-danger small">-S/. @dev.Amount.ToString("0.00")</td>
@@ -242,7 +319,7 @@
                                                     </button>
                                                     @if (MostrarEditar)
                                                     {
-                                                        <button class="btn btn-sm" @onclick="@(() => OpenEdit(dev))" title="Editar"
+                                                        <button class="btn btn-sm" @onclick="async () => await OpenEdit(dev)" title="Editar"
                                                                 style="width:32px;height:32px;border-radius:8px;">
                                                             <i class="fas fa-edit text-warning" style="font-size:0.82rem;"></i>
                                                         </button>
@@ -269,19 +346,20 @@
                                             </tr>
                                         }
                                     }
-                                @if (!Filtered.Any())
-                                {
-                                    <tr>
-                                        <td colspan="@TableColumnCount" class="text-center py-5 text-muted-foreground">
-                                            @EmptyMessage
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                                    @if (!Filtered.Any())
+                                    {
+                                        <tr>
+                                            <td colspan="@TableColumnCount" class="text-center py-5 text-muted-foreground">
+                                                @EmptyMessage
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-                </div>
+            }
         }
 
     </div>
@@ -294,7 +372,7 @@
             <div class="modal-content bg-card border-border" style="border-radius: 1.25rem; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.2);">
                 <div class="modal-header border-border bg-muted bg-opacity-10 px-4 py-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <h5 class="modal-title text-foreground fw-bold" style="font-family:'Outfit',sans-serif;">@(_isEditing ? "Modificar Devolución" : "Registrar Devolución")</h5>
+                        <h5 class="modal-title text-foreground fw-bold">@(_isEditing ? "Modificar Devolución" : "Registrar Devolución")</h5>
                         <p class="text-muted-foreground text-xs m-0">Selecciona la venta presencial y los productos a devolver</p>
                     </div>
                     <button type="button" class="btn-close" @onclick="@(() => _showModal = false)"></button>
@@ -404,13 +482,14 @@
                         <div>
                             <label class="form-label small fw-bold text-foreground">Motivo <span class="text-danger">*</span></label>
                             <select @bind="_selectedMotivo" @bind:after="@(() => _formDirty = true)" class="form-select text-foreground" style="height: 46px; border-radius: 8px;" required>
-                                <option value="Vencido">Vencido</option>
-                                <option value="Dañado">Dañado</option>
-                                <option value="Otro">Otro</option>
+                                <option value="VENCIDO">Vencido</option>
+                                <option value="DAÑADO">Dañado</option>
+                                <option value="ERROR_PEDIDO">Error de pedido</option>
+                                <option value="OTRO">Otro</option>
                             </select>
                         </div>
 
-                        @if (_selectedMotivo == "Otro")
+                        @if (_selectedMotivo == "OTRO")
                         {
                             <div>
                                 <label class="form-label small fw-bold text-foreground">Especificar Motivo <span class="text-danger">*</span></label>
@@ -438,7 +517,7 @@
                                     </button>                            
                                     <button type="submit"
                                             class="btn btn-success fw-semibold d-flex align-items-center justify-content-center"
-                                            disabled="@(_guardandoDevolucion || _selectedSale == null || !_productSelected.Values.Any(v => v) || (_selectedMotivo == "Otro" ? string.IsNullOrWhiteSpace(_customMotivo) : string.IsNullOrEmpty(_selectedMotivo)))"
+                                            disabled="@(_guardandoDevolucion || _selectedSale == null || !_productSelected.Values.Any(v => v) || (_selectedMotivo == "OTRO" ? string.IsNullOrWhiteSpace(_customMotivo) : string.IsNullOrEmpty(_selectedMotivo)))"
                                             style="border-radius:8px; height:44px; min-width:180px; background:#196c3e; border-color:#196c3e;">
 
                                         @if (_guardandoDevolucion)
@@ -474,7 +553,7 @@
             <div class="modal-content bg-card border-border" style="border-radius: 1.25rem; overflow: hidden; box-shadow: 0 15px 35px rgba(0,0,0,0.2);">
                 <div class="modal-header border-bottom border-color-default px-4 py-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <h5 class="modal-title text-foreground fw-bold" style="font-family:'Outfit',sans-serif;">Detalle de Devolución</h5>
+                        <h5 class="modal-title text-foreground fw-bold">Detalle de Devolución</h5>
                         <span class="text-success fw-bold text-sm">@_selectedDetailReturn.Id</span>
                     </div>
                     <button type="button" class="btn-close" @onclick="@(() => _showDetailModal = false)"></button>
@@ -497,7 +576,15 @@
 
                     <div class="d-flex justify-content-between">
                         <span class="text-muted-foreground small">Motivo:</span>
-                        <span class="text-foreground small fw-semibold">@_selectedDetailReturn.Reason</span>
+                        <span class="text-foreground small fw-semibold">
+                            @(_selectedDetailReturn.Reason switch {
+                                "VENCIDO" => "Vencido",
+                                "DAÑADO" => "Dañado",
+                                "ERROR_PEDIDO" => "Error de pedido",
+                                "OTRO" => string.IsNullOrEmpty(_selectedDetailReturn.MotivoDetalle) ? "Otro" : $"Otro: {_selectedDetailReturn.MotivoDetalle}",
+                                _ => _selectedDetailReturn.Reason
+                            })
+                        </span>
                     </div>
                     <div class="d-flex justify-content-between border-bottom border-color-default pb-2">
                         <span class="text-muted-foreground small">Estado:</span>
@@ -676,7 +763,13 @@
                         </p>
                         <div class="d-flex flex-column gap-1 p-3 rounded-3" style="background:var(--muted);font-size:0.85rem;">
                             <span><strong>Origen:</strong> @GetOrigenText(_devAEvaluar)</span>
-                            <span><strong>Motivo:</strong> @(_devAEvaluar.Reason is "Vencido" or "Dañado" ? _devAEvaluar.Reason : "Motivo personalizado")</span>
+                            <span><strong>Motivo:</strong> @(_devAEvaluar.Reason switch {
+                                "VENCIDO" => "Vencido",
+                                "DAÑADO" => "Dañado",
+                                "ERROR_PEDIDO" => "Error de pedido",
+                                "OTRO" => string.IsNullOrEmpty(_devAEvaluar.MotivoDetalle) ? "Otro" : $"Otro: {_devAEvaluar.MotivoDetalle}",
+                                _ => _devAEvaluar.Reason
+                            })</span>
                             <span><strong>Monto:</strong> -S/. @_devAEvaluar.Amount.ToString("0.00")</span>
                             @if (!string.IsNullOrEmpty(_devAEvaluar.Observations))
                             {
@@ -719,6 +812,7 @@
 
     [Parameter] public bool MostrarKpis { get; set; } = true;
     [Parameter] public bool PermitirEvaluar { get; set; } = true;
+    [Parameter] public string FiltrarEstados { get; set; } = ""; // "" = todos, "PENDIENTE", "APROBADO,RECHAZADO"
 
     private bool _loading = true;
 
@@ -748,7 +842,7 @@
     private Return? _selectedDetailReturn = null;
 
     // Motivo select values
-    private string _selectedMotivo = "Vencido";
+    private string _selectedMotivo = "VENCIDO";
     private string _customMotivo = "";
 
     private bool _showUnsavedConfirm = false;
@@ -802,6 +896,14 @@
         }
     }
 
+    private string? _resaltarId;
+
+    protected override void OnInitialized()
+    {
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        _resaltarId = System.Web.HttpUtility.ParseQueryString(uri.Query)["resaltar"];
+    }
+
     protected override async Task OnInitializedAsync()
     {
         _loading = true;
@@ -832,6 +934,13 @@
             StateHasChanged();
         }
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !string.IsNullOrEmpty(_resaltarId))
+            await JS.InvokeVoidAsync("scrollToElement", $"row-dev-{_resaltarId}");
+    }
+
     private static bool IsOnlineReturn(Return r) =>
     r.IdPedido.HasValue && r.IdPedido.Value > 0;
 
@@ -847,24 +956,51 @@
 
     private IEnumerable<Return> BaseReturns => _returns.Where(MatchesTipoVista);
 
-    private IEnumerable<Return> Filtered => BaseReturns.Where(r =>
-        (string.IsNullOrEmpty(_search) ||
-         r.Product.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
-         r.Id.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
-         r.RegisteredBy.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
-         (r.IdPedido.HasValue && (
-             r.IdPedido.Value.ToString().Contains(_search) ||
-             $"SHI-2024-{r.IdPedido.Value:D4}".Contains(_search, StringComparison.OrdinalIgnoreCase))) ||
-         (r.IdVenta.HasValue && (
-             r.IdVenta.Value.ToString().Contains(_search) ||
-             $"VTA-{r.IdVenta.Value:D3}".Contains(_search, StringComparison.OrdinalIgnoreCase)))
-        ) &&
-        (string.IsNullOrEmpty(_motivoFilter) || r.Reason.Equals(_motivoFilter, StringComparison.OrdinalIgnoreCase)) &&
-        (!_fechaDesde.HasValue || r.Date >= _fechaDesde.Value) &&
-        (!_fechaHasta.HasValue || r.Date <= _fechaHasta.Value.AddDays(1))
-    )
-    .OrderBy(r => (r.Estado?.ToLower() ?? "pendiente") == "pendiente" ? 0 : 1)
-    .ThenByDescending(r => r.Date);
+    private IEnumerable<Return> Filtered
+    {
+        get
+        {
+            var query = BaseReturns.Where(r =>
+                (string.IsNullOrEmpty(_search) ||
+                 r.Product.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                 r.Id.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                 r.RegisteredBy.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                 (r.IdPedido.HasValue && (
+                     r.IdPedido.Value.ToString().Contains(_search) ||
+                     $"SHI-2024-{r.IdPedido.Value:D4}".Contains(_search, StringComparison.OrdinalIgnoreCase))) ||
+                 (r.IdVenta.HasValue && (
+                     r.IdVenta.Value.ToString().Contains(_search) ||
+                     $"VTA-{r.IdVenta.Value:D3}".Contains(_search, StringComparison.OrdinalIgnoreCase)))
+                ) &&
+                (string.IsNullOrEmpty(_motivoFilter) || r.Reason == _motivoFilter) &&
+                (!_fechaDesde.HasValue || r.Date >= _fechaDesde.Value) &&
+                (!_fechaHasta.HasValue || r.Date <= _fechaHasta.Value.AddDays(1))
+            );
+
+            if (!string.IsNullOrEmpty(FiltrarEstados))
+            {
+                var estados = FiltrarEstados.Split(',').Select(e => e.Trim().ToLower()).ToHashSet();
+                query = query.Where(r => estados.Contains(r.Estado?.ToLower() ?? "pendiente"));
+            }
+
+            return query
+                .OrderBy(r => (r.Estado?.ToLower() ?? "pendiente") == "pendiente" ? 0 : 1)
+                .ThenByDescending(r => r.Date);
+        }
+    }
+
+    private IEnumerable<IGrouping<int, Return>> GroupedByVenta =>
+        Filtered.GroupBy(r => r.IdVenta ?? 0)
+                .OrderByDescending(g => g.Max(r => r.Date));
+
+    private static string GetReasonText(string reason, string motivoDetalle) => reason switch
+    {
+        "VENCIDO" => "Vencido",
+        "DAÑADO" => "Dañado",
+        "ERROR_PEDIDO" => "Error de pedido",
+        "OTRO" => string.IsNullOrEmpty(motivoDetalle) ? "Otro" : motivoDetalle,
+        _ => reason ?? "Otro"
+    };
 
     private decimal TotalRefunded => Filtered.Sum(r => r.Amount);
 
@@ -972,7 +1108,7 @@
         _productSelected.Clear();
         _productReturnQty.Clear();
 
-        _selectedMotivo = "Vencido";
+        _selectedMotivo = "VENCIDO";
         _customMotivo = "";
         _formDirty = false;
         _showModal = true;
@@ -980,7 +1116,7 @@
         StateHasChanged();
     }
 
-    private void OpenEdit(Return dev)
+    private async Task OpenEdit(Return dev)
     {
         _isEditing = true;
         _errorMessage = "";
@@ -1004,15 +1140,15 @@
             }).ToList() : new List<DetalleDevolucionApi>()
         };
 
-        if (dev.Reason == "Vencido" || dev.Reason == "Dañado")
+        if (dev.Reason is "VENCIDO" or "DAÑADO" or "ERROR_PEDIDO")
         {
             _selectedMotivo = dev.Reason;
             _customMotivo = "";
         }
         else
         {
-            _selectedMotivo = "Otro";
-            _customMotivo = dev.Reason ?? "";
+            _selectedMotivo = "OTRO";
+            _customMotivo = dev.MotivoDetalle ?? dev.Reason ?? "";
         }
 
         _saleSearchTerm = "";
@@ -1029,6 +1165,11 @@
             if (_selectedSale != null)
             {
                 _saleSearchTerm = $"{_selectedSale.Id} - {_selectedSale.Cliente}";
+
+                if (_selectedSale.Productos == null || !_selectedSale.Productos.Any())
+                {
+                    _selectedSale.Productos = await SalesSvc.GetProductosPorVentaAsync(dev.IdVenta.Value);
+                }
 
                 foreach (var item in _selectedSale.Productos)
                 {
@@ -1153,7 +1294,8 @@
                 return;
             }
 
-            _form.Reason = _selectedMotivo == "Otro" ? _customMotivo : _selectedMotivo;
+            _form.Reason = _selectedMotivo;
+            _form.MotivoDetalle = _selectedMotivo == "OTRO" ? _customMotivo : "";
 
             _form.Detalles ??= new List<DetalleDevolucionApi>();
             _form.Detalles.Clear();
@@ -1197,6 +1339,11 @@
             _form.ProductCode = string.Join(", ", _form.Detalles.Select(d => $"PROD-{d.IdProducto:D3}"));
             _form.Quantity = _form.Detalles.Sum(d => d.Cantidad);
             _form.Amount = (decimal)_form.Detalles.Sum(d => d.Cantidad * d.PrecioUnitario);
+
+            if (!_isEditing)
+            {
+                _form.Estado = "aprobado";
+            }
 
             int idUsuario = Auth.CurrentUser.IdUsuario;
             bool success;

@@ -50,6 +50,12 @@
 .qty-input-sm[type=number] { -moz-appearance:textfield; }
 </style>
 
+@if (_loading)
+{
+    <LoadingIndicator Text="Cargando tus pedidos..." />
+}
+else
+{
 <div class="container-xl px-3 px-sm-4 py-4" style="max-width:960px;">
 
     <div class="d-flex align-items-center gap-3 mb-4">
@@ -612,9 +618,12 @@
     </div>
 }
 
+}
+
 @code {
     private List<Order> _allOrders = new();
     private List<Order> _filtered  = new();
+    private bool _loading = true;
 
     private string    _statusFilter = "todos";
     private DateTime? _dateFrom;
@@ -776,6 +785,7 @@
         var idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
         _allOrders = await SalesSvc.GetClientOrdersAsync(idCliente);
         ApplyFilters();
+        _loading = false;
     }
 
     private void ApplyFilters()

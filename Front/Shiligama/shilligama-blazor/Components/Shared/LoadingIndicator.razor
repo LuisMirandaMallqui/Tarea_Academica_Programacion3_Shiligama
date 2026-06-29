@@ -1,0 +1,12 @@
+<div class="d-flex flex-column align-items-center justify-content-center py-5 w-100"
+     style="min-height:@MinHeight;">
+    <div style="font-size:4rem;color:#1A6B3C;animation:cartTrip 3.5s ease-in-out infinite;">
+        <i class="fas fa-shopping-cart"></i>
+    </div>
+    <div class="mt-3" style="color:#1A6B3C;font-weight:600;font-size:1.1rem;">@Text</div>
+</div>
+
+@code {
+    [Parameter] public string Text { get; set; } = "Cargando...";
+    [Parameter] public string MinHeight { get; set; } = "400px";
+}

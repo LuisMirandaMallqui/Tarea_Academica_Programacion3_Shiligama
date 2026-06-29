@@ -11,7 +11,7 @@
 
 <style>
 .active-category-btn {
-    background-color: #0D4525 !important;
+    background-color: #1A6B3C !important;
     color: white !important;
     border-radius: var(--radius);
     transition: all 0.2s ease;
@@ -27,10 +27,10 @@
 }
 .inactive-category-btn:hover {
     background-color: var(--secondary) !important;
-    color: #0D4525 !important;
+    color: #1A6B3C !important;
 }
 .inactive-category-btn i { color: #4b5563 !important; }
-.inactive-category-btn:hover i { color: #0D4525 !important; }
+.inactive-category-btn:hover i { color: #1A6B3C !important; }
 .dark .inactive-category-btn { color: var(--foreground) !important; }
 .dark .inactive-category-btn i { color: var(--muted-foreground) !important; }
 .dark .inactive-category-btn:hover { background-color: var(--secondary) !important; color: var(--foreground) !important; }
@@ -46,7 +46,7 @@
 }
 .dual-range-highlight {
     position: absolute; height: 6px;
-    background-color: #0D4525; border-radius: 3px; z-index: 2;
+    background-color: #1A6B3C; border-radius: 3px; z-index: 2;
 }
 .dual-range-slider {
     position: absolute; width: 100%; background: transparent;
@@ -56,7 +56,7 @@
 .dual-range-slider::-webkit-slider-thumb {
     -webkit-appearance: none; appearance: none;
     width: 18px; height: 18px; border-radius: 50%;
-    background: white; border: 2.5px solid #0D4525;
+    background: white; border: 2.5px solid #1A6B3C;
     cursor: pointer; pointer-events: auto;
     box-shadow: 0 1px 3px rgba(0,0,0,0.15); margin-top: -6px;
     transition: transform 0.1s ease, background-color 0.1s ease;
@@ -64,7 +64,7 @@
 .dual-range-slider::-webkit-slider-thumb:hover { transform: scale(1.15); background-color: #E8F5E9; }
 .dual-range-slider::-moz-range-thumb {
     width: 18px; height: 18px; border-radius: 50%;
-    background: white; border: 2.5px solid #0D4525;
+    background: white; border: 2.5px solid #1A6B3C;
     cursor: pointer; pointer-events: auto;
     box-shadow: 0 1px 3px rgba(0,0,0,0.15);
     transition: transform 0.1s ease, background-color 0.1s ease;
@@ -73,24 +73,24 @@
 
 .pagination-nav-btn:hover:not(.disabled) {
     background-color: var(--secondary) !important;
-    border-color: #0D4525 !important; color: #0D4525 !important; transform: scale(1.05);
+    border-color: #1A6B3C !important; color: #1A6B3C !important; transform: scale(1.05);
 }
 .pagination-nav-btn.disabled { opacity: 0.4; cursor: not-allowed; }
 .pagination-num-btn { background-color: var(--card) !important; color: var(--foreground) !important; }
 .pagination-num-btn:hover:not(.active-page) {
     background-color: var(--secondary) !important;
-    border-color: #0D4525 !important; color: #0D4525 !important; transform: scale(1.05);
+    border-color: #1A6B3C !important; color: #1A6B3C !important; transform: scale(1.05);
 }
 .active-page {
-    background-color: #0D4525 !important; color: white !important;
-    border-color: #0D4525 !important; box-shadow: 0 4px 10px rgba(13,69,37,0.2);
+    background-color: #1A6B3C !important; color: white !important;
+    border-color: #1A6B3C !important; box-shadow: 0 4px 10px rgba(26,107,60,0.2);
 }
-.dark .active-page { box-shadow: 0 4px 10px rgba(13,69,37,0.4); }
+.dark .active-page { box-shadow: 0 4px 10px rgba(26,107,60,0.4); }
 
 .btn-agregar-pill {
     background-color: white !important;
-    color: #0D4525 !important;
-    border: 1.5px solid #0D4525 !important;
+    color: #1A6B3C !important;
+    border: 1.5px solid #1A6B3C !important;
     border-radius: 24px !important;
     font-weight: 700 !important;
     font-size: 0.85rem !important;
@@ -100,8 +100,14 @@
     text-transform: uppercase !important;
 }
 .btn-agregar-pill:hover {
-    background-color: #0D4525 !important;
+    background-color: #1A6B3C !important;
     color: white !important;
+}
+:root.dark .btn-agregar-pill,
+.dark .btn-agregar-pill {
+    background-color: var(--card) !important;
+    color: var(--primary) !important;
+    border-color: var(--primary) !important;
 }
 .btn-cart-control-round:hover {
     transform: scale(1.08);
@@ -129,7 +135,7 @@
     align-items: center;
     justify-content: center;
     margin-top: 6px;
-    background-color: #0D4525;
+    background-color: #1A6B3C;
     color: #ffffff;
     font-weight: 700;
     border-radius: 20px;
@@ -202,10 +208,10 @@
             <div class="col-lg-3 d-none d-lg-block">
                 <div class="card p-3 d-flex flex-column gap-3">
                     <h3 class="fw-bold text-foreground mb-1"
-                        style="font-size:0.9rem;letter-spacing:0.05em;font-family:'Outfit',sans-serif;">
+                        style="font-size:0.9rem;letter-spacing:0.05em;">
                         CATEGORIAS
                     </h3>
-                    <div class="d-flex flex-column gap-1">
+                    <div class="d-flex flex-column gap-1" style="max-height: 420px; overflow-y: auto; padding-right: 4px;">
                         <button @onclick="() => SelectCategoryAsync(null)"
                                 class="btn text-start px-3 py-2 small d-flex align-items-center gap-3
                                        @(_selectedCategory == null ? "active-category-btn" : "inactive-category-btn")"
@@ -229,7 +235,7 @@
 
                 <div class="card p-4 d-flex flex-column gap-3 mt-3">
                     <h3 class="fw-bold text-foreground mb-1"
-                        style="font-size:0.9rem;letter-spacing:0.05em;font-family:'Outfit',sans-serif;">
+                        style="font-size:0.9rem;letter-spacing:0.05em;">
                         RANGO DE PRECIO
                     </h3>
                     <div class="px-1">
@@ -290,7 +296,7 @@
                 </button>
                 @if (_showMobileFilters)
                 {
-                    <div class="card p-3 mt-2 d-flex flex-column gap-2 slide-up">
+                    <div class="card p-3 mt-2 d-flex flex-column gap-2 slide-up" style="max-height: 400px; overflow-y: auto;">
                         <button @onclick="() => SelectCategoryAsync(null)"
                                 class="btn text-start px-3 py-2 small
                                        @(_selectedCategory == null ? "btn-primary" : "btn-secondary")"
@@ -312,12 +318,6 @@
 
             <!-- Grid de productos -->
             <div class="col-lg-9">
-                @if (!string.IsNullOrEmpty(SearchQuery))
-                {
-                    <p class="text-muted-foreground small mb-3">
-                        Resultados para "<strong>@SearchQuery</strong>" — @_page.TotalCount productos
-                    </p>
-                }
                 @if (_selectedCategory != null)
                 {
                     <div class="d-flex align-items-center gap-2 mb-3">
@@ -331,7 +331,7 @@
                     </div>
                 }
 
-                @if (_isLoading)
+                @if (_loading)
                 {
                     <div class="row g-3">
                         @for (int i = 0; i < 8; i++)
@@ -399,7 +399,7 @@
                                                         d-flex align-items-center justify-content-center z-1"
                                                  style="background:rgba(255,255,255,0.15);">
                                                 <span class="fw-bold text-secondary"
-                                                      style="font-size:1.15rem;font-family:'Outfit',sans-serif;">
+                                                      style="font-size:1.15rem;">
                                                     Agotado
                                                 </span>
                                             </div>
@@ -433,7 +433,7 @@
                                         <a href="/catalogo/@product.Id"
                                            class="text-decoration-none text-foreground mb-2">
                                             <p class="fw-bold text-foreground mb-0 lh-sm"
-                                               style="font-family:'Outfit',sans-serif;font-size:0.95rem;
+                                               style="font-size:0.95rem;
                                                       display:-webkit-box;-webkit-line-clamp:2;
                                                       -webkit-box-orient:vertical;overflow:hidden;height:36px;">
                                                 @product.Name
@@ -524,8 +524,8 @@
                                                                         @onclick="() => IncreaseQty(product)"
                                                                         disabled="@(product.Stock <= cartItem.Quantity)"
                                                                         style="width:34px;height:34px;border-radius:50%;
-                                                                               border:2px solid #0D4525;background:white;
-                                                                               color:#0D4525;transition:all 0.2s;">
+                                                                               border:2px solid #1A6B3C;background:white;
+                                                                               color:#1A6B3C;transition:all 0.2s;">
                                                                     <i class="fa-solid fa-plus" style="font-size:0.85rem;"></i>
                                                                 </button>
                                                                 <span class="position-absolute d-flex align-items-center justify-content-center rounded-circle bg-success"
@@ -611,7 +611,7 @@
     private decimal _priceMax = 100;    // tope real calculado de los productos cargados
 
     private bool _showMobileFilters = false;
-    private bool _isLoading = true;
+    private bool _loading = true;
 
     private int _currentPage = 1;
     private const int PageSize = 8;
@@ -624,7 +624,7 @@
 
     // Paleta de colores para slides generados dinámicamente
     private static readonly string[] _slideColors =
-        { "#0D4525", "#1a3a5c", "#4a1942", "#7c2d12", "#1e3a1e", "#2d1b69" };
+        { "#1A6B3C", "#1a3a5c", "#4a1942", "#7c2d12", "#1e3a1e", "#2d1b69" };
 
     // Slides generados desde promos con MostrarEnCarrusel=true (más un slide fijo de delivery)
     private (string Icon, string Title, string Desc, string Color, string Route)[] _slides =
@@ -642,7 +642,7 @@
     {
         if (_minPrice > _maxPrice) (_minPrice, _maxPrice) = (_maxPrice, _minPrice);
 
-        _isLoading = true;
+        _loading = true;
         StateHasChanged();
 
         decimal? min = _minPrice <= 0 ? (decimal?)null : _minPrice;
@@ -650,13 +650,13 @@
 
         _page = await ProductSvc.SearchAsync(
             categoriaId: _selectedCategory,
-            q: string.IsNullOrWhiteSpace(SearchQuery) ? null : SearchQuery,
+            q: null,
             precioMin: min,
             precioMax: max,
             pagina: _currentPage,
             tamano: PageSize);
 
-        _isLoading = false;
+        _loading = false;
         StateHasChanged();
     }
 
@@ -672,14 +672,10 @@
     private async Task ClearFiltersAsync() { _minPrice = 0; _maxPrice = _priceMax; _currentPage = 1; await LoadAsync(); }
     private async Task ClearAllAsync() { _selectedCategory = null; ProductSvc.NotifySearch(""); }
 
-    // Disparado por el buscador del navbar (evento OnSearch del ProductService).
-    private void OnSearchChanged() { _currentPage = 1; _ = InvokeAsync(LoadAsync); }
-
     protected override async Task OnInitializedAsync()
     {
         await ProductSvc.EnsureLoadedAsync();
         _categories = ProductSvc.GetCategories();
-        ProductSvc.OnSearch += OnSearchChanged;
         Cart.OnChange += RefreshCart;
 
         // Calcular el precio máximo real de los productos para el slider
@@ -702,7 +698,7 @@
                 Icon:  p.Es2x1 ? "fa-candy-cane" : (p.TipoDescuento == "PORCENTAJE" ? "fa-tags" : "fa-dollar-sign"),
                 Title: p.Nombre,
                 Desc:  string.IsNullOrWhiteSpace(p.Descripcion) ? p.DescuentoLabel : p.Descripcion,
-                Color: _slideColors[i % _slideColors.Length],
+                Color: string.IsNullOrWhiteSpace(p.ColorCarrusel) ? _slideColors[i % _slideColors.Length] : p.ColorCarrusel,
                 Route: "/ofertas"
             ))
             .ToList();
@@ -712,7 +708,7 @@
 
         _slides = slidesPromo.Any()
             ? slidesPromo.Append(slideDelivery).ToArray()
-            : new[] { ("fa-tags", "Ofertas Especiales", "Descuentos en productos seleccionados", "#0D4525", "/ofertas"), slideDelivery };
+            : new[] { ("fa-tags", "Ofertas Especiales", "Descuentos en productos seleccionados", "#1A6B3C", "/ofertas"), slideDelivery };
 
         _carouselTotal = _slides.Length;
 
@@ -833,7 +829,6 @@
 
     public async ValueTask DisposeAsync()
     {
-        ProductSvc.OnSearch -= OnSearchChanged;
         Cart.OnChange -= RefreshCart;
         try
         {

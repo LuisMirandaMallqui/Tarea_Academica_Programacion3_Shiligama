@@ -3,6 +3,7 @@ package pe.edu.pucp.persistance.dao.operacion.Impl;
 import pe.edu.pucp.db.DBManager;
 import pe.edu.pucp.model.operacion.Devolucion;
 import pe.edu.pucp.model.operacion.DetalleDevolucion;
+import pe.edu.pucp.model.enums.TipoDevolucion;
 import pe.edu.pucp.persistance.dao.operacion.dao.DevolucionDao;
 
 import java.sql.*;
@@ -42,11 +43,12 @@ public class DevolucionDaoImpl implements DevolucionDao {
             parametrosEntrada.put(5, devolucion.getIdUsuarioRegistra() > 0 ? devolucion.getIdUsuarioRegistra() : null);
             parametrosEntrada.put(6, devolucion.getEstadoDevolucion());
             parametrosEntrada.put(7, totalCant);
-            parametrosEntrada.put(8, devolucion.getMotivo());
-            parametrosEntrada.put(9, devolucion.getFechaHora() != null
+            parametrosEntrada.put(8, devolucion.getMotivo() != null ? devolucion.getMotivo().name() : null);
+            parametrosEntrada.put(9, devolucion.getMotivoDetalle());
+            parametrosEntrada.put(10, devolucion.getFechaHora() != null
                     ? Timestamp.valueOf(devolucion.getFechaHora())
                     : Timestamp.valueOf(LocalDateTime.now()));
-            parametrosEntrada.put(10, devolucion.getObservaciones());
+            parametrosEntrada.put(11, devolucion.getObservaciones());
 
             dbManager.ejecutarProcedimientoTransaccion(
                     "INSERTAR_DEVOLUCION", parametrosEntrada, parametrosSalida);
@@ -99,10 +101,11 @@ public class DevolucionDaoImpl implements DevolucionDao {
             parametrosEntrada.put(5, devolucion.getIdUsuarioRegistra() > 0 ? devolucion.getIdUsuarioRegistra() : null);
             parametrosEntrada.put(6, devolucion.getEstadoDevolucion());
             parametrosEntrada.put(7, totalCant);
-            parametrosEntrada.put(8, devolucion.getMotivo());
-            parametrosEntrada.put(9, Timestamp.valueOf(devolucion.getFechaHora() != null
+            parametrosEntrada.put(8, devolucion.getMotivo() != null ? devolucion.getMotivo().name() : null);
+            parametrosEntrada.put(9, devolucion.getMotivoDetalle());
+            parametrosEntrada.put(10, Timestamp.valueOf(devolucion.getFechaHora() != null
                     ? devolucion.getFechaHora() : LocalDateTime.now()));
-            parametrosEntrada.put(10, devolucion.getObservaciones());
+            parametrosEntrada.put(11, devolucion.getObservaciones());
 
             dbManager.ejecutarProcedimientoTransaccion(
                     "MODIFICAR_DEVOLUCION", parametrosEntrada, null);
@@ -221,7 +224,15 @@ public class DevolucionDaoImpl implements DevolucionDao {
         d.setIdUsuarioRegistra(rs.getInt("USUARIO_REGISTRA_ID"));
         d.setEstadoDevolucion(rs.getString("ESTADO_DEVOLUCION"));
         d.setCantidad(rs.getInt("CANTIDAD"));
-        d.setMotivo(rs.getString("MOTIVO"));
+        String motivoStr = rs.getString("MOTIVO");
+        if (motivoStr != null) {
+            try {
+                d.setMotivo(TipoDevolucion.valueOf(motivoStr));
+            } catch (IllegalArgumentException e) {
+                d.setMotivo(TipoDevolucion.OTRO);
+            }
+        }
+        d.setMotivoDetalle(rs.getString("MOTIVO_DETALLE"));
         d.setObservaciones(rs.getString("OBSERVACIONES"));
         d.setFechaHora(rs.getTimestamp("FECHA_HORA") != null
                 ? rs.getTimestamp("FECHA_HORA").toLocalDateTime() : null);

@@ -121,8 +121,8 @@ INSERT INTO producto(CATEGORIA_ID, NOMBRE, DESCRIPCION, PRECIO_UNITARIO, STOCK, 
 -- ================================================================
 -- PROMOCIONES
 -- ================================================================
-INSERT INTO promocion(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO, FECHA_INICIO, FECHA_FIN, CONDICIONES)
-VALUES('Semana del Abarrote', 'Descuento en abarrotes seleccionados', 'PORCENTAJE', 10.00, CURDATE(), CURDATE() + INTERVAL 60 DAY, 'Aplica en productos seleccionados');
+INSERT INTO promocion(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO, FECHA_INICIO, FECHA_FIN, CONDICIONES, MOSTRAR_EN_CARRUSEL, COLOR_CARRUSEL)
+VALUES('Semana del Abarrote', 'Descuento en abarrotes seleccionados', 'PORCENTAJE', 10.00, CURDATE(), CURDATE() + INTERVAL 60 DAY, 'Aplica en productos seleccionados', 1, '#0D4525');
 INSERT INTO promocion_producto(PROMOCION_ID, PRODUCTO_ID) VALUES (1, 1), (1, 2), (1, 4);
 
 INSERT INTO promocion(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO, FECHA_INICIO, FECHA_FIN, CONDICIONES)
@@ -237,52 +237,52 @@ VALUES
 --    NOTIFICACIONES DE PRUEBA
 --    ID_DESTINATARIO NULL = broadcast para todos los admins/trabajadores
 -- ================================================================
-INSERT INTO notificacion(TITULO, MENSAJE, TIPO, LEIDA, ID_DESTINATARIO) VALUES
+INSERT INTO notificacion(TITULO, MENSAJE, TIPO, LEIDA, ID_DESTINATARIO, REFERENCIA_TIPO, REFERENCIA_ID) VALUES
 ('Stock crítico: Inca Kola 1.5L',
  'El producto "Inca Kola 1.5L" (PROD-017) tiene 0 unidades en stock. Requiere reabastecimiento urgente.',
- 'STOCK_BAJO', 0, NULL),
+ 'STOCK_BAJO', 0, NULL, 'PRODUCTO', 17),
 
 ('Nuevo pedido recibido',
  'El cliente Ana Costa (ID-4) realizó el pedido PED-0001 por S/. 44.40. Modalidad: Delivery a Av. Los Pinos 300.',
- 'NUEVO_PEDIDO', 0, NULL),
+ 'NUEVO_PEDIDO', 0, NULL, 'PEDIDO', 1),
 
 ('Pedido listo para despacho',
  'El pedido PED-0002 de Luis Huamán está listo para recojo en tienda. Estado: EN_PROCESO.',
- 'PEDIDO_LISTO', 1, NULL),
+ 'PEDIDO_LISTO', 1, NULL, 'PEDIDO', 2),
 
 ('Solicitud de devolución pendiente',
  'El trabajador Juan Pérez registró una devolución de 2 unidades de "Arroz Costeño 5kg". Pendiente de aprobación.',
- 'DEVOLUCION_PENDIENTE', 0, NULL),
+ 'DEVOLUCION_PENDIENTE', 0, NULL, 'DEVOLUCION', 1),
 
 ('Stock bajo: Aceite Primor 1L',
  'El producto "Aceite Primor 1L" (PROD-003) tiene solo 8 unidades, por debajo del mínimo establecido (8).',
- 'STOCK_BAJO', 1, NULL),
+ 'STOCK_BAJO', 1, NULL, 'PRODUCTO', 3),
 
 ('Venta registrada: VTA-003',
  'Se registró la venta VTA-003 por S/. 34.00 (canal WEB) del cliente Pedro Ramos.',
- 'VENTA_REGISTRADA', 1, NULL),
+ 'VENTA_REGISTRADA', 1, NULL, 'PEDIDO', 3),
 
 ('Pedido cancelado',
  'El pedido PED-0005 de Jorge Villanueva fue cancelado. Motivo: Cliente no recogió en plazo.',
- 'SISTEMA', 0, NULL);
+ 'SISTEMA', 0, NULL, 'PEDIDO', 5);
 
 
 -- ================================================================
 --    DEVOLUCIONES PRESENCIALES DE PRUEBA
 -- ================================================================
 
-CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 1, 3, 'PENDIENTE', 2, 'Vencido', NOW(), 'Producto vencido hace 3 días');
+CALL INSERTAR_DEVOLUCION(@dev1, 1, NULL, 1, 3, 'APROBADO', 2, 'VENCIDO', NULL, NOW(), 'Producto vencido hace 3 días');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev1, 1, 2);
 
-CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 3, 'PENDIENTE', 1, 'Dañado', NOW(), 'Producto con empaque deteriorado');
+CALL INSERTAR_DEVOLUCION(@dev2, 3, NULL, 2, 3, 'APROBADO', 1, 'DAÑADO', NULL, NOW(), 'Producto con empaque deteriorado');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev2, 3, 1);
 
-CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 4, 3, 'APROBADO', 3, 'Error de pedido', NOW(), 'Cliente indicó que se registró un producto incorrecto');
+CALL INSERTAR_DEVOLUCION(@dev3, 5, NULL, 4, 3, 'APROBADO', 3, 'ERROR_PEDIDO', NULL, NOW(), 'Cliente indicó que se registró un producto incorrecto');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev3, 5, 3);
 
-CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 5, 3, 'RECHAZADO', 1, 'Dañado', NOW(), 'El daño no corresponde a responsabilidad de la tienda');
+CALL INSERTAR_DEVOLUCION(@dev4, 8, NULL, 5, 3, 'RECHAZADO', 1, 'DAÑADO', NULL, NOW(), 'El daño no corresponde a responsabilidad de la tienda');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev4, 8, 1);
 
-CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 1, 3, 'APROBADO', 4, 'Vencido', NOW(), 'Producto retirado por fecha vencida');
+CALL INSERTAR_DEVOLUCION(@dev5, 11, NULL, 1, 3, 'APROBADO', 4, 'VENCIDO', NULL, NOW(), 'Producto retirado por fecha vencida');
 CALL INSERTAR_DETALLE_DEVOLUCION(@dev5, 11, 4);
 

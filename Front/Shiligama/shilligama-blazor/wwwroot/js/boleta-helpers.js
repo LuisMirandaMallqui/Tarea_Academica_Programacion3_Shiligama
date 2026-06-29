@@ -89,7 +89,7 @@ window.boletaHelpers = {
 
         .doc-title {
             text-align: center;
-            background: #f0f8f3;
+            background: #e8f5e9;
             border: 1px solid #c8e6d0;
             border-radius: 6px;
             padding: 8px;

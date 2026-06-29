@@ -263,6 +263,7 @@ BEGIN
         d.ESTADO_DEVOLUCION,
         d.CANTIDAD,
         d.MOTIVO,
+        d.MOTIVO_DETALLE,
         d.OBSERVACIONES,
         d.FECHA_HORA,
         d.ACTIVO,
@@ -480,7 +481,8 @@ BEGIN
         FECHA_FIN            AS fecha_fin,
         CONDICIONES          AS condiciones,
         ACTIVO               AS activo,
-        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel
+        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel,
+        COLOR_CARRUSEL       AS color_carrusel
     FROM promocion
     WHERE PROMOCION_ID = _promocion_id AND ACTIVO = 1;
 END ;;
@@ -1028,7 +1030,8 @@ CREATE DEFINER=`admin`@`%` PROCEDURE `INSERTAR_DEVOLUCION`(
     IN  _usuario_registra_id INT,
     IN  _estado_devolucion   VARCHAR(20),
     IN  _cantidad            INT,
-    IN  _motivo              VARCHAR(500),
+    IN  _motivo              VARCHAR(20),
+    IN  _motivo_detalle      VARCHAR(500),
     IN  _fecha_hora          DATETIME,
     IN  _observaciones       VARCHAR(500)
 )
@@ -1071,6 +1074,7 @@ BEGIN
         ESTADO_DEVOLUCION,
         CANTIDAD,
         MOTIVO,
+        MOTIVO_DETALLE,
         OBSERVACIONES,
         FECHA_HORA,
         ACTIVO
@@ -1083,6 +1087,7 @@ BEGIN
         _estado_devolucion,
         _cantidad,
         _motivo,
+        _motivo_detalle,
         _observaciones,
         _fecha_hora,
         1
@@ -1222,13 +1227,14 @@ CREATE DEFINER=`admin`@`%` PROCEDURE `INSERTAR_PROMOCION`(
     IN  _fecha_inicio         DATE,
     IN  _fecha_fin            DATE,
     IN  _condiciones          VARCHAR(500),
-    IN  _mostrar_en_carrusel  TINYINT
+    IN  _mostrar_en_carrusel  TINYINT,
+    IN  _color_carrusel       VARCHAR(7)
 )
 BEGIN
     INSERT INTO promocion(NOMBRE, DESCRIPCION, TIPO_DESCUENTO, VALOR_DESCUENTO,
-                            FECHA_INICIO, FECHA_FIN, CONDICIONES, MOSTRAR_EN_CARRUSEL)
+                            FECHA_INICIO, FECHA_FIN, CONDICIONES, MOSTRAR_EN_CARRUSEL, COLOR_CARRUSEL)
     VALUES(_nombre, _descripcion, _tipo_descuento, _valor_descuento,
-           _fecha_inicio, _fecha_fin, _condiciones, _mostrar_en_carrusel);
+           _fecha_inicio, _fecha_fin, _condiciones, _mostrar_en_carrusel, _color_carrusel);
     SET _promocion_id = LAST_INSERT_ID();
 END ;;
 DELIMITER ;
@@ -1494,6 +1500,7 @@ BEGIN
         d.ESTADO_DEVOLUCION,
         d.CANTIDAD,
         d.MOTIVO,
+        d.MOTIVO_DETALLE,
         d.OBSERVACIONES,
         d.FECHA_HORA,
         d.ACTIVO,
@@ -1532,6 +1539,7 @@ BEGIN
         d.ESTADO_DEVOLUCION,
         d.CANTIDAD,
         d.MOTIVO,
+        d.MOTIVO_DETALLE,
         d.OBSERVACIONES,
         d.FECHA_HORA,
         d.ACTIVO,
@@ -1563,6 +1571,7 @@ BEGIN
         d.ESTADO_DEVOLUCION,
         d.CANTIDAD,
         d.MOTIVO,
+        d.MOTIVO_DETALLE,
         d.OBSERVACIONES,
         d.FECHA_HORA,
         d.ACTIVO,
@@ -1850,6 +1859,7 @@ BEGIN
         p.CONDICIONES          AS condiciones,
         p.ACTIVO               AS activo,
         p.MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel,
+        p.COLOR_CARRUSEL       AS color_carrusel,
         pp.PRODUCTO_ID
     FROM promocion p
     LEFT JOIN promocion_producto pp ON p.PROMOCION_ID = pp.PROMOCION_ID
@@ -1888,7 +1898,8 @@ BEGIN
         FECHA_FIN            AS fecha_fin,
         CONDICIONES          AS condiciones,
         ACTIVO               AS activo,
-        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel
+        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel,
+        COLOR_CARRUSEL       AS color_carrusel
     FROM promocion
     ORDER BY FECHA_INICIO DESC;
 END ;;
@@ -1907,7 +1918,8 @@ BEGIN
         FECHA_FIN            AS fecha_fin,
         CONDICIONES          AS condiciones,
         ACTIVO               AS activo,
-        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel
+        MOSTRAR_EN_CARRUSEL  AS mostrar_en_carrusel,
+        COLOR_CARRUSEL       AS color_carrusel
     FROM promocion
     WHERE ACTIVO = 1 AND CURDATE() BETWEEN FECHA_INICIO AND FECHA_FIN;
 END ;;
@@ -2097,7 +2109,8 @@ CREATE DEFINER=`admin`@`%` PROCEDURE `MODIFICAR_DEVOLUCION`(
     IN _usuario_registra_id INT,
     IN _estado_devolucion   VARCHAR(20),
     IN _cantidad            INT,
-    IN _motivo              VARCHAR(500),
+    IN _motivo              VARCHAR(20),
+    IN _motivo_detalle      VARCHAR(500),
     IN _fecha_hora          DATETIME,
     IN _observaciones       VARCHAR(500)
 )
@@ -2136,6 +2149,7 @@ BEGIN
         ESTADO_DEVOLUCION   = _estado_devolucion,
         CANTIDAD            = _cantidad,
         MOTIVO              = _motivo,
+        MOTIVO_DETALLE      = _motivo_detalle,
         OBSERVACIONES       = _observaciones,
         FECHA_HORA          = _fecha_hora
     WHERE DEVOLUCION_ID = _devolucion_id;
@@ -2273,7 +2287,8 @@ CREATE DEFINER=`admin`@`%` PROCEDURE `MODIFICAR_PROMOCION`(
     IN _fecha_fin             DATE,
     IN _condiciones           VARCHAR(500),
     IN _activo                TINYINT,
-    IN _mostrar_en_carrusel   TINYINT
+    IN _mostrar_en_carrusel   TINYINT,
+    IN _color_carrusel        VARCHAR(7)
 )
 BEGIN
     UPDATE promocion SET
@@ -2285,7 +2300,8 @@ BEGIN
         FECHA_FIN            = _fecha_fin,
         CONDICIONES          = _condiciones,
         ACTIVO               = _activo,
-        MOSTRAR_EN_CARRUSEL  = _mostrar_en_carrusel
+        MOSTRAR_EN_CARRUSEL  = _mostrar_en_carrusel,
+        COLOR_CARRUSEL       = _color_carrusel
     WHERE PROMOCION_ID = _promocion_id;
 END ;;
 DELIMITER ;

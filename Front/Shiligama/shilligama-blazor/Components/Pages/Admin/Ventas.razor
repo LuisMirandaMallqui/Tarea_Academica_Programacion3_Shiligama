@@ -9,9 +9,11 @@
 
 <div class="d-flex flex-column gap-4">
     <!-- Header -->
-    <div>
-        <h1 class="fs-4 fw-bold text-foreground mb-0">Historial de Ventas</h1>
-        <p class="text-muted-foreground small mt-1 mb-0">Reportes de ingresos consolidados físicos y virtuales</p>
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <div>
+            <h1 class="fs-4 fw-bold text-foreground mb-0">Historial de Ventas</h1>
+            <p class="text-muted-foreground small mt-1 mb-0">Reportes de ingresos consolidados físicos y virtuales</p>
+        </div>
     </div>
 
 
@@ -125,20 +127,7 @@
 
         @if (_loading)
         {
-            <div class="d-flex flex-column align-items-center justify-content-center py-5"
-                 style="min-height:350px;">
-
-                <div style="font-size:4rem;
-                            color:#1A6B3C;
-                            animation:cartTrip 3.5s ease-in-out infinite;">
-                    <i class="fas fa-shopping-cart"></i>
-                </div>
-
-                <div class="mt-3"
-                     style="color:#1A6B3C;font-weight:600;">
-                    Cargando ventas...
-                </div>
-            </div>
+            <LoadingIndicator Text="Cargando ventas..." MinHeight="350px" />
         }
         else
         {
@@ -176,7 +165,7 @@
                                         <td class="px-4 py-3 fw-semibold text-foreground small">S/. @sale.Total.ToString("0.00")</td>
                                         <td class="px-4 py-3 text-center">
                                             <button class="btn btn-sm d-inline-flex align-items-center gap-1"
-                                                    style="border-radius:0.4rem;font-size:0.78rem;font-weight:600;background-color:#f0f8f3;color:#064420;border:1px solid #c8e6d0;"
+                                                    style="border-radius:0.4rem;font-size:0.78rem;font-weight:600;background-color:#e8f5e9;color:#064420;border:1px solid #c8e6d0;"
                                                     @onclick="@(() => VerBoleta(sale.Id))"
                                                     disabled="@_loadingBoleta">
                                                 <i class="fas fa-file-invoice"></i> Ver Comprobante
@@ -233,7 +222,7 @@
                     <div class="d-inline-flex align-items-center justify-content-center bg-white rounded-circle mb-3 shadow-sm" style="width:60px;height:60px;color:#064420;">
                         <i class="fas fa-file-invoice" style="font-size:1.5rem;"></i>
                     </div>
-                    <h4 class="fw-bold mb-1" style="font-family:'Outfit',sans-serif;">Comprobante de Pago</h4>
+                    <h4 class="fw-bold mb-1">Comprobante de Pago</h4>
                     <p class="mb-0 opacity-75 small">@_boletaSeleccionada.Serie - @_boletaSeleccionada.Numero.ToString("D8")</p>
                 </div>
 
@@ -311,24 +300,6 @@
         </div>
     </div>
 }
-
-<style>
-    .pag-btn { background:var(--card); border:1px solid var(--border); color:var(--foreground); transition:all .15s; }
-    .pag-btn:hover:not(:disabled) { background:var(--secondary); }
-    .pag-btn:disabled { opacity:.4; }
-    .pag-active { background:#1A6B3C !important; color:#fff !important; border-color:#1A6B3C !important; }
-
-    @@keyframes cartTrip {
-        0%   { transform: translateX(-120px); opacity: 0; }
-        12%  { transform: translateX(-30px) translateY(0); opacity: 1; }
-        25%  { transform: translateX(20px) translateY(-18px) rotate(90deg); }
-        40%  { transform: translateX(0) translateY(-38px) rotate(180deg); }
-        55%  { transform: translateX(-20px) translateY(-18px) rotate(270deg); }
-        68%  { transform: translateX(30px) translateY(0) rotate(360deg); }
-        85%  { transform: translateX(120px); opacity: 0; }
-        100% { transform: translateX(120px); opacity: 0; }
-    }
-</style>
 
 @code {
     private List<Sale> _sales = new();
