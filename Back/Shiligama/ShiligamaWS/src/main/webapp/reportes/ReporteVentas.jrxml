@@ -1,5 +1,5 @@
 <!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
-<jasperReport name="Reporte2" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="ced95029-b569-4027-895c-af2843a4e088" ignorePagination="true" floatColumnFooter="true" summaryWithPageHeaderAndFooter="true" summaryNewPage="true" titleNewPage="true">
+<jasperReport name="Reporte2" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="ced95029-b569-4027-895c-af2843a4e088" ignorePagination="true" summaryWithPageHeaderAndFooter="true" titleNewPage="true" summaryNewPage="true" floatColumnFooter="true">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Conexion MySQL"/>
 	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
 	<property name="net.sf.jasperreports.print.create.bookmarks" value="true"/>
@@ -337,8 +337,8 @@ ORDER BY
 						</element>
 					</columnHeader>
 					<detailCell height="30" style="Table_TD">
-						<element kind="textField" uuid="a0fbd27f-2f41-4bc6-a7cb-3b7a03963f1d" x="0" y="0" width="121" height="30" hTextAlign="Center">
-							<expression><![CDATA[$F{cantidadVentas}]]></expression>
+						<element kind="textField" uuid="a656ed27-1da5-408c-b091-c300c82d56d3" x="0" y="0" width="121" height="30" hTextAlign="Center">
+							<expression><![CDATA[$F{totalUnidades}]]></expression>
 						</element>
 					</detailCell>
 					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column4"/>
@@ -357,8 +357,8 @@ ORDER BY
 						</element>
 					</columnHeader>
 					<detailCell height="30" style="Table_TD">
-						<element kind="textField" uuid="a8c887d0-c61a-4860-b67c-ba2e63d5dbb7" x="0" y="0" width="133" height="30" hTextAlign="Center">
-							<expression><![CDATA["S/."+$F{totalNeto}]]></expression>
+						<element kind="textField" uuid="87a8d377-2f06-4431-bc6b-17470d45c3f9" x="0" y="0" width="133" height="30" hTextAlign="Center">
+							<expression><![CDATA["S/."+$F{totalIngresos}]]></expression>
 						</element>
 					</detailCell>
 					<property name="com.jaspersoft.studio.components.table.model.column.name" value="Column5"/>

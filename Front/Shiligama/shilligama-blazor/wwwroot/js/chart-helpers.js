@@ -171,6 +171,26 @@ window.chartHelper = {
   // Alias used by Admin Dashboard
   renderChannelsChart: function (canvasId, labels, presencialData, onlineData) {
     this.renderOrdersComparisonChart(canvasId, labels, presencialData, onlineData);
+  },
+
+  downloadPdf: function (fileName, base64) {
+    const link = document.createElement('a');
+    link.href = 'data:application/pdf;base64,' + base64;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  },
+
+  downloadPdfFromUrl: function (url) {
+    let iframe = document.getElementById('pdf-download-iframe');
+    if (!iframe) {
+      iframe = document.createElement('iframe');
+      iframe.id = 'pdf-download-iframe';
+      iframe.style.display = 'none';
+      document.body.appendChild(iframe);
+    }
+    iframe.src = url;
   }
 };
 

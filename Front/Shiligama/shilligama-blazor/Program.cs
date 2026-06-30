@@ -182,4 +182,53 @@ app.MapGet("/api/img/{filename}", async (string filename, HttpClient glassHttp) 
     return Results.File(bytes, ct, enableRangeProcessing: false);
 });
 
+// Proxy endpoints to download PDF reports directly, avoiding the SignalR connection
+app.MapGet("/api/reportes/descargar/devoluciones", async (string fechaInicio, string fechaFin, string estado, int diasAlerta, HttpClient glassHttp) =>
+{
+    var url = $"reportes/pdf/devoluciones?fechaInicio={fechaInicio}&fechaFin={fechaFin}&estado={estado}&diasAlerta={diasAlerta}";
+    try
+    {
+        var resp = await glassHttp.GetAsync(url);
+        if (!resp.IsSuccessStatusCode) return Results.StatusCode((int)resp.StatusCode);
+        var bytes = await resp.Content.ReadAsByteArrayAsync();
+        return Results.File(bytes, "application/pdf", "Reporte_Devoluciones.pdf");
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: 500);
+    }
+});
+
+app.MapGet("/api/reportes/descargar/ventas-agrupadas", async (string fechaInicio, string fechaFin, string agrupacion, HttpClient glassHttp) =>
+{
+    var url = $"reportes/pdf/ventas-agrupadas?fechaInicio={fechaInicio}&fechaFin={fechaFin}&agrupacion={agrupacion}";
+    try
+    {
+        var resp = await glassHttp.GetAsync(url);
+        if (!resp.IsSuccessStatusCode) return Results.StatusCode((int)resp.StatusCode);
+        var bytes = await resp.Content.ReadAsByteArrayAsync();
+        return Results.File(bytes, "application/pdf", "Reporte_VentasAgrupadas.pdf");
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: 500);
+    }
+});
+
+app.MapGet("/api/reportes/descargar/top-productos", async (string fechaInicio, string fechaFin, int limite, HttpClient glassHttp) =>
+{
+    var url = $"reportes/pdf/top-productos?fechaInicio={fechaInicio}&fechaFin={fechaFin}&limite={limite}";
+    try
+    {
+        var resp = await glassHttp.GetAsync(url);
+        if (!resp.IsSuccessStatusCode) return Results.StatusCode((int)resp.StatusCode);
+        var bytes = await resp.Content.ReadAsByteArrayAsync();
+        return Results.File(bytes, "application/pdf", "Reporte_TopProductos.pdf");
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { error = ex.Message }, statusCode: 500);
+    }
+});
+
 app.Run();

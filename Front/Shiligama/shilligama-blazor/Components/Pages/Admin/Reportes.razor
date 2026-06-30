@@ -51,6 +51,24 @@
         </div>
     </div>
 
+    <!-- Exportar Reportes (PDF) -->
+    <div class="card p-4" style="border-radius:12px;">
+        <h2 class="fs-5 fw-bold text-foreground mb-3">
+            <i class="fas fa-file-pdf me-2 text-reporte"></i> Generar Reportes PDF
+        </h2>
+        <div class="d-flex gap-3 flex-wrap">
+            <button class="btn btn-reporte fw-semibold" @onclick="AbrirModalDevoluciones">
+                <i class="fas fa-download me-2"></i> Reporte Devoluciones
+            </button>
+            <button class="btn btn-reporte fw-semibold" @onclick="AbrirModalVentas">
+                <i class="fas fa-download me-2"></i> Reporte Ventas Agrupadas
+            </button>
+            <button class="btn btn-reporte fw-semibold" @onclick="AbrirModalTopProductos">
+                <i class="fas fa-download me-2"></i> Reporte Top Productos
+            </button>
+        </div>
+    </div>
+
     <!-- Quick Stats Row -->
     <div class="row g-3">
         <div class="col-6 col-md-4">
@@ -207,9 +225,248 @@
             </table>
         </div>
     </div>
+
+    <!-- Modal Reporte Devoluciones -->
+    @if (_showModalDevoluciones)
+    {
+        <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-card border-border" style="border-radius:1.2rem;overflow:hidden;">
+                    <div class="modal-header border-border p-4">
+                        <h5 class="modal-title text-foreground fw-bold">Reporte de Devoluciones</h5>
+                        @if (!_generandoReporte)
+                        {
+                            <button type="button" class="btn-close" @onclick="CerrarModalDevoluciones"></button>
+                        }
+                    </div>
+                    @if (_generandoReporte)
+                    {
+                        <div class="modal-body bg-light text-center py-5">
+                            <LoadingIndicator Text="Se está generando el reporte...." MinHeight="200px" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="modal-body p-4 bg-light">
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Fecha Inicio</label>
+                                <input type="date" @bind="_repDevDesde" class="form-control" style="border-radius:10px;" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Fecha Fin</label>
+                                <input type="date" @bind="_repDevHasta" class="form-control" style="border-radius:10px;" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Estado</label>
+                                <select @bind="_repDevEstado" class="form-select" style="border-radius:10px;">
+                                    <option value="TODOS">Todos</option>
+                                    <option value="PENDIENTE">Pendiente</option>
+                                    <option value="APROBADO">Aprobado</option>
+                                    <option value="RECHAZADO">Rechazado</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Días Alerta</label>
+                                <input type="number" @bind="_repDevDiasAlerta" min="1" class="form-control" style="border-radius:10px;" />
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-4 bg-light justify-content-end">
+                            <button class="btn btn-secondary" style="border-radius:0.6rem;" @onclick="CerrarModalDevoluciones">Cancelar</button>
+                            <button class="btn btn-danger fw-bold" style="border-radius:0.6rem;" @onclick="GenerarDevoluciones">
+                                <i class="fas fa-file-pdf me-2"></i>Generar PDF
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Modal Reporte Ventas Agrupadas -->
+    @if (_showModalVentas)
+    {
+        <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-card border-border" style="border-radius:1.2rem;overflow:hidden;">
+                    <div class="modal-header border-border p-4">
+                        <h5 class="modal-title text-foreground fw-bold">Reporte de Ventas Agrupadas</h5>
+                        @if (!_generandoReporte)
+                        {
+                            <button type="button" class="btn-close" @onclick="CerrarModalVentas"></button>
+                        }
+                    </div>
+                    @if (_generandoReporte)
+                    {
+                        <div class="modal-body bg-light text-center py-5">
+                            <LoadingIndicator Text="Se está generando el reporte...." MinHeight="200px" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="modal-body p-4 bg-light">
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Fecha Inicio</label>
+                                <input type="date" @bind="_repVenDesde" class="form-control" style="border-radius:10px;" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Fecha Fin</label>
+                                <input type="date" @bind="_repVenHasta" class="form-control" style="border-radius:10px;" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Agrupación</label>
+                                <select @bind="_repVenAgrupacion" class="form-select" style="border-radius:10px;">
+                                    <option value="DIA">Día</option>
+                                    <option value="MES">Mes</option>
+                                    <option value="ANIO">Año</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-4 bg-light justify-content-end">
+                            <button class="btn btn-secondary" style="border-radius:0.6rem;" @onclick="CerrarModalVentas">Cancelar</button>
+                            <button class="btn btn-danger fw-bold" style="border-radius:0.6rem;" @onclick="GenerarVentas">
+                                <i class="fas fa-file-pdf me-2"></i>Generar PDF
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Modal Reporte Top Productos -->
+    @if (_showModalTop)
+    {
+        <div class="modal show d-block fade-in" tabindex="-1" style="background:rgba(0,0,0,.5);z-index:1060;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-card border-border" style="border-radius:1.2rem;overflow:hidden;">
+                    <div class="modal-header border-border p-4">
+                        <h5 class="modal-title text-foreground fw-bold">Reporte Top Productos</h5>
+                        @if (!_generandoReporte)
+                        {
+                            <button type="button" class="btn-close" @onclick="CerrarModalTopProductos"></button>
+                        }
+                    </div>
+                    @if (_generandoReporte)
+                    {
+                        <div class="modal-body bg-light text-center py-5">
+                            <LoadingIndicator Text="Se está generando el reporte...." MinHeight="200px" />
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="modal-body p-4 bg-light">
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Fecha Inicio</label>
+                                <input type="date" @bind="_repTopDesde" class="form-control" style="border-radius:10px;" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Fecha Fin</label>
+                                <input type="date" @bind="_repTopHasta" class="form-control" style="border-radius:10px;" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium text-foreground">Límite</label>
+                                <input type="number" @bind="_repTopLimite" min="1" max="100" class="form-control" style="border-radius:10px;" />
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-4 bg-light justify-content-end">
+                            <button class="btn btn-secondary" style="border-radius:0.6rem;" @onclick="CerrarModalTopProductos">Cancelar</button>
+                            <button class="btn btn-danger fw-bold" style="border-radius:0.6rem;" @onclick="GenerarTopProductos">
+                                <i class="fas fa-file-pdf me-2"></i>Generar PDF
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
+    // Estado de Modales Reportes PDF
+    private bool _showModalDevoluciones = false;
+    private bool _showModalVentas = false;
+    private bool _showModalTop = false;
+    private bool _generandoReporte = false;
+
+    private DateTime _repDevDesde = DateTime.Today.AddDays(-30);
+    private DateTime _repDevHasta = DateTime.Today;
+    private string _repDevEstado = "TODOS";
+    private int _repDevDiasAlerta = 30;
+
+    private DateTime _repVenDesde = DateTime.Today.AddDays(-30);
+    private DateTime _repVenHasta = DateTime.Today;
+    private string _repVenAgrupacion = "DIA";
+
+    private DateTime _repTopDesde = DateTime.Today.AddDays(-30);
+    private DateTime _repTopHasta = DateTime.Today;
+    private int _repTopLimite = 10;
+
+    private void AbrirModalDevoluciones() => _showModalDevoluciones = true;
+    private void CerrarModalDevoluciones() => _showModalDevoluciones = false;
+    private async Task GenerarDevoluciones()
+    {
+        _generandoReporte = true;
+        StateHasChanged();
+        await Task.Delay(500); // Darle tiempo a Blazor de renderizar el indicador de carga
+        try
+        {
+            var url = $"/api/reportes/descargar/devoluciones?fechaInicio={_repDevDesde.ToString("yyyy-MM-dd")}&fechaFin={_repDevHasta.ToString("yyyy-MM-dd")}&estado={_repDevEstado}&diasAlerta={_repDevDiasAlerta}";
+            await JS.InvokeVoidAsync("chartHelper.downloadPdfFromUrl", url);
+            await Task.Delay(2000); // Mantener spinner brevemente para mejorar experiencia de usuario antes de cerrar
+            CerrarModalDevoluciones();
+        }
+        catch { }
+        finally
+        {
+            _generandoReporte = false;
+            StateHasChanged();
+        }
+    }
+
+    private void AbrirModalVentas() => _showModalVentas = true;
+    private void CerrarModalVentas() => _showModalVentas = false;
+    private async Task GenerarVentas()
+    {
+        _generandoReporte = true;
+        StateHasChanged();
+        await Task.Delay(500); // Darle tiempo a Blazor de renderizar el indicador de carga
+        try
+        {
+            var url = $"/api/reportes/descargar/ventas-agrupadas?fechaInicio={_repVenDesde.ToString("yyyy-MM-dd")}&fechaFin={_repVenHasta.ToString("yyyy-MM-dd")}&agrupacion={_repVenAgrupacion}";
+            await JS.InvokeVoidAsync("chartHelper.downloadPdfFromUrl", url);
+            await Task.Delay(2000); // Mantener spinner brevemente para mejorar experiencia de usuario antes de cerrar
+            CerrarModalVentas();
+        }
+        catch { }
+        finally
+        {
+            _generandoReporte = false;
+            StateHasChanged();
+        }
+    }
+
+    private void AbrirModalTopProductos() => _showModalTop = true;
+    private void CerrarModalTopProductos() => _showModalTop = false;
+    private async Task GenerarTopProductos()
+    {
+        _generandoReporte = true;
+        StateHasChanged();
+        await Task.Delay(500); // Darle tiempo a Blazor de renderizar el indicador de carga
+        try
+        {
+            var url = $"/api/reportes/descargar/top-productos?fechaInicio={_repTopDesde.ToString("yyyy-MM-dd")}&fechaFin={_repTopHasta.ToString("yyyy-MM-dd")}&limite={_repTopLimite}";
+            await JS.InvokeVoidAsync("chartHelper.downloadPdfFromUrl", url);
+            await Task.Delay(2000); // Mantener spinner brevemente para mejorar experiencia de usuario antes de cerrar
+            CerrarModalTopProductos();
+        }
+        catch { }
+        finally
+        {
+            _generandoReporte = false;
+            StateHasChanged();
+        }
+    }
+
     private List<DetalleVenta> _detallesVenta = new();
     private class CategoriaStats
     {
@@ -384,3 +641,27 @@
             onlineData);
     }
 }
+
+<style>
+    .btn-reporte {
+        border: 2px solid #7C3AED;
+        color: #7C3AED;
+        background: transparent;
+        border-radius: var(--radius, 8px);
+        transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+    }
+    .btn-reporte:hover, .btn-reporte:focus {
+        background: #7C3AED;
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(124,58,237,0.25);
+        border-color: #7C3AED;
+    }
+    .btn-reporte:active {
+        background: #6D28D9;
+        border-color: #6D28D9;
+        color: #fff;
+    }
+    .text-reporte {
+        color: #7C3AED;
+    }
+</style>

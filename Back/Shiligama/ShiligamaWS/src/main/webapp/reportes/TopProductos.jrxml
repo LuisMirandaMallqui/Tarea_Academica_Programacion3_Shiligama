@@ -1,5 +1,5 @@
 <!-- Created with Jaspersoft Studio version 7.0.6.final using JasperReports Library version 7.0.6-5d2a603fdc6b3db8f842a83383e594f41891534d  -->
-<jasperReport name="TopProductos" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="ced95029-b569-4027-895c-af2843a4e088" ignorePagination="true" floatColumnFooter="true" summaryWithPageHeaderAndFooter="true" summaryNewPage="true" titleNewPage="true">
+<jasperReport name="TopProductos" language="java" pageWidth="595" pageHeight="842" whenNoDataType="AllSectionsNoDetail" columnWidth="535" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="ced95029-b569-4027-895c-af2843a4e088" ignorePagination="true" floatColumnFooter="true" summaryWithPageHeaderAndFooter="true" titleNewPage="true" summaryNewPage="true">
 	<property name="com.jaspersoft.studio.data.defaultdataadapter" value="Conexion MySQL"/>
 	<property name="com.jaspersoft.studio.data.sql.tables" value=""/>
 	<property name="net.sf.jasperreports.print.create.bookmarks" value="true"/>
@@ -46,19 +46,15 @@
 		<parameter name="fechaFin" class="java.lang.String"/>
 		<parameter name="fechaInicio" class="java.lang.String"/>
 		<query language="sql"><![CDATA[SELECT
-    p.NOMBRE                                        AS productoNombre,
-    cat.NOMBRE                                      AS categoriaNombre,
-    p.CODIGO_BARRAS                                 AS codigoBarras,
-    SUM(CASE WHEN v.CANAL_VENTA = 'PRESENCIAL'
-        THEN dv.CANTIDAD ELSE 0 END)                AS unidadesPresencial,
-    SUM(CASE WHEN v.CANAL_VENTA = 'PRESENCIAL'
-        THEN dv.SUBTOTAL ELSE 0 END)                AS ingresosPresencial,
-    SUM(CASE WHEN v.CANAL_VENTA = 'WEB'
-        THEN dv.CANTIDAD ELSE 0 END)                AS unidadesWeb,
-    SUM(CASE WHEN v.CANAL_VENTA = 'WEB'
-        THEN dv.SUBTOTAL ELSE 0 END)                AS ingresosWeb,
-    SUM(dv.CANTIDAD)                                AS totalUnidades,
-    SUM(dv.SUBTOTAL)                                AS totalIngresos,
+    p.NOMBRE AS productoNombre,
+    cat.NOMBRE AS categoriaNombre,
+    p.CODIGO_BARRAS AS codigoBarras,
+    SUM(CASE WHEN v.CANAL_VENTA = 'PRESENCIAL' THEN dv.CANTIDAD ELSE 0 END) AS unidadesPresencial,
+    SUM(CASE WHEN v.CANAL_VENTA = 'PRESENCIAL' THEN dv.SUBTOTAL ELSE 0 END) AS ingresosPresencial,
+    SUM(CASE WHEN v.CANAL_VENTA = 'WEB' THEN dv.CANTIDAD ELSE 0 END) AS unidadesWeb,
+    SUM(CASE WHEN v.CANAL_VENTA = 'WEB' THEN dv.SUBTOTAL ELSE 0 END) AS ingresosWeb,
+    SUM(dv.CANTIDAD) AS totalUnidades,
+    SUM(dv.SUBTOTAL) AS totalIngresos,
     ROUND(
         SUM(dv.SUBTOTAL) * 100.0 /
         NULLIF((
@@ -69,19 +65,19 @@
               AND ESTADO_VENTA = 'COMPLETADA'
               AND ACTIVO = 1
         ), 0)
-    , 2)                                            AS porcentajeVentas,
-    p.STOCK                                         AS stockActual
+    , 2) AS porcentajeVentas,
+    p.STOCK AS stockActual
 FROM detalle_venta dv
-JOIN venta v        ON dv.VENTA_ID    = v.VENTA_ID
-JOIN producto p     ON dv.PRODUCTO_ID = p.PRODUCTO_ID
-JOIN categoria cat  ON p.CATEGORIA_ID = cat.CATEGORIA_ID
+JOIN venta v ON dv.VENTA_ID = v.VENTA_ID
+JOIN producto p ON dv.PRODUCTO_ID = p.PRODUCTO_ID
+JOIN categoria cat ON p.CATEGORIA_ID = cat.CATEGORIA_ID
 WHERE v.FECHA_HORA BETWEEN STR_TO_DATE($P{fechaInicio}, '%Y-%m-%d') 
                        AND STR_TO_DATE($P{fechaFin}, '%Y-%m-%d')
   AND v.ESTADO_VENTA = 'COMPLETADA'
   AND v.ACTIVO = 1
 GROUP BY p.PRODUCTO_ID, p.NOMBRE, cat.NOMBRE, p.CODIGO_BARRAS, p.STOCK
 ORDER BY totalIngresos DESC
-LIMIT 10;]]></query>
+LIMIT $P{limite};]]></query>
 		<field name="productoNombre" class="java.lang.String">
 			<property name="com.jaspersoft.studio.field.name" value="NOMBRE"/>
 			<property name="com.jaspersoft.studio.field.label" value="productoNombre"/>
@@ -328,7 +324,7 @@ LIMIT 10;]]></query>
 						</element>
 					</columnHeader>
 					<detailCell height="30" style="Table_TD">
-						<element kind="textField" uuid="e97e7d95-d226-49cf-95c9-18da0c4f1c2c" x="0" y="0" width="99" height="30" hTextAlign="Left">
+						<element kind="textField" uuid="e97e7d95-d226-49cf-95c9-18da0c4f1c2c" x="0" y="0" width="99" height="30" hTextAlign="Center">
 							<expression><![CDATA[$F{categoriaNombre}]]></expression>
 						</element>
 					</detailCell>
