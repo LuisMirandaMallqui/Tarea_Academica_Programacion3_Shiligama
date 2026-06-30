@@ -180,11 +180,11 @@
                     <ThemeSelector />
 
                     <!-- Notifications Link -->
-                    <a href="/admin/notificaciones" class="btn btn-ghost p-2 position-relative text-foreground" style="border-radius: var(--radius);" title="Notificaciones">
+                    <a href="/admin/notificaciones" class="btn btn-ghost p-2 position-relative text-foreground" style="border-radius: var(--radius); overflow: visible;" title="Notificaciones">
                         <i class="fas fa-bell @(_unreadCount > 0 ? "bell-unread" : "")" style="font-size:1.1rem;"></i>
                         @if (_unreadCount > 0)
                         {
-                            <span class="position-absolute badge bg-danger rounded-circle d-flex align-items-center justify-content-center notification-badge" style="width: 22px; height: 22px; font-size: 0.7rem; font-weight: 700; top: -4px; right: -8px; padding: 0; border: 2px solid var(--card);">
+                            <span class="position-absolute badge bg-danger rounded-circle d-flex align-items-center justify-content-center notification-badge" style="width: 24px; height: 24px; font-size: 0.7rem; font-weight: 700; top: -4px; right: -8px; padding: 0 4px; border: 2px solid var(--card);">
                                 @(_unreadCount > 99 ? "99+" : _unreadCount.ToString())
                             </span>
                         }

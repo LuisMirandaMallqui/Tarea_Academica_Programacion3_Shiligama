@@ -197,6 +197,7 @@
                                             <input type="checkbox"
                                                    class="form-check-input"
                                                    checked="@IsProductSelected(item.Id)"
+                                                   disabled="@(GetAlreadyReturned(item.Id) >= item.Quantity)"
                                                    @onclick:stopPropagation
                                                    @onchange="@((e) => SetProductSelected(item.Id, (bool)(e.Value ?? false)))" />
 
@@ -204,6 +205,10 @@
                                                 <div class="fw-semibold small">@item.Name</div>
                                                 <div class="text-muted small">
                                                     Comprado: @item.Quantity uds. · S/. @item.Price.ToString("0.00")
+                                                    @if (GetAlreadyReturned(item.Id) > 0)
+                                                    {
+                                                        <span class="text-warning ms-1">· Ya devuelto: @GetAlreadyReturned(item.Id)</span>
+                                                    }
                                                 </div>
                                             </div>
                                         </div>
@@ -214,9 +219,9 @@
                                                    class="form-control text-center"
                                                    style="width:70px;"
                                                    min="1"
-                                                   max="@item.Quantity"
+                                                   max="@(item.Quantity - GetAlreadyReturned(item.Id))"
                                                    value="@GetReturnQty(item.Id)"
-                                                   disabled="@(!IsProductSelected(item.Id))"
+                                                   disabled="@(!IsProductSelected(item.Id) || GetAlreadyReturned(item.Id) >= item.Quantity)"
                                                    @onclick:stopPropagation
                                                    @onchange="@((e) => SetReturnQty(item.Id, int.Parse(e.Value?.ToString() ?? "1")))" />
                                         </div>
@@ -454,9 +459,25 @@
         }
 
         if (qty < 1) qty = 1;
-        if (qty > product.Quantity) qty = product.Quantity;
+        int maxReturnable = product.Quantity - GetAlreadyReturned(productId);
+        if (maxReturnable < 1) maxReturnable = 1;
+        if (qty > maxReturnable) qty = maxReturnable;
 
         _productReturnQty[productId] = qty;
+    }
+
+    private int GetAlreadyReturned(int productId)
+    {
+        int idPedido = _selectedOrder != null ? ParsePedidoId(_selectedOrder.Id) : 0;
+        if (idPedido <= 0) return 0;
+
+        return _misDevoluciones
+            .Where(r => r.IdPedido == idPedido
+                      && r.Estado?.ToLower() != "rechazado"
+                      && r.Detalles != null)
+            .SelectMany(r => r.Detalles)
+            .Where(d => d.IdProducto == productId)
+            .Sum(d => d.Cantidad);
     }
 
     private async Task RegistrarDevolucionOnline()
@@ -484,6 +505,17 @@
         {
             _modalError = "Debe seleccionar al menos un producto.";
             return;
+        }
+
+        foreach (var p in productosSeleccionados)
+        {
+            int qty = GetReturnQty(p.Id);
+            int already = GetAlreadyReturned(p.Id);
+            if (qty + already > p.Quantity)
+            {
+                _modalError = $"La cantidad a devolver de '{p.Name}' excede lo permitido (ya devuelto: {already}, comprado: {p.Quantity}).";
+                return;
+            }
         }
 
         if (_selectedMotivo == "OTRO" && string.IsNullOrWhiteSpace(_customMotivo))

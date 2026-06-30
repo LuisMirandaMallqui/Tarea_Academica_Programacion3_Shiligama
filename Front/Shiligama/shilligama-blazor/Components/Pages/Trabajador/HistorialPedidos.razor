@@ -1,18 +1,17 @@
-﻿@page "/admin/pedidos"
-@layout AdminLayout
+@page "/trabajador/historial-pedidos"
+@layout TrabajadorLayout
 @inject SalesService SalesSvc
-@inject NotificacionService NotifSvc
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
-<PageTitle>Pedidos – Shiligama Admin</PageTitle>
+<PageTitle>Historial de Pedidos - Shiligama Trabajador</PageTitle>
 
 <div class="d-flex flex-column gap-4">
 
     <!-- Header -->
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
-            <p class="text-muted-foreground small mt-0 mb-0">Gestiona los pedidos recibidos del minimarket</p>
+            <p class="text-muted-foreground small mt-0 mb-0">Consulta pedidos completados, rechazados y cancelados</p>
         </div>
     </div>
 
@@ -22,14 +21,6 @@
 }
 else
 {
-    <PedidosCardList @ref="_cardListRef" ActiveOnly="true" PageSize="6" OnOrderStatusChanged="RecargarPedidos" />
-
-    <!-- Historial de pedidos -->
-    <div class="mt-4">
-        <h2 class="fw-bold text-foreground mb-0" style="font-size:1.9rem;letter-spacing:-0.01em;">Historial de pedidos</h2>
-        <p class="text-muted-foreground small mb-0">Pedidos atendidos, rechazados y cancelados</p>
-    </div>
-
     <!-- Filtros -->
     <div class="card p-4" style="border-radius:12px;">
         <div class="row g-3 align-items-end">
@@ -159,12 +150,6 @@ else
                                             @onclick="@(() => VerDetalle(order))"
                                             style="border-radius:var(--radius);font-size:0.8rem;">
                                         <i class="fa-solid fa-eye"></i> Ver detalles
-                                    </button>
-                                    <button class="btn btn-sm p-1 text-muted-foreground"
-                                            @onclick="@(() => AskCambiarEstado(order))"
-                                            title="Modificar estado del pedido"
-                                            style="border:none;background:transparent;box-shadow:none;">
-                                        <i class="fa-solid fa-pen"></i>
                                     </button>
                                 </div>
                             </td>
@@ -432,100 +417,6 @@ else
     </div>
 }
 
-<!-- Modal Modificar Estado (desde Historial) -->
-@if (_showCambiarEstadoModal && _cambiarEstadoOrder != null)
-{
-    <div class="modal show d-block" tabindex="-1" style="background:rgba(0,0,0,.45);z-index:1070;" @onclick="CancelCambiarEstado">
-        <div class="modal-dialog modal-dialog-centered" style="max-width:420px;" @onclick:stopPropagation>
-            <div class="modal-content bg-card border-border">
-                <div class="modal-body p-4">
-
-                    @if (!_pedirConfirmacionFinal)
-                    {
-                        <h5 class="fw-bold text-foreground mb-1"><i class="fa-solid fa-rotate me-2"></i>Modificar estado</h5>
-                        <p class="text-muted-foreground small mb-3">
-                            Pedido <strong>@_cambiarEstadoOrder.Id</strong> · Estado actual:
-                            <span class="badge" style="@GetStatusBadgeStyle(_cambiarEstadoOrder.Status) font-size:0.73rem;border-radius:9999px;padding:3px 9px;">@GetStatusLabel(_cambiarEstadoOrder.Status)</span>
-                        </p>
-                        <label class="form-label small fw-medium text-foreground mb-1">Nuevo estado</label>
-                        <select class="form-select text-foreground mb-3" @bind="_nuevoEstadoSeleccionado">
-                            <option value="recibido">Recibido</option>
-                            <option value="en_proceso">En proceso</option>
-                            <option value="atendido">Atendido</option>
-                            <option value="rechazado">Rechazado</option>
-                            <option value="cancelado">Cancelado</option>
-                        </select>
-
-                        @if (!string.IsNullOrEmpty(_cambiarEstadoError))
-                        {
-                            <div class="alert alert-danger py-2 small mb-3">@_cambiarEstadoError</div>
-                        }
-
-                        <div class="d-flex gap-2 justify-content-end">
-                            <button class="btn btn-secondary" style="border-radius:var(--radius);" @onclick="CancelCambiarEstado">Cancelar</button>
-                            <button class="btn btn-primary"
-                                    style="border-radius:var(--radius);"
-                                    disabled="@(_nuevoEstadoSeleccionado == _cambiarEstadoOrder.Status)"
-                                    @onclick="@(() => _pedirConfirmacionFinal = true)">
-                                Continuar
-                            </button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="text-center">
-                            <div class="mb-3" style="font-size:2.5rem;">⚠️</div>
-                            <h5 class="fw-bold text-foreground mb-1">¿Estás segura?</h5>
-                            <p class="text-muted-foreground small mb-4">
-                                El pedido <strong>@_cambiarEstadoOrder.Id</strong> pasará de
-                                <strong>@GetStatusLabel(_cambiarEstadoOrder.Status)</strong> a
-                                <strong>@GetStatusLabel(_nuevoEstadoSeleccionado)</strong>.
-                            </p>
-
-                            @if (!string.IsNullOrEmpty(_cambiarEstadoError))
-                            {
-                                <div class="alert alert-danger py-2 small mb-3 text-start">@_cambiarEstadoError</div>
-                            }
-
-                            <div class="d-flex gap-2 justify-content-center">
-                                <button class="btn btn-secondary" disabled="@_cambiandoEstado" style="border-radius:var(--radius);" @onclick="@(() => _pedirConfirmacionFinal = false)">Volver</button>
-                                <button class="btn text-white" disabled="@_cambiandoEstado"
-                                        style="background:var(--primary);border-color:var(--primary);border-radius:var(--radius);min-width:160px;"
-                                        @onclick="ConfirmCambiarEstado">
-                                    @if (_cambiandoEstado)
-                                    {
-                                        <span class="spinner-border spinner-border-sm me-1"></span>
-                                        <span>Actualizando...</span>
-                                    }
-                                    else
-                                    {
-                                        <span>Sí, confirmar</span>
-                                    }
-                                </button>
-                            </div>
-                        </div>
-                    }
-
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- Toast -->
-@if (_showToast)
-{
-    <div class="position-fixed bottom-0 end-0 p-3" style="z-index:9999;">
-        <div class="toast show align-items-center text-white border-0" style="background:@(_toastError ? "#dc3545" : "#1A6B3C");border-radius:var(--radius);min-width:300px;">
-            <div class="d-flex align-items-center gap-2 px-3 py-2">
-                <i class="fa-solid @(_toastError ? "fa-circle-exclamation" : "fa-circle-check")"></i>
-                <span class="small">@_toastMsg</span>
-                <button class="btn-close btn-close-white ms-auto" style="font-size:.7rem;" @onclick="@(() => _showToast = false)"></button>
-            </div>
-        </div>
-    </div>
-}
-
 <style>
     /* Modal detalle */
     .detail-modal-overlay { position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9998;padding:1rem;backdrop-filter:blur(2px); }
@@ -587,10 +478,6 @@ else
     private DateTime? _fechaDesde   = null;
     private DateTime? _fechaHasta   = null;
 
-    // Referencia al componente hijo (Listado de pedidos) para poder refrescarlo
-    // sin recargar la página cuando un pedido cambia de estado desde el Historial.
-    private PedidosCardList? _cardListRef;
-
     // Paginación
     private int _pageSize    = 8;
     private int _currentPage = 1;
@@ -599,53 +486,11 @@ else
     private bool _showDetailModal = false;
     private Order? _detailOrder;
 
-    // Modificar estado (desde Historial) — flujo en 2 pasos: elegir estado → confirmar
-    private bool _showCambiarEstadoModal = false;
-    private bool _pedirConfirmacionFinal = false;
-    private Order? _cambiarEstadoOrder;
-    private string _nuevoEstadoSeleccionado = "";
-    private bool _cambiandoEstado = false;
-    private string _cambiarEstadoError = "";
-
-    // Toast feedback
-    private bool _showToast = false;
-    private string _toastMsg = "";
-    private bool _toastError = false;
-
     protected override async Task OnInitializedAsync()
     {
         await SalesSvc.EnsureLoadedAsync(recargar: true);
         _orders = SalesSvc.GetRecentOrders();
         _loading = false;
-    }
-
-    private string? _resaltarId;
-    private string? _notifId;
-
-    protected override void OnInitialized()
-    {
-        var uri = Nav.ToAbsoluteUri(Nav.Uri);
-        _resaltarId = System.Web.HttpUtility.ParseQueryString(uri.Query)["resaltar"];
-        _notifId = System.Web.HttpUtility.ParseQueryString(uri.Query)["notif"];
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            if (!string.IsNullOrEmpty(_resaltarId))
-                await JS.InvokeVoidAsync("scrollToElement", $"row-{_resaltarId}");
-
-            if (!string.IsNullOrEmpty(_notifId) && int.TryParse(_notifId, out int nid))
-                await NotifSvc.MarcarLeidaAsync(nid);
-        }
-    }
-
-    private async Task RecargarPedidos()
-    {
-        await SalesSvc.EnsureLoadedAsync(recargar: true);
-        _orders = SalesSvc.GetRecentOrders();
-        StateHasChanged();
     }
 
     private static readonly Dictionary<string,int> StatusOrder = new(StringComparer.OrdinalIgnoreCase)
@@ -727,74 +572,4 @@ else
         "cancelado"  => "background:#ffebee;color:#c62828;font-weight:600;",
         _            => "background:#f5f5f5;color:#555;font-weight:600;"
     };
-
-    // ── Modificar estado (Historial) ─────────────────────────────────────
-
-    private void AskCambiarEstado(Order order)
-    {
-        _cambiarEstadoOrder = order;
-        _nuevoEstadoSeleccionado = order.Status;
-        _pedirConfirmacionFinal = false;
-        _cambiarEstadoError = "";
-        _showCambiarEstadoModal = true;
-    }
-
-    private void CancelCambiarEstado()
-    {
-        _showCambiarEstadoModal = false;
-        _pedirConfirmacionFinal = false;
-        _cambiarEstadoOrder = null;
-        _nuevoEstadoSeleccionado = "";
-        _cambiarEstadoError = "";
-    }
-
-    private async Task ConfirmCambiarEstado()
-    {
-        if (_cambiarEstadoOrder == null) return;
-        _cambiandoEstado = true;
-        _cambiarEstadoError = "";
-        StateHasChanged();
-
-        var (ok, error) = await SalesSvc.UpdateOrderStatusAsync(_cambiarEstadoOrder.Id, _nuevoEstadoSeleccionado);
-
-        _cambiandoEstado = false;
-
-        if (ok)
-        {
-            // Recargamos desde el backend para reflejar el estado real persistido.
-            await SalesSvc.EnsureLoadedAsync(recargar: true);
-            _orders = SalesSvc.GetRecentOrders();
-
-            // Avisamos también al "Listado de pedidos" (PedidosCardList) para que
-            // se actualice al instante: si un pedido pasó de un estado terminal
-            // (atendido/rechazado/cancelado) a recibido/en_proceso, debe aparecer
-            // ahí sin que la persona tenga que recargar la página.
-            if (_cardListRef != null)
-                await _cardListRef.RefreshAsync();
-
-            _showCambiarEstadoModal = false;
-            _pedirConfirmacionFinal = false;
-            _cambiarEstadoOrder = null;
-            ShowToast("Estado del pedido actualizado correctamente.", false);
-        }
-        else
-        {
-            // No mentimos en la UI: si el backend rechazó el cambio
-            // (p.ej. el pedido ya está en un estado terminal y no puede revertirse),
-            // mostramos el motivo real en vez de cerrar el modal como si hubiera funcionado.
-            _cambiarEstadoError = error;
-        }
-        StateHasChanged();
-    }
-
-    private async void ShowToast(string message, bool isError)
-    {
-        _toastMsg = message;
-        _toastError = isError;
-        _showToast = true;
-        StateHasChanged();
-        await Task.Delay(3500);
-        _showToast = false;
-        StateHasChanged();
-    }
 }

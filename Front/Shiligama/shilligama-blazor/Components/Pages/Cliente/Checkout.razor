@@ -427,9 +427,15 @@ else
                                             <span class="input-group-text">
                                                 <Icons Name="Smartphone" style="width:15px;height:15px;" />
                                             </span>
-                                            <input type="tel" class="form-control font-monospace"
-                                                   placeholder="999 999 999" maxlength="9" @bind="_yapePhone" />
+                                            <input type="tel" class="form-control font-monospace @(!string.IsNullOrEmpty(_yapePhoneError) ? "is-invalid" : "")"
+                                                   placeholder="999 999 999" maxlength="9"
+                                                   value="@_yapePhone"
+                                                   @oninput="OnYapePhoneInput" />
                                         </div>
+                                        @if (!string.IsNullOrEmpty(_yapePhoneError))
+                                        {
+                                            <p class="text-danger small mb-0 mt-1">@_yapePhoneError</p>
+                                        }
                                     </div>
                                     <div>
                                         <label class="form-label small fw-medium">Código de confirmación</label>
@@ -437,16 +443,25 @@ else
                                             <span class="input-group-text">
                                                 <Icons Name="Hash" style="width:15px;height:15px;" />
                                             </span>
-                                            <input type="text" class="form-control"
-                                                   placeholder="Código de tu app Yape" @bind="_yapeCode" />
+                                            <input type="text" class="form-control @(!string.IsNullOrEmpty(_yapeCodeError) ? "is-invalid" : "")"
+                                                   placeholder="Código de tu app Yape"
+                                                   value="@_yapeCode"
+                                                   @oninput="OnYapeCodeInput" />
                                         </div>
-                                        <p class="form-text">Encuéntralo en tu app tras escanear el QR</p>
+                                        @if (!string.IsNullOrEmpty(_yapeCodeError))
+                                        {
+                                            <p class="text-danger small mb-0 mt-1">@_yapeCodeError</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="form-text">Encuéntralo en tu app tras escanear el QR</p>
+                                        }
                                     </div>
                                     @if (!_yapeConfirmed)
                                     {
                                         <button class="btn btn-outline-secondary btn-sm"
                                                 @onclick="ConfirmYape"
-                                                disabled="@(_yapeCode.Length < 4)">
+                                                disabled="@(_yapeCode.Length < 4 || _yapePhoneError != null || _yapeCodeError != null)">
                                             <Icons Name="CheckCircle" style="width:14px;height:14px;" />
                                             Confirmar pago Yape
                                         </button>
@@ -597,6 +612,13 @@ else
                             El monto ingresado es menor al total del pedido (S/. @Total.ToString("0.00")).
                         </p>
                     }
+                    @if (_payMethod == "yape" && !_yapeConfirmed)
+                    {
+                        <p class="text-muted-foreground small mt-2 mb-0 d-flex align-items-center gap-1">
+                            <Icons Name="Smartphone" style="width:13px;height:13px;" />
+                            Confirma el pago Yape antes de continuar.
+                        </p>
+                    }
                     <button class="btn btn-primary w-100 fw-semibold mt-3 d-flex align-items-center justify-content-center gap-2"
                             style="height:52px;border-radius:var(--radius);"
                             disabled="@(_isLoading || !CanPlaceOrder)"
@@ -648,6 +670,8 @@ else
     private string _yapePhone     = "";
     private string _yapeCode      = "";
     private bool   _yapeConfirmed = false;
+    private string? _yapePhoneError;
+    private string? _yapeCodeError;
 
     private bool   _isLoading = false;
     private bool   _success   = false;
@@ -702,7 +726,8 @@ else
     // El pedido para delivery requiere dirección; efectivo requiere monto ≥ total.
     private bool CanPlaceOrder =>
         (_deliveryMethod != "delivery" || !string.IsNullOrWhiteSpace(_address)) &&
-        (_payMethod != "efectivo" || CashEnough);
+        (_payMethod != "efectivo" || CashEnough) &&
+        (_payMethod != "yape" || _yapeConfirmed);
 
     // Extrae el id numérico del pedido del código "PED-0012".
     private int ParsePedidoId(string orderId)
@@ -781,9 +806,44 @@ else
 
     private void OnCashQuick(decimal amount) { _cashAmount = amount; }
 
+    private void OnYapePhoneInput(ChangeEventArgs e)
+    {
+        _yapePhone = e.Value?.ToString() ?? "";
+        ValidateYapePhone();
+    }
+
+    private void OnYapeCodeInput(ChangeEventArgs e)
+    {
+        _yapeCode = e.Value?.ToString() ?? "";
+        ValidateYapeCode();
+    }
+
+    private void ValidateYapePhone()
+    {
+        _yapePhoneError = null;
+        if (string.IsNullOrWhiteSpace(_yapePhone))
+            _yapePhoneError = "El número es obligatorio.";
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(_yapePhone, @"^9\d{8}$"))
+            _yapePhoneError = "Formato inválido (9 dígitos, empieza con 9).";
+    }
+
+    private void ValidateYapeCode()
+    {
+        _yapeCodeError = null;
+        if (string.IsNullOrWhiteSpace(_yapeCode))
+            _yapeCodeError = "El código es obligatorio.";
+        else if (_yapeCode.Length < 4 || _yapeCode.Length > 8)
+            _yapeCodeError = "Debe tener entre 4 y 8 caracteres.";
+        else if (!System.Text.RegularExpressions.Regex.IsMatch(_yapeCode, @"^[a-zA-Z0-9]+$"))
+            _yapeCodeError = "Solo letras y números.";
+    }
+
     private void ConfirmYape()
     {
-        if (_yapeCode.Length >= 4) _yapeConfirmed = true;
+        ValidateYapePhone();
+        ValidateYapeCode();
+        if (_yapePhoneError == null && _yapeCodeError == null)
+            _yapeConfirmed = true;
     }
 
     private async Task PlaceOrder()

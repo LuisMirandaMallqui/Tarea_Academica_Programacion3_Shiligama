@@ -5,6 +5,7 @@
 @inject ProductService ProductSvc
 @inject AuthService Auth
 @inject SalesService SalesSvc
+@inject NotificacionService NotifSvc
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
@@ -448,6 +449,7 @@
                                                 <input type="checkbox"
                                                        class="form-check-input"
                                                        checked="@GetProductChecked(item.Id)"
+                                                       disabled="@(GetAlreadyReturned(item.Id) >= item.Quantity)"
                                                        @onchange="@((e) => OnProductCheckedChange(item.Id, (bool)(e.Value ?? false)))"
                                                        style="width: 18px; height: 18px; border-radius: 4px;" />
 
@@ -455,6 +457,10 @@
                                                     <span class="fw-semibold text-foreground small d-block">@item.Name</span>
                                                     <span class="text-muted-foreground text-xs">
                                                         Comprado: @item.Quantity uds. · S/. @item.Price.ToString("0.00")
+                                                        @if (GetAlreadyReturned(item.Id) > 0)
+                                                        {
+                                                            <span class="text-warning ms-1">· Ya devuelto: @GetAlreadyReturned(item.Id)</span>
+                                                        }
                                                     </span>
                                                 </div>
                                             </div>
@@ -468,8 +474,8 @@
                                                        @onchange="@((e) => OnProductReturnQtyChange(item.Id, int.Parse(e.Value?.ToString() ?? "1")))"
                                                        @onclick:stopPropagation
                                                        min="1"
-                                                       max="@item.Quantity"
-                                                       disabled="@(!GetProductChecked(item.Id))"
+                                                       max="@GetMaxReturnable(item.Id)"
+                                                       disabled="@(!GetProductChecked(item.Id) || GetAlreadyReturned(item.Id) >= item.Quantity)"
                                                        style="width: 60px; height: 36px; padding: 4px; border-radius:6px;" />
                                             </div>
                                         </div>
@@ -897,11 +903,13 @@
     }
 
     private string? _resaltarId;
+    private string? _notifId;
 
     protected override void OnInitialized()
     {
         var uri = Nav.ToAbsoluteUri(Nav.Uri);
         _resaltarId = System.Web.HttpUtility.ParseQueryString(uri.Query)["resaltar"];
+        _notifId = System.Web.HttpUtility.ParseQueryString(uri.Query)["notif"];
     }
 
     protected override async Task OnInitializedAsync()
@@ -937,8 +945,14 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !string.IsNullOrEmpty(_resaltarId))
-            await JS.InvokeVoidAsync("scrollToElement", $"row-dev-{_resaltarId}");
+        if (firstRender)
+        {
+            if (!string.IsNullOrEmpty(_resaltarId))
+                await JS.InvokeVoidAsync("scrollToElement", $"row-dev-{_resaltarId}");
+
+            if (!string.IsNullOrEmpty(_notifId) && int.TryParse(_notifId, out int nid))
+                await NotifSvc.MarcarLeidaAsync(nid);
+        }
     }
 
     private static bool IsOnlineReturn(Return r) =>
@@ -1191,13 +1205,40 @@
     private void OnProductCheckedChange(int productId, bool val)
     {
         _productSelected[productId] = val;
-        _formDirty = true; // ← agrega
+        _formDirty = true;
     }
     private int GetProductReturnQty(int productId) => _productReturnQty.ContainsKey(productId) ? _productReturnQty[productId] : 1;
     private void OnProductReturnQtyChange(int productId, int val)
     {
+        int max = GetMaxReturnable(productId);
+        if (val < 1) val = 1;
+        if (val > max) val = max;
         _productReturnQty[productId] = val;
-        _formDirty = true; // ← agrega
+        _formDirty = true;
+    }
+
+    private int GetAlreadyReturned(int productId)
+    {
+        if (_selectedSale == null) return 0;
+
+        int? idVenta = int.TryParse(_selectedSale.Id?.Replace("VTA-", ""), out var parsed) ? parsed : null;
+        int? idPedido = _form.IdPedido;
+
+        return _returns
+            .Where(r => r.Estado?.ToLower() != "rechazado" && r.Detalles != null
+                      && ((idPedido.HasValue && r.IdPedido == idPedido)
+                          || (idVenta.HasValue && r.IdVenta == idVenta)))
+            .SelectMany(r => r.Detalles)
+            .Where(d => d.IdProducto == productId)
+            .Sum(d => d.Cantidad);
+    }
+
+    private int GetMaxReturnable(int productId)
+    {
+        var item = _selectedSale?.Productos?.FirstOrDefault(p => p.Id == productId);
+        if (item == null) return 1;
+        int remaining = item.Quantity - GetAlreadyReturned(productId);
+        return remaining < 1 ? 1 : remaining;
     }
 
     private string GetEstadoBadge(Return r)
@@ -1333,6 +1374,17 @@
             {
                 _errorMessage = "Debe seleccionar al menos un producto para devolver.";
                 return;
+            }
+
+            foreach (var item in _selectedSale.Productos.Where(p => GetProductChecked(p.Id)))
+            {
+                int qty = GetProductReturnQty(item.Id);
+                int already = GetAlreadyReturned(item.Id);
+                if (qty + already > item.Quantity)
+                {
+                    _errorMessage = $"La cantidad de '{item.Name}' excede lo permitido (ya devuelto: {already}, comprado: {item.Quantity}).";
+                    return;
+                }
             }
 
             _form.Product = string.Join(", ", _form.Detalles.Select(d => d.NombreProducto));

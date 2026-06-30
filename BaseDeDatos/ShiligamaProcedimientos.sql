@@ -793,7 +793,21 @@ DROP PROCEDURE IF EXISTS `ELIMINAR_LOTE`;
 DELIMITER ;;
 CREATE DEFINER=`admin`@`%` PROCEDURE `ELIMINAR_LOTE`(IN _lote_id INT)
 BEGIN
+    DECLARE v_producto_id INT;
+
+    SELECT PRODUCTO_ID INTO v_producto_id
+    FROM lote WHERE LOTE_ID = _lote_id;
+
     UPDATE lote SET ACTIVO = 0 WHERE LOTE_ID = _lote_id;
+
+    UPDATE producto p
+    SET p.STOCK = (
+        SELECT COALESCE(SUM(l.CANTIDAD_ACTUAL), 0)
+        FROM lote l
+        WHERE l.PRODUCTO_ID = v_producto_id
+          AND l.ACTIVO = 1
+    )
+    WHERE p.PRODUCTO_ID = v_producto_id;
 END ;;
 DELIMITER ;
 DROP PROCEDURE IF EXISTS `ELIMINAR_METODO_PAGO`;
@@ -2178,11 +2192,25 @@ CREATE DEFINER=`admin`@`%` PROCEDURE `MODIFICAR_LOTE`(
     IN _numero_lote        VARCHAR(50)
 )
 BEGIN
+    DECLARE v_producto_id INT;
+
     UPDATE lote
     SET CANTIDAD_ACTUAL   = _cantidad_actual,
         FECHA_VENCIMIENTO = _fecha_vencimiento,
         NUMERO_LOTE       = _numero_lote
     WHERE LOTE_ID = _lote_id;
+
+    SELECT PRODUCTO_ID INTO v_producto_id
+    FROM lote WHERE LOTE_ID = _lote_id;
+
+    UPDATE producto p
+    SET p.STOCK = (
+        SELECT COALESCE(SUM(l.CANTIDAD_ACTUAL), 0)
+        FROM lote l
+        WHERE l.PRODUCTO_ID = v_producto_id
+          AND l.ACTIVO = 1
+    )
+    WHERE p.PRODUCTO_ID = v_producto_id;
 END ;;
 DELIMITER ;
 DROP PROCEDURE IF EXISTS `MODIFICAR_METODO_PAGO`;

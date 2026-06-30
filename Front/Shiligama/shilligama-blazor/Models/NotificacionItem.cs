@@ -62,10 +62,10 @@ public class NotificacionItem
         {
             "admin" => ReferenciaTipo.ToUpper() switch
             {
-                "PEDIDO" => $"/admin/pedidos?resaltar={ReferenciaId}",
-                "PRODUCTO" => $"/admin/productos?resaltar={ReferenciaId}",
-                "DEVOLUCION" => $"/admin/devoluciones?resaltar={ReferenciaId}",
-                "PROMOCION" => $"/admin/promociones?resaltar={ReferenciaId}",
+                "PEDIDO" => $"/admin/pedidos?resaltar={ReferenciaId}&notif={IdNotificacion}",
+                "PRODUCTO" => $"/admin/productos?resaltar={ReferenciaId}&notif={IdNotificacion}",
+                "DEVOLUCION" => $"/admin/devoluciones?resaltar={ReferenciaId}&notif={IdNotificacion}",
+                "PROMOCION" => $"/admin/promociones?resaltar={ReferenciaId}&notif={IdNotificacion}",
                 _ => null
             },
             "trabajador" => ReferenciaTipo.ToUpper() switch
@@ -73,15 +73,15 @@ public class NotificacionItem
                 // No existe /trabajador/pedidos: el listado de pedidos activos
                 // vive embebido en el Dashboard (/trabajador).
                 "PEDIDO" => "/trabajador",
-                "PRODUCTO" => $"/trabajador/productos?resaltar={ReferenciaId}",
-                "DEVOLUCION" => $"/trabajador/devoluciones?resaltar={ReferenciaId}",
+                "PRODUCTO" => $"/trabajador/productos?resaltar={ReferenciaId}&notif={IdNotificacion}",
+                "DEVOLUCION" => $"/trabajador/devoluciones?resaltar={ReferenciaId}&notif={IdNotificacion}",
                 // Trabajador no administra promociones, no hay pantalla a la que ir.
                 "PROMOCION" => null,
                 _ => null
             },
             "cliente" => ReferenciaTipo.ToUpper() switch
             {
-                "PEDIDO" => $"/mis-pedidos?resaltar={ReferenciaId}",
+                "PEDIDO" => $"/mis-pedidos?resaltar={ReferenciaId}&notif={IdNotificacion}",
                 _ => null
             },
             _ => null

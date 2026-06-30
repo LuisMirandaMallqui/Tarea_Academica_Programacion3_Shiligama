@@ -27,7 +27,7 @@
 
         <nav class="flex-grow-1 sidebar-nav-container overflow-y-auto">
             <a href="/trabajador"
-               class="sidebar-link-formal @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/perfil") && !IsActive("/trabajador/notificaciones") ? "active" : "")">
+               class="sidebar-link-formal @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/historial-pedidos") && !IsActive("/trabajador/perfil") && !IsActive("/trabajador/notificaciones") ? "active" : "")">
                 <i class="fas fa-clipboard-list"></i> Pedidos Clientes
             </a>
             <a href="/trabajador/registrar-venta"
@@ -41,6 +41,10 @@
             <a href="/trabajador/devoluciones"
                class="sidebar-link-formal @(IsActive("/trabajador/devoluciones") ? "active" : "")">
                 <i class="fas fa-undo"></i> Devoluciones
+            </a>
+            <a href="/trabajador/historial-pedidos"
+               class="sidebar-link-formal @(IsActive("/trabajador/historial-pedidos") ? "active" : "")">
+                <i class="fas fa-clock-rotate-left"></i> Historial Pedidos
             </a>
         </nav>
 
@@ -79,7 +83,7 @@
             </div>
             <nav class="sidebar-nav-container overflow-y-auto flex-grow-1">
                 <a href="/trabajador" @onclick="ToggleMobileSidebar"
-                   class="sidebar-link-formal @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/perfil") && !IsActive("/trabajador/notificaciones") ? "active" : "")">
+                   class="sidebar-link-formal @(IsActive("/trabajador") && !IsActive("/trabajador/productos") && !IsActive("/trabajador/registrar-venta") && !IsActive("/trabajador/devoluciones") && !IsActive("/trabajador/historial-pedidos") && !IsActive("/trabajador/perfil") && !IsActive("/trabajador/notificaciones") ? "active" : "")">
                     <i class="fas fa-clipboard-list"></i> Pedidos Clientes
                 </a>
                 <a href="/trabajador/registrar-venta" @onclick="ToggleMobileSidebar"
@@ -93,6 +97,10 @@
                 <a href="/trabajador/devoluciones" @onclick="ToggleMobileSidebar"
                    class="sidebar-link-formal @(IsActive("/trabajador/devoluciones") ? "active" : "")">
                     <i class="fas fa-undo"></i> Devoluciones
+                </a>
+                <a href="/trabajador/historial-pedidos" @onclick="ToggleMobileSidebar"
+                   class="sidebar-link-formal @(IsActive("/trabajador/historial-pedidos") ? "active" : "")">
+                    <i class="fas fa-clock-rotate-left"></i> Historial Pedidos
                 </a>
             </nav>
             <div class="sidebar-footer-container">
@@ -123,11 +131,11 @@
                     <ThemeSelector />
 
                     <!-- Notifications Link -->
-                    <a href="/trabajador/notificaciones" class="btn btn-ghost p-2 position-relative text-foreground" style="border-radius: var(--radius);" title="Notificaciones">
+                    <a href="/trabajador/notificaciones" class="btn btn-ghost p-2 position-relative text-foreground" style="border-radius: var(--radius); overflow: visible;" title="Notificaciones">
                         <i class="fas fa-bell @(_unreadCount > 0 ? "bell-unread" : "")" style="font-size:1.1rem;"></i>
                         @if (_unreadCount > 0)
                         {
-                            <span class="position-absolute badge bg-danger rounded-circle d-flex align-items-center justify-content-center notification-badge" style="width: 22px; height: 22px; font-size: 0.7rem; font-weight: 700; top: -4px; right: -8px; padding: 0; border: 2px solid var(--card);">
+                            <span class="position-absolute badge bg-danger rounded-circle d-flex align-items-center justify-content-center notification-badge" style="width: 24px; height: 24px; font-size: 0.7rem; font-weight: 700; top: -4px; right: -8px; padding: 0 4px; border: 2px solid var(--card);">
                                 @(_unreadCount > 99 ? "99+" : _unreadCount.ToString())
                             </span>
                         }
@@ -254,6 +262,7 @@
             if (rel.Contains("productos"))        return "Catálogo de Productos";
             if (rel.Contains("registrar-venta"))  return "Registrar Venta (POS)";
             if (rel.Contains("devoluciones"))      return "Mis Devoluciones";
+            if (rel.Contains("historial"))         return "Historial de Pedidos";
             if (rel.Contains("notificaciones"))    return "Notificaciones";
             if (rel.Contains("perfil"))            return "Mi Perfil";
             return "Pedidos Clientes";

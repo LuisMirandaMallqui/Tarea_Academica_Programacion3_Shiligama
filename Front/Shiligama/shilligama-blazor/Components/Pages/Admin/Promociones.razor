@@ -4,6 +4,7 @@
 @using shilligama_blazor.Services
 @inject ProductService ProductSvc
 @inject PromocionService PromoSvc
+@inject NotificacionService NotifSvc
 @inject IJSRuntime JS
 @inject NavigationManager Nav
 
@@ -12,8 +13,7 @@
 <div class="d-flex flex-column gap-4">
     <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
-            <h1 class="fs-4 fw-bold text-foreground mb-0">Gestión de Promociones</h1>
-            <p class="text-muted-foreground small mt-1 mb-0">Crea y administra descuentos vinculados a productos del catálogo</p>
+            <p class="text-muted-foreground small mt-0 mb-0">Crea y administra descuentos vinculados a productos del catálogo</p>
         </div>
         <button @onclick="OpenCreate" class="btn btn-primary d-flex align-items-center gap-2 fw-semibold" style="border-radius:var(--radius);">
             <i class="fa-solid fa-plus"></i> Nueva Promoción
@@ -540,17 +540,25 @@
     private string _toastMsg = "";
 
     private string? _resaltarId;
+    private string? _notifId;
 
     protected override void OnInitialized()
     {
         var uri = Nav.ToAbsoluteUri(Nav.Uri);
         _resaltarId = System.Web.HttpUtility.ParseQueryString(uri.Query)["resaltar"];
+        _notifId = System.Web.HttpUtility.ParseQueryString(uri.Query)["notif"];
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender && !string.IsNullOrEmpty(_resaltarId))
-            await JS.InvokeVoidAsync("scrollToElement", $"row-{_resaltarId}");
+        if (firstRender)
+        {
+            if (!string.IsNullOrEmpty(_resaltarId))
+                await JS.InvokeVoidAsync("scrollToElement", $"row-{_resaltarId}");
+
+            if (!string.IsNullOrEmpty(_notifId) && int.TryParse(_notifId, out int nid))
+                await NotifSvc.MarcarLeidaAsync(nid);
+        }
     }
 
     protected override async Task OnInitializedAsync()
