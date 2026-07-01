@@ -2,6 +2,7 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 @inject NotificacionService NotificacionSvc
+@implements IDisposable
 
 <RoleGate RequiredRole="trabajador">
 <div class="d-flex flex-column min-vh-100 bg-background text-foreground">
@@ -218,12 +219,22 @@
 </style>
 </RoleGate>
 
-@code {
+
+
+
+ @code {
     private bool _isMobileSidebarOpen = false;
     private bool _isDropdownOpen = false;
     private int _unreadCount = 0;
 
     protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+        Auth.OnChange += HandleAuthChanged;
+        await CargarContadorAsync();
+    }
+
+    private async Task CargarContadorAsync()
     {
         try
         {
@@ -233,6 +244,17 @@
         {
             _unreadCount = 0;
         }
+        StateHasChanged();
+    }
+
+    private async void HandleAuthChanged()
+    {
+        await CargarContadorAsync();
+    }
+
+    public void Dispose()
+    {
+        Auth.OnChange -= HandleAuthChanged;
     }
 
     private void ToggleMobileSidebar() => _isMobileSidebarOpen = !_isMobileSidebarOpen;
@@ -272,8 +294,8 @@
     private string GetInitials(string name)
     {
         if (string.IsNullOrWhiteSpace(name)) return "T";
-        var parts = name.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length == 1) return parts[0][0].ToString().ToUpper();
-        return (parts[0][0].ToString() + parts[parts.Length - 1][0].ToString()).ToUpper();
+        var partes = name.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (partes.Length == 1) return partes[0][..1].ToUpper();
+        return (partes[0][..1] + partes[1][..1]).ToUpper();
     }
 }

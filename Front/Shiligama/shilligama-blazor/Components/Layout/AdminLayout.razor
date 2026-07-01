@@ -2,6 +2,8 @@
 @inject AuthService Auth
 @inject NavigationManager Navigation
 @inject NotificacionService NotificacionSvc
+@implements IDisposable
+
 
 <RoleGate RequiredRole="administrador">
 <div class="d-flex flex-column min-vh-100 bg-background text-foreground">
@@ -273,12 +275,18 @@
     }
 </style>
 </RoleGate>
-
 @code {
     private bool _isMobileSidebarOpen = false;
     private int _unreadCount = 0;
 
     protected override async Task OnInitializedAsync()
+    {
+        await Auth.InitializeAsync();
+        Auth.OnChange += HandleAuthChanged;
+        await CargarContadorAsync();
+    }
+
+    private async Task CargarContadorAsync()
     {
         try
         {
@@ -288,8 +296,18 @@
         {
             _unreadCount = 0;
         }
+        StateHasChanged();
     }
 
+    private async void HandleAuthChanged()
+    {
+        await CargarContadorAsync();
+    }
+
+    public void Dispose()
+    {
+        Auth.OnChange -= HandleAuthChanged;
+    }
 
     private void ToggleMobileSidebar()
     {
