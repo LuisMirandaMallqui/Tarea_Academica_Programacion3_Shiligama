@@ -129,7 +129,7 @@ public class PedidoRS {
             return Response.ok(lista).build();
         } catch (IllegalArgumentException ex) {
             return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Estado inválido. Valores: RECIBIDO, EN_PROCESO, ATENDIDO, RECHAZADO, CANCELADO.")
+                    .entity("Estado inválido. Valores: RECIBIDO, EN_PROCESO, LISTO, EN_CAMINO, ENTREGADO, RECOGIDO, RECHAZADO, CANCELADO.")
                     .build();
         } catch (Exception ex) {
             return Response.status(Response.Status.BAD_REQUEST)

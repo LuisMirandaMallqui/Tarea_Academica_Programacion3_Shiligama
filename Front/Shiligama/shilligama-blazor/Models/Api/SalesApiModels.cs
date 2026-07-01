@@ -95,35 +95,66 @@ internal class PedidoApi
     public List<DetallePedidoApi>? Detalles { get; set; }
     public int TotalItems { get; set; }
 
-    public Order ToOrder() => new Order
+    public DateTime? FechaRecibido { get; set; }
+    public DateTime? FechaEnPreparacion { get; set; }
+    public DateTime? FechaListo { get; set; }
+    public DateTime? FechaEnCamino { get; set; }
+    public DateTime? FechaEntregado { get; set; }
+    public DateTime? FechaRecogido { get; set; }
+    public DateTime? FechaCancelado { get; set; }
+
+    public Order ToOrder()
     {
-        Id = $"PED-{IdPedido:D4}",
-        Customer = (Cliente != null &&
-                    !string.IsNullOrWhiteSpace($"{Cliente.Nombres} {Cliente.Apellidos}".Trim()))
-                   ? $"{Cliente.Nombres} {Cliente.Apellidos}".Trim()
-                   : "Cliente",
-        Date = FechaHora ?? DateTime.Now,
-        Total = (decimal)MontoTotal,
-        Items = TotalItems > 0 ? TotalItems : (Detalles?.Count ?? 0),
-        Status = (EstadoPedido ?? "").ToLower() switch
+        string status = (EstadoPedido ?? "").ToLower() switch
         {
             "recibido" => "recibido",
             "en_proceso" => "en_proceso",
-            "atendido" => "atendido",
+            "listo" => "listo",
+            "en_camino" => "en_camino",
+            "entregado" => "entregado",
+            "recogido" => "recogido",
             "rechazado" => "rechazado",
             "cancelado" => "cancelado",
+
+            // Por si queda algún pedido antiguo en la BD
+            "atendido" => "listo",
+
             _ => "recibido"
-        },
-        DeliveryMethod = (ModalidadVenta ?? "").ToUpper() switch
+        };
+
+        string deliveryMethod = (ModalidadVenta ?? "").ToUpper() switch
         {
             "RECOJO_TIENDA" => "pickup",
+            "DELIVERY" => "delivery",
             _ => "delivery"
-        },
-        Channel = "Online",
-        Address = DireccionEntrega ?? string.Empty,
-        Observaciones = Observaciones,
-        TimelinePedidoRecibido = FechaHora ?? DateTime.Now,
-    };
+        };
+
+        return new Order
+        {
+            Id = $"PED-{IdPedido:D4}",
+            Customer = (Cliente != null &&
+                        !string.IsNullOrWhiteSpace($"{Cliente.Nombres} {Cliente.Apellidos}".Trim()))
+                       ? $"{Cliente.Nombres} {Cliente.Apellidos}".Trim()
+                       : "Cliente",
+
+            Date = FechaHora ?? DateTime.Now,
+            Total = (decimal)MontoTotal,
+            Items = TotalItems > 0 ? TotalItems : (Detalles?.Count ?? 0),
+            Status = status,
+            DeliveryMethod = deliveryMethod,
+            Channel = "Online",
+            Address = DireccionEntrega ?? string.Empty,
+            Observaciones = Observaciones,
+
+            TimelinePedidoRecibido = FechaRecibido ?? FechaHora ?? DateTime.Now,
+            TimelineEnPreparacion = FechaEnPreparacion,
+            TimelineListo = FechaListo,
+            TimelineEnCamino = FechaEnCamino,
+            TimelineEntregado = FechaEntregado,
+            TimelineRecogido = FechaRecogido,
+            TimelineCancelado = FechaCancelado
+        };
+    }
 }
 
 // Clases de referencia compartidas

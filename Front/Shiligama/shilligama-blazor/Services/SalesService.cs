@@ -383,7 +383,10 @@ public class SalesService
     {
         "recibido" => "RECIBIDO",
         "en_proceso" => "EN_PROCESO",
-        "atendido" => "ATENDIDO",
+        "listo" => "LISTO",
+        "en_camino" => "EN_CAMINO",
+        "entregado" => "ENTREGADO",
+        "recogido" => "RECOGIDO",
         "rechazado" => "RECHAZADO",
         "cancelado" => "CANCELADO",
         _ => status.ToUpper()
@@ -408,7 +411,12 @@ public class SalesService
             if (resp.IsSuccessStatusCode)
             {
                 var order = _orders.FirstOrDefault(o => o.Id == id);
-                if (order != null) order.Status = "atendido";
+                if (order != null)
+                {
+                    order.Status = "listo";
+                    order.TimelineEnPreparacion ??= DateTime.Now;
+                    order.TimelineListo ??= DateTime.Now;
+                }
                 return (true, string.Empty);
             }
 
@@ -446,9 +454,53 @@ public class SalesService
 
         // Solo si el backend confirmó el cambio, actualizamos la caché local.
         var order = _orders.FirstOrDefault(o => o.Id == id);
-        if (order != null) { order.Status = status; if (observaciones != null) order.Observaciones = observaciones; }
-        var sale = _sales.FirstOrDefault(s => s.Id == id.Replace("PED-", "VTA-"));
-        if (sale != null) sale.Estado = status == "atendido" ? "completado" : status;
+if (order != null)
+{
+    order.Status = status;
+
+    if (observaciones != null)
+        order.Observaciones = observaciones;
+
+    if (status == "en_proceso")
+        order.TimelineEnPreparacion ??= DateTime.Now;
+
+    if (status == "listo")
+    {
+        order.TimelineEnPreparacion ??= DateTime.Now;
+        order.TimelineListo ??= DateTime.Now;
+    }
+
+    if (status == "en_camino")
+    {
+        order.TimelineEnPreparacion ??= DateTime.Now;
+        order.TimelineListo ??= DateTime.Now;
+        order.TimelineEnCamino ??= DateTime.Now;
+    }
+
+    if (status == "entregado")
+    {
+        order.TimelineEnPreparacion ??= DateTime.Now;
+        order.TimelineListo ??= DateTime.Now;
+        order.TimelineEnCamino ??= DateTime.Now;
+        order.TimelineEntregado ??= DateTime.Now;
+    }
+
+    if (status == "recogido")
+    {
+        order.TimelineEnPreparacion ??= DateTime.Now;
+        order.TimelineListo ??= DateTime.Now;
+        order.TimelineRecogido ??= DateTime.Now;
+    }
+
+    if (status == "cancelado" || status == "rechazado")
+        order.TimelineCancelado ??= DateTime.Now;
+}
+
+var sale = _sales.FirstOrDefault(s => s.Id == id.Replace("PED-", "VTA-"));
+if (sale != null)
+{
+    sale.Estado = status is "entregado" or "recogido" ? "completado" : status;
+}
 
         return (true, string.Empty);
     }
@@ -535,7 +587,7 @@ public class SalesService
             Total = total,
             MetodoPago = paymentMethod,
             Comprobante = "boleta",
-            Estado = "pendiente"
+            Estado = "recibido"
         });
     }
 
@@ -580,7 +632,7 @@ public class SalesService
             Total = total,
             MetodoPago = payMethod,
             Comprobante = "boleta",
-            Estado = "pendiente"
+            Estado = "recibido"
         });
 
         return orderId;
@@ -612,7 +664,7 @@ public class SalesService
             montoTotal = (double)total,
             estadoPedido = "RECIBIDO",
             direccionEntrega = address,
-            modalidadVenta = deliveryMethod == "delivery" ? "DELIVERY" : "PRESENCIAL",
+            modalidadVenta = deliveryMethod == "delivery" ? "DELIVERY" : "RECOJO_TIENDA",
             observaciones = (string?)null,
             cliente = idCliente > 0 ? new { idUsuario = idCliente } : null,
             detalles = detalles

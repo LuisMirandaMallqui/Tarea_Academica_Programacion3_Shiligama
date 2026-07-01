@@ -55,6 +55,99 @@ public class Pedido {
     @JsonbProperty("totalItems")
     private int totalItems;
 
+    @XmlElement(name = "fechaRecibido")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaRecibido")
+    private LocalDateTime fechaRecibido;
+
+    @XmlElement(name = "fechaEnPreparacion")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaEnPreparacion")
+    private LocalDateTime fechaEnPreparacion;
+
+    @XmlElement(name = "fechaListo")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaListo")
+    private LocalDateTime fechaListo;
+
+    @XmlElement(name = "fechaEnCamino")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaEnCamino")
+    private LocalDateTime fechaEnCamino;
+
+    @XmlElement(name = "fechaEntregado")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaEntregado")
+    private LocalDateTime fechaEntregado;
+
+    @XmlElement(name = "fechaRecogido")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaRecogido")
+    private LocalDateTime fechaRecogido;
+
+    @XmlElement(name = "fechaCancelado")
+    @JsonbDateFormat(value = "yyyy-MM-dd'T'HH:mm:ss")
+    @JsonbProperty("fechaCancelado")
+    private LocalDateTime fechaCancelado;
+
+
+    public LocalDateTime getFechaCancelado() {
+        return fechaCancelado;
+    }
+
+    public void setFechaCancelado(LocalDateTime fechaCancelado) {
+        this.fechaCancelado = fechaCancelado;
+    }
+
+    public LocalDateTime getFechaRecogido() {
+        return fechaRecogido;
+    }
+
+    public void setFechaRecogido(LocalDateTime fechaRecogido) {
+        this.fechaRecogido = fechaRecogido;
+    }
+
+    public LocalDateTime getFechaEntregado() {
+        return fechaEntregado;
+    }
+
+    public void setFechaEntregado(LocalDateTime fechaEntregado) {
+        this.fechaEntregado = fechaEntregado;
+    }
+
+    public LocalDateTime getFechaEnCamino() {
+        return fechaEnCamino;
+    }
+
+    public void setFechaEnCamino(LocalDateTime fechaEnCamino) {
+        this.fechaEnCamino = fechaEnCamino;
+    }
+
+    public LocalDateTime getFechaListo() {
+        return fechaListo;
+    }
+
+    public void setFechaListo(LocalDateTime fechaListo) {
+        this.fechaListo = fechaListo;
+    }
+
+    public LocalDateTime getFechaEnPreparacion() {
+        return fechaEnPreparacion;
+    }
+
+    public void setFechaEnPreparacion(LocalDateTime fechaEnPreparacion) {
+        this.fechaEnPreparacion = fechaEnPreparacion;
+    }
+
+    public LocalDateTime getFechaRecibido() {
+        return fechaRecibido;
+    }
+
+    public void setFechaRecibido(LocalDateTime fechaRecibido) {
+        this.fechaRecibido = fechaRecibido;
+    }
+
+
     public int getTotalItems() { return totalItems; }
     public void setTotalItems(int totalItems) { this.totalItems = totalItems; }
 

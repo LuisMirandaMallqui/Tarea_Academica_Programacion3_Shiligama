@@ -108,13 +108,15 @@ public class PagoBoImpl implements PagoBo {
         pagoDao.modificarPorOrder(orderId.trim(), nuevoEstado, referencia);
 
         if (autorizado) {
-            // Pago confirmado: el pedido pasa a ser procesado por la tienda.
-            // (El enum EstadoPedido no tiene "PAGADO"; EN_PROCESO representa
-            //  un pedido pagado y listo para atención.)
+            // El stock ya fue reservado/descontado cuando el cliente inició el pago.
+            // Al confirmarse el pago, el pedido pasa a preparación.
             Pedido pedido = new Pedido();
             pedido.setIdPedido(pago.getIdPedido());
             pedido.setEstadoPedido(EstadoPedido.EN_PROCESO);
             pedidoDao.modificar(pedido);
+        } else {
+            // Si el pago falla, se devuelve el stock reservado.
+            pedidoDao.restaurarStockReservado(pago.getIdPedido());
         }
     }
 

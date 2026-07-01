@@ -6,6 +6,7 @@
 @inject AuthService Auth
 @inject AddressService AddressSvc
 @inject NavigationManager Navigation
+@inject PagoService PagoSvc
 @implements IDisposable
 
 <PageTitle>Checkout – Shiligama</PageTitle>
@@ -850,8 +851,6 @@ else
     {
         _payError = null;
 
-        // Exigir login de cliente antes de registrar el pedido.
-        // Sin idCliente el SP INSERTAR_PEDIDO rechaza por FK/NOT NULL.
         if (!Auth.IsCliente())
         {
             _showLoginRequired = true;
@@ -860,36 +859,63 @@ else
 
         _isLoading = true;
 
-        // 1) Registrar el pedido en el backend (devuelve "PED-0012").
+        var itemsPedido = Cart.GetCartItems().ToList();
+        var subtotalPedido = Subtotal;
+        var deliveryFeePedido = DeliveryFee;
+        var totalPedido = Total;
+
         _orderId = await SalesSvc.PlaceOnlineOrderAsync(
             _name,
-            Cart.GetCartItems().ToList(),
-            Subtotal, DeliveryFee, Total,
-            _payMethod, _deliveryMethod, _address,
+            itemsPedido,
+            subtotalPedido,
+            deliveryFeePedido,
+            totalPedido,
+            _payMethod,
+            _deliveryMethod,
+            _address,
             Auth.CurrentUser?.Id ?? 0);
 
-        // 2) Pago con tarjeta → formulario embebido de Izipay (página /checkout/pago).
         if (_payMethod == "tarjeta")
         {
             int idPedido = ParsePedidoId(_orderId);
+
             if (idPedido > 0)
             {
-                await Cart.ClearCartAsync();
-                _countdownTimer?.Dispose(); // timer ya no necesario
-                // Pasamos el total para que el backend pueda usar el monto correcto
-                // (el SP INSERTAR_PEDIDO no guarda MONTO_TOTAL, queda en 0 en la BD)
-                Navigation.NavigateTo($"/checkout/pago?pedido={idPedido}&total={Total:F2}");
+                _countdownTimer?.Dispose();
+
+                Navigation.NavigateTo(
+                    $"/checkout/pago?pedido={idPedido}&total={totalPedido.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}");
+
                 return;
             }
+
             _payError = "No se pudo registrar el pedido. Verifica tu conexión e intenta de nuevo.";
             _isLoading = false;
             return;
         }
 
-        // 3) Yape / Efectivo → confirmación directa (pago manual / contra entrega).
+        // 3) Yape / Efectivo → reservar stock antes de mostrar éxito.
+        int idPedidoManual = ParsePedidoId(_orderId);
+
+        if (idPedidoManual <= 0)
+        {
+            _payError = "No se pudo registrar el pedido. Verifica tu conexión e intenta de nuevo.";
+            _isLoading = false;
+            return;
+        }
+
+        var reserva = await PagoSvc.ReservarStockAsync(idPedidoManual);
+
+        if (reserva == null || !reserva.Exito)
+        {
+            _payError = reserva?.Mensaje ?? "No se pudo verificar el stock del pedido.";
+            _isLoading = false;
+            return;
+        }
+
         await Cart.ClearCartAsync();
-        _countdownTimer?.Dispose(); // timer ya no necesario
-        _success   = true;
+        _countdownTimer?.Dispose();
+        _success = true;
         _isLoading = false;
     }
 

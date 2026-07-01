@@ -21,6 +21,7 @@ public class Order
     public DateTime? TimelineListo { get; set; }
     public DateTime? TimelineEnCamino { get; set; }
     public DateTime? TimelineEntregado { get; set; }
+    public DateTime? TimelineRecogido { get; set; }
     public DateTime? TimelineCancelado { get; set; }
     public string Channel { get; set; } = "Online";
     public string? Observaciones { get; set; }

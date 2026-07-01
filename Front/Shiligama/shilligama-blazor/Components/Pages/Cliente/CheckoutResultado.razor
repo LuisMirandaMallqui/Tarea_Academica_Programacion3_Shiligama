@@ -1,7 +1,7 @@
 @page "/checkout/resultado"
 @layout MainLayout
 @inject PagoService PagoSvc
-
+@inject CartService Cart
 <PageTitle>Resultado del pago – Shiligama</PageTitle>
 
 <div class="container py-5 text-center" style="max-width:480px;">
@@ -81,7 +81,10 @@
 
             // En modo demo el IPN nunca llega — confirmamos manualmente.
             if (_estado == "AUTORIZADO" && Pedido > 0)
+            {
                 await PagoSvc.ConfirmarDemoAsync(Pedido);
+                await Cart.ClearCartAsync();
+            }
         }
 
         // 2) Si no hay status en la URL (o fue desconocido), consultar la BD.

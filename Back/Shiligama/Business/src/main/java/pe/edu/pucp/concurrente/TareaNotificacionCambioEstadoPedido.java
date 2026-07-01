@@ -47,31 +47,54 @@ public class TareaNotificacionCambioEstadoPedido implements Runnable {
 
         switch (nuevoEstado) {
             case EN_PROCESO:
-                titulo = "Pedido #" + idPedido + " en proceso";
+                titulo = "Pedido #" + idPedido + " en preparación";
                 mensaje = esDelivery
-                        ? "Tu pedido #" + idPedido + " está siendo preparado para el delivery."
+                        ? "Tu pedido #" + idPedido + " está siendo preparado para el envío."
                         : "Tu pedido #" + idPedido + " está siendo preparado para recojo en tienda.";
                 tipo = TipoNotificacion.PEDIDO_LISTO;
                 break;
-            case ATENDIDO:
-                titulo = "Pedido #" + idPedido + " atendido";
+
+            case LISTO:
+                titulo = esDelivery
+                        ? "Pedido #" + idPedido + " listo para envío"
+                        : "Pedido #" + idPedido + " listo para recoger";
                 mensaje = esDelivery
-                        ? "Tu pedido #" + idPedido + " fue atendido y será entregado a tu dirección."
-                        : "Tu pedido #" + idPedido + " fue atendido. Ya puedes recogerlo en tienda.";
+                        ? "Tu pedido #" + idPedido + " ya está listo para ser enviado."
+                        : "Tu pedido #" + idPedido + " ya está listo. Puedes recogerlo en tienda.";
+                tipo = TipoNotificacion.PEDIDO_LISTO;
+                break;
+
+            case EN_CAMINO:
+                titulo = "Pedido #" + idPedido + " en camino";
+                mensaje = "Tu pedido #" + idPedido + " ya está en camino a tu dirección.";
                 tipo = TipoNotificacion.PEDIDO_ATENDIDO;
                 break;
+
+            case ENTREGADO:
+                titulo = "Pedido #" + idPedido + " entregado";
+                mensaje = "Tu pedido #" + idPedido + " fue entregado correctamente.";
+                tipo = TipoNotificacion.PEDIDO_ATENDIDO;
+                break;
+
+            case RECOGIDO:
+                titulo = "Pedido #" + idPedido + " recogido";
+                mensaje = "Tu pedido #" + idPedido + " fue recogido correctamente.";
+                tipo = TipoNotificacion.PEDIDO_ATENDIDO;
+                break;
+
             case RECHAZADO:
                 titulo = "Pedido #" + idPedido + " rechazado";
                 mensaje = "Tu pedido #" + idPedido + " fue rechazado. Si tienes dudas, contáctanos.";
                 tipo = TipoNotificacion.SISTEMA;
                 break;
+
             case CANCELADO:
                 titulo = "Pedido #" + idPedido + " cancelado";
                 mensaje = "Tu pedido #" + idPedido + " fue cancelado.";
                 tipo = TipoNotificacion.SISTEMA;
                 break;
+
             default:
-                // RECIBIDO no se notifica aqui: ya lo cubre la confirmacion del pedido en el checkout.
                 return;
         }
 

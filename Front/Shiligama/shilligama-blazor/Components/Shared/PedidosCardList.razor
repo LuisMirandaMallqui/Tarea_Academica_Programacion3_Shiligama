@@ -122,7 +122,7 @@ else
                     <div class="d-flex justify-content-between align-items-center w-100">
                         <div class="d-flex align-items-center gap-2">
                             <span class="fw-bold text-foreground" style="font-size:0.88rem;">@order.Id</span>
-                            <span class="badge" style="@GetStatusBadgeStyle(order.Status) font-size:0.72rem;border-radius:9999px;padding:0.3rem 0.6rem;">@GetStatusLabel(order.Status)</span>
+                            <span class="badge" style="@GetStatusBadgeStyle(order.Status) font-size:0.72rem;border-radius:9999px;padding:0.3rem 0.6rem;">@GetStatusLabel(order)</span>
                         </div>
                         @if (order.DeliveryMethod?.ToLower() == "delivery")
                         {
@@ -303,7 +303,7 @@ else
                 <div class="d-flex flex-column gap-1">
                     <div class="d-flex align-items-center gap-2">
                         <span class="fw-bold text-foreground" style="font-size:1.1rem;">@_detailOrder.Id</span>
-                        <span class="badge" style="@GetStatusBadgeStyle(_detailOrder.Status) font-size:0.73rem;border-radius:9999px;padding:4px 11px;">@GetStatusLabel(_detailOrder.Status)</span>
+                        <span class="badge" style="@GetStatusBadgeStyle(_detailOrder.Status) font-size:0.73rem;border-radius:9999px;padding:4px 11px;">@GetStatusLabel(_detailOrder)</span>
                     </div>
                     <span class="text-muted-foreground" style="font-size:0.78rem;">
                         <i class="far fa-calendar-alt me-1"></i>@_detailOrder.Date.ToString("dd/MM/yyyy")&nbsp;·&nbsp;
@@ -509,12 +509,12 @@ else
                 <button class="btn btn-outline-secondary fw-medium" @onclick="CloseModal" style="border-radius:var(--radius);min-width:90px;">
                     <i class="fas fa-times me-1"></i>Cerrar
                 </button>
-                @if (!string.IsNullOrEmpty(GetNextActionLabel(_detailOrder.Status)))
+                @if (!string.IsNullOrEmpty(GetNextActionLabel(_detailOrder)))
                 {
                     <button class="btn text-white fw-semibold"
                             @onclick="@(() => { var o = _detailOrder; CloseModal(); AskAvanzar(o!); })"
                             style="background:#064e3b;border:1px solid #064e3b;border-radius:var(--radius);min-width:160px;">
-                        <i class="fas fa-arrow-right me-2"></i>@GetNextActionLabel(_detailOrder.Status)
+                        <i class="fas fa-arrow-right me-2"></i>@GetNextActionLabel(_detailOrder)
                     </button>
                 }
             </div>
@@ -818,7 +818,8 @@ else
     private int _currentPage = 1;
     private int _pageSize;
 
-    private int TotalActiveOrders => _allOrders.Count(o => o.Status is "recibido" or "en_proceso");
+    private int TotalActiveOrders => _allOrders.Count(o => 
+    o.Status is "recibido" or "en_proceso" or "listo" or "en_camino");
 
     protected override async Task OnInitializedAsync()
     {
@@ -860,7 +861,7 @@ else
         get
         {
             var source = ActiveOnly
-                ? _allOrders.Where(o => o.Status is "recibido" or "en_proceso")
+                ? _allOrders.Where(o => o.Status is "recibido" or "en_proceso" or "listo" or "en_camino")
                 : _allOrders;
 
             return source.Where(o =>
@@ -871,12 +872,15 @@ else
 
                 bool matchFilter = _selectedFilter switch
                 {
-                    "recibido"   => o.Status == "recibido",
+                    "recibido" => o.Status == "recibido",
                     "en_proceso" => o.Status == "en_proceso",
-                    "atendido"   => o.Status == "atendido",
-                    "rechazado"  => o.Status == "rechazado",
-                    "cancelado"  => o.Status == "cancelado",
-                    _            => true
+                    "listo" => o.Status == "listo",
+                    "en_camino" => o.Status == "en_camino",
+                    "entregado" => o.Status == "entregado",
+                    "recogido" => o.Status == "recogido",
+                    "rechazado" => o.Status == "rechazado",
+                    "cancelado" => o.Status == "cancelado",
+                    _ => true
                 };
 
                 bool matchDateFrom = !_dateFrom.HasValue || o.Date >= _dateFrom.Value;
@@ -909,7 +913,7 @@ else
 
     private async Task EjecutarCambioEstado(Order o, string nuevoEstado)
     {
-        if (nuevoEstado == "atendido")
+        if (nuevoEstado == "listo")
         {
             var (ok, error) = await SalesSvc.ConfirmOrderAsync(o.Id, 1, 1);
             await SalesSvc.EnsureLoadedAsync(recargar: true);
@@ -918,7 +922,7 @@ else
                 _detailOrder = _allOrders.FirstOrDefault(x => x.Id == o.Id);
             if (ok)
             {
-                ShowToast("Pedido atendido y venta generada correctamente", false);
+                ShowToast("Pedido listo y venta generada correctamente", false);
             }
             else
             {
@@ -938,11 +942,19 @@ else
     {
         var next = o.Status switch
         {
-            "recibido"   => "en_proceso",
-            "en_proceso" => "atendido",
-            _            => ""
+            "recibido" => "en_proceso",
+            "en_proceso" => "listo",
+
+            "listo" when o.DeliveryMethod == "delivery" => "en_camino",
+            "listo" => "recogido",
+
+            "en_camino" => "entregado",
+
+            _ => ""
         };
+
         if (string.IsNullOrEmpty(next)) return;
+
         _cambioEstadoOrder = o;
         _cambioEstadoNuevo = next;
         _showCambioEstadoConfirm = true;
@@ -1029,34 +1041,60 @@ else
         StateHasChanged();
     }
 
+    private string GetStatusLabel(Order o) => o.Status switch
+    {
+        "recibido" => "Recibido",
+        "en_proceso" => "En preparación",
+
+        "listo" => o.DeliveryMethod == "delivery"
+            ? "Listo para envío"
+            : "Listo para recoger",
+
+        "en_camino" => "En camino",
+        "entregado" => "Entregado",
+        "recogido" => "Recogido",
+        "rechazado" => "Rechazado",
+        "cancelado" => "Cancelado",
+        _ => o.Status
+    };
+
     private string GetStatusLabel(string s) => s switch
     {
-        "recibido"   => "Recibido",
-        "en_proceso" => "En proceso",
-        "atendido"   => "Atendido",
-        "rechazado"  => "Rechazado",
-        "cancelado"  => "Cancelado",
-        _            => s
+        "recibido" => "Recibido",
+        "en_proceso" => "En preparación",
+        "listo" => "Listo",
+        "en_camino" => "En camino",
+        "entregado" => "Entregado",
+        "recogido" => "Recogido",
+        "rechazado" => "Rechazado",
+        "cancelado" => "Cancelado",
+        _ => s
     };
 
     private string GetStatusBadgeStyle(string s) => s switch
     {
-        "recibido"   => "background:#fff3e0;color:#b25e00;font-weight:600;",
-        "en_proceso" => "background:#e8f5e9;color:#1A6B3C;font-weight:600;",
-        "atendido"   => "background:#e8f5e9;color:#198754;font-weight:600;",
-        "rechazado"  => "background:#ffebee;color:#c62828;font-weight:600;",
-        "cancelado"  => "background:#ffebee;color:#c62828;font-weight:600;",
-        _            => "background:#f5f5f5;color:#555;font-weight:600;"
+        "recibido" => "background:#fff3e0;color:#b25e00;font-weight:600;",
+        "en_proceso" => "background:#e3f2fd;color:#1565c0;font-weight:600;",
+        "listo" => "background:#e8f5e9;color:#1A6B3C;font-weight:600;",
+        "en_camino" => "background:#e8f5e9;color:#1A6B3C;font-weight:600;",
+        "entregado" => "background:#e8f5e9;color:#198754;font-weight:600;",
+        "recogido" => "background:#e8f5e9;color:#198754;font-weight:600;",
+        "rechazado" => "background:#ffebee;color:#c62828;font-weight:600;",
+        "cancelado" => "background:#ffebee;color:#c62828;font-weight:600;",
+        _ => "background:#f5f5f5;color:#555;font-weight:600;"
     };
 
     private string GetLeftBorderClass(string s) => s switch
     {
-        "recibido"   => "border-left-pendiente",
+        "recibido" => "border-left-pendiente",
         "en_proceso" => "border-left-preparando",
-        "atendido"   => "border-left-entregado",
-        "rechazado"  => "border-left-cancelado",
-        "cancelado"  => "border-left-cancelado",
-        _            => ""
+        "listo" => "border-left-preparando",
+        "en_camino" => "border-left-preparando",
+        "entregado" => "border-left-entregado",
+        "recogido" => "border-left-entregado",
+        "rechazado" => "border-left-cancelado",
+        "cancelado" => "border-left-cancelado",
+        _ => ""
     };
 
     private string GetElapsedTime(DateTime date)
@@ -1068,11 +1106,20 @@ else
         return $"Hace {Math.Floor(diff.TotalDays)} días";
     }
 
-    private string GetNextActionLabel(string s) => s switch
+    private string GetNextActionLabel(Order o) => o.Status switch
     {
-        "recibido"   => "Iniciar proceso",
-        "en_proceso" => "Marcar atendido",
-        _            => ""
+        "recibido" => "Iniciar preparación",
+
+        "en_proceso" => o.DeliveryMethod == "delivery"
+            ? "Marcar listo para envío"
+            : "Marcar listo para recoger",
+
+        "listo" when o.DeliveryMethod == "delivery" => "Marcar en camino",
+        "listo" => "Marcar recogido",
+
+        "en_camino" => "Marcar entregado",
+
+        _ => ""
     };
 
     private int TotalPages(int totalCount) => (int)Math.Ceiling((double)totalCount / _pageSize);

@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
 
 public class PedidoDaoImpl implements PedidoDao {
 
@@ -145,10 +146,22 @@ public class PedidoDaoImpl implements PedidoDao {
         return result != null ? ((Number) result).intValue() : 0;
     }
 
+    private LocalDateTime getLocalDateTime(ResultSet rs, String column) throws SQLException {
+        Timestamp ts = rs.getTimestamp(column);
+        return ts != null ? ts.toLocalDateTime() : null;
+    }
+
     private Pedido mapearPedido(ResultSet rs) throws SQLException {
         Pedido p = new Pedido();
         p.setIdPedido(rs.getInt("PEDIDO_ID"));
         p.setFechaHora(rs.getTimestamp("FECHA_HORA").toLocalDateTime());
+        p.setFechaRecibido(getLocalDateTime(rs, "FECHA_RECIBIDO"));
+        p.setFechaEnPreparacion(getLocalDateTime(rs, "FECHA_EN_PREPARACION"));
+        p.setFechaListo(getLocalDateTime(rs, "FECHA_LISTO"));
+        p.setFechaEnCamino(getLocalDateTime(rs, "FECHA_EN_CAMINO"));
+        p.setFechaEntregado(getLocalDateTime(rs, "FECHA_ENTREGADO"));
+        p.setFechaRecogido(getLocalDateTime(rs, "FECHA_RECOGIDO"));
+        p.setFechaCancelado(getLocalDateTime(rs, "FECHA_CANCELADO"));
         p.setMontoTotal(rs.getDouble("MONTO_TOTAL"));
 
         // Proteger contra valores null o inesperados en ESTADO_PEDIDO
@@ -180,5 +193,36 @@ public class PedidoDaoImpl implements PedidoDao {
         p.setCliente(cliente);
 
         return p;
+    }
+
+    @Override
+    public String reservarStockParaPago(int idPedido) {
+        Map<Integer, Object> parametrosSalida = new HashMap<>();
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+
+        parametrosSalida.put(1, Types.INTEGER);  // OUT _exito
+        parametrosSalida.put(2, Types.VARCHAR);  // OUT _mensaje
+        parametrosEntrada.put(3, idPedido);      // IN _pedido_id
+
+        DBManager.getInstance().ejecutarProcedimiento(
+                "RESERVAR_STOCK_PEDIDO", parametrosEntrada, parametrosSalida);
+
+        Object exitoObj = parametrosSalida.get(1);
+        int exito = exitoObj != null ? ((Number) exitoObj).intValue() : 0;
+
+        String mensaje = parametrosSalida.get(2) != null
+                ? parametrosSalida.get(2).toString()
+                : "No se pudo reservar stock para el pedido.";
+
+        return exito == 1 ? null : mensaje;
+    }
+
+    @Override
+    public int restaurarStockReservado(int idPedido) {
+        Map<Integer, Object> parametrosEntrada = new HashMap<>();
+        parametrosEntrada.put(1, idPedido);
+
+        return DBManager.getInstance().ejecutarProcedimiento(
+                "RESTAURAR_STOCK_PEDIDO", parametrosEntrada, null);
     }
 }

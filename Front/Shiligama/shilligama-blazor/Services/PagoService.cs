@@ -40,13 +40,19 @@ public class PagoService
                 email,
                 monto = monto > 0 ? (double)monto : 0
             };
+
             var resp = await _http.PostAsJsonAsync("pagos/iniciar", body);
-            if (resp.IsSuccessStatusCode)
-            {
-                return await resp.Content.ReadFromJsonAsync<RespuestaIniciarPago>(_json);
-            }
+
+            var data = await resp.Content.ReadFromJsonAsync<RespuestaIniciarPago>(_json);
+
+            if (data != null)
+                return data;
         }
-        catch { /* backend o pasarela no disponible */ }
+        catch
+        {
+            // backend o pasarela no disponible
+        }
+
         return null;
     }
 
@@ -70,6 +76,22 @@ public class PagoService
             return await _http.GetFromJsonAsync<RespuestaPagoEstado>($"pagos/pedido/{idPedido}", _json);
         }
         catch { return null; }
+    }
+
+    public async Task<RespuestaIniciarPago?> ReservarStockAsync(int idPedido)
+    {
+        try
+        {
+            var resp = await _http.PostAsync($"pagos/reservar-stock/{idPedido}", null);
+
+            var data = await resp.Content.ReadFromJsonAsync<RespuestaIniciarPago>(_json);
+
+            return data;
+        }
+        catch
+        {
+            return null;
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 @page "/mis-pedidos"
 @layout MainLayout
+@implements IDisposable
 @inject SalesService SalesSvc
 @inject AuthService Auth
 @inject NavigationManager Navigation
@@ -77,8 +78,11 @@ else
                     @onchange="OnStatusChanged">
                 <option value="todos">Todos los estados</option>
                 <option value="recibido">Recibido</option>
-                <option value="en_proceso">En proceso</option>
-                <option value="atendido">Atendido</option>
+                <option value="en_proceso">En preparación</option>
+                <option value="listo">Listo</option>
+                <option value="en_camino">En camino</option>
+                <option value="entregado">Entregado</option>
+                <option value="recogido">Recogido</option>
                 <option value="rechazado">Rechazado</option>
                 <option value="cancelado">Cancelado</option>
             </select>
@@ -146,7 +150,7 @@ else
                                     <div class="d-flex align-items-center gap-2 flex-wrap">
                                         <span class="fw-bold text-foreground">@order.Id</span>
                                         <span class="badge rounded-pill @(StatusBadgeClass(order.Status))">
-                                            @StatusLabel(order.Status)
+                                            @StatusLabel(order)
                                         </span>
                                     </div>
                                     <p class="text-muted-foreground small mt-1 mb-0">
@@ -447,7 +451,7 @@ else
                             @_selectedOrder.Id
                         </h5>
                         <span class="badge rounded-pill @(StatusBadgeClass(_selectedOrder.Status))">
-                            @StatusLabel(_selectedOrder.Status)
+                            @StatusLabel(_selectedOrder)
                         </span>
                     </div>
                     <button class="btn-close ms-auto" @onclick="CloseModal"></button>
@@ -639,6 +643,11 @@ else
     private List<Order> PagedOrders => _filtered
         .Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
 
+
+    private System.Threading.Timer? _refreshTimer;
+    private bool _refreshingOrders = false;
+
+
     private async Task GoToPage(int page)
     {
         if (page < 1 || page > TotalPages) return;
@@ -779,16 +788,58 @@ else
         StateHasChanged();
     }
 
-    protected override async Task OnInitializedAsync()
+    private async Task LoadClientOrdersAsync()
     {
-        if (!Auth.IsLoggedIn()) { Navigation.NavigateTo("/"); return; }
         var idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
         _allOrders = await SalesSvc.GetClientOrdersAsync(idCliente);
         ApplyFilters();
-        _loading = false;
     }
 
-    private void ApplyFilters()
+    private async Task RefreshClientOrdersAsync()
+    {
+        if (_refreshingOrders || !Auth.IsLoggedIn())
+            return;
+
+        try
+        {
+            _refreshingOrders = true;
+
+            var selectedId = _selectedOrder?.Id;
+            var idCliente = Auth.CurrentUser?.IdUsuario ?? 0;
+
+            _allOrders = await SalesSvc.GetClientOrdersAsync(idCliente);
+            ApplyFilters(false);
+
+            if (!string.IsNullOrEmpty(selectedId))
+                _selectedOrder = _allOrders.FirstOrDefault(o => o.Id == selectedId);
+
+            StateHasChanged();
+        }
+        finally
+        {
+            _refreshingOrders = false;
+        }
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Auth.IsLoggedIn())
+        {
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        await LoadClientOrdersAsync();
+        _loading = false;
+
+        _refreshTimer = new System.Threading.Timer(
+            async _ => await InvokeAsync(RefreshClientOrdersAsync),
+            null,
+            TimeSpan.FromSeconds(10),
+            TimeSpan.FromSeconds(10)
+        );
+    }
+
+    private void ApplyFilters(bool resetPage = true)
     {
         _filtered = _allOrders.Where(o =>
         {
@@ -799,7 +850,15 @@ else
         })
         .OrderByDescending(o => o.Date)
         .ToList();
-        _currentPage = 1;
+
+        if (resetPage)
+        {
+            _currentPage = 1;
+        }
+        else if (_currentPage > TotalPages)
+        {
+            _currentPage = Math.Max(1, TotalPages);
+        }
     }
 
     private void OnStatusChanged(ChangeEventArgs e)
@@ -827,21 +886,28 @@ else
 
     private string StatusBadgeClass(string s) => s.ToLower() switch
     {
-        "atendido"   => "badge-entregado",
+        "entregado" or "recogido" => "badge-entregado",
+        "listo" or "en_camino" => "badge-preparando",
         "en_proceso" => "badge-preparando",
-        "recibido"   => "badge-pendiente",
-        "rechazado"  => "badge-cancelado",
-        "cancelado"  => "badge-cancelado",
+        "recibido" => "badge-pendiente",
+        "rechazado" or "cancelado" => "badge-cancelado",
         _ => "badge-pendiente"
     };
-    private string StatusLabel(string s) => s.ToLower() switch
+    private string StatusLabel(Order o) => o.Status.ToLower() switch
     {
-        "atendido"   => "Atendido",
-        "en_proceso" => "En proceso",
-        "recibido"   => "Recibido",
-        "rechazado"  => "Rechazado",
-        "cancelado"  => "Cancelado",
-        _ => s
+        "recibido" => "Recibido",
+        "en_proceso" => "En preparación",
+
+        "listo" => o.DeliveryMethod == "delivery"
+            ? "Listo para envío"
+            : "Listo para recoger",
+
+        "en_camino" => "En camino",
+        "entregado" => "Entregado",
+        "recogido" => "Recogido",
+        "rechazado" => "Rechazado",
+        "cancelado" => "Cancelado",
+        _ => o.Status
     };
     private string PaymentLabel(string p) => p.ToLower() switch
     {
@@ -865,29 +931,52 @@ else
     private List<(string Label, DateTime? Time, bool Done, bool Cancelled)> GetTimeline(Order o)
     {
         var steps = new List<(string, DateTime?, bool, bool)>();
-        bool cancelled = o.Status == "cancelado";
+
+        bool cancelled = o.Status == "cancelado" || o.Status == "rechazado";
 
         steps.Add(("Pedido recibido", o.TimelinePedidoRecibido, true, false));
 
         if (cancelled)
         {
-            steps.Add(("Cancelado", o.TimelineCancelado, true, true));
+            string cancelLabel = o.Status == "rechazado" ? "Pedido rechazado" : "Pedido cancelado";
+            steps.Add((cancelLabel, o.TimelineCancelado, true, true));
             return steps;
         }
 
         steps.Add(("En preparación", o.TimelineEnPreparacion,
-            o.TimelineEnPreparacion.HasValue, false));
-        steps.Add(("Listo para envío", o.TimelineListo,
-            o.TimelineListo.HasValue, false));
+            o.Status is "en_proceso" or "listo" or "en_camino" or "entregado" or "recogido"
+            || o.TimelineEnPreparacion.HasValue, false));
+
+        string listoLabel = o.DeliveryMethod == "delivery"
+            ? "Listo para envío"
+            : "Listo para recoger";
+
+        steps.Add((listoLabel, o.TimelineListo,
+            o.Status is "listo" or "en_camino" or "entregado" or "recogido"
+            || o.TimelineListo.HasValue, false));
 
         if (o.DeliveryMethod == "delivery")
+        {
             steps.Add(("En camino", o.TimelineEnCamino,
-                o.TimelineEnCamino.HasValue, false));
+                o.Status is "en_camino" or "entregado"
+                || o.TimelineEnCamino.HasValue, false));
 
-        string lastLabel = o.DeliveryMethod == "delivery" ? "Entregado" : "Recogido";
-        steps.Add((lastLabel, o.TimelineEntregado,
-            o.TimelineEntregado.HasValue, false));
+            steps.Add(("Entregado", o.TimelineEntregado,
+                o.Status == "entregado"
+                || o.TimelineEntregado.HasValue, false));
+        }
+        else
+        {
+            steps.Add(("Recogido", o.TimelineRecogido,
+                o.Status == "recogido"
+                || o.TimelineRecogido.HasValue, false));
+        }
 
         return steps;
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
     }
 }

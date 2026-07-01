@@ -43,12 +43,7 @@ public class PedidoBoImpl implements PedidoBo {
     public int modificar(Pedido pedido) throws Exception {
         validar(pedido, true);
 
-        // ATENDIDO solo se puede alcanzar via confirmarPedido(); bloquear aqui.
-        if (pedido.getEstadoPedido() == EstadoPedido.ATENDIDO) {
-            throw new Exception(
-                    "Para confirmar un pedido use el endpoint POST /pedidos/{id}/confirmar. " +
-                            "El estado ATENDIDO no puede asignarse mediante modificar().");
-        }
+
 
         // Permite reabrir/corregir pedidos en estado terminal (ATENDIDO, RECHAZADO,
         // CANCELADO) hacia cualquier otro estado (excepto ATENDIDO, bloqueado arriba),
@@ -84,10 +79,15 @@ public class PedidoBoImpl implements PedidoBo {
         if (actual == null) throw new Exception("Pedido con ID " + idPedido + " no encontrado.");
 
         EstadoPedido estado = actual.getEstadoPedido();
-        if (estado == EstadoPedido.ATENDIDO || estado == EstadoPedido.RECHAZADO
-                || estado == EstadoPedido.CANCELADO) {
+        if (estado == EstadoPedido.LISTO ||
+                estado == EstadoPedido.EN_CAMINO ||
+                estado == EstadoPedido.ENTREGADO ||
+                estado == EstadoPedido.RECOGIDO ||
+                estado == EstadoPedido.RECHAZADO ||
+                estado == EstadoPedido.CANCELADO) {
+
             throw new Exception(
-                    "El pedido ya está en estado terminal (" + estado + ") y no puede confirmarse.");
+                    "El pedido ya está en estado " + estado + " y no puede confirmarse nuevamente.");
         }
 
         // Gestion concurrente de stock: reservar antes de ejecutar el SP.
@@ -95,18 +95,7 @@ public class PedidoBoImpl implements PedidoBo {
         // GestorStock.reservarStock() es synchronized -> area critica:
         // solo un hilo a la vez puede decrementar; los demas esperan (wait)
         // si no hay stock, hasta que llegue una reposicion (notifyAll).
-        GestorStock gestorStock = GestorStock.getInstance();
-        LoteBoImpl loteBO = new LoteBoImpl();
-        for (DetallePedido detalle : actual.getDetalles()) {
-            int idProducto = detalle.getProducto().getIdProducto();
-            int cantidad   = detalle.getCantidad();
-            // Cargar stock real desde BD solo la primera vez que se ve el producto
-            List<Lote> lotes = loteBO.listarPorProducto(idProducto);
-            int stockTotal = lotes.stream().mapToInt(Lote::getCantidadActual).sum();
-            gestorStock.inicializarSiNecesario(idProducto, stockTotal);
-            // Si no hay stock suficiente, el hilo queda en wait() hasta reposicion
-            gestorStock.reservarStock(Thread.currentThread().getName(), idProducto, cantidad);
-        }
+
 
         // El SP CONFIRMAR_PEDIDO_A_VENTA se encarga de: crear venta, copiar detalles,
         // decrementar stock y marcar el pedido como ATENDIDO de forma atómica.
@@ -121,10 +110,13 @@ public class PedidoBoImpl implements PedidoBo {
         // Notificacion adicional de PEDIDO_ATENDIDO (distinta de VENTA_REGISTRADA):
         // confirma al cliente que su pedido especifico fue atendido, con referencia
         // directa al pedido para que "ver" navegue al item exacto en Mis Pedidos.
+
+        // El SP CONFIRMAR_PEDIDO_A_VENTA se encarga de crear venta, copiar detalles,
+        // decrementar stock y marcar el pedido como LISTO de forma atómica.
         Runnable tareaEstado = new TareaNotificacionCambioEstadoPedido(
                 actual.getCliente().getIdUsuario(), idPedido,
-                EstadoPedido.ATENDIDO, actual.getModalidadVenta());
-        new Thread(tareaEstado, "Hilo-Notificacion-Atendido-Pedido" + idPedido).start();
+                EstadoPedido.LISTO, actual.getModalidadVenta());
+        new Thread(tareaEstado, "Hilo-Notificacion-Listo-Pedido" + idPedido).start();
 
         return idVenta;
     }
@@ -179,5 +171,23 @@ public class PedidoBoImpl implements PedidoBo {
         if (!esModificacion && pedido.getMontoTotal() <= 0) {
             throw new Exception("El monto total del pedido debe ser mayor que cero.");
         }
+    }
+
+    @Override
+    public String reservarStockParaPago(int idPedido) throws Exception {
+        if (idPedido <= 0) {
+            throw new Exception("El ID del pedido debe ser mayor que cero.");
+        }
+
+        return daoPedido.reservarStockParaPago(idPedido);
+    }
+
+    @Override
+    public int restaurarStockReservado(int idPedido) throws Exception {
+        if (idPedido <= 0) {
+            throw new Exception("El ID del pedido debe ser mayor que cero.");
+        }
+
+        return daoPedido.restaurarStockReservado(idPedido);
     }
 }

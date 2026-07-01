@@ -380,16 +380,27 @@ CREATE DEFINER=`admin`@`%` PROCEDURE `BUSCAR_PEDIDO_X_ID`(
 )
 BEGIN
     SELECT p.PEDIDO_ID,
-           p.CLIENTE_ID,
-           u.NOMBRES    AS CLIENTE_NOMBRES,
-           u.APELLIDOS  AS CLIENTE_APELLIDOS,
-           p.VENTA_ID,
-           p.FECHA_HORA,
-           p.MONTO_TOTAL,
-           p.ESTADO_PEDIDO,
-           p.DIRECCION_ENTREGA,
-           p.MODALIDAD_ENTREGA,
-           p.OBSERVACIONES
+       p.CLIENTE_ID,
+       u.NOMBRES    AS CLIENTE_NOMBRES,
+       u.APELLIDOS  AS CLIENTE_APELLIDOS,
+       p.VENTA_ID,
+       p.FECHA_HORA,
+       p.FECHA_RECIBIDO,
+       p.FECHA_EN_PREPARACION,
+       p.FECHA_LISTO,
+       p.FECHA_CANCELADO,
+       p.MONTO_TOTAL,
+       p.ESTADO_PEDIDO,
+       p.DIRECCION_ENTREGA,
+       p.MODALIDAD_ENTREGA,
+       p.OBSERVACIONES,
+       p.FECHA_RECIBIDO,
+		p.FECHA_EN_PREPARACION,
+		p.FECHA_LISTO,
+		p.FECHA_EN_CAMINO,
+		p.FECHA_ENTREGADO,
+		p.FECHA_RECOGIDO,
+		p.FECHA_CANCELADO
     FROM pedido p
     LEFT JOIN usuario u ON p.CLIENTE_ID = u.USUARIO_ID
     WHERE p.PEDIDO_ID = _pedido_id AND p.ACTIVO = 1;
@@ -635,17 +646,13 @@ BEGIN
     FROM   detalle_pedido
     WHERE  PEDIDO_ID = p_pedido_id;
 
-    -- 6. Decrementar stock (GREATEST evita negativos)
-    UPDATE producto p
-    INNER JOIN detalle_pedido dp ON p.PRODUCTO_ID = dp.PRODUCTO_ID
-    SET    p.STOCK = GREATEST(0, p.STOCK - dp.CANTIDAD)
-    WHERE  dp.PEDIDO_ID = p_pedido_id;
+   
 
     -- 7. Actualizar pedido: marcar ATENDIDO y vincular venta
     UPDATE pedido
-    SET    ESTADO_PEDIDO = 'ATENDIDO',
-           VENTA_ID      = p_venta_id
-    WHERE  PEDIDO_ID = p_pedido_id;
+	SET    ESTADO_PEDIDO = 'LISTO',
+		   VENTA_ID      = p_venta_id
+	WHERE  PEDIDO_ID = p_pedido_id;
 END ;;
 DELIMITER ;
 DROP PROCEDURE IF EXISTS `CONTAR_NOTIFICACIONES_NO_LEIDAS`;
@@ -1774,6 +1781,13 @@ BEGIN
            u.APELLIDOS  AS CLIENTE_APELLIDOS,
            p.VENTA_ID,
            p.FECHA_HORA,
+           p.FECHA_RECIBIDO,
+           p.FECHA_EN_PREPARACION,
+           p.FECHA_LISTO,
+           p.FECHA_EN_CAMINO,
+           p.FECHA_ENTREGADO,
+           p.FECHA_RECOGIDO,
+           p.FECHA_CANCELADO,
            p.MONTO_TOTAL,
            p.ESTADO_PEDIDO,
            p.DIRECCION_ENTREGA,
@@ -1791,11 +1805,24 @@ CREATE DEFINER=`admin`@`%` PROCEDURE `LISTAR_PEDIDOS_X_CLIENTE`(
     IN _cliente_id INT
 )
 BEGIN
-    SELECT p.PEDIDO_ID, p.CLIENTE_ID,
+    SELECT p.PEDIDO_ID, 
+           p.CLIENTE_ID,
            u.NOMBRES   AS CLIENTE_NOMBRES,
            u.APELLIDOS AS CLIENTE_APELLIDOS,
-           p.VENTA_ID, p.FECHA_HORA, p.MONTO_TOTAL,
-           p.ESTADO_PEDIDO, p.DIRECCION_ENTREGA, p.MODALIDAD_ENTREGA, p.OBSERVACIONES
+           p.VENTA_ID, 
+           p.FECHA_HORA,
+           p.FECHA_RECIBIDO,
+           p.FECHA_EN_PREPARACION,
+           p.FECHA_LISTO,
+           p.FECHA_EN_CAMINO,
+           p.FECHA_ENTREGADO,
+           p.FECHA_RECOGIDO,
+           p.FECHA_CANCELADO,
+           p.MONTO_TOTAL,
+           p.ESTADO_PEDIDO, 
+           p.DIRECCION_ENTREGA, 
+           p.MODALIDAD_ENTREGA, 
+           p.OBSERVACIONES
     FROM pedido p
     LEFT JOIN usuario u ON p.CLIENTE_ID = u.USUARIO_ID
     WHERE p.CLIENTE_ID = _cliente_id AND p.ACTIVO = 1
@@ -1808,11 +1835,24 @@ CREATE DEFINER=`admin`@`%` PROCEDURE `LISTAR_PEDIDOS_X_ESTADO`(
     IN _estado VARCHAR(20)
 )
 BEGIN
-    SELECT p.PEDIDO_ID, p.CLIENTE_ID,
+    SELECT p.PEDIDO_ID, 
+           p.CLIENTE_ID,
            u.NOMBRES   AS CLIENTE_NOMBRES,
            u.APELLIDOS AS CLIENTE_APELLIDOS,
-           p.VENTA_ID, p.FECHA_HORA, p.MONTO_TOTAL,
-           p.ESTADO_PEDIDO, p.DIRECCION_ENTREGA, p.MODALIDAD_ENTREGA, p.OBSERVACIONES
+           p.VENTA_ID, 
+           p.FECHA_HORA,
+           p.FECHA_RECIBIDO,
+           p.FECHA_EN_PREPARACION,
+           p.FECHA_LISTO,
+           p.FECHA_EN_CAMINO,
+           p.FECHA_ENTREGADO,
+           p.FECHA_RECOGIDO,
+           p.FECHA_CANCELADO,
+           p.MONTO_TOTAL,
+           p.ESTADO_PEDIDO, 
+           p.DIRECCION_ENTREGA, 
+           p.MODALIDAD_ENTREGA, 
+           p.OBSERVACIONES
     FROM pedido p
     LEFT JOIN usuario u ON p.CLIENTE_ID = u.USUARIO_ID
     WHERE p.ESTADO_PEDIDO = _estado AND p.ACTIVO = 1
@@ -2634,4 +2674,165 @@ BEGIN
     INSERT IGNORE INTO promocion_producto(PROMOCION_ID, PRODUCTO_ID)
     VALUES(_promocion_id, _producto_id);
 END ;;
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `RESERVAR_STOCK_PEDIDO`;
+DELIMITER ;;
+
+CREATE DEFINER=`admin`@`%` PROCEDURE `RESERVAR_STOCK_PEDIDO`(
+    OUT _exito TINYINT,
+    OUT _mensaje VARCHAR(500),
+    IN  _pedido_id INT
+)
+BEGIN
+    DECLARE v_existe INT DEFAULT 0;
+    DECLARE v_reservado TINYINT DEFAULT 0;
+    DECLARE v_total_productos INT DEFAULT 0;
+    DECLARE v_actualizados INT DEFAULT 0;
+
+    DECLARE v_nombre VARCHAR(100) DEFAULT NULL;
+    DECLARE v_stock INT DEFAULT 0;
+    DECLARE v_solicitado INT DEFAULT 0;
+
+    SET _exito = 0;
+    SET _mensaje = '';
+
+    START TRANSACTION;
+
+    SELECT COUNT(*)
+    INTO v_existe
+    FROM pedido
+    WHERE PEDIDO_ID = _pedido_id
+      AND ACTIVO = 1;
+
+    IF v_existe = 0 THEN
+        ROLLBACK;
+        SET _mensaje = 'El pedido no existe o no está activo.';
+    ELSE
+        SELECT STOCK_RESERVADO
+        INTO v_reservado
+        FROM pedido
+        WHERE PEDIDO_ID = _pedido_id
+        FOR UPDATE;
+
+        IF v_reservado = 1 THEN
+            COMMIT;
+            SET _exito = 1;
+            SET _mensaje = 'El stock del pedido ya estaba reservado.';
+        ELSE
+            SELECT COUNT(*)
+            INTO v_total_productos
+            FROM (
+                SELECT PRODUCTO_ID
+                FROM detalle_pedido
+                WHERE PEDIDO_ID = _pedido_id
+                GROUP BY PRODUCTO_ID
+            ) t;
+
+            IF v_total_productos = 0 THEN
+                ROLLBACK;
+                SET _mensaje = 'El pedido no tiene productos.';
+            ELSE
+                UPDATE producto p
+                INNER JOIN (
+                    SELECT PRODUCTO_ID, SUM(CANTIDAD) AS CANTIDAD_TOTAL
+                    FROM detalle_pedido
+                    WHERE PEDIDO_ID = _pedido_id
+                    GROUP BY PRODUCTO_ID
+                ) dp ON p.PRODUCTO_ID = dp.PRODUCTO_ID
+                SET p.STOCK = p.STOCK - dp.CANTIDAD_TOTAL
+                WHERE p.ACTIVO = 1
+                  AND p.STOCK >= dp.CANTIDAD_TOTAL;
+
+                SET v_actualizados = ROW_COUNT();
+
+                IF v_actualizados <> v_total_productos THEN
+                    ROLLBACK;
+
+                    SELECT p.NOMBRE, p.STOCK, dp.CANTIDAD_TOTAL
+                    INTO v_nombre, v_stock, v_solicitado
+                    FROM producto p
+                    INNER JOIN (
+                        SELECT PRODUCTO_ID, SUM(CANTIDAD) AS CANTIDAD_TOTAL
+                        FROM detalle_pedido
+                        WHERE PEDIDO_ID = _pedido_id
+                        GROUP BY PRODUCTO_ID
+                    ) dp ON p.PRODUCTO_ID = dp.PRODUCTO_ID
+                    WHERE p.ACTIVO = 0
+                       OR p.STOCK < dp.CANTIDAD_TOTAL
+                    LIMIT 1;
+
+                    IF v_nombre IS NULL THEN
+                        SET _mensaje = 'No tenemos suficiente stock para completar el pedido.';
+                    ELSE
+                        SET _mensaje = CONCAT(
+                            'No tenemos suficiente stock para ',
+                            v_nombre,
+                            '. Solicitaste ',
+                            v_solicitado,
+                            ' unidad(es), pero solo tenemos ',
+                            v_stock,
+                            '.'
+                        );
+                    END IF;
+                ELSE
+                    UPDATE pedido
+                    SET STOCK_RESERVADO = 1
+                    WHERE PEDIDO_ID = _pedido_id;
+
+                    COMMIT;
+                    SET _exito = 1;
+                    SET _mensaje = 'Stock reservado correctamente.';
+                END IF;
+            END IF;
+        END IF;
+    END IF;
+END ;;
+
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `RESTAURAR_STOCK_PEDIDO`;
+DELIMITER ;;
+
+CREATE DEFINER=`admin`@`%` PROCEDURE `RESTAURAR_STOCK_PEDIDO`(
+    IN _pedido_id INT
+)
+BEGIN
+    DECLARE v_existe INT DEFAULT 0;
+    DECLARE v_reservado TINYINT DEFAULT 0;
+    DECLARE v_venta_id INT DEFAULT NULL;
+
+    START TRANSACTION;
+
+    SELECT COUNT(*)
+    INTO v_existe
+    FROM pedido
+    WHERE PEDIDO_ID = _pedido_id;
+
+    IF v_existe > 0 THEN
+        SELECT STOCK_RESERVADO, VENTA_ID
+        INTO v_reservado, v_venta_id
+        FROM pedido
+        WHERE PEDIDO_ID = _pedido_id
+        FOR UPDATE;
+
+        IF v_reservado = 1 AND v_venta_id IS NULL THEN
+            UPDATE producto p
+            INNER JOIN (
+                SELECT PRODUCTO_ID, SUM(CANTIDAD) AS CANTIDAD_TOTAL
+                FROM detalle_pedido
+                WHERE PEDIDO_ID = _pedido_id
+                GROUP BY PRODUCTO_ID
+            ) dp ON p.PRODUCTO_ID = dp.PRODUCTO_ID
+            SET p.STOCK = p.STOCK + dp.CANTIDAD_TOTAL;
+
+            UPDATE pedido
+            SET STOCK_RESERVADO = 0
+            WHERE PEDIDO_ID = _pedido_id;
+        END IF;
+    END IF;
+
+    COMMIT;
+END ;;
+
 DELIMITER ;

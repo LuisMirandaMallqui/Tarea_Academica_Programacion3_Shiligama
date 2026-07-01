@@ -73,28 +73,41 @@ public class PagoRS {
             }
 
             // Order id único y trazable al pedido (el callback recupera el
-            // pedido a partir del pago localizado por este order id).
+            // Antes de iniciar el pago, reservamos/descontamos el stock.
+// Si no alcanza, el cliente no debe llegar a pagar.
+            String errorStock = pedidoBo.reservarStockParaPago(pedido.getIdPedido());
+
+            if (errorStock != null) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity(new RespuestaIniciarPago(false,
+                                errorStock, null, null, null, null, 0))
+                        .build();
+            }
+
+// Order id único y trazable al pedido
             String orderId = "PED" + pedido.getIdPedido() + "-" + System.currentTimeMillis();
 
-            Pago pago = pagoBo.registrarPagoPendiente(
-                    pedido.getIdPedido(), idMetodoIzipay, monto, moneda, orderId);
-
-            // Izipay maneja montos en céntimos (entero).
+// Izipay maneja montos en céntimos.
             long amountCents = Math.round(monto * 100);
             String email = (dto.getEmail() != null && !dto.getEmail().isBlank())
                     ? dto.getEmail()
                     : (pedido.getCliente() != null ? pedido.getCliente().getCorreo() : null);
 
-            // CreatePayment → formToken para el formulario embebido.
             String formToken = pasarela.crearFormToken(amountCents, moneda, orderId, email);
 
             if (formToken == null) {
-                // El pago queda PENDIENTE; el cliente puede reintentar.
+                // Si Izipay no permite iniciar el pago, devolvemos el stock.
+                pedidoBo.restaurarStockReservado(pedido.getIdPedido());
+
                 return Response.status(Response.Status.BAD_GATEWAY)
                         .entity(new RespuestaIniciarPago(false,
                                 "No se pudo iniciar el pago con Izipay. Intente nuevamente.",
-                                null, null, null, orderId, pago.getIdPago())).build();
+                                null, null, null, orderId, 0))
+                        .build();
             }
+
+            Pago pago = pagoBo.registrarPagoPendiente(
+                    pedido.getIdPedido(), idMetodoIzipay, monto, moneda, orderId);
 
             return Response.ok(new RespuestaIniciarPago(true,
                     "Pago iniciado. Renderizar el formulario embebido.",
@@ -184,5 +197,41 @@ public class PagoRS {
             }
         }
         return -1;
+    }
+
+    @POST
+    @Path("/reservar-stock/{idPedido}")
+    public Response reservarStock(@PathParam("idPedido") int idPedido) {
+        try {
+            if (idPedido <= 0) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(new RespuestaIniciarPago(false,
+                                "El id del pedido es obligatorio.",
+                                null, null, null, null, 0))
+                        .build();
+            }
+
+            String errorStock = pedidoBo.reservarStockParaPago(idPedido);
+
+            if (errorStock != null) {
+                return Response.status(Response.Status.CONFLICT)
+                        .entity(new RespuestaIniciarPago(false,
+                                errorStock,
+                                null, null, null, null, 0))
+                        .build();
+            }
+
+            return Response.ok(new RespuestaIniciarPago(true,
+                            "Stock reservado correctamente.",
+                            null, null, null, null, 0))
+                    .build();
+
+        } catch (Exception ex) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(new RespuestaIniciarPago(false,
+                            "Error al reservar stock: " + ex.getMessage(),
+                            null, null, null, null, 0))
+                    .build();
+        }
     }
 }

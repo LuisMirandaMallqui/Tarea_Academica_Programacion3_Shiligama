@@ -11,4 +11,7 @@ public interface PedidoDao extends IDAO<Pedido> {
     List<Pedido> listarPorEstado(EstadoPedido estado);
     /** Confirma un pedido creando la Venta de forma atómica. Devuelve el idVenta generado. */
     int confirmarPedidoAVenta(int idPedido, int idTrabajador, int idMetodoPago);
+    String reservarStockParaPago(int idPedido);
+
+    int restaurarStockReservado(int idPedido);
 }
